@@ -42,15 +42,13 @@ The two §18 obligations we had deferred now fire on `InvalidateAcceptedEvidence
 
 Both idempotent, gated behind the fail-closed run-resolution guard. Covered by VF-003F (open-run, both drivers, in the diff-to-zero), VF-003D (Issue on the closed-run path), a unit suite, and a coupling mutation. Details in `ADDITIONS.md` and `contracts/CONTRACT_GAPS.md` (B-Q-29).
 
-## Planning now — Phase A
+## Phase A — outbox delivery leg (at-least-once eventing) — DONE (B-Q-30)
 
-Phase B is shipped, so Phase A is the active phase (the two were sequenced Phase B first, then Phase A).
+`deliverOutbox()` consumes undelivered outbox rows in seq order and drives an idempotent projection handler, marking each delivered. **At-least-once** is real (apply and mark are separate transactions, so a crash between them forces a safe redelivery the idempotent handler absorbs — no double count). Ordering is delivered by seq (falsifiably proven — a scrambled outbox still ascends), orphan rows are never marked delivered, and the whole thing survives a reload. Proven in the backend gate (red-capability spot-checked on both idempotency and ordering).
 
-### Phase A — Outbox delivery leg (at-least-once eventing)
-- **Why now.** The events table and the outbox rows are written transactionally, but there is no consumer. The at-least-once eventing story (TAD §12) is currently aspirational — reload rebuilds directly from records+events. This is the one place the design claims more than the code delivers.
-- **What.** A delivery consumer that marks outbox rows `delivered` and drives idempotent projection workers; the exactly-once-effect guarantee proven across a crash between write and deliver.
-- **Touches.** `src/driver/backend.ts` (outbox consumer, delivery state), a new backend durability proof and/or bench scenario.
-- **Done when.** A proof shows a crash mid-delivery replays with idempotent effect (no double projection), delivery state survives a cold reload, and cross-driver diff-to-zero does not regress.
+An adversarial review drove three fixes: the first cut was effectively *exactly-once* (apply+mark atomic — the at-least-once idempotency defended an unreachable path), the ordering proof was vacuous, and an orphan outbox row could be marked delivered without applying. Details in `ADDITIONS.md` and `contracts/CONTRACT_GAPS.md` (B-Q-30). **Deferred:** retries-with-backoff + dead-letter-after-retry-limit (TAD §12 lists them but specifies no magnitudes — would be invention).
+
+**Both roadmap phases are now shipped.** Remaining work is in the backlog below.
 
 ---
 
@@ -59,7 +57,7 @@ Phase B is shipped, so Phase A is the active phase (the two were sequenced Phase
 *From `contracts/CONTRACT_GAPS.md` — each deferred with a reason, nothing hidden.*
 
 - **Partial-build tails.** Report regeneration triggers beyond the two wired (`report_definition_change`, `source_record_correction` — currently inert); a fully automatic daemon-style supersession (we have operator- and reconciliation-driven); bounded drill-down's "capped" + arbitrary-predicate-rejection obligations (deferred until a cap magnitude enters the contract — a cap invented now would violate no-invention); the GrammarGap lifecycle (`EscalateGrammarGap` unimplemented — create+escalate only).
-- **Infrastructure / scaling.** A dedicated append-only idempotency table (replace the O(n) `world_config` serialization of the seen-keys set); runtime payload-*shape* schema validation (the event type + producer poka-yoke already fires at runtime; payload shape is still pinned by assertions, not schema).
+- **Infrastructure / scaling.** A dedicated append-only idempotency table (replace the O(n) `world_config` serialization of the seen-keys set); runtime payload-*shape* schema validation (the event type + producer poka-yoke already fires at runtime; payload shape is still pinned by assertions, not schema); **outbox retries-with-backoff + dead-letter-after-retry-limit** (B-Q-30 — the delivery leg is built, but these two elaborations wait until the contract names a backoff schedule and retry limit rather than inventing them).
 - **Broadest surface.** ~58 of the 116 registered operations have no handler and return `not_implemented` by design — intentional first-slice scoping, not a defect list. Each becomes a build when a scenario needs it.
 
 ---

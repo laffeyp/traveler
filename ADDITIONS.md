@@ -67,6 +67,17 @@ Contract Spec §18 lists six effects when accepted evidence is invalidated; VF-0
 
 Both effects are idempotent (one per invalidated evidence) and run only after the fail-closed run-resolution guard, so a failed invalidation cascades nothing. The "physical product may be affected" condition is genuinely underspecified in §18; encoded fail-safe (always open a review), recorded as B-Q-29. Tests: `tests/reconciliation/evidence-invalidation-cascade.test.ts` + VF-003F + a coupling mutation that turns VF-003F red if the cascade is suppressed. Red-capability spot-checked (neutering both obligations turned the unit tests red; restored).
 
+## Phase A — outbox delivery leg (B-Q-30)
+
+The backend wrote outbox rows transactionally but nothing consumed them (TAD §12's at-least-once eventing was aspirational). Phase A builds `deliverOutbox()` — backend plumbing below the operation layer, so no registry change:
+
+- Reads undelivered outbox rows in seq order, drives an **idempotent projection handler** (`delivery_projection` keyed by `event_seq`; a materialized `projection_counts` view incremented only on first apply), and marks each row delivered.
+- **At-least-once** (not exactly-once): apply and mark are **separate transactions**, so a crash between them forces a safe redelivery — which the idempotent handler absorbs with no double effect.
+- **Ordering** delivered by seq (falsifiable: a proof scrambles outbox row-order and asserts delivery still ascends). **Orphan guard**: an outbox row with no matching event is never marked delivered. `outbox.event_seq` is `UNIQUE`.
+- Proven by a durability proof in `run-backend.ts` (gated into the backend exit; red-capability spot-checked on both the idempotency and the ordering assertions). Retries-with-backoff + dead-letter-after-retry-limit are deferred (magnitudes unspecified — would be invention).
+
+This phase is the clearest case of adversarial review earning its keep: the skeptic pass caught that the first cut was effectively *exactly-once* (apply+mark atomic), so the at-least-once idempotency defended an unreachable path. Splitting the two transactions is what made the claim true. It also found the ordering proof vacuous and a mark-without-apply orphan hole — both fixed. See `contracts/CONTRACT_GAPS.md` B-Q-30.
+
 ## Notes on scope
 
 - These additions extend the locked contract vocabulary. They were authorized directly by the user (the sole authority) — the original doc stack does not define them.

@@ -558,6 +558,20 @@ plain is fine; skipping the adversarial review is not — it is what makes fast 
 
 ---
 
+## Entry 22 — Phase A: the adversarial view caught the claim being false, not the code being buggy (2026-07-01)
+
+**What happened.** Second roadmap phase: the outbox delivery leg (TAD §12). The backend wrote outbox rows but nothing consumed them. Built `deliverOutbox()` — an idempotent projection handler + safe checkpointing — and a durability proof, then pulled a quick adversarial skeptic (the user's standing ask: "get quick adversarial views from time to time").
+
+**Lesson 1: distrust-the-green also means distrust the CLAIM, and the sharpest review finding is a true-code / false-claim mismatch.** The skeptic returned SOUND-BUT-NOTES: the code was correct and its idempotency proof was tight — but the *headline claim was wrong*. Apply and mark were in ONE transaction, which makes delivery effectively EXACTLY-once: the "crash between apply and mark" state the whole at-least-once story rests on was UNREACHABLE by real code — only the test poke could produce it. So the idempotency machinery was defending a path the mechanism could never take, and the proof validated a state the system can't reach. That is a species of overstated-green (Entry 5) at the design level: not "the test lies" but "the architecture doesn't need the property it claims to demonstrate." The fix was a genuine design correction — split apply and mark into two transactions — which is what MAKES delivery at-least-once and is the whole reason an idempotent projection is required. The review didn't find a bug; it found that the feature wasn't the feature it said it was. Only an adversary reasoning about reachable crash states catches that; a passing proof never will.
+
+**Lesson 2: a proof for an order-insensitive projection cannot test ordering — pick a falsifiable witness.** The skeptic also showed the ordering claim was carried entirely by one `ORDER BY` clause that nothing observed: the projection is a commutative counter, so deleting the clause still passed. This is the decoupled-green of Entry 8 in a new guise — the assertion (counts) is structurally blind to the property (order). The fix is the same discipline: make the witness sensitive to the subject. Added a test that scrambles outbox row-order and asserts delivery still ascends by seq — and confirmed it is red-capable (dropping `ORDER BY` fails it). An ordering proof over an order-insensitive projection is worth exactly nothing until the witness can see order.
+
+**Lesson 3: quick, single-agent adversarial views are high-yield when grounded and aimed.** The review was one focused subagent with a tight brief (refute these four named claims, ground each finding in a failure scenario), not a heavy panel. It returned three real findings + a clear list of what it tried and couldn't break — the "couldn't break" half is itself evidence (it confirmed the idempotency guard is tight, so I didn't waste effort re-hardening it). Cheap, aimed, adversarial, grounded in the actual files — the pattern to reach for routinely, not just at big milestones.
+
+**Kit observation (no new practice; two confirmations + one sharpening).** Phase A adds no new failure mode but sharpens the taxonomy: **overstated-green includes the case where the code is correct and the proof passes, but the ARCHITECTURE doesn't need the property it advertises (exactly-once masquerading as at-least-once)** — catchable only by reasoning about reachable states, not by any green. It reconfirms the decoupled-green lesson (an order-insensitive witness cannot prove ordering) and the value of grounded single-agent adversarial review. Both roadmap phases now shipped; the discipline held for two more increments.
+
+---
+
 ## Hypothesis tracking
 
 | Hypothesis | Status | Evidence |

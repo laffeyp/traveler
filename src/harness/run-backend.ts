@@ -249,4 +249,45 @@ const getR = freshR.executeOperation("GetReport", { report_alias: "run_close_rep
 console.log(`  VF-003D reconciliation reload: evidence=${evState}  report.regeneration_required=${repStale}  GetReport.stale=${getR?.regeneration_required}`);
 const okR = runR.result.status === "passed" && evState === "invalidated" && repStale === true && getR?.regeneration_required === true;
 console.log(`  backend reconciliation durability proof (VF-003D): ${okR ? "PASS" : "FAIL"}`);
-process.exit(ok && ok6 && ok8 && ok9 && ok13 && ok15 && okW && ok12 && equivOk && okIdc && okR ? 0 : 1);
+// Phase A — outbox DELIVERY leg (TAD §12: at-least-once, idempotent projection handler, safe checkpointing,
+// durable). Run a scenario, deliver the outbox, simulate a crash that lost the delivered-marks (projection
+// persisted), redeliver, and prove the materialized projection did NOT double-count; then prove it survives a
+// cold reload and a re-deliver from disk is a no-op.
+const DBD = join(tmpdir(), "phaseA-delivery-cli.db");
+for (const f of [DBD, DBD + "-journal"]) if (existsSync(f)) rmSync(f);
+const backendD = new BackendProductDriver(DBD);
+runScenarioOnDriver("VF-001", backendD, "backend", "VF-001-delivery");
+const beforeD = backendD.countPersisted();          // outbox written, none delivered
+const d1 = backendD.deliverOutbox();                 // first pass: apply each event once, mark delivered
+const afterD = backendD.countPersisted();
+const lostD = backendD.__test_loseDeliveryMarks(3);  // crash: 3 delivered-marks lost, projection persisted
+const d2 = backendD.deliverOutbox();                 // redelivery (at-least-once): must re-apply idempotently
+const redelD = backendD.countPersisted();
+const freshD = new BackendProductDriver(DBD);        // fresh handle on the same file (in-process reload, not a process kill)
+const d3 = freshD.deliverOutbox();                   // nothing left to deliver
+const reloadD = freshD.countPersisted();
+// Ordering (TAD §12 "ordering per object_id"): scramble the outbox so rowid order is the REVERSE of seq order,
+// then prove delivery still ascends by event_seq. Falsifiable — dropping `ORDER BY event_seq` delivers in rowid
+// order (descending seq here) and fails `orderingOk`.
+const DBO = join(tmpdir(), "phaseA-ordering-cli.db");
+for (const f of [DBO, DBO + "-journal"]) if (existsSync(f)) rmSync(f);
+const backendO = new BackendProductDriver(DBO);
+runScenarioOnDriver("VF-001", backendO, "backend", "VF-001-ordering");
+const reversed = backendO.__test_reverseOutboxRowOrder();
+const dO = backendO.deliverOutbox();
+const orderingOk = reversed > 3 && dO.order.length === reversed && dO.order.every((v, i) => i === 0 || v > dO.order[i - 1]);
+const okD =
+  beforeD.undelivered === beforeD.outbox && beforeD.outbox > 3 &&          // nothing delivered before the consumer ran
+  d1.applied === beforeD.outbox && d1.skipped === 0 && d1.orphaned === 0 && // first pass projected every event once, no orphans
+  d1.order.length === beforeD.outbox && d1.order.every((v, i) => i === 0 || v > d1.order[i - 1]) && // delivered ascending by seq
+  afterD.undelivered === 0 &&                                             // safe checkpointing marked all delivered
+  afterD.projectionRows === afterD.events && afterD.projectionTotal === afterD.events && // one projection row + one count per event
+  lostD === 3 && d2.applied === 0 && d2.skipped === 3 && d2.orphaned === 0 && // redelivery re-applied NOTHING
+  redelD.projectionTotal === afterD.projectionTotal &&                    // NO double count — the idempotency proof
+  redelD.undelivered === 0 &&                                             // redelivery re-marked delivered
+  d3.applied === 0 && d3.skipped === 0 && d3.delivered === 0 &&           // after reload nothing remains
+  reloadD.projectionTotal === afterD.projectionTotal &&                   // projection survived the reload
+  orderingOk;                                                            // delivery order follows seq even when rows are scrambled
+console.log(`  Phase A delivery: applied=${d1.applied}, simulated crash lost ${lostD} marks -> redeliver skipped=${d2.skipped}/applied=${d2.applied}, projectionTotal ${afterD.projectionTotal}->${redelD.projectionTotal} (no double count), reload no-op delivered=${d3.delivered}, ordering(scrambled->ascending)=${orderingOk}`);
+console.log(`  backend outbox-delivery durability proof (Phase A): ${okD ? "PASS" : "FAIL"}`);
+process.exit(ok && ok6 && ok8 && ok9 && ok13 && ok15 && okW && ok12 && equivOk && okIdc && okR && okD ? 0 : 1);
