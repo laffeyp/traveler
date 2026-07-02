@@ -572,6 +572,18 @@ plain is fine; skipping the adversarial review is not — it is what makes fast 
 
 ---
 
+## Entry 23 — Making a governed repo legible is an index problem, not a file-move problem (2026-07-01)
+
+**What happened.** After both roadmap phases shipped, the task was to make the docs grouped + tracked and the whole repo "organized and named legibly." Built a README front door + a grouped DOCS index via an ultracode doc-inventory workflow (five family agents in parallel + a completeness critic), and deliberately moved nothing.
+
+**Lesson 1: in a spec-governed, code-referenced repo, "organize legibly" resolves to a map, not a reshuffle.** The instinct on "organize the folders" is to move files into tidy trees. But a quick scout showed the cost: `src/ contracts/ scenarios/ schemas/ tests/` are prescribed by the Build Readiness Plan's repo layout AND hardcoded in the code (`readYaml("contracts/…")`, scenario/schema loaders), and `BLACKBOARD.md`/`WORKING_AGREEMENT.md`/`KIT_DIARY.md` live at root by SDD-kit convention. Renaming or relocating any of them breaks the build or deviates from the governing spec — for marginal tidiness. So the legible move is an authoritative README repo-map + a grouped DOCS catalog *over* the governed layout. The independent completeness critic reached the same conclusion unprompted ("index, not shuffle"). The kit lesson: when the layout is itself contract (spec-mandated + code-referenced), legibility is a documentation deliverable, and physically reshuffling is a spec violation dressed as housekeeping.
+
+**Lesson 2: a doc inventory is a genuine fan-out, and the "couldn't-move" constraint is discovered by scouting first.** Cataloguing ~90 docs across six families with accurate one-line purposes is exactly the read-many-files-keep-the-conclusion shape a parallel agent sweep fits — each family agent read its own files and returned structured entries, and a critic synthesized the grouping. But the load-bearing step was the inline scout BEFORE the workflow: `git ls-files` (confirming all 388 files already tracked — the "tracked" half was a non-task) and a grep for code/spec path dependencies (revealing what could not move). Scout for the constraints inline; fan out for the breadth.
+
+**Kit observation (no new practice; a project-class note).** For the contract-first / spec-executor class, add: **the repo layout can itself be part of the contract** (spec-prescribed + code-referenced), so "make it legible" is answered with a README map + doc index, not a directory reshuffle — verify the immovable set with a code/spec path grep before touching anything. No taxonomy change; the docs are process artifacts, not a green to distrust.
+
+---
+
 ## Hypothesis tracking
 
 | Hypothesis | Status | Evidence |
@@ -582,4 +594,4 @@ plain is fine; skipping the adversarial review is not — it is what makes fast 
 
 ---
 
-*KIT_DIARY.md for the Distributed Factory Execution Record System. Twenty entries plus phase syntheses, from the registry-extraction founding act through the closed line (first-slice bench, extended adversarial arc, consolidation audit + readability refactor, the nine persona additions, and the deferred-items build). The through-line it records: applying sdd-kit-2 to a contract-first manufacturing-execution build, where across twelve straight increments the distrust-the-green review never once came back empty by inspection — the discipline, not the green, was the load-bearing thing.*
+*KIT_DIARY.md for the Distributed Factory Execution Record System. Twenty-four entries plus phase syntheses, from the registry-extraction founding act through the closed line, the two roadmap phases (Phase B §18 auto-cascades, Phase A outbox delivery leg), and the documentation-index step. The through-line it records: applying sdd-kit-2 to a contract-first manufacturing-execution build, where across fourteen straight increments the distrust-the-green review never once came back empty by inspection — the discipline, not the green, was the load-bearing thing.*

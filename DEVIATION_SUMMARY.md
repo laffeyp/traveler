@@ -58,10 +58,12 @@ The same discipline the whole project runs on, applied to beyond-spec work:
 | `validate:contracts` | ok — 116 operations / 122 events / 39 records / 13 state machines / 26 assertion types; consistency ok; VF-003 references resolved |
 | `validate:schemas` | ok — 106 operation schemas, 70 event payload schemas, 14/14 fixtures discriminate |
 | bench (first_slice) | 14/14 = 1.00 on both drivers |
-| backend gate | all durability proofs PASS — VF-003/006/008/009/012/013/015 + write-boundary idempotency + record-id counter reload + VF-003D reconciliation reload; whole-bench cross-driver diff-to-zero over 22 scenarios PASS (byte-identical) |
-| vitest | 115/115 across 23 test files |
-| Open ContractGaps | none; B-Q-22/27/28 RESOLVED |
+| backend gate | all durability proofs PASS — VF-003/006/008/009/012/013/015 + write-boundary idempotency + record-id counter reload + VF-003D reconciliation reload + Phase A outbox delivery; whole-bench cross-driver diff-to-zero over 23 scenarios PASS (byte-identical) |
+| vitest | 121/121 across 24 test files |
+| Open ContractGaps | none; B-Q-22/27/28 RESOLVED (deferred items) + B-Q-29/30 RESOLVED (roadmap phases) |
+
+*Numbers updated after the two roadmap phases shipped following the initial close-of-line: Phase B (§18 evidence-invalidation auto-cascades, B-Q-29) and Phase A (outbox delivery leg, B-Q-30). See `ROADMAP.md` for the phase detail; the deviation analysis above is unchanged in kind — both phases completed spec'd behavior (§18, TAD §12) and added no new registry vocabulary.*
 
 ## 5. The through-line
 
-The design's deepest claim — a factory that speaks a typed vocabulary, **refuses to blur distinct states, and never asserts false certainty** — is now executable, holds under adversity (idempotency, access control, unsupported input), and holds **beyond the original spec** (segregation of duties, export control, calibration, supplier certs, evidence reconciliation, report freshness). The deviations did not dilute the discipline; they were subjected to it. Across twelve straight increments — feature, fix, hardening, refactor, audit, the persona additions, the deferred-items build, and the close-out itself — the distrust-the-green review never once came back empty by inspection. The load-bearing thing was never the green; it was the discipline that refused to trust it.
+The design's deepest claim — a factory that speaks a typed vocabulary, **refuses to blur distinct states, and never asserts false certainty** — is now executable, holds under adversity (idempotency, access control, unsupported input), and holds **beyond the original spec** (segregation of duties, export control, calibration, supplier certs, evidence reconciliation, report freshness). The deviations did not dilute the discipline; they were subjected to it. Across fourteen straight increments — feature, fix, hardening, refactor, audit, the persona additions, the deferred-items build, the close-out, and both roadmap phases (Phase B's §18 auto-cascades and Phase A's outbox delivery leg, where the skeptic caught an exactly-once mechanism masquerading as at-least-once) — the distrust-the-green review never once came back empty by inspection. The load-bearing thing was never the green; it was the discipline that refused to trust it.
