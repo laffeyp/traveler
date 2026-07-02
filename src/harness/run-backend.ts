@@ -44,7 +44,7 @@ console.log(`  backend skeleton proof (VF-003 closed path): ${ok ? "PASS" : "FAI
 // type / producer / step / payload, in order) on both, so any backend divergence localizes to its exact event
 // rather than hiding behind pass/pass. Keep EQUIV_SCENARIOS in sync with bench.ts `all`.
 const normTrace = (evs: any[]) => evs.map((e) => ({ type: e.type, producer: e.producer_operation, step: e.step_id, payload: e.payload }));
-const EQUIV_SCENARIOS = ["IDEM-001", "VF-001", "VF-002", "VF-003", "VF-003A", "VF-003B", "VF-003C", "VF-003D", "VF-003E", "VF-004", "VF-005", "VF-006", "VF-007", "VF-008", "VF-009", "VF-010", "VF-011", "VF-012", "VF-013", "VF-014", "VF-015", "VF-016"];
+const EQUIV_SCENARIOS = ["IDEM-001", "VF-001", "VF-002", "VF-003", "VF-003A", "VF-003B", "VF-003C", "VF-003D", "VF-003E", "VF-003F", "VF-004", "VF-005", "VF-006", "VF-007", "VF-008", "VF-009", "VF-010", "VF-011", "VF-012", "VF-013", "VF-014", "VF-015", "VF-016"];
 let equivOk = true;
 const equivFailures: string[] = [];
 for (const id of EQUIV_SCENARIOS) {

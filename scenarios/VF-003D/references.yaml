@@ -7,7 +7,7 @@ note: >
   regeneration_required, and GetReport surfaces the staleness fail-closed. Fills the reserved
   InvalidateAcceptedEvidence + the registered-but-unhandled GetReport.
 operations: [ReceiveMachineEvidence, NormalizeMachineEvidence, LinkMachineEvidence, AcceptMachineEvidence, InvalidateAcceptedEvidence, GetReport, GenerateRunCloseReport, ApplyRunCloseResultToRun]
-events: [MACHINE_EVIDENCE_RECEIVED, MACHINE_EVIDENCE_NORMALIZED, MACHINE_EVIDENCE_LINKED, MACHINE_EVIDENCE_ACCEPTED, MACHINE_EVIDENCE_INVALIDATED, REPORT_GENERATED, RUN_CLOSED]
+events: [MACHINE_EVIDENCE_RECEIVED, MACHINE_EVIDENCE_NORMALIZED, MACHINE_EVIDENCE_LINKED, MACHINE_EVIDENCE_ACCEPTED, MACHINE_EVIDENCE_INVALIDATED, ISSUE_OPENED, RUN_CLOSE_OBSERVATION_CREATED, REPORT_GENERATED, RUN_CLOSED]
 record_states:
   MachineEvidenceRecord: [raw, normalized, accepted, invalidated]
   GeneratedReport: [generated]

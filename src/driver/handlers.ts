@@ -443,12 +443,33 @@ export const HANDLERS: Record<string, H> = {
     // wrong run, and an unresolvable run would silently reconcile nothing while the op reported success.
     const linked = mer.fields.linked_run;
     if (i.run_alias && linked && i.run_alias !== linked) throw new Error(`precondition_failed: run_alias '${i.run_alias}' does not match the evidence's linked run '${linked}'`);
-    const runId = tryGet(w, linked ?? i.run_alias)?.id;
-    if (!runId) throw new Error(`precondition_failed: cannot resolve the run affected by this evidence; reconciliation would mark nothing`);
+    const run = tryGet(w, linked ?? i.run_alias);
+    if (!run) throw new Error(`precondition_failed: cannot resolve the run affected by this evidence; reconciliation would mark nothing`);
+    const runId = run.id;
     moveState(mer, "InvalidateAcceptedEvidence"); // accepted -> invalidated (refuses any other from-state)
     w.emit("MACHINE_EVIDENCE_INVALIDATED", "InvalidateAcceptedEvidence", { machine_evidence_record_id: mer.id, reason: i.reason });
+    // §18 cascade, obligation "mark dependent report artifacts as affected" + "require report regeneration".
     for (const rep of w.byType("GeneratedReport")) {
       if (rep.fields.run === runId && rep.state === "generated") { rep.fields.regeneration_required = true; rep.fields.regeneration_reason = "reconciliation_resolution_affecting_run"; }
+    }
+    // §18 cascade, obligation "create run close observation if run still open" (B-Q-29). "Still open" = the run
+    // has not reached a terminal state (closed | cancelled). If it already closed, the report-regeneration path
+    // above is the correction; a fresh observation would have no open close-check to attach to. Idempotent: one
+    // observation per invalidated evidence (a replay must not duplicate).
+    const runOpen = !["closed", "cancelled"].includes(run.state);
+    if (runOpen && !w.byType("RunCloseObservation").some((o) => o.fields.source_evidence === mer.id)) {
+      w.create("RunCloseObservation", "", "created", { run: runId, source_evidence: mer.id, reason: "reconciliation_resolution_affecting_run" });
+      w.emit("RUN_CLOSE_OBSERVATION_CREATED", "InvalidateAcceptedEvidence", { run_id: runId, machine_evidence_record_id: mer.id, reason: "reconciliation_resolution_affecting_run" });
+    }
+    // §18 cascade, obligation "create quality issue or nonconformance if physical product MAY be affected"
+    // (B-Q-29). "May be affected" is underspecified; encoded FAIL-SAFE per §18's own default first-version rule
+    // ("quality review is required if artifact acceptability depended on the evidence"): the invalidated evidence
+    // was ACCEPTED, so an artifact's acceptability depended on it -> open a quality Issue for review. Issue (a
+    // review), not Nonconformance (an asserted non-conformity), is the proportionate response to "may". Prefer a
+    // false review over a missed one. Idempotent: one issue per invalidated evidence.
+    if (!w.byType("Issue").some((is) => is.fields.source_evidence === mer.id)) {
+      const iss = w.createInitial("Issue", `issue_${i.evidence_alias}`, { source_evidence: mer.id, run: runId, origin: "evidence_invalidation", reason: "reconciliation_resolution_affecting_run" });
+      w.emit("ISSUE_OPENED", "InvalidateAcceptedEvidence", { issue_id: iss.id, source_evidence: mer.id, run_id: runId });
     }
   },
   GetReport(w, i) {

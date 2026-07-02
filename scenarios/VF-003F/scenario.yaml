@@ -1,0 +1,89 @@
+scenario_id: VF-003F
+scenario_version: "1"
+title: Accepted machine evidence invalidated while the run is STILL OPEN — the §18 auto-cascade
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  Phase B (Contract Spec §18 evidence-invalidation auto-cascades, B-Q-29). VF-003D covered invalidation on an
+  already-CLOSED run (report regeneration). VF-003F covers the OPEN-run half: a run is started (in_progress) and a
+  piece of its machine evidence is accepted, then INVALIDATED. Because the run is still open, §18 requires the
+  cascade to (a) create a run-close observation, and (b) create a quality Issue because physical product may be
+  affected. Proves both obligations fire (and the run stays in_progress) on both drivers.
+
+seed: { deterministic_seed: 30006 }
+clock: { start_at: "2026-06-29T08:00:00Z", timezone: "UTC", mode: controlled }
+
+actors:
+  - { actor_id: mfg_eng_1, actor_type: manufacturing_engineer, product_caller_type: manufacturing_engineer }
+  - { actor_id: planner_1, actor_type: planner,                product_caller_type: planner }
+  - { actor_id: operator_1, actor_type: operator,              product_caller_type: operator }
+  - { actor_id: quality_1, actor_type: quality_engineer,       product_caller_type: quality_engineer }
+  - { actor_id: machine_adapter_1, actor_type: adapter,        product_caller_type: adapter }
+  - { actor_id: report_worker_1, actor_type: system_worker,    product_caller_type: system_worker }
+
+aliases:
+  procedure_version_v1: ProcedureVersion
+  procedure_step_torque: ProcedureStep
+  data_field_torque: DataCollectionField
+  manufacturing_structure_v1: ManufacturingStructureVersion
+  valve_body_001: InventoryItem
+  effectivity_rule_procedure: EffectivityRule
+  effectivity_rule_structure: EffectivityRule
+  effectivity_resolution_001: EffectivityResolution
+  build_check_001: BuildCheckResult
+  run_001: Run
+  run_context_snapshot_001: RunContextSnapshot
+  run_step_torque: RunStep
+  torque_evidence_001: MachineEvidenceRecord
+
+world:
+  factory_node: node_la_001
+  part_revisions:
+    - { alias: valve_body_rev_a, part_number: VB-100, revision: A }
+  inventory_truth:
+    - { alias: valve_body_001, part_revision: valve_body_rev_a, serial_number: VB-001 }
+
+steps:
+  - { step_id: "001", set_time: "2026-06-29T08:01:00Z", actor: mfg_eng_1, operation: CreateProcedureVersion, idempotency_key: vf003f-001, input: { procedure_version_alias: procedure_version_v1, steps: [ { alias: procedure_step_torque, ordinal: 1, name: "Capture torque", data_collection_fields: [ { alias: data_field_torque, name: "Valve body torque", unit: Nm, lower_bound: 10.0, upper_bound: 12.0, nominal: 11.0, evaluation_mode: synchronous } ] } ] }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_CREATED] } }
+  - { step_id: "002", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf003f-002, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUBMITTED] } }
+  - { step_id: "003", actor: mfg_eng_1, operation: ReleaseProcedureVersion, idempotency_key: vf003f-003, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_RELEASED] } }
+  - { step_id: "004", actor: mfg_eng_1, operation: CreateManufacturingStructureVersion, idempotency_key: vf003f-004, input: { manufacturing_structure_alias: manufacturing_structure_v1, part_revision: valve_body_rev_a }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_CREATED] } }
+  - { step_id: "005", actor: mfg_eng_1, operation: ReleaseManufacturingStructureVersion, idempotency_key: vf003f-005, input: { manufacturing_structure_alias: manufacturing_structure_v1 }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_RELEASED] } }
+  - { step_id: "006", set_time: "2026-06-29T08:05:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf003f-006, input: { inventory_alias: valve_body_001, part_revision: valve_body_rev_a, serial_number: VB-001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "007", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf003f-007, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "008", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf003f-008, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+  - { step_id: "009", actor: planner_1, operation: ReserveInventory, idempotency_key: vf003f-009, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RESERVED] } }
+  - { step_id: "010", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf003f-010, input: { effectivity_rule_alias: effectivity_rule_procedure, target_record_type: ProcedureVersion, rule_type: serial_cut_in, serial_condition: "VB-001", target_alias: procedure_version_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "011", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf003f-011, input: { effectivity_rule_alias: effectivity_rule_structure, target_record_type: ManufacturingStructureVersion, rule_type: serial_cut_in, serial_condition: "VB-001", target_alias: manufacturing_structure_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "012", actor: planner_1, operation: ResolveEffectivity, idempotency_key: vf003f-012, input: { effectivity_resolution_alias: effectivity_resolution_001, target_serial: "VB-001", target_inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RESOLVED] } }
+  - { step_id: "013", actor: planner_1, operation: RunBuildCheck, idempotency_key: vf003f-013, input: { build_check_alias: build_check_001, target_inventory_alias: valve_body_001, effectivity_resolution_alias: effectivity_resolution_001 }, expect: { operation_succeeded: true, events_emitted: [BUILD_CHECK_STARTED, BUILD_CHECK_PASSED] } }
+  - { step_id: "014", set_time: "2026-06-29T08:10:00Z", actor: planner_1, operation: CreateRun, idempotency_key: vf003f-014, input: { run_alias: run_001, run_context_snapshot_alias: run_context_snapshot_001, procedure_version_alias: procedure_version_v1, manufacturing_structure_alias: manufacturing_structure_v1, effectivity_resolution_alias: effectivity_resolution_001, build_check_alias: build_check_001, target_inventory_alias: valve_body_001, run_step_aliases: [run_step_torque] }, expect: { operation_succeeded: true, events_emitted: [RUN_CREATED] } }
+  - { step_id: "015", actor: report_worker_1, operation: ApplyBuildCheckResultToRun, idempotency_key: vf003f-015, input: { run_alias: run_001, build_check_alias: build_check_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_READY] } }
+  - { step_id: "016", set_time: "2026-06-29T08:12:00Z", actor: operator_1, operation: StartRun, idempotency_key: vf003f-016, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_STARTED] } }
+  # Machine evidence for the (still open) run is received, normalized, linked, and ACCEPTED.
+  - { step_id: "017", set_time: "2026-06-29T08:20:00Z", actor: machine_adapter_1, operation: ReceiveMachineEvidence, idempotency_key: vf003f-017, input: { alias: torque_evidence_001, machine_alias: torque_tool_001, adapter_alias: machine_adapter_1, payload_type: torque_trace, occurred_at: "2026-06-29T08:20:00Z", received_at: "2026-06-29T08:21:00Z", payload: { serial_number: "VB-001", measured_torque_nm: 11.1 } }, expect: { operation_succeeded: true, events_emitted: [MACHINE_EVIDENCE_RECEIVED] } }
+  - { step_id: "018", actor: report_worker_1, operation: NormalizeMachineEvidence, idempotency_key: vf003f-018, input: { evidence_alias: torque_evidence_001 }, expect: { operation_succeeded: true, events_emitted: [MACHINE_EVIDENCE_NORMALIZED] } }
+  - { step_id: "019", actor: report_worker_1, operation: LinkMachineEvidence, idempotency_key: vf003f-019, input: { evidence_alias: torque_evidence_001, run_alias: run_001, serial_number: "VB-001", target_inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [MACHINE_EVIDENCE_LINKED] } }
+  - { step_id: "020", set_time: "2026-06-29T08:25:00Z", actor: quality_1, operation: AcceptMachineEvidence, idempotency_key: vf003f-020, input: { evidence_alias: torque_evidence_001 }, expect: { operation_succeeded: true, events_emitted: [MACHINE_EVIDENCE_ACCEPTED] } }
+  # A superseding correction while the run is STILL OPEN: invalidation cascades to a run-close observation + a review Issue.
+  - { step_id: "021", set_time: "2026-06-29T09:00:00Z", actor: quality_1, operation: InvalidateAcceptedEvidence, idempotency_key: vf003f-021, input: { evidence_alias: torque_evidence_001, run_alias: run_001, reason: superseding_measurement_correction }, expect: { operation_succeeded: true, events_emitted: [MACHINE_EVIDENCE_INVALIDATED, RUN_CLOSE_OBSERVATION_CREATED, ISSUE_OPENED] } }
+
+assertions:
+  # The run is STILL OPEN (in_progress) — invalidation did not close or advance it.
+  - { assertion_id: vf003f_run_open, assertion_type: record_state, severity: blocking, target: { record_type: Run, alias: run_001 }, expected: { state: in_progress } }
+  # Evidence moved accepted -> invalidated.
+  - { assertion_id: vf003f_invalidated, assertion_type: record_state, severity: blocking, target: { record_type: MachineEvidenceRecord, alias: torque_evidence_001 }, expected: { state: invalidated } }
+  - { assertion_id: vf003f_invalidated_emitted, assertion_type: event_emitted, severity: blocking, target: { event_type: MACHINE_EVIDENCE_INVALIDATED, producer_operation: InvalidateAcceptedEvidence }, expected: { count: 1 } }
+  # §18 obligation "create run close observation if run still open" — fires here because the run is open.
+  # (The observation + issue RECORD existence and their linkage to the evidence are asserted by the unit suite
+  # tests/reconciliation/evidence-invalidation-cascade.test.ts; the bench proves the events fire identically on
+  # both drivers via the whole-bench diff-to-zero.)
+  - { assertion_id: vf003f_observation, assertion_type: event_emitted, severity: blocking, target: { event_type: RUN_CLOSE_OBSERVATION_CREATED, producer_operation: InvalidateAcceptedEvidence }, expected: { count: 1 } }
+  # §18 obligation "create quality issue if physical product may be affected" — fail-safe, always on invalidation.
+  - { assertion_id: vf003f_issue, assertion_type: event_emitted, severity: blocking, target: { event_type: ISSUE_OPENED, producer_operation: InvalidateAcceptedEvidence }, expected: { count: 1 } }
+  - { assertion_id: vf003f_invalidate_ok, assertion_type: operation_succeeded, severity: blocking, target: { step_id: "021", operation: InvalidateAcceptedEvidence }, expected: { succeeded: true } }

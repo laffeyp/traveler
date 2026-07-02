@@ -98,7 +98,7 @@ events:
   - { type: MACHINE_EVIDENCE_INVALIDATED,   owning_module: machine_evidence, event_category: machine_evidence_event, event_stratum: incident, producer_operations: [InvalidateAcceptedEvidence], payload_schema_ref: schemas/events/MACHINE_EVIDENCE_INVALIDATED.payload.schema.json }
 
   # --- Quality (domain / incident) ---
-  - { type: ISSUE_OPENED,    owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [OpenIssue],    payload_schema_ref: schemas/events/ISSUE_OPENED.payload.schema.json }
+  - { type: ISSUE_OPENED,    owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [OpenIssue, InvalidateAcceptedEvidence],    payload_schema_ref: schemas/events/ISSUE_OPENED.payload.schema.json }
   - { type: ISSUE_TRIAGED,   owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [TriageIssue],  payload_schema_ref: schemas/events/ISSUE_TRIAGED.payload.schema.json }
   - { type: ISSUE_RESOLVED,  owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [ResolveIssue], payload_schema_ref: schemas/events/ISSUE_RESOLVED.payload.schema.json }
   - { type: ISSUE_CLOSED,    owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [CloseIssue],   payload_schema_ref: schemas/events/ISSUE_CLOSED.payload.schema.json }
@@ -135,7 +135,7 @@ events:
 
   # --- Run Close (runtime) ---
   - { type: RUN_CLOSE_CHECK_STARTED,      owning_module: run_close, event_category: runtime_event, event_stratum: event,    producer_operations: [RunCloseCheck],        payload_schema_ref: schemas/events/RUN_CLOSE_CHECK_STARTED.payload.schema.json }
-  - { type: RUN_CLOSE_OBSERVATION_CREATED, owning_module: run_close, event_category: runtime_event, event_stratum: event,   producer_operations: [RunCloseCheck],        payload_schema_ref: schemas/events/RUN_CLOSE_OBSERVATION_CREATED.payload.schema.json }
+  - { type: RUN_CLOSE_OBSERVATION_CREATED, owning_module: run_close, event_category: runtime_event, event_stratum: event,   producer_operations: [RunCloseCheck, InvalidateAcceptedEvidence],        payload_schema_ref: schemas/events/RUN_CLOSE_OBSERVATION_CREATED.payload.schema.json }
   - { type: RUN_CLOSE_CHECK_PASSED,       owning_module: run_close, event_category: runtime_event, event_stratum: summary,  producer_operations: [RunCloseCheck],        payload_schema_ref: schemas/events/RUN_CLOSE_CHECK_PASSED.payload.schema.json }
   - { type: RUN_CLOSE_CHECK_BLOCKED,      owning_module: run_close, event_category: runtime_event, event_stratum: incident, producer_operations: [RunCloseCheck],        payload_schema_ref: schemas/events/RUN_CLOSE_CHECK_BLOCKED.payload.schema.json }
   - { type: RUN_CLOSE_CHECK_FAILED,       owning_module: run_close, event_category: runtime_event, event_stratum: incident, producer_operations: [RunCloseCheck],        payload_schema_ref: schemas/events/RUN_CLOSE_CHECK_FAILED.payload.schema.json }

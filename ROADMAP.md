@@ -13,9 +13,9 @@
 | `validate:contracts` | ok — 116 operations / 122 events / 39 records / 13 state machines / 26 assertion types |
 | `validate:schemas` | ok — 14/14 fixtures discriminate |
 | bench (first_slice) | 14/14 on both drivers |
-| whole-bench cross-driver diff-to-zero | 22 scenarios, byte-identical |
+| whole-bench cross-driver diff-to-zero | 23 scenarios, byte-identical |
 | backend durability gate | exit 0 (all reload proofs) |
-| vitest | 115/115 across 23 files |
+| vitest | 121/121 across 24 files |
 | Open ContractGaps | none |
 | Repo | `laffeyp/Manufacturing` (private), branch `main` |
 
@@ -34,21 +34,23 @@
 
 ---
 
-## Planning now — the next two phases (run sequentially)
+## Phase B — §18 auto-cascades (reconciliation completion) — DONE (B-Q-29)
 
-These are the natural completions of work just shipped: each finishes a story that is currently only partly true. They touch mostly-disjoint subsystems — Phase A is in the persistence / eventing layer (`backend.ts`), Phase B is in the quality handlers (`handlers.ts`), sharing only the event registry (`events.yaml`) — so they *could* run in parallel, but we are doing them **one at a time: Phase B first, then Phase A**, to avoid two build lines in flight at once.
+The two §18 obligations we had deferred now fire on `InvalidateAcceptedEvidence`, reusing existing vocabulary (no invention):
+- **"create run close observation if run still open"** — creates a `RunCloseObservation` + emits `RUN_CLOSE_OBSERVATION_CREATED` when the run is not terminal.
+- **"create quality issue ... if physical product may be affected"** — opens a quality `Issue` + emits `ISSUE_OPENED`, fail-safe (the accepted evidence's acceptability depended on it; Issue not Nonconformance, proportionate to "may").
+
+Both idempotent, gated behind the fail-closed run-resolution guard. Covered by VF-003F (open-run, both drivers, in the diff-to-zero), VF-003D (Issue on the closed-run path), a unit suite, and a coupling mutation. Details in `ADDITIONS.md` and `contracts/CONTRACT_GAPS.md` (B-Q-29).
+
+## Planning now — Phase A
+
+Phase B is shipped, so Phase A is the active phase (the two were sequenced Phase B first, then Phase A).
 
 ### Phase A — Outbox delivery leg (at-least-once eventing)
 - **Why now.** The events table and the outbox rows are written transactionally, but there is no consumer. The at-least-once eventing story (TAD §12) is currently aspirational — reload rebuilds directly from records+events. This is the one place the design claims more than the code delivers.
 - **What.** A delivery consumer that marks outbox rows `delivered` and drives idempotent projection workers; the exactly-once-effect guarantee proven across a crash between write and deliver.
 - **Touches.** `src/driver/backend.ts` (outbox consumer, delivery state), a new backend durability proof and/or bench scenario.
 - **Done when.** A proof shows a crash mid-delivery replays with idempotent effect (no double projection), delivery state survives a cold reload, and cross-driver diff-to-zero does not regress.
-
-### Phase B — §18 auto-cascades (reconciliation completion)
-- **Why now.** We built evidence-invalidation -> mark reports stale, but not the automatic downstream that Contract Spec §18 describes.
-- **What.** On `InvalidateAcceptedEvidence`: auto-reopen the run-close observation, and auto-open a nonconformance when physical product is affected. Any new events / transitions are **registered first** (halt with a B-Q if §18 underspecifies the cascade — do not invent it).
-- **Touches.** `src/driver/handlers.ts`, `contracts/state-machines.yaml`, `contracts/events.yaml`, a new scenario extending VF-003D.
-- **Done when.** A scenario exercises the full cascade on both drivers, adversarially reviewed, fail-closed, with a backend reload proof.
 
 ---
 

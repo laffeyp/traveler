@@ -544,6 +544,20 @@ plain is fine; skipping the adversarial review is not — it is what makes fast 
 
 ---
 
+## Entry 21 — Phase B: completing a spec'd cascade, where the spec text IS the checklist (2026-07-01)
+
+**What happened.** First of the two roadmap phases (sequenced Phase B first). Contract Spec §18 enumerates six effects of invalidating accepted evidence; VF-003D had shipped four. Phase B built the remaining two ("create run close observation if run still open"; "create quality issue if physical product may be affected") by extending `InvalidateAcceptedEvidence`.
+
+**Lesson 1: completing a spec'd cascade is enumeration, not design — the deferred work is exactly the un-checked bullets.** Unlike a persona addition (where the standard is external and the vocabulary must be invented), §18 is a numbered list in the authority doc. So "what's left" was mechanical: read the six bullets, diff against what VF-003D emits, build the two that don't fire. And the vocabulary already existed — `RunCloseObservation`, `Issue`, `RUN_CLOSE_OBSERVATION_CREATED`, `ISSUE_OPENED` were all registered; the only registry change was adding `InvalidateAcceptedEvidence` as a co-producer of two events (multi-producer precedent already set by the grammar-gap work). Nothing invented. When the spec is a checklist, honor the checklist — the discipline is resisting the urge to add flourish beyond the bullets.
+
+**Lesson 2: the one underspecified clause is where judgment lives — resolve it fail-safe and record it.** Five of the six §18 bullets are precise. One is not: "if physical product MAY be affected." There is no physical-product-affected signal in the world model, so any precise condition would be invented. The disciplined move (the same fail-closed/fail-safe instinct that runs through the whole project) was to read §18's OWN default-first-version rule ("quality review is required if artifact acceptability depended on the evidence") as the fail-safe encoding: the evidence was accepted, so acceptability depended on it, so always open a review Issue — and choose Issue (a review) over Nonconformance (an assertion) as proportionate to "may". Prefer a false review over a missed one; record it as B-Q-29 so the encoding is legible, not smuggled.
+
+**Lesson 3: the review's teeth found the coverage gap, not a logic bug.** The cascade was correct, but the adversarial pass caught that the run-OPEN observation path had only in-memory unit coverage — no bench scenario, so no cross-driver diff-to-zero and no reload. That is practice #12 (a behavior worth hardening deserves a bench scenario) reasserting itself: unit tests prove a code path, a scenario proves the product behavior on both drivers. Fixed by authoring VF-003F (open-run cascade, in the whole-bench diff-to-zero) + a coupling mutation, and by tightening the unit test to assert the observation/issue are LINKED to the evidence (not merely present) — the decoupled-green guard from Entry 8.
+
+**Kit observation (no new practice; two confirmations).** Phase B adds no new failure mode. It CONFIRMS practice #12 (bench scenario, not only unit tests) and the fail-safe/fail-closed instinct (now applied to an underspecified spec clause, not just a guard). And it demonstrates a clean case of the no-invention rule paying off: a spec'd cascade completed with zero new vocabulary because the registry already held every concept.
+
+---
+
 ## Hypothesis tracking
 
 | Hypothesis | Status | Evidence |

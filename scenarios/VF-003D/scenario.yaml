@@ -103,3 +103,7 @@ assertions:
   - { assertion_id: vf003d_getreport_ok, assertion_type: operation_succeeded, severity: blocking, target: { step_id: "031", operation: GetReport }, expected: { succeeded: true } }
   # GetReport's RETURNED output surfaces the staleness fail-closed (not just the record field).
   - { assertion_id: vf003d_getreport_surfaces_stale, assertion_type: operation_output_contains, severity: blocking, target: { step_id: "031", operation: GetReport }, expected: { regeneration_required: true, regeneration_reason: reconciliation_resolution_affecting_run } }
+  # §18 cascade obligation "create quality issue if physical product may be affected" (Phase B, B-Q-29): the run
+  # is already CLOSED here, so NO run-close observation is created, but the review Issue IS opened (fail-safe).
+  - { assertion_id: vf003d_issue_opened, assertion_type: event_emitted, severity: blocking, target: { event_type: ISSUE_OPENED, producer_operation: InvalidateAcceptedEvidence }, expected: { count: 1 } }
+  - { assertion_id: vf003d_no_observation_on_closed_run, assertion_type: event_emitted, severity: blocking, target: { event_type: RUN_CLOSE_OBSERVATION_CREATED, producer_operation: InvalidateAcceptedEvidence }, expected: { count: 0 } }

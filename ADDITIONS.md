@@ -56,6 +56,17 @@ The **reconciliation build got its own review** (2026-07-01, two critics + verif
 
 **Close-out registry reconciliation (sprint 019).** Closing the line surfaced one more thing to distrust: the gap-7/8 additions were HANDLER-ONLY. `CaptureCertificate` / `VerifyCertificate` and the `Certificate` / `Instrument` record types ran because the driver dispatches any handler present, but the locked registries never named them — so the contract validator (which checks only the forward direction: every registered op resolves) passed while two ops and two records lived outside the vocabulary. That is the sharpest breach of this project's whole premise (vocabulary-as-contract), and it was invisible for several sprints. Fixed: registered `Instrument` + `Certificate` in `records.yaml`, `CaptureCertificate` + `VerifyCertificate` in `operations.yaml` (neither emits an event — a capture and a read), and — the poka-yoke that would have caught it — added `tests/consolidation/handler-registration.test.ts`, a reverse-direction check that every HANDLER maps to a registered operation (red-capable; the asymmetry is deliberate: a registered op with no handler is fine — it returns not_implemented — but a handler with no registered op is behavior outside the contract). Registry now: 39 records, 116 operations, and every handler accounted for.
 
+## Phase B — §18 evidence-invalidation auto-cascades (B-Q-29)
+
+Contract Spec §18 lists six effects when accepted evidence is invalidated; VF-003D shipped four. Phase B builds the two that were deferred, extending `InvalidateAcceptedEvidence` — reusing existing vocabulary, nothing invented:
+
+| Obligation | What | Vocabulary (all pre-existing) | Proven by |
+|---|---|---|---|
+| "create run close observation if run still open" | If the affected run is not terminal (state not in {closed, cancelled}), create a `RunCloseObservation` and emit `RUN_CLOSE_OBSERVATION_CREATED`. | `RunCloseObservation` record + `RUN_CLOSE_OBSERVATION_CREATED` (InvalidateAcceptedEvidence added as a co-producer). | VF-003F (open run, both drivers); unit suite; coupling mutation. |
+| "create quality issue ... if physical product may be affected" | Open a quality `Issue` and emit `ISSUE_OPENED`. Fail-safe: since the evidence was accepted, an artifact's acceptability depended on it, so the review Issue always opens. Issue (a review), not Nonconformance (an assertion). | `Issue` record + `ISSUE_OPENED` (InvalidateAcceptedEvidence added as a co-producer). | VF-003D (closed run) + VF-003F (open run); unit suite; coupling mutation. |
+
+Both effects are idempotent (one per invalidated evidence) and run only after the fail-closed run-resolution guard, so a failed invalidation cascades nothing. The "physical product may be affected" condition is genuinely underspecified in §18; encoded fail-safe (always open a review), recorded as B-Q-29. Tests: `tests/reconciliation/evidence-invalidation-cascade.test.ts` + VF-003F + a coupling mutation that turns VF-003F red if the cascade is suppressed. Red-capability spot-checked (neutering both obligations turned the unit tests red; restored).
+
 ## Notes on scope
 
 - These additions extend the locked contract vocabulary. They were authorized directly by the user (the sole authority) — the original doc stack does not define them.

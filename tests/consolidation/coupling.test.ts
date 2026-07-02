@@ -23,7 +23,28 @@ const blockersOf = (driver: any): string[] =>
 describe("consolidation: headline behaviors are coupled (mutation goes red)", () => {
   // Sanity: unmutated, the target scenarios are green (so a RED below is caused by the mutation, not a pre-break).
   it("baseline: VF-004/007/012/013 pass unmutated", () => {
-    for (const s of ["VF-004", "VF-007", "VF-012", "VF-013", "VF-016", "VF-003D"]) expect(runScenarioWithDriver(s).result.status).toBe("passed");
+    for (const s of ["VF-004", "VF-007", "VF-012", "VF-013", "VF-016", "VF-003D", "VF-003F"]) expect(runScenarioWithDriver(s).result.status).toBe("passed");
+  });
+
+  it("§18 auto-cascade must fire on invalidation — suppressing its two events makes VF-003F red (B-Q-29)", () => {
+    // Surgically drop ONLY the cascade events (run-close observation + issue); the base invalidation + report
+    // marking still happen. VF-003F asserts both events count==1, so defeating the cascade turns it red — proving
+    // the scenario is coupled to the §18 obligations, not just to the invalidation itself.
+    withMutation("InvalidateAcceptedEvidence", (orig) => (w: any, i: any, ...rest: any[]) => {
+      const proxy = new Proxy(w, {
+        get(t: any, p: string) {
+          if (p === "emit") return (type: string, ...a: any[]) => {
+            if (type === "RUN_CLOSE_OBSERVATION_CREATED" || type === "ISSUE_OPENED") return; // suppress the cascade
+            return t.emit(type, ...a);
+          };
+          const v = t[p];
+          return typeof v === "function" ? v.bind(t) : v;
+        },
+      });
+      return orig(proxy, i, ...rest);
+    }, () => {
+      expect(runScenarioWithDriver("VF-003F").result.status).toBe("failed");
+    });
   });
 
   it("RecordApprovalDecision must honor the decision — force-approve makes VF-013 red (safety)", () => {

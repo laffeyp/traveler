@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/ISSUE_OPENED.payload.schema.json",
+  "title": "ISSUE_OPENED payload (baseline; owning_module=quality)",
+  "type": "object"
+}

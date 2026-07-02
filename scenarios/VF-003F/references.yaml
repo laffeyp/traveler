@@ -1,0 +1,15 @@
+scenario_id: VF-003F
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Contract Spec v0.4.1 §18 reconciliation (auto-cascade on evidence invalidation while the run is still open) + B-Q-29
+note: >
+  Accepted machine evidence is invalidated while its run is still open (in_progress). The §18 cascade creates a
+  run-close observation (run still open) and a quality Issue (physical product may be affected). Covers the
+  open-run half of the cascade that VF-003D (closed run) does not.
+operations: [CreateProcedureVersion, SubmitProcedureVersionForReview, ReleaseProcedureVersion, CreateManufacturingStructureVersion, ReleaseManufacturingStructureVersion, CreateInventoryItem, ReceiveInventory, ReleaseInventory, ReserveInventory, CreateEffectivityRule, ResolveEffectivity, RunBuildCheck, CreateRun, ApplyBuildCheckResultToRun, StartRun, ReceiveMachineEvidence, NormalizeMachineEvidence, LinkMachineEvidence, AcceptMachineEvidence, InvalidateAcceptedEvidence]
+events: [PROCEDURE_VERSION_CREATED, PROCEDURE_VERSION_SUBMITTED, PROCEDURE_VERSION_RELEASED, MANUFACTURING_STRUCTURE_CREATED, MANUFACTURING_STRUCTURE_RELEASED, INVENTORY_CREATED, INVENTORY_RECEIVED, INVENTORY_AVAILABLE, INVENTORY_RESERVED, EFFECTIVITY_RULE_CREATED, EFFECTIVITY_RESOLVED, BUILD_CHECK_STARTED, BUILD_CHECK_PASSED, RUN_CREATED, RUN_READY, RUN_STARTED, MACHINE_EVIDENCE_RECEIVED, MACHINE_EVIDENCE_NORMALIZED, MACHINE_EVIDENCE_LINKED, MACHINE_EVIDENCE_ACCEPTED, MACHINE_EVIDENCE_INVALIDATED, RUN_CLOSE_OBSERVATION_CREATED, ISSUE_OPENED]
+record_states:
+  MachineEvidenceRecord: [raw, normalized, accepted, invalidated]
+  Run: [planned, ready, in_progress]
+assertion_types: [record_state, event_emitted, operation_succeeded]
+caller_types: [manufacturing_engineer, planner, operator, quality_engineer, adapter, system_worker]

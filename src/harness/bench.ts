@@ -22,13 +22,13 @@ const BENCHES: Record<string, { scenarios: string[]; required_pass_rate: number 
   first_slice: { scenarios: ["VF-001", "VF-002", "VF-003", "VF-003A", "VF-003B", "VF-003C", "VF-003E", "VF-004", "VF-005", "VF-006", "VF-007", "VF-008", "VF-009", "VF-010"], required_pass_rate: 1.0 },
   // Harness §24 extended adversarial: duplicate-payload idempotency (VF-011), redline-rejected (VF-013),
   // bounded-drill-down audit+filter (VF-014), unsupported-payload GrammarGap (VF-015). VF-003D/VF-012 deferred (B-Q).
-  extended: { scenarios: ["VF-011", "VF-012", "VF-013", "VF-014", "VF-015", "VF-003D"], required_pass_rate: 1.0 },
+  extended: { scenarios: ["VF-011", "VF-012", "VF-013", "VF-014", "VF-015", "VF-003D", "VF-003F"], required_pass_rate: 1.0 },
   // Hardening regressions (B-Q-13 write-boundary idempotency).
   hardening: { scenarios: ["IDEM-001"], required_pass_rate: 1.0 },
   // Persona-review gap 1: segregation of duties — a redline cannot be approved by its own author (VF-016).
   authority: { scenarios: ["VF-016"], required_pass_rate: 1.0 },
   // Everything materialized so far.
-  all: { scenarios: ["IDEM-001", "VF-001", "VF-002", "VF-003", "VF-003A", "VF-003B", "VF-003C", "VF-003D", "VF-003E", "VF-004", "VF-005", "VF-006", "VF-007", "VF-008", "VF-009", "VF-010", "VF-011", "VF-012", "VF-013", "VF-014", "VF-015", "VF-016"], required_pass_rate: 1.0 },
+  all: { scenarios: ["IDEM-001", "VF-001", "VF-002", "VF-003", "VF-003A", "VF-003B", "VF-003C", "VF-003D", "VF-003E", "VF-003F", "VF-004", "VF-005", "VF-006", "VF-007", "VF-008", "VF-009", "VF-010", "VF-011", "VF-012", "VF-013", "VF-014", "VF-015", "VF-016"], required_pass_rate: 1.0 },
 };
 
 const name = process.argv[2] ?? "smoke";
