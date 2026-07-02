@@ -84,7 +84,15 @@ function standardOutput(op: string): any {
 // ---- five tight input schemas (Build Readiness §8.2-§8.6, verbatim) ----------
 const TIGHT_INPUTS: Record<string, any> = {
   CaptureMeasurement: {
-    required: ["run_alias", "run_step_alias", "data_collection_field_alias", "value", "unit", "source_type", "captured_at"],
+    required: [
+      "run_alias",
+      "run_step_alias",
+      "data_collection_field_alias",
+      "value",
+      "unit",
+      "source_type",
+      "captured_at",
+    ],
     properties: {
       run_alias: { type: "string" },
       run_step_alias: { type: "string" },
@@ -96,7 +104,14 @@ const TIGHT_INPUTS: Record<string, any> = {
     },
   },
   InstallInventory: {
-    required: ["run_alias", "run_step_alias", "parent_inventory_alias", "child_inventory_alias", "bom_line_alias", "installed_at"],
+    required: [
+      "run_alias",
+      "run_step_alias",
+      "parent_inventory_alias",
+      "child_inventory_alias",
+      "bom_line_alias",
+      "installed_at",
+    ],
     properties: {
       run_alias: { type: "string" },
       run_step_alias: { type: "string" },
@@ -107,7 +122,15 @@ const TIGHT_INPUTS: Record<string, any> = {
     },
   },
   ReceiveMachineEvidence: {
-    required: ["alias", "machine_alias", "adapter_alias", "payload_type", "occurred_at", "received_at", "payload"],
+    required: [
+      "alias",
+      "machine_alias",
+      "adapter_alias",
+      "payload_type",
+      "occurred_at",
+      "received_at",
+      "payload",
+    ],
     properties: {
       alias: { type: "string" },
       machine_alias: { type: "string" },
@@ -136,7 +159,14 @@ const TIGHT_INPUTS: Record<string, any> = {
     },
   },
   GenerateRunCloseReport: {
-    required: ["report_alias", "report_type", "run_alias", "run_close_check_alias", "report_definition_version", "generated_at"],
+    required: [
+      "report_alias",
+      "report_type",
+      "run_alias",
+      "run_close_check_alias",
+      "report_definition_version",
+      "generated_at",
+    ],
     properties: {
       report_alias: { type: "string" },
       report_type: { const: "RunCloseReport" },
@@ -178,23 +208,45 @@ function eventPayload(type: string): any {
 
 // ---- RunCloseReport (Build Readiness §10.2) ---------------------------------
 const REQUIRED_SECTIONS = [
-  "report_header", "run_context", "executed_steps", "measurement_summary", "quality_path",
-  "redline_history", "installed_inventory", "machine_evidence_summary", "run_close_observations",
-  "final_close_result", "source_traceability", "access_policy_snapshot",
+  "report_header",
+  "run_context",
+  "executed_steps",
+  "measurement_summary",
+  "quality_path",
+  "redline_history",
+  "installed_inventory",
+  "machine_evidence_summary",
+  "run_close_observations",
+  "final_close_result",
+  "source_traceability",
+  "access_policy_snapshot",
 ];
 function runCloseReportSchema(): any {
   const sectionProps: Record<string, any> = {};
   for (const s of REQUIRED_SECTIONS) {
-    sectionProps[s] = s.endsWith("s") || s === "executed_steps" || s === "measurement_summary" || s === "installed_inventory" || s === "machine_evidence_summary" || s === "run_close_observations"
-      ? { type: ["object", "array"] }
-      : { type: "object" };
+    sectionProps[s] =
+      s.endsWith("s") ||
+      s === "executed_steps" ||
+      s === "measurement_summary" ||
+      s === "installed_inventory" ||
+      s === "machine_evidence_summary" ||
+      s === "run_close_observations"
+        ? { type: ["object", "array"] }
+        : { type: "object" };
   }
   return {
     $schema: DRAFT,
     $id: "schemas/reports/RunCloseReport.schema.json",
     title: "RunCloseReport payload (Build Readiness §10.2)",
     type: "object",
-    required: ["report_type", "report_definition_version", "run_id", "run_context_snapshot_id", "generated_at", "sections"],
+    required: [
+      "report_type",
+      "report_definition_version",
+      "run_id",
+      "run_context_snapshot_id",
+      "generated_at",
+      "sections",
+    ],
     properties: {
       report_type: { const: "RunCloseReport" },
       report_definition_version: { type: "integer" },
@@ -214,7 +266,10 @@ function runCloseReportSchema(): any {
 let opCount = 0;
 let evCount = 0;
 for (const op of vfOps) {
-  write(`schemas/operations/${op}.input.schema.json`, TIGHT_INPUTS[op] ? tightInput(op) : baselineInput(op));
+  write(
+    `schemas/operations/${op}.input.schema.json`,
+    TIGHT_INPUTS[op] ? tightInput(op) : baselineInput(op),
+  );
   write(`schemas/operations/${op}.output.schema.json`, standardOutput(op));
   opCount++;
 }
@@ -225,6 +280,8 @@ for (const type of vfEvents) {
 write("schemas/reports/RunCloseReport.schema.json", runCloseReportSchema());
 
 console.log(`schema generation (contracts-0.4.1)`);
-console.log(`  operations: ${opCount} (input+output)  tight_inputs: ${Object.keys(TIGHT_INPUTS).length}`);
+console.log(
+  `  operations: ${opCount} (input+output)  tight_inputs: ${Object.keys(TIGHT_INPUTS).length}`,
+);
 console.log(`  events: ${evCount} payload schemas`);
 console.log(`  reports: 1 (RunCloseReport)`);

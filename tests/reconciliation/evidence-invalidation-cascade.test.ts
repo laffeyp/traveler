@@ -7,7 +7,14 @@ import { describe, it, expect } from "vitest";
 import { InMemoryProductDriver } from "../../src/driver/engine.ts";
 
 function invalidate(d: any, opts: any = {}) {
-  return d.executeOperation("InvalidateAcceptedEvidence", { evidence_alias: "mer", reason: "sensor drift", ...opts }, "quality_engineer", "s", undefined, "qe_1");
+  return d.executeOperation(
+    "InvalidateAcceptedEvidence",
+    { evidence_alias: "mer", reason: "sensor drift", ...opts },
+    "quality_engineer",
+    "s",
+    undefined,
+    "qe_1",
+  );
 }
 
 describe("§18 evidence-invalidation auto-cascades (Phase B, B-Q-29)", () => {
@@ -21,7 +28,7 @@ describe("§18 evidence-invalidation auto-cascades (Phase B, B-Q-29)", () => {
     const types = d.readEventTrace().map((e: any) => e.type);
     expect(types).toContain("MACHINE_EVIDENCE_INVALIDATED");
     expect(types).toContain("RUN_CLOSE_OBSERVATION_CREATED"); // obligation: run still open
-    expect(types).toContain("ISSUE_OPENED");                  // obligation: physical product may be affected
+    expect(types).toContain("ISSUE_OPENED"); // obligation: physical product may be affected
     expect(d.world.byType("RunCloseObservation").length).toBe(1);
     expect(d.world.byType("Issue").length).toBe(1);
     expect(d.world.byType("Issue")[0].state).toBe("open");
@@ -41,7 +48,7 @@ describe("§18 evidence-invalidation auto-cascades (Phase B, B-Q-29)", () => {
     const types = d.readEventTrace().map((e: any) => e.type);
     expect(types).not.toContain("RUN_CLOSE_OBSERVATION_CREATED"); // run closed -> no observation
     expect(d.world.byType("RunCloseObservation").length).toBe(0);
-    expect(types).toContain("ISSUE_OPENED");                       // fail-safe: acceptability still depended on it
+    expect(types).toContain("ISSUE_OPENED"); // fail-safe: acceptability still depended on it
     expect(d.world.byType("Issue").length).toBe(1);
   });
 
@@ -68,7 +75,7 @@ describe("§18 evidence-invalidation auto-cascades (Phase B, B-Q-29)", () => {
     const inv = invalidate(d);
     expect(inv.succeeded).toBe(false);
     expect(inv.failureClass).toBe("precondition_failed");
-    expect(d.world.byType("Issue").length).toBe(0);              // no cascade on a failed op (rolled back)
+    expect(d.world.byType("Issue").length).toBe(0); // no cascade on a failed op (rolled back)
     expect(d.world.byType("RunCloseObservation").length).toBe(0);
     expect(d.readRecord("mer").state).toBe("accepted");
   });

@@ -59,15 +59,44 @@ describe("build-check-blocker family (in-memory)", () => {
   // (same part_number, wrong revision), not world-global. These lock the scoping fix.
   it("[3] a MISSING child is not mislabeled wrong_part when an unrelated stray item exists", () => {
     const d = new InMemoryProductDriver();
-    d.world.partRevisions = new Map([["gk_b", { part_number: "GK-200", revision: "B" }], ["wd_a", { part_number: "WD-999", revision: "A" }], ["vb_a", { part_number: "VB-100", revision: "A" }]]);
-    d.executeOperation("AddBOMLine", { bom_line_alias: "bl", manufacturing_structure_alias: "ms", part_revision: "gk_b", install_required: true }, "eng", "3-bl");
-    d.executeOperation("CreateInventoryItem", { inventory_alias: "vb", part_revision: "vb_a", serial_number: "VB1" }, "pl", "3-vb");
+    d.world.partRevisions = new Map([
+      ["gk_b", { part_number: "GK-200", revision: "B" }],
+      ["wd_a", { part_number: "WD-999", revision: "A" }],
+      ["vb_a", { part_number: "VB-100", revision: "A" }],
+    ]);
+    d.executeOperation(
+      "AddBOMLine",
+      {
+        bom_line_alias: "bl",
+        manufacturing_structure_alias: "ms",
+        part_revision: "gk_b",
+        install_required: true,
+      },
+      "eng",
+      "3-bl",
+    );
+    d.executeOperation(
+      "CreateInventoryItem",
+      { inventory_alias: "vb", part_revision: "vb_a", serial_number: "VB1" },
+      "pl",
+      "3-vb",
+    );
     d.executeOperation("ReceiveInventory", { inventory_alias: "vb" }, "pl", "3-vbr");
     d.executeOperation("ReleaseInventory", { inventory_alias: "vb" }, "pl", "3-vbrl");
-    d.executeOperation("CreateInventoryItem", { inventory_alias: "wd", part_revision: "wd_a", serial_number: "WD1" }, "pl", "3-wd"); // unrelated stray
+    d.executeOperation(
+      "CreateInventoryItem",
+      { inventory_alias: "wd", part_revision: "wd_a", serial_number: "WD1" },
+      "pl",
+      "3-wd",
+    ); // unrelated stray
     d.executeOperation("ReceiveInventory", { inventory_alias: "wd" }, "pl", "3-wdr");
     d.executeOperation("ReleaseInventory", { inventory_alias: "wd" }, "pl", "3-wdrl");
-    d.executeOperation("RunBuildCheck", { build_check_alias: "bc", target_inventory_alias: "vb", effectivity_resolution_alias: "x" }, "pl", "3-bc");
+    d.executeOperation(
+      "RunBuildCheck",
+      { build_check_alias: "bc", target_inventory_alias: "vb", effectivity_resolution_alias: "x" },
+      "pl",
+      "3-bc",
+    );
     const b = blockersFrom(d);
     expect(b).toContain("missing_bom_inventory:gk_b");
     expect(b.some((x) => x.startsWith("wrong_part"))).toBe(false); // the stray is a different part, not a wrong revision
@@ -75,19 +104,59 @@ describe("build-check-blocker family (in-memory)", () => {
 
   it("[4] two BOM lines: a wrong gasket is not cross-attributed to the missing bracket line", () => {
     const d = new InMemoryProductDriver();
-    d.world.partRevisions = new Map([["gk_b", { part_number: "GK-200", revision: "B" }], ["gk_c", { part_number: "GK-200", revision: "C" }], ["br_a", { part_number: "BR-300", revision: "A" }], ["vb_a", { part_number: "VB-100", revision: "A" }]]);
-    d.executeOperation("AddBOMLine", { bom_line_alias: "bl1", manufacturing_structure_alias: "ms", part_revision: "gk_b", install_required: true }, "eng", "4-bl1");
-    d.executeOperation("AddBOMLine", { bom_line_alias: "bl2", manufacturing_structure_alias: "ms", part_revision: "br_a", install_required: true }, "eng", "4-bl2");
-    d.executeOperation("CreateInventoryItem", { inventory_alias: "vb", part_revision: "vb_a", serial_number: "VB1" }, "pl", "4-vb");
+    d.world.partRevisions = new Map([
+      ["gk_b", { part_number: "GK-200", revision: "B" }],
+      ["gk_c", { part_number: "GK-200", revision: "C" }],
+      ["br_a", { part_number: "BR-300", revision: "A" }],
+      ["vb_a", { part_number: "VB-100", revision: "A" }],
+    ]);
+    d.executeOperation(
+      "AddBOMLine",
+      {
+        bom_line_alias: "bl1",
+        manufacturing_structure_alias: "ms",
+        part_revision: "gk_b",
+        install_required: true,
+      },
+      "eng",
+      "4-bl1",
+    );
+    d.executeOperation(
+      "AddBOMLine",
+      {
+        bom_line_alias: "bl2",
+        manufacturing_structure_alias: "ms",
+        part_revision: "br_a",
+        install_required: true,
+      },
+      "eng",
+      "4-bl2",
+    );
+    d.executeOperation(
+      "CreateInventoryItem",
+      { inventory_alias: "vb", part_revision: "vb_a", serial_number: "VB1" },
+      "pl",
+      "4-vb",
+    );
     d.executeOperation("ReceiveInventory", { inventory_alias: "vb" }, "pl", "4-vbr");
     d.executeOperation("ReleaseInventory", { inventory_alias: "vb" }, "pl", "4-vbrl");
-    d.executeOperation("CreateInventoryItem", { inventory_alias: "gkc", part_revision: "gk_c", serial_number: "GKC1" }, "pl", "4-gkc"); // wrong-rev gasket
+    d.executeOperation(
+      "CreateInventoryItem",
+      { inventory_alias: "gkc", part_revision: "gk_c", serial_number: "GKC1" },
+      "pl",
+      "4-gkc",
+    ); // wrong-rev gasket
     d.executeOperation("ReceiveInventory", { inventory_alias: "gkc" }, "pl", "4-gkcr");
     d.executeOperation("ReleaseInventory", { inventory_alias: "gkc" }, "pl", "4-gkcrl");
-    d.executeOperation("RunBuildCheck", { build_check_alias: "bc", target_inventory_alias: "vb", effectivity_resolution_alias: "x" }, "pl", "4-bc");
+    d.executeOperation(
+      "RunBuildCheck",
+      { build_check_alias: "bc", target_inventory_alias: "vb", effectivity_resolution_alias: "x" },
+      "pl",
+      "4-bc",
+    );
     const b = blockersFrom(d);
-    expect(b).toContain("wrong_part:gk_c_expected:gk_b");   // gasket line: wrong revision present
-    expect(b).toContain("missing_bom_inventory:br_a");       // bracket line: genuinely missing
+    expect(b).toContain("wrong_part:gk_c_expected:gk_b"); // gasket line: wrong revision present
+    expect(b).toContain("missing_bom_inventory:br_a"); // bracket line: genuinely missing
     expect(b).not.toContain("wrong_part:gk_c_expected:br_a"); // no cross-attribution to the bracket line
   });
 
@@ -101,24 +170,77 @@ describe("build-check-blocker family (in-memory)", () => {
   it("RunBuildCheck handler discriminates quarantined from missing at the unit level", () => {
     // Missing: BOM requires a part, no inventory at all.
     const dMissing = new InMemoryProductDriver();
-    dMissing.executeOperation("AddBOMLine", { bom_line_alias: "bl", manufacturing_structure_alias: "ms", part_revision: "gk_b", install_required: true }, "eng", "m-bl");
-    dMissing.executeOperation("CreateInventoryItem", { inventory_alias: "vb", part_revision: "vb_a", serial_number: "VB-1" }, "planner", "m-vb");
+    dMissing.executeOperation(
+      "AddBOMLine",
+      {
+        bom_line_alias: "bl",
+        manufacturing_structure_alias: "ms",
+        part_revision: "gk_b",
+        install_required: true,
+      },
+      "eng",
+      "m-bl",
+    );
+    dMissing.executeOperation(
+      "CreateInventoryItem",
+      { inventory_alias: "vb", part_revision: "vb_a", serial_number: "VB-1" },
+      "planner",
+      "m-vb",
+    );
     dMissing.executeOperation("ReceiveInventory", { inventory_alias: "vb" }, "planner", "m-rcv");
     dMissing.executeOperation("ReleaseInventory", { inventory_alias: "vb" }, "planner", "m-rel");
-    dMissing.executeOperation("RunBuildCheck", { build_check_alias: "bc", target_inventory_alias: "vb", effectivity_resolution_alias: "nope" }, "planner", "m-bc");
+    dMissing.executeOperation(
+      "RunBuildCheck",
+      {
+        build_check_alias: "bc",
+        target_inventory_alias: "vb",
+        effectivity_resolution_alias: "nope",
+      },
+      "planner",
+      "m-bc",
+    );
     expect(blockersFrom(dMissing)).toContain("missing_bom_inventory:gk_b");
     expect(blockersFrom(dMissing)).not.toContain("quarantined_inventory:gk_b");
 
     // Quarantined: same BOM, the required part exists but is on hold.
     const dQ = new InMemoryProductDriver();
-    dQ.executeOperation("AddBOMLine", { bom_line_alias: "bl", manufacturing_structure_alias: "ms", part_revision: "gk_b", install_required: true }, "eng", "q-bl");
-    dQ.executeOperation("CreateInventoryItem", { inventory_alias: "vb", part_revision: "vb_a", serial_number: "VB-1" }, "planner", "q-vb");
+    dQ.executeOperation(
+      "AddBOMLine",
+      {
+        bom_line_alias: "bl",
+        manufacturing_structure_alias: "ms",
+        part_revision: "gk_b",
+        install_required: true,
+      },
+      "eng",
+      "q-bl",
+    );
+    dQ.executeOperation(
+      "CreateInventoryItem",
+      { inventory_alias: "vb", part_revision: "vb_a", serial_number: "VB-1" },
+      "planner",
+      "q-vb",
+    );
     dQ.executeOperation("ReceiveInventory", { inventory_alias: "vb" }, "planner", "q-rcv");
     dQ.executeOperation("ReleaseInventory", { inventory_alias: "vb" }, "planner", "q-rel");
-    dQ.executeOperation("CreateInventoryItem", { inventory_alias: "gk", part_revision: "gk_b", serial_number: "GK-1" }, "planner", "q-gk");
+    dQ.executeOperation(
+      "CreateInventoryItem",
+      { inventory_alias: "gk", part_revision: "gk_b", serial_number: "GK-1" },
+      "planner",
+      "q-gk",
+    );
     dQ.executeOperation("ReceiveInventory", { inventory_alias: "gk" }, "planner", "q-gkr");
     dQ.executeOperation("QuarantineInventory", { inventory_alias: "gk" }, "quality", "q-quar");
-    dQ.executeOperation("RunBuildCheck", { build_check_alias: "bc", target_inventory_alias: "vb", effectivity_resolution_alias: "nope" }, "planner", "q-bc");
+    dQ.executeOperation(
+      "RunBuildCheck",
+      {
+        build_check_alias: "bc",
+        target_inventory_alias: "vb",
+        effectivity_resolution_alias: "nope",
+      },
+      "planner",
+      "q-bc",
+    );
     expect(blockersFrom(dQ)).toContain("quarantined_inventory:gk_b");
     expect(blockersFrom(dQ)).not.toContain("missing_bom_inventory:gk_b");
   });

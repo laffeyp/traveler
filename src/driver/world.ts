@@ -117,8 +117,19 @@ export class World {
   emit(type: string, producer: string, payload: any = {}) {
     const producers = eventProducers.get(type);
     if (!producers) throw new Error(`emit_vocabulary_violation: unregistered event '${type}'`);
-    if (!producers.has(producer)) throw new Error(`emit_vocabulary_violation: '${producer}' is not a registered producer of '${type}'`);
-    this.events.push({ seq: ++this.seq, type, producer_operation: producer, step_id: this.currentStep, occurred_at: this.clock, correlation_id: this.correlation, payload });
+    if (!producers.has(producer))
+      throw new Error(
+        `emit_vocabulary_violation: '${producer}' is not a registered producer of '${type}'`,
+      );
+    this.events.push({
+      seq: ++this.seq,
+      type,
+      producer_operation: producer,
+      step_id: this.currentStep,
+      occurred_at: this.clock,
+      correlation_id: this.correlation,
+      payload,
+    });
   }
 }
 
@@ -129,8 +140,11 @@ export class World {
 export function moveState(rec: Rec, op: string): any {
   const m = machineByRecord.get(rec.record_type);
   if (!m) throw new Error(`no_state_machine: ${rec.record_type}`);
-  const t = (m.transitions ?? []).find((t: any) => (Array.isArray(t.via) ? t.via : [t.via]).includes(op) && t.from === rec.state);
-  if (!t) throw new Error(`state_transition_forbidden: ${rec.record_type} '${rec.state}' via ${op}`);
+  const t = (m.transitions ?? []).find(
+    (t: any) => (Array.isArray(t.via) ? t.via : [t.via]).includes(op) && t.from === rec.state,
+  );
+  if (!t)
+    throw new Error(`state_transition_forbidden: ${rec.record_type} '${rec.state}' via ${op}`);
   rec.state = t.to;
   return t;
 }
@@ -142,8 +156,14 @@ export function moveState(rec: Rec, op: string): any {
 export function moveStateTo(rec: Rec, op: string, to: string): any {
   const m = machineByRecord.get(rec.record_type);
   if (!m) throw new Error(`no_state_machine: ${rec.record_type}`);
-  const t = (m.transitions ?? []).find((t: any) => (Array.isArray(t.via) ? t.via : [t.via]).includes(op) && t.from === rec.state && t.to === to);
-  if (!t) throw new Error(`state_transition_forbidden: ${rec.record_type} '${rec.state}' via ${op} -> ${to}`);
+  const t = (m.transitions ?? []).find(
+    (t: any) =>
+      (Array.isArray(t.via) ? t.via : [t.via]).includes(op) && t.from === rec.state && t.to === to,
+  );
+  if (!t)
+    throw new Error(
+      `state_transition_forbidden: ${rec.record_type} '${rec.state}' via ${op} -> ${to}`,
+    );
   rec.state = t.to;
   return t;
 }
@@ -151,7 +171,11 @@ export function moveStateTo(rec: Rec, op: string, to: string): any {
 /** Resolve an alias to a record, or null if the alias is absent/unresolvable (never throws). */
 export function tryGet(w: World, alias: string | undefined): Rec | null {
   if (!alias) return null;
-  try { return w.get(alias); } catch { return null; }
+  try {
+    return w.get(alias);
+  } catch {
+    return null;
+  }
 }
 
 /** Pure single-record transition op: move + emit the transition's declared event once. */
@@ -166,6 +190,10 @@ export function step(w: World, rec: Rec, op: string, payload: any = {}) {
  */
 export function createGrammarGap(w: World, alias: string, fields: any, producer: string): Rec {
   const gap = w.create("GrammarGap", alias, "created", fields);
-  w.emit("GRAMMAR_GAP_CREATED", producer, { grammar_gap_id: gap.id, reason: fields.reason, gap_type: fields.gap_type });
+  w.emit("GRAMMAR_GAP_CREATED", producer, {
+    grammar_gap_id: gap.id,
+    reason: fields.reason,
+    gap_type: fields.gap_type,
+  });
   return gap;
 }

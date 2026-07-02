@@ -7,7 +7,16 @@ import { runScenarioWithDriver } from "../../src/harness/run.ts";
 describe("VF-003 assertion discrimination (the green must be able to fail)", () => {
   it("RunBuildCheck blocks on an empty world — not a rubber-stamp (§7.3)", () => {
     const d = new InMemoryProductDriver();
-    const r = d.executeOperation("RunBuildCheck", { build_check_alias: "bc", target_inventory_alias: "nope", effectivity_resolution_alias: "nope" }, "planner", "probe-bc");
+    const r = d.executeOperation(
+      "RunBuildCheck",
+      {
+        build_check_alias: "bc",
+        target_inventory_alias: "nope",
+        effectivity_resolution_alias: "nope",
+      },
+      "planner",
+      "probe-bc",
+    );
     expect(r.succeeded).toBe(true);
     const bc = d.readRecord("bc")!;
     expect(bc.state).toBe("blocked");
@@ -31,7 +40,12 @@ describe("VF-003 assertion discrimination (the green must be able to fail)", () 
 
   it("BoundedDrillDown without a resolvable access policy is denied (not a hardcoded pass)", () => {
     const { driver } = runScenarioWithDriver("VF-003");
-    const r = driver.executeOperation("BoundedDrillDown", { scope: "run", access_profile: "no_such_policy" }, "support_user", "probe-bdd");
+    const r = driver.executeOperation(
+      "BoundedDrillDown",
+      { scope: "run", access_profile: "no_such_policy" },
+      "support_user",
+      "probe-bdd",
+    );
     expect(r.succeeded).toBe(false);
     expect(r.failureClass).toBe("access_filtered");
   });
@@ -45,12 +59,34 @@ describe("VF-003 assertion discrimination (the green must be able to fail)", () 
 
   it("a failing operation leaves ZERO facts — per-operation rollback (Contract Spec §8)", () => {
     const d = new InMemoryProductDriver();
-    d.executeOperation("CreateRedlineDraft", { redline_alias: "rl", run_alias: "run" }, "operator", "s1");
-    d.executeOperation("RequestApproval", { approval_request_alias: "ar", redline_alias: "rl" }, "mfg", "s2");
+    d.executeOperation(
+      "CreateRedlineDraft",
+      { redline_alias: "rl", run_alias: "run" },
+      "operator",
+      "s1",
+    );
+    d.executeOperation(
+      "RequestApproval",
+      { approval_request_alias: "ar", redline_alias: "rl" },
+      "mfg",
+      "s2",
+    );
     const eventsBefore = d.readEventTrace().length;
     // RecordApprovalDecision advances the approval request + creates a decision, THEN tries to move the
     // redline (which is still 'draft', not 'under_review') -> throws mid-handler. Rollback must undo it all.
-    const r = d.executeOperation("RecordApprovalDecision", { approval_request_alias: "ar", approval_decision_alias: "ad", redline_alias: "rl", decision: "approved" }, "mfg", "s3", undefined, "approver_1");
+    const r = d.executeOperation(
+      "RecordApprovalDecision",
+      {
+        approval_request_alias: "ar",
+        approval_decision_alias: "ad",
+        redline_alias: "rl",
+        decision: "approved",
+      },
+      "mfg",
+      "s3",
+      undefined,
+      "approver_1",
+    );
     expect(r.succeeded).toBe(false);
     expect(r.failureClass).toBe("state_transition_forbidden");
     expect(d.readRecord("ar").state).toBe("requested"); // not advanced to approved

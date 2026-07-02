@@ -14,7 +14,9 @@ import { readYaml } from "../../src/registry/load.ts";
 
 describe("handler <-> registry coverage (reverse poka-yoke, sprint-019 close-out)", () => {
   it("every HANDLER maps to a registered operation (no handler-only vocabulary)", () => {
-    const registered = new Set<string>((readYaml("contracts/operations.yaml").operations ?? []).map((o: any) => o.name));
+    const registered = new Set<string>(
+      (readYaml("contracts/operations.yaml").operations ?? []).map((o: any) => o.name),
+    );
     const handlerNames = Object.keys(HANDLERS);
     const unregistered = handlerNames.filter((h) => !registered.has(h));
     // If this fails: a handler names an op the registry does not — either register the op in operations.yaml
@@ -25,7 +27,9 @@ describe("handler <-> registry coverage (reverse poka-yoke, sprint-019 close-out
 
   it("the check is red-capable: an unregistered handler name would be caught", () => {
     // Prove the instrument can fire — a handler map with a bogus name yields a non-empty unregistered set.
-    const registered = new Set<string>((readYaml("contracts/operations.yaml").operations ?? []).map((o: any) => o.name));
+    const registered = new Set<string>(
+      (readYaml("contracts/operations.yaml").operations ?? []).map((o: any) => o.name),
+    );
     const withBogus = [...Object.keys(HANDLERS), "ThisOpIsNotRegistered"];
     expect(withBogus.filter((h) => !registered.has(h))).toEqual(["ThisOpIsNotRegistered"]);
   });

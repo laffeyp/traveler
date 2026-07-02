@@ -42,9 +42,13 @@ function serialPrefix(s: any): string {
 function ruleAppliesToSerial(rule: any, serial: string): boolean {
   const f = rule.fields;
   if (f.serial_from !== undefined && f.serial_to !== undefined) {
-    const n = serialNum(serial), lo = serialNum(f.serial_from), hi = serialNum(f.serial_to);
+    const n = serialNum(serial),
+      lo = serialNum(f.serial_from),
+      hi = serialNum(f.serial_to);
     if (n === null || lo === null || hi === null) return false;
-    const p = serialPrefix(serial), pf = serialPrefix(f.serial_from), pt = serialPrefix(f.serial_to);
+    const p = serialPrefix(serial),
+      pf = serialPrefix(f.serial_from),
+      pt = serialPrefix(f.serial_to);
     if (p !== pf || pf !== pt) return false; // same family only; a foreign prefix never matches a range
     return n >= lo && n <= hi;
   }
@@ -59,25 +63,47 @@ export const HANDLERS: Record<string, H> = {
   CreateProcedureVersion(w, i) {
     const pv = w.createInitial("ProcedureVersion", i.procedure_version_alias, { steps: i.steps });
     for (const s of i.steps ?? []) {
-      w.createInitial("ProcedureStep", s.alias, { ordinal: s.ordinal, name: s.name, install_required: !!s.install_required });
-      for (const f of s.data_collection_fields ?? []) w.createInitial("DataCollectionField", f.alias, f);
+      w.createInitial("ProcedureStep", s.alias, {
+        ordinal: s.ordinal,
+        name: s.name,
+        install_required: !!s.install_required,
+      });
+      for (const f of s.data_collection_fields ?? [])
+        w.createInitial("DataCollectionField", f.alias, f);
     }
     w.emit("PROCEDURE_VERSION_CREATED", "CreateProcedureVersion", { procedure_version_id: pv.id });
   },
-  SubmitProcedureVersionForReview: (w, i) => step(w, w.get(i.procedure_version_alias), "SubmitProcedureVersionForReview"),
-  ReleaseProcedureVersion: (w, i) => step(w, w.get(i.procedure_version_alias), "ReleaseProcedureVersion"),
+  SubmitProcedureVersionForReview: (w, i) =>
+    step(w, w.get(i.procedure_version_alias), "SubmitProcedureVersionForReview"),
+  ReleaseProcedureVersion: (w, i) =>
+    step(w, w.get(i.procedure_version_alias), "ReleaseProcedureVersion"),
   CreateManufacturingStructureVersion(w, i) {
-    const m = w.createInitial("ManufacturingStructureVersion", i.manufacturing_structure_alias, { part_revision: i.part_revision });
-    w.emit("MANUFACTURING_STRUCTURE_CREATED", "CreateManufacturingStructureVersion", { manufacturing_structure_version_id: m.id });
+    const m = w.createInitial("ManufacturingStructureVersion", i.manufacturing_structure_alias, {
+      part_revision: i.part_revision,
+    });
+    w.emit("MANUFACTURING_STRUCTURE_CREATED", "CreateManufacturingStructureVersion", {
+      manufacturing_structure_version_id: m.id,
+    });
   },
   AddBOMLine(w, i) {
-    w.create("BOMLine", i.bom_line_alias, "created", { manufacturing_structure: i.manufacturing_structure_alias, part_revision: i.part_revision, install_required: !!i.install_required });
+    w.create("BOMLine", i.bom_line_alias, "created", {
+      manufacturing_structure: i.manufacturing_structure_alias,
+      part_revision: i.part_revision,
+      install_required: !!i.install_required,
+    });
     w.emit("BOM_LINE_CREATED", "AddBOMLine", { bom_line_alias: i.bom_line_alias });
   },
-  ReleaseManufacturingStructureVersion: (w, i) => step(w, w.get(i.manufacturing_structure_alias), "ReleaseManufacturingStructureVersion"),
+  ReleaseManufacturingStructureVersion: (w, i) =>
+    step(w, w.get(i.manufacturing_structure_alias), "ReleaseManufacturingStructureVersion"),
   CreateInventoryItem(w, i) {
-    const inv = w.createInitial("InventoryItem", i.inventory_alias, { serial_number: i.serial_number, part_revision: i.part_revision });
-    w.emit("INVENTORY_CREATED", "CreateInventoryItem", { inventory_id: inv.id, serial_number: i.serial_number });
+    const inv = w.createInitial("InventoryItem", i.inventory_alias, {
+      serial_number: i.serial_number,
+      part_revision: i.part_revision,
+    });
+    w.emit("INVENTORY_CREATED", "CreateInventoryItem", {
+      inventory_id: inv.id,
+      serial_number: i.serial_number,
+    });
   },
   ReceiveInventory: (w, i) => step(w, w.get(i.inventory_alias), "ReceiveInventory"),
   ReleaseInventory: (w, i) => step(w, w.get(i.inventory_alias), "ReleaseInventory"),
@@ -88,8 +114,18 @@ export const HANDLERS: Record<string, H> = {
   CreateEffectivityRule(w, i) {
     // serial_from/serial_to carry a cut-in/cut-out RANGE (gap 6); absent for the existing exact serial_condition
     // rules, which keep matching by exact serial.
-    w.create("EffectivityRule", i.effectivity_rule_alias, "active", { target_record_type: i.target_record_type, rule_type: i.rule_type, serial_condition: i.serial_condition, serial_from: i.serial_from, serial_to: i.serial_to, target_alias: i.target_alias, priority: i.priority });
-    w.emit("EFFECTIVITY_RULE_CREATED", "CreateEffectivityRule", { effectivity_rule_alias: i.effectivity_rule_alias });
+    w.create("EffectivityRule", i.effectivity_rule_alias, "active", {
+      target_record_type: i.target_record_type,
+      rule_type: i.rule_type,
+      serial_condition: i.serial_condition,
+      serial_from: i.serial_from,
+      serial_to: i.serial_to,
+      target_alias: i.target_alias,
+      priority: i.priority,
+    });
+    w.emit("EFFECTIVITY_RULE_CREATED", "CreateEffectivityRule", {
+      effectivity_rule_alias: i.effectivity_rule_alias,
+    });
   },
   ResolveEffectivity(w, i) {
     // serial_cut_in matching (Contract Spec §17): one highest-priority match per required target type.
@@ -97,17 +133,29 @@ export const HANDLERS: Record<string, H> = {
     // outcome, NOT a throw; emits the registered EFFECTIVITY_AMBIGUOUS incident), FAIL RESOLUTION (no
     // match for a required type — precondition_failed). "creates ambiguity" vs "fails resolution" are
     // distinct per Harness §19 and must not be conflated.
-    const rules = w.byType("EffectivityRule").filter((r) => ruleAppliesToSerial(r, i.target_serial)); // exact OR range (gap 6)
+    const rules = w
+      .byType("EffectivityRule")
+      .filter((r) => ruleAppliesToSerial(r, i.target_serial)); // exact OR range (gap 6)
     const required = ["ProcedureVersion", "ManufacturingStructureVersion"];
     const selected: any = {};
     const matchedRuleIds: string[] = [];
     const ambiguities: any[] = [];
     const missing: string[] = [];
     for (const type of required) {
-      const cands = rules.filter((r) => r.fields.target_record_type === type).sort((a, b) => (a.fields.priority ?? 0) - (b.fields.priority ?? 0));
-      if (cands.length === 0) { missing.push(type); continue; }                                         // "no required match fails resolution"
-      const top = cands.filter((c) => c.fields.priority === cands[cands.length - 1].fields.priority);
-      if (top.length > 1) { ambiguities.push({ target_record_type: type, rule_ids: top.map((t) => t.alias) }); continue; } // "equal-priority creates ambiguity"
+      const cands = rules
+        .filter((r) => r.fields.target_record_type === type)
+        .sort((a, b) => (a.fields.priority ?? 0) - (b.fields.priority ?? 0));
+      if (cands.length === 0) {
+        missing.push(type);
+        continue;
+      } // "no required match fails resolution"
+      const top = cands.filter(
+        (c) => c.fields.priority === cands[cands.length - 1].fields.priority,
+      );
+      if (top.length > 1) {
+        ambiguities.push({ target_record_type: type, rule_ids: top.map((t) => t.alias) });
+        continue;
+      } // "equal-priority creates ambiguity"
       selected[type] = cands[cands.length - 1].fields.target_alias;
       matchedRuleIds.push(cands[cands.length - 1].alias);
     }
@@ -115,21 +163,48 @@ export const HANDLERS: Record<string, H> = {
     // "fails resolution" (a hard fail — you cannot resolve at all if a required target type has no
     // candidate) and DOMINATES an equal-priority ambiguity elsewhere. Decided after the full loop so
     // the outcome is deterministic regardless of target-type order (was order-dependent mid-loop throw).
-    if (missing.length > 0) throw new Error(`precondition_failed: no effectivity rule for ${missing.join(",")}`);
+    if (missing.length > 0)
+      throw new Error(`precondition_failed: no effectivity rule for ${missing.join(",")}`);
     // Flat selection fields mirror the nested `selected` (Contract Spec §17: the resolution carries the
     // "selected target records") so the selection is assertable at the flat level the harness supports.
-    const flat = { selected_procedure_version: selected.ProcedureVersion, selected_manufacturing_structure_version: selected.ManufacturingStructureVersion };
+    const flat = {
+      selected_procedure_version: selected.ProcedureVersion,
+      selected_manufacturing_structure_version: selected.ManufacturingStructureVersion,
+    };
     if (ambiguities.length > 0) {
       const res = w.create("EffectivityResolution", i.effectivity_resolution_alias, "ambiguous", {
-        status: "ambiguous", target_serial: i.target_serial, selected, ...flat, matched_rule_ids: matchedRuleIds,
-        explanation: { target_serial: i.target_serial, matched_rule_ids: matchedRuleIds, selected, ambiguities, why: "equal-priority serial_cut_in matches for a target type — ambiguity; resolution blocked" },
+        status: "ambiguous",
+        target_serial: i.target_serial,
+        selected,
+        ...flat,
+        matched_rule_ids: matchedRuleIds,
+        explanation: {
+          target_serial: i.target_serial,
+          matched_rule_ids: matchedRuleIds,
+          selected,
+          ambiguities,
+          why: "equal-priority serial_cut_in matches for a target type — ambiguity; resolution blocked",
+        },
       });
-      w.emit("EFFECTIVITY_AMBIGUOUS", "ResolveEffectivity", { effectivity_resolution_id: res.id, ambiguities });
+      w.emit("EFFECTIVITY_AMBIGUOUS", "ResolveEffectivity", {
+        effectivity_resolution_id: res.id,
+        ambiguities,
+      });
       return;
     }
     const res = w.create("EffectivityResolution", i.effectivity_resolution_alias, "resolved", {
-      status: "resolved", target_serial: i.target_serial, selected, ...flat, matched_rule_ids: matchedRuleIds,
-      explanation: { target_serial: i.target_serial, matched_rule_ids: matchedRuleIds, selected, ambiguities: [], why: "highest-priority serial_cut_in match per target type" },
+      status: "resolved",
+      target_serial: i.target_serial,
+      selected,
+      ...flat,
+      matched_rule_ids: matchedRuleIds,
+      explanation: {
+        target_serial: i.target_serial,
+        matched_rule_ids: matchedRuleIds,
+        selected,
+        ambiguities: [],
+        why: "highest-priority serial_cut_in match per target type",
+      },
     });
     w.emit("EFFECTIVITY_RESOLVED", "ResolveEffectivity", { effectivity_resolution_id: res.id });
   },
@@ -145,7 +220,9 @@ export const HANDLERS: Record<string, H> = {
     // Harness §19) vs. not-resolved. The inventory checks below do NOT depend on the resolution and are
     // always evaluated, so an inventory problem is still reported even when versions are undetermined.
     if (!res || res.state !== "resolved") {
-      blockers.push(res?.state === "ambiguous" ? "effectivity_ambiguous" : "effectivity_not_resolved");
+      blockers.push(
+        res?.state === "ambiguous" ? "effectivity_ambiguous" : "effectivity_not_resolved",
+      );
     } else {
       const sel = res.fields.selected ?? {};
       const pv = tryGet(w, sel.ProcedureVersion);
@@ -154,7 +231,8 @@ export const HANDLERS: Record<string, H> = {
       if (!msv || msv.state !== "released") blockers.push("manufacturing_structure_not_released");
     }
     const target = tryGet(w, i.target_inventory_alias);
-    if (!target || !["available", "reserved", "kitted"].includes(target.state)) blockers.push("target_inventory_not_available");
+    if (!target || !["available", "reserved", "kitted"].includes(target.state))
+      blockers.push("target_inventory_not_available");
     // Name the child-inventory blocker per Product Spec §212 ("build checks name blockers"): the
     // three first-slice cases (missing / quarantined / wrong-part) are DISTINCT facts and must not
     // collapse to one label (Research Dossier: preserve distinct states). B-Q-14. Every predicate is
@@ -162,30 +240,56 @@ export const HANDLERS: Record<string, H> = {
     // never mislabeled wrong just because an unrelated item exists elsewhere in the world, and each
     // BOM line is judged on its own part (no cross-line attribution). A "wrong child" is the same
     // part_number in a different revision — the classic wrong-revision pick.
-    const identity = (alias: string) => w.partRevisions.get(alias) ?? { part_number: alias, revision: "" };
+    const identity = (alias: string) =>
+      w.partRevisions.get(alias) ?? { part_number: alias, revision: "" };
     const requiredLines = w.byType("BOMLine").filter((b) => b.fields.install_required);
     const targetId = target?.id;
     const candidates = w.byType("InventoryItem").filter((inv) => inv.id !== targetId);
     for (const b of requiredLines) {
       const reqAlias = b.fields.part_revision;
       const req = identity(reqAlias);
-      const exact = candidates.filter((inv) => { const id = identity(inv.fields.part_revision); return id.part_number === req.part_number && id.revision === req.revision; });
-      if (exact.some((inv) => usable.includes(inv.state))) continue;                                    // a usable exact candidate exists
-      if (exact.some((inv) => inv.state === "quarantined")) { blockers.push(`quarantined_inventory:${reqAlias}`); continue; } // right part, on quality hold
+      const exact = candidates.filter((inv) => {
+        const id = identity(inv.fields.part_revision);
+        return id.part_number === req.part_number && id.revision === req.revision;
+      });
+      if (exact.some((inv) => usable.includes(inv.state))) continue; // a usable exact candidate exists
+      if (exact.some((inv) => inv.state === "quarantined")) {
+        blockers.push(`quarantined_inventory:${reqAlias}`);
+        continue;
+      } // right part, on quality hold
       // No usable/quarantined exact candidate. Wrong child = a usable unit of the SAME part_number in a
       // different revision (scoped to this required part — not any stray item in the world).
-      const wrong = candidates.find((inv) => { const id = identity(inv.fields.part_revision); return usable.includes(inv.state) && id.part_number === req.part_number && id.revision !== req.revision; });
+      const wrong = candidates.find((inv) => {
+        const id = identity(inv.fields.part_revision);
+        return (
+          usable.includes(inv.state) &&
+          id.part_number === req.part_number &&
+          id.revision !== req.revision
+        );
+      });
       if (wrong) blockers.push(`wrong_part:${wrong.fields.part_revision}_expected:${reqAlias}`);
       else blockers.push(`missing_bom_inventory:${reqAlias}`);
     }
     const status = blockers.length === 0 ? "passed" : "blocked";
-    const bc = w.create("BuildCheckResult", i.build_check_alias, status, { status, blockers, target_inventory: i.target_inventory_alias, effectivity_resolution: i.effectivity_resolution_alias });
+    const bc = w.create("BuildCheckResult", i.build_check_alias, status, {
+      status,
+      blockers,
+      target_inventory: i.target_inventory_alias,
+      effectivity_resolution: i.effectivity_resolution_alias,
+    });
     w.emit("BUILD_CHECK_STARTED", "RunBuildCheck", { build_check_id: bc.id });
-    if (status === "passed") { w.emit("BUILD_CHECK_PASSED", "RunBuildCheck", { build_check_id: bc.id }); }
-    else { w.emit("BUILD_CHECK_FAILED", "RunBuildCheck", { build_check_id: bc.id, blockers }); for (const bl of blockers) w.emit("BUILD_BLOCKER_CREATED", "RunBuildCheck", { blocker: bl }); }
+    if (status === "passed") {
+      w.emit("BUILD_CHECK_PASSED", "RunBuildCheck", { build_check_id: bc.id });
+    } else {
+      w.emit("BUILD_CHECK_FAILED", "RunBuildCheck", { build_check_id: bc.id, blockers });
+      for (const bl of blockers) w.emit("BUILD_BLOCKER_CREATED", "RunBuildCheck", { blocker: bl });
+    }
   },
   CreateRun(w, i) {
-    const run = w.createInitial("Run", i.run_alias, { target_inventory: i.target_inventory_alias, procedure_version: i.procedure_version_alias });
+    const run = w.createInitial("Run", i.run_alias, {
+      target_inventory: i.target_inventory_alias,
+      procedure_version: i.procedure_version_alias,
+    });
     // Snapshot the EFFECTIVITY CONTEXT per Contract Spec §17 ("CreateRun snapshots effectivity
     // context. Later effectivity changes do not rewrite RunContextSnapshot."): the snapshot's
     // procedure/structure are captured from what the effectivity resolution SELECTED at run-creation
@@ -194,23 +298,38 @@ export const HANDLERS: Record<string, H> = {
     // (a snapshot that merely echoed the input literal would be immutable by omission, untested).
     const res = tryGet(w, i.effectivity_resolution_alias);
     const snapPv = res?.fields.selected_procedure_version ?? i.procedure_version_alias;
-    const snapMsv = res?.fields.selected_manufacturing_structure_version ?? i.manufacturing_structure_alias;
-    w.createInitial("RunContextSnapshot", i.run_context_snapshot_alias, { procedure_version: snapPv, manufacturing_structure: snapMsv, effectivity_resolution: i.effectivity_resolution_alias, resolution_serial: res?.fields.target_serial, run: run.id });
+    const snapMsv =
+      res?.fields.selected_manufacturing_structure_version ?? i.manufacturing_structure_alias;
+    w.createInitial("RunContextSnapshot", i.run_context_snapshot_alias, {
+      procedure_version: snapPv,
+      manufacturing_structure: snapMsv,
+      effectivity_resolution: i.effectivity_resolution_alias,
+      resolution_serial: res?.fields.target_serial,
+      run: run.id,
+    });
     for (const sa of i.run_step_aliases ?? []) w.createInitial("RunStep", sa, { run: run.id });
     w.emit("RUN_CREATED", "CreateRun", { run_id: run.id });
   },
   ApplyBuildCheckResultToRun(w, i) {
     const bc = w.get(i.build_check_alias);
     const run = w.get(i.run_alias);
-    if (bc.state === "passed") { moveStateTo(run, "ApplyBuildCheckResultToRun", "ready"); w.emit("RUN_READY", "ApplyBuildCheckResultToRun", { run_id: run.id }); }
-    else { moveStateTo(run, "ApplyBuildCheckResultToRun", "blocked"); w.emit("RUN_BLOCKED", "ApplyBuildCheckResultToRun", { run_id: run.id }); }
+    if (bc.state === "passed") {
+      moveStateTo(run, "ApplyBuildCheckResultToRun", "ready");
+      w.emit("RUN_READY", "ApplyBuildCheckResultToRun", { run_id: run.id });
+    } else {
+      moveStateTo(run, "ApplyBuildCheckResultToRun", "blocked");
+      w.emit("RUN_BLOCKED", "ApplyBuildCheckResultToRun", { run_id: run.id });
+    }
   },
   StartRun: (w, i) => step(w, w.get(i.run_alias), "StartRun"),
   StartRunWithInventory(w, i) {
     for (const a of i.inventory_aliases ?? []) {
       const inv = w.get(a);
       moveState(inv, "StartRunWithInventory");
-      w.emit("INVENTORY_IN_WIP", "StartRunWithInventory", { inventory_id: inv.id, serial_number: inv.fields.serial_number }); // B-Q-4: one per item
+      w.emit("INVENTORY_IN_WIP", "StartRunWithInventory", {
+        inventory_id: inv.id,
+        serial_number: inv.fields.serial_number,
+      }); // B-Q-4: one per item
     }
   },
   StartRunStep: (w, i) => step(w, w.get(i.run_step_alias), "StartRunStep"),
@@ -223,47 +342,82 @@ export const HANDLERS: Record<string, H> = {
     // Fail CLOSED: accept a reading only from a CONFIRMED in-calibration instrument. Any other cal_status —
     // overdue, expired, unknown, missing, mis-cased — is refused (sprint-019 review: matching only the exact
     // string "overdue" let every other out-of-cal representation through). Guilty until proven calibrated.
-    if (instrument && instrument.fields.cal_status !== "in_cal") throw new Error(`calibration_not_current: instrument '${i.instrument_alias}' is not confirmed in-calibration (cal_status='${instrument.fields.cal_status ?? "(none)"}'); measurement refused`);
-    const lo = field.fields.lower_bound, hi = field.fields.upper_bound;
-    const result = (i.value < lo || i.value > hi) ? "fail" : "pass";
+    if (instrument && instrument.fields.cal_status !== "in_cal")
+      throw new Error(
+        `calibration_not_current: instrument '${i.instrument_alias}' is not confirmed in-calibration (cal_status='${instrument.fields.cal_status ?? "(none)"}'); measurement refused`,
+      );
+    const lo = field.fields.lower_bound,
+      hi = field.fields.upper_bound;
+    const result = i.value < lo || i.value > hi ? "fail" : "pass";
     const run = w.get(i.run_alias);
     // captured_by (persona gap 9): who took the reading is recorded on the measurement.
-    const meas = w.create("Measurement", i.measurement_alias, result, { value: i.value, unit: i.unit, result, run: run.id, run_step: i.run_step_alias, data_field: i.data_collection_field_alias, instrument: i.instrument_alias, captured_by: actor });
-    w.emit("MEASUREMENT_CAPTURED", "CaptureMeasurement", { measurement_id: meas.id, value: i.value });
+    const meas = w.create("Measurement", i.measurement_alias, result, {
+      value: i.value,
+      unit: i.unit,
+      result,
+      run: run.id,
+      run_step: i.run_step_alias,
+      data_field: i.data_collection_field_alias,
+      instrument: i.instrument_alias,
+      captured_by: actor,
+    });
+    w.emit("MEASUREMENT_CAPTURED", "CaptureMeasurement", {
+      measurement_id: meas.id,
+      value: i.value,
+    });
     w.emit("MEASUREMENT_EVALUATED", "CaptureMeasurement", { measurement_id: meas.id, result });
-    w.emit(result === "fail" ? "MEASUREMENT_FAILED" : "MEASUREMENT_PASSED", "CaptureMeasurement", { measurement_id: meas.id });
+    w.emit(result === "fail" ? "MEASUREMENT_FAILED" : "MEASUREMENT_PASSED", "CaptureMeasurement", {
+      measurement_id: meas.id,
+    });
   },
   OpenNonconformance(w, i) {
     const run = w.get(i.run_alias);
     const src = w.get(i.source_measurement_alias);
-    const nc = w.createInitial("Nonconformance", i.nonconformance_alias, { source_measurement: src.id, run: run.id });
+    const nc = w.createInitial("Nonconformance", i.nonconformance_alias, {
+      source_measurement: src.id,
+      run: run.id,
+    });
     w.emit("NONCONFORMANCE_OPENED", "OpenNonconformance", { nonconformance_id: nc.id });
   },
   DefineAffectedPopulation(w, i) {
     // Link the population to its nonconformance so run close can check remediation across the WHOLE batch,
     // not just the run's own part (persona gap 4).
-    w.create("AffectedPopulation", i.affected_population_alias, "created", { scope_type: i.scope_type, serials: i.serials, nonconformance: i.nonconformance_alias });
+    w.create("AffectedPopulation", i.affected_population_alias, "created", {
+      scope_type: i.scope_type,
+      serials: i.serials,
+      nonconformance: i.nonconformance_alias,
+    });
     step(w, w.get(i.nonconformance_alias), "DefineAffectedPopulation");
   },
   StartQualityContainment(w, i) {
     w.createInitial("QualityContainmentAction", i.containment_action_alias); // state: required
     moveState(w.get(i.nonconformance_alias), "StartQualityContainment"); // open->containment_required OR disposition_pending self-loop (B-Q-2)
-    w.emit("QUALITY_CONTAINMENT_REQUIRED", "StartQualityContainment", { containment_action_alias: i.containment_action_alias }); // one event
+    w.emit("QUALITY_CONTAINMENT_REQUIRED", "StartQualityContainment", {
+      containment_action_alias: i.containment_action_alias,
+    }); // one event
   },
   ActivateQualityContainment(w, i) {
     moveState(w.get(i.containment_action_alias), "ActivateQualityContainment"); // required->active
     moveState(w.get(i.nonconformance_alias), "ActivateQualityContainment"); // containment_required->disposition_pending OR self-loop
-    w.emit("QUALITY_CONTAINMENT_STARTED", "ActivateQualityContainment", { containment_action_alias: i.containment_action_alias });
+    w.emit("QUALITY_CONTAINMENT_STARTED", "ActivateQualityContainment", {
+      containment_action_alias: i.containment_action_alias,
+    });
   },
   CreateRedlineDraft(w, i, actor) {
     // Record who authored the redline, so the approval can refuse a same-person sign-off (segregation of duties).
-    const rl = w.createInitial("Redline", i.redline_alias, { run: i.run_alias, procedure_version: i.procedure_version_alias, authored_by: actor });
+    const rl = w.createInitial("Redline", i.redline_alias, {
+      run: i.run_alias,
+      procedure_version: i.procedure_version_alias,
+      authored_by: actor,
+    });
     w.emit("REDLINE_DRAFT_CREATED", "CreateRedlineDraft", { redline_id: rl.id });
   },
   SubmitRedline: (w, i) => step(w, w.get(i.redline_alias), "SubmitRedline"),
   ReviewRedline: (w, i) => step(w, w.get(i.redline_alias), "ReviewRedline"),
   RequestApproval(w, i) {
-    const ar = w.createInitial("ApprovalRequest", i.approval_request_alias, { redline: i.redline_alias });
+    const ar = w.createInitial("ApprovalRequest", i.approval_request_alias, {
+      redline: i.redline_alias,
+    });
     w.emit("APPROVAL_REQUESTED", "RequestApproval", { approval_request_id: ar.id });
   },
   RecordApprovalDecision(w, i, actor) {
@@ -275,27 +429,45 @@ export const HANDLERS: Record<string, H> = {
     // [3]/[4]). Both branches are registered transitions (ApprovalRequest requested->approved|rejected;
     // Redline under_review->approved|rejected) + events. B-Q-5: the redline events cross the module.
     const decision = i.decision;
-    if (decision !== "approved" && decision !== "rejected") throw new Error(`validation_error: RecordApprovalDecision.decision must be 'approved' or 'rejected', got '${decision}'`);
+    if (decision !== "approved" && decision !== "rejected")
+      throw new Error(
+        `validation_error: RecordApprovalDecision.decision must be 'approved' or 'rejected', got '${decision}'`,
+      );
     // Segregation of duties: the approver cannot be the person who authored the redline. Checked BEFORE any
     // mutation so a same-person sign-off fails cleanly (rolled back, no facts) rather than approving the
     // author's own change — the AS9102/AS9100-8.7 second-person control. Only enforced when the caller is
     // identified (actor present) and the author was recorded.
     // Fail CLOSED: an approval must carry an identified approver (sprint-019 review — an absent actor slipped
     // through as an unsigned, unattributed approval), and that approver cannot be the redline's author.
-    if (!actor) throw new Error(`segregation_of_duties_violation: an approval must carry an approver identity`);
+    if (!actor)
+      throw new Error(
+        `segregation_of_duties_violation: an approval must carry an approver identity`,
+      );
     const author = w.get(i.redline_alias).fields.authored_by;
-    if (author && actor === author) throw new Error(`segregation_of_duties_violation: the approver (${actor}) must differ from the redline author (${author})`);
+    if (author && actor === author)
+      throw new Error(
+        `segregation_of_duties_violation: the approver (${actor}) must differ from the redline author (${author})`,
+      );
     const approved = decision === "approved";
     moveStateTo(w.get(i.approval_request_alias), "RecordApprovalDecision", decision);
     // Record the sign-off as a proper electronic signature: who (decided_by), when (signed_at), and what they
     // are attesting (signature_meaning) — the three parts of a signature manifestation. Persona gap 2.
     w.create("ApprovalDecision", i.approval_decision_alias, decision, {
-      decision, approval_request: i.approval_request_alias, decided_by: actor, signed_at: w.clock,
-      signature_meaning: approved ? "approval: authorizes this redline for application" : "rejection: refuses this redline",
+      decision,
+      approval_request: i.approval_request_alias,
+      decided_by: actor,
+      signed_at: w.clock,
+      signature_meaning: approved
+        ? "approval: authorizes this redline for application"
+        : "rejection: refuses this redline",
     });
     moveStateTo(w.get(i.redline_alias), "RecordApprovalDecision", decision);
-    w.emit(approved ? "APPROVAL_APPROVED" : "APPROVAL_REJECTED", "RecordApprovalDecision", { approval_request_alias: i.approval_request_alias });
-    w.emit(approved ? "REDLINE_APPROVED" : "REDLINE_REJECTED", "RecordApprovalDecision", { redline_alias: i.redline_alias });
+    w.emit(approved ? "APPROVAL_APPROVED" : "APPROVAL_REJECTED", "RecordApprovalDecision", {
+      approval_request_alias: i.approval_request_alias,
+    });
+    w.emit(approved ? "REDLINE_APPROVED" : "REDLINE_REJECTED", "RecordApprovalDecision", {
+      redline_alias: i.redline_alias,
+    });
   },
   ApplyRedline: (w, i) => step(w, w.get(i.redline_alias), "ApplyRedline"),
   RecordDisposition(w, i, actor, role) {
@@ -304,17 +476,30 @@ export const HANDLERS: Record<string, H> = {
     // planner cannot authorize accepting or repairing off-nominal product). Authority is only enforced when
     // the caller's role is known (a direct call without a role is not blocked — parity with the SoD checks).
     const kind = i.disposition;
-    if (!DISPOSITION_KINDS.has(kind)) throw new Error(`validation_error: disposition must be one of ${[...DISPOSITION_KINDS].join("/")}, got '${kind}'`);
+    if (!DISPOSITION_KINDS.has(kind))
+      throw new Error(
+        `validation_error: disposition must be one of ${[...DISPOSITION_KINDS].join("/")}, got '${kind}'`,
+      );
     // Fail CLOSED: an elevated disposition requires an AUTHORIZED role. An absent / empty / unrecognized role
     // is refused, not waved through (sprint-019 review: the `role &&` conjunct failed this open).
-    if (ELEVATED_DISPOSITIONS.has(kind) && !DISPOSITION_AUTHORITY_ROLES.has(role)) throw new Error(`disposition_authority_violation: '${kind}' requires quality or engineering authority, not '${role || "(none)"}'`);
-    w.create("Disposition", "", "created", { nonconformance: i.nonconformance_alias, disposition: kind, dispositioned_by: actor });
+    if (ELEVATED_DISPOSITIONS.has(kind) && !DISPOSITION_AUTHORITY_ROLES.has(role))
+      throw new Error(
+        `disposition_authority_violation: '${kind}' requires quality or engineering authority, not '${role || "(none)"}'`,
+      );
+    w.create("Disposition", "", "created", {
+      nonconformance: i.nonconformance_alias,
+      disposition: kind,
+      dispositioned_by: actor,
+    });
     step(w, w.get(i.nonconformance_alias), "RecordDisposition"); // disposition_pending->dispositioned emits DISPOSITION_RECORDED
   },
   StartRework(w, i, actor) {
     // Record who performed the rework, so the verification can refuse a same-person sign-off (the person who
     // did the work cannot verify their own work — AS9102 self-verification prohibition).
-    w.create("ReworkRun", i.rework_run_alias, "in_progress", { nonconformance: i.nonconformance_alias, performed_by: actor });
+    w.create("ReworkRun", i.rework_run_alias, "in_progress", {
+      nonconformance: i.nonconformance_alias,
+      performed_by: actor,
+    });
     step(w, w.get(i.nonconformance_alias), "StartRework"); // dispositioned->in_rework emits REWORK_STARTED
   },
   CompleteRework(w, i) {
@@ -328,12 +513,23 @@ export const HANDLERS: Record<string, H> = {
     // before any mutation. Only enforced when the caller is identified and a performer was recorded.
     // Fail CLOSED: a verification must carry an identified verifier (sprint-019 review), who cannot be the
     // person who performed the rework.
-    if (!actor) throw new Error(`segregation_of_duties_violation: a verification must carry a verifier identity`);
-    const performer = w.byType("ReworkRun").find((r) => r.fields.nonconformance === i.nonconformance_alias)?.fields.performed_by;
-    if (performer && actor === performer) throw new Error(`segregation_of_duties_violation: the verifier (${actor}) must differ from the rework performer (${performer})`);
+    if (!actor)
+      throw new Error(
+        `segregation_of_duties_violation: a verification must carry a verifier identity`,
+      );
+    const performer = w
+      .byType("ReworkRun")
+      .find((r) => r.fields.nonconformance === i.nonconformance_alias)?.fields.performed_by;
+    if (performer && actor === performer)
+      throw new Error(
+        `segregation_of_duties_violation: the verifier (${actor}) must differ from the rework performer (${performer})`,
+      );
     // Sign-off as an electronic signature: who + when + what is attested (persona gap 2).
     w.create("Verification", i.verification_alias, "verified", {
-      nonconformance: i.nonconformance_alias, result: "verified", verified_by: actor, signed_at: w.clock,
+      nonconformance: i.nonconformance_alias,
+      result: "verified",
+      verified_by: actor,
+      signed_at: w.clock,
       signature_meaning: "verification: rework meets the procedure",
     });
     step(w, w.get(i.nonconformance_alias), "VerifyRework"); // verification_pending->verified emits VERIFICATION_COMPLETED
@@ -347,19 +543,39 @@ export const HANDLERS: Record<string, H> = {
   InstallInventory(w, i) {
     const child = w.get(i.child_inventory_alias);
     moveState(child, "InstallInventory"); // in_wip->installed
-    w.create("InstallationEvent", i.installation_event_alias, "created", { parent: i.parent_inventory_alias, child: i.child_inventory_alias, bom_line: i.bom_line_alias, installed_at: i.installed_at });
-    w.emit("INVENTORY_INSTALLED", "InstallInventory", { parent_inventory_alias: i.parent_inventory_alias, child_inventory_alias: i.child_inventory_alias });
+    w.create("InstallationEvent", i.installation_event_alias, "created", {
+      parent: i.parent_inventory_alias,
+      child: i.child_inventory_alias,
+      bom_line: i.bom_line_alias,
+      installed_at: i.installed_at,
+    });
+    w.emit("INVENTORY_INSTALLED", "InstallInventory", {
+      parent_inventory_alias: i.parent_inventory_alias,
+      child_inventory_alias: i.child_inventory_alias,
+    });
   },
   CaptureCertificate(w, i) {
     // Typed supplier certificate (CofC / mill cert) tied to a received lot or serial (persona gap 8; AS9100
     // 8.4.2). Today these would be untyped attachments; this makes them first-class governed records with a
     // type, the lot/serial they cover, the supplier CAGE code, and an expiry.
-    w.create("Certificate", i.certificate_alias ?? "", "captured", { cert_type: i.cert_type, part_revision: i.part_revision, serial_or_lot: i.serial_or_lot, cage_code: i.cage_code, expires_at: i.expires_at });
+    w.create("Certificate", i.certificate_alias ?? "", "captured", {
+      cert_type: i.cert_type,
+      part_revision: i.part_revision,
+      serial_or_lot: i.serial_or_lot,
+      cage_code: i.cage_code,
+      expires_at: i.expires_at,
+    });
   },
   VerifyCertificate(w, i) {
     // Verify a lot/serial has a valid typed certificate: one of the required type whose expiry (if any) is on or
     // after the reference date. Returns { valid, reason } for a receiving gate to act on (persona gap 8).
-    const certs = w.byType("Certificate").filter((c) => c.fields.serial_or_lot === i.serial_or_lot && (!i.cert_type || c.fields.cert_type === i.cert_type));
+    const certs = w
+      .byType("Certificate")
+      .filter(
+        (c) =>
+          c.fields.serial_or_lot === i.serial_or_lot &&
+          (!i.cert_type || c.fields.cert_type === i.cert_type),
+      );
     if (certs.length === 0) return { valid: false, reason: "no_certificate" };
     // Compare dates CHRONOLOGICALLY, not lexically (sprint-019 review: "2026-9-1" >= "2026-10-01" is lexically
     // true but chronologically expired). A cert with a missing or unparseable expiry cannot be verified -> not
@@ -370,11 +586,23 @@ export const HANDLERS: Record<string, H> = {
       return Number.isFinite(expT) && Number.isFinite(asOfT) && expT >= asOfT;
     });
     if (ok) return { valid: true, certificate_id: ok.id };
-    return { valid: false, reason: certs.every((c) => c.fields.expires_at == null) ? "no_expiry" : "certificate_expired" };
+    return {
+      valid: false,
+      reason: certs.every((c) => c.fields.expires_at == null) ? "no_expiry" : "certificate_expired",
+    };
   },
   ReceiveMachineEvidence(w, i) {
-    const mer = w.createInitial("MachineEvidenceRecord", i.alias, { machine: i.machine_alias, adapter: i.adapter_alias, payload_type: i.payload_type, occurred_at: i.occurred_at, received_at: i.received_at, payload: i.payload });
-    w.emit("MACHINE_EVIDENCE_RECEIVED", "ReceiveMachineEvidence", { machine_evidence_record_id: mer.id });
+    const mer = w.createInitial("MachineEvidenceRecord", i.alias, {
+      machine: i.machine_alias,
+      adapter: i.adapter_alias,
+      payload_type: i.payload_type,
+      occurred_at: i.occurred_at,
+      received_at: i.received_at,
+      payload: i.payload,
+    });
+    w.emit("MACHINE_EVIDENCE_RECEIVED", "ReceiveMachineEvidence", {
+      machine_evidence_record_id: mer.id,
+    });
   },
   NormalizeMachineEvidence(w, i) {
     const mer = w.get(i.evidence_alias);
@@ -385,52 +613,90 @@ export const HANDLERS: Record<string, H> = {
     const spec = Object.hasOwn(NORMALIZE_GRAMMAR, type) ? NORMALIZE_GRAMMAR[type] : undefined;
     const keys = spec ? Object.keys(spec) : [];
     const absent = keys.filter((k) => mer.fields.payload?.[k] === undefined);
-    const invalid = keys.filter((k) => !absent.includes(k) && !keyPresentAndValid(mer.fields.payload?.[k], spec![k]));
-    const reason = !spec ? "unsupported_payload_type" : absent.length ? "missing_required_field" : invalid.length ? "invalid_required_field" : null;
+    const invalid = keys.filter(
+      (k) => !absent.includes(k) && !keyPresentAndValid(mer.fields.payload?.[k], spec![k]),
+    );
+    const reason = !spec
+      ? "unsupported_payload_type"
+      : absent.length
+        ? "missing_required_field"
+        : invalid.length
+          ? "invalid_required_field"
+          : null;
     if (reason) {
       // Un-normalizable: ESCALATE a GrammarGap instead of transitioning the record or fabricating a
       // normalized result (B-Q-16/B-Q-26). Record stays raw; no MACHINE_EVIDENCE_NORMALIZED, no Measurement.
       // Idempotent per-record: if this evidence already escalated, do not create a duplicate gap under the
       // same alias (a re-normalize with a fresh key must not orphan the first gap; sprint-012 review [3]).
       if (!w.byType("GrammarGap").some((g) => g.fields.source_evidence === mer.id)) {
-        createGrammarGap(w, `grammar_gap_${i.evidence_alias}`, {
-          reason, gap_type: "unnormalizable_machine_payload", source_evidence: mer.id, payload_type: type, missing_fields: absent, invalid_fields: invalid,
-        }, "NormalizeMachineEvidence");
+        createGrammarGap(
+          w,
+          `grammar_gap_${i.evidence_alias}`,
+          {
+            reason,
+            gap_type: "unnormalizable_machine_payload",
+            source_evidence: mer.id,
+            payload_type: type,
+            missing_fields: absent,
+            invalid_fields: invalid,
+          },
+          "NormalizeMachineEvidence",
+        );
       }
       return;
     }
     moveState(mer, "NormalizeMachineEvidence"); // raw->normalized
-    mer.fields.normalized = { serial_number: mer.fields.payload.serial_number, measured_torque_nm: mer.fields.payload.measured_torque_nm };
-    w.emit("MACHINE_EVIDENCE_NORMALIZED", "NormalizeMachineEvidence", { machine_evidence_record_id: mer.id }); // no Measurement created
+    mer.fields.normalized = {
+      serial_number: mer.fields.payload.serial_number,
+      measured_torque_nm: mer.fields.payload.measured_torque_nm,
+    };
+    w.emit("MACHINE_EVIDENCE_NORMALIZED", "NormalizeMachineEvidence", {
+      machine_evidence_record_id: mer.id,
+    }); // no Measurement created
   },
   CreateGrammarGap(w, i) {
     // Explicit grammar-gap creation (registered vocab; was not_implemented). A worker records a gap when the
     // factory does something the grammar cannot represent (Harness §21). Lifecycle deferred (records.yaml).
-    createGrammarGap(w, i.grammar_gap_alias ?? "", { reason: i.reason, gap_type: i.gap_type, source: i.source, detail: i.detail }, "CreateGrammarGap");
+    createGrammarGap(
+      w,
+      i.grammar_gap_alias ?? "",
+      { reason: i.reason, gap_type: i.gap_type, source: i.source, detail: i.detail },
+      "CreateGrammarGap",
+    );
   },
   LinkMachineEvidence(w, i) {
     const mer = w.get(i.evidence_alias);
-    mer.fields.linked_run = i.run_alias; mer.fields.linked_serial = i.serial_number; // no state change, no measurement overwrite
-    w.emit("MACHINE_EVIDENCE_LINKED", "LinkMachineEvidence", { machine_evidence_record_id: mer.id });
+    mer.fields.linked_run = i.run_alias;
+    mer.fields.linked_serial = i.serial_number; // no state change, no measurement overwrite
+    w.emit("MACHINE_EVIDENCE_LINKED", "LinkMachineEvidence", {
+      machine_evidence_record_id: mer.id,
+    });
   },
-  RouteMachineEvidenceForReview: (w, i) => step(w, w.get(i.evidence_alias), "RouteMachineEvidenceForReview"),
+  RouteMachineEvidenceForReview: (w, i) =>
+    step(w, w.get(i.evidence_alias), "RouteMachineEvidenceForReview"),
   // Terminal evidence dispositions (Contract Spec §10.2 state machine; Build Readiness §7.6). Surfaced
   // by VF-003A/B/C — registered but unexercised until the machine-evidence variants. No Measurement is
   // created/overwritten by any disposition; the state transition + event is the whole effect.
   AcceptMachineEvidence(w, i) {
     const mer = w.get(i.evidence_alias);
     moveState(mer, "AcceptMachineEvidence"); // normalized/review_required -> accepted
-    w.emit("MACHINE_EVIDENCE_ACCEPTED", "AcceptMachineEvidence", { machine_evidence_record_id: mer.id });
+    w.emit("MACHINE_EVIDENCE_ACCEPTED", "AcceptMachineEvidence", {
+      machine_evidence_record_id: mer.id,
+    });
   },
   RejectMachineEvidence(w, i) {
     const mer = w.get(i.evidence_alias);
     moveState(mer, "RejectMachineEvidence"); // normalized/review_required -> rejected
-    w.emit("MACHINE_EVIDENCE_REJECTED", "RejectMachineEvidence", { machine_evidence_record_id: mer.id });
+    w.emit("MACHINE_EVIDENCE_REJECTED", "RejectMachineEvidence", {
+      machine_evidence_record_id: mer.id,
+    });
   },
   QuarantineMachineEvidence(w, i) {
     const mer = w.get(i.evidence_alias);
     moveState(mer, "QuarantineMachineEvidence"); // raw/normalized/review_required -> quarantined
-    w.emit("MACHINE_EVIDENCE_QUARANTINED", "QuarantineMachineEvidence", { machine_evidence_record_id: mer.id });
+    w.emit("MACHINE_EVIDENCE_QUARANTINED", "QuarantineMachineEvidence", {
+      machine_evidence_record_id: mer.id,
+    });
   },
   InvalidateAcceptedEvidence(w, i) {
     // Contract Spec §18 reconciliation: accepted evidence is later found wrong and INVALIDATED (accepted ->
@@ -442,24 +708,47 @@ export const HANDLERS: Record<string, H> = {
     // AGREE with it, and the run must resolve — else fail CLOSED (sprint-019 review): a mismatch would mark the
     // wrong run, and an unresolvable run would silently reconcile nothing while the op reported success.
     const linked = mer.fields.linked_run;
-    if (i.run_alias && linked && i.run_alias !== linked) throw new Error(`precondition_failed: run_alias '${i.run_alias}' does not match the evidence's linked run '${linked}'`);
+    if (i.run_alias && linked && i.run_alias !== linked)
+      throw new Error(
+        `precondition_failed: run_alias '${i.run_alias}' does not match the evidence's linked run '${linked}'`,
+      );
     const run = tryGet(w, linked ?? i.run_alias);
-    if (!run) throw new Error(`precondition_failed: cannot resolve the run affected by this evidence; reconciliation would mark nothing`);
+    if (!run)
+      throw new Error(
+        `precondition_failed: cannot resolve the run affected by this evidence; reconciliation would mark nothing`,
+      );
     const runId = run.id;
     moveState(mer, "InvalidateAcceptedEvidence"); // accepted -> invalidated (refuses any other from-state)
-    w.emit("MACHINE_EVIDENCE_INVALIDATED", "InvalidateAcceptedEvidence", { machine_evidence_record_id: mer.id, reason: i.reason });
+    w.emit("MACHINE_EVIDENCE_INVALIDATED", "InvalidateAcceptedEvidence", {
+      machine_evidence_record_id: mer.id,
+      reason: i.reason,
+    });
     // §18 cascade, obligation "mark dependent report artifacts as affected" + "require report regeneration".
     for (const rep of w.byType("GeneratedReport")) {
-      if (rep.fields.run === runId && rep.state === "generated") { rep.fields.regeneration_required = true; rep.fields.regeneration_reason = "reconciliation_resolution_affecting_run"; }
+      if (rep.fields.run === runId && rep.state === "generated") {
+        rep.fields.regeneration_required = true;
+        rep.fields.regeneration_reason = "reconciliation_resolution_affecting_run";
+      }
     }
     // §18 cascade, obligation "create run close observation if run still open" (B-Q-29). "Still open" = the run
     // has not reached a terminal state (closed | cancelled). If it already closed, the report-regeneration path
     // above is the correction; a fresh observation would have no open close-check to attach to. Idempotent: one
     // observation per invalidated evidence (a replay must not duplicate).
     const runOpen = !["closed", "cancelled"].includes(run.state);
-    if (runOpen && !w.byType("RunCloseObservation").some((o) => o.fields.source_evidence === mer.id)) {
-      w.create("RunCloseObservation", "", "created", { run: runId, source_evidence: mer.id, reason: "reconciliation_resolution_affecting_run" });
-      w.emit("RUN_CLOSE_OBSERVATION_CREATED", "InvalidateAcceptedEvidence", { run_id: runId, machine_evidence_record_id: mer.id, reason: "reconciliation_resolution_affecting_run" });
+    if (
+      runOpen &&
+      !w.byType("RunCloseObservation").some((o) => o.fields.source_evidence === mer.id)
+    ) {
+      w.create("RunCloseObservation", "", "created", {
+        run: runId,
+        source_evidence: mer.id,
+        reason: "reconciliation_resolution_affecting_run",
+      });
+      w.emit("RUN_CLOSE_OBSERVATION_CREATED", "InvalidateAcceptedEvidence", {
+        run_id: runId,
+        machine_evidence_record_id: mer.id,
+        reason: "reconciliation_resolution_affecting_run",
+      });
     }
     // §18 cascade, obligation "create quality issue or nonconformance if physical product MAY be affected"
     // (B-Q-29). "May be affected" is underspecified; encoded FAIL-SAFE per §18's own default first-version rule
@@ -468,8 +757,17 @@ export const HANDLERS: Record<string, H> = {
     // review), not Nonconformance (an asserted non-conformity), is the proportionate response to "may". Prefer a
     // false review over a missed one. Idempotent: one issue per invalidated evidence.
     if (!w.byType("Issue").some((is) => is.fields.source_evidence === mer.id)) {
-      const iss = w.createInitial("Issue", `issue_${i.evidence_alias}`, { source_evidence: mer.id, run: runId, origin: "evidence_invalidation", reason: "reconciliation_resolution_affecting_run" });
-      w.emit("ISSUE_OPENED", "InvalidateAcceptedEvidence", { issue_id: iss.id, source_evidence: mer.id, run_id: runId });
+      const iss = w.createInitial("Issue", `issue_${i.evidence_alias}`, {
+        source_evidence: mer.id,
+        run: runId,
+        origin: "evidence_invalidation",
+        reason: "reconciliation_resolution_affecting_run",
+      });
+      w.emit("ISSUE_OPENED", "InvalidateAcceptedEvidence", {
+        issue_id: iss.id,
+        source_evidence: mer.id,
+        run_id: runId,
+      });
     }
   },
   GetReport(w, i) {
@@ -489,19 +787,37 @@ export const HANDLERS: Record<string, H> = {
     // OR after generation, marks it regeneration_required rather than reading fresh.
     if (!stale && mode === "controlled_export") {
       const genT = Date.parse(rep.fields.generated_at ?? "");
-      if (!Number.isFinite(genT)) { stale = true; reason = "unverifiable_generated_at"; }
-      else if ((w.accessPolicyChanges ?? []).some((c) => {
-        if (c.policy_alias !== rep.fields.access_scope) return false;
-        const effT = Date.parse(c.effective_at ?? "");
-        return !Number.isFinite(effT) || effT > genT; // unparseable change date -> assume it staled (fail closed)
-      })) { stale = true; reason = "access_policy_change_for_controlled_export"; }
+      if (!Number.isFinite(genT)) {
+        stale = true;
+        reason = "unverifiable_generated_at";
+      } else if (
+        (w.accessPolicyChanges ?? []).some((c) => {
+          if (c.policy_alias !== rep.fields.access_scope) return false;
+          const effT = Date.parse(c.effective_at ?? "");
+          return !Number.isFinite(effT) || effT > genT; // unparseable change date -> assume it staled (fail closed)
+        })
+      ) {
+        stale = true;
+        reason = "access_policy_change_for_controlled_export";
+      }
     }
-    return { found: true, report_id: rep.id, state: rep.state, filtering_mode: mode, access_scope: rep.fields.access_scope, regeneration_required: stale, regeneration_reason: stale ? reason : undefined };
+    return {
+      found: true,
+      report_id: rep.id,
+      state: rep.state,
+      filtering_mode: mode,
+      access_scope: rep.fields.access_scope,
+      regeneration_required: stale,
+      regeneration_reason: stale ? reason : undefined,
+    };
   },
   CompleteRunSteps(w, i) {
     const run = w.get(i.run_alias);
-    const open = w.byType("RunStep").filter((s) => s.fields.run === run.id && !["complete", "skipped"].includes(s.state));
-    if (open.length) throw new Error(`precondition_failed: ${open.length} run steps not complete/skipped`);
+    const open = w
+      .byType("RunStep")
+      .filter((s) => s.fields.run === run.id && !["complete", "skipped"].includes(s.state));
+    if (open.length)
+      throw new Error(`precondition_failed: ${open.length} run steps not complete/skipped`);
     moveState(run, "CompleteRunSteps");
     w.emit("RUN_COMPLETED", "CompleteRunSteps", { run_id: run.id });
   },
@@ -510,11 +826,16 @@ export const HANDLERS: Record<string, H> = {
     const run = w.get(i.run_alias);
     // Evaluate the run-close rules that the first slice exercises (run-close-rules.yaml). Each blocker
     // string is the REGISTERED rule id, so emitting it is faithful (not an executor-invented encoding).
-    const failed = w.byType("Measurement").filter((m) => m.fields.run === run.id && m.fields.result === "fail");
+    const failed = w
+      .byType("Measurement")
+      .filter((m) => m.fields.run === run.id && m.fields.result === "fail");
     const blockers: string[] = [];
     for (const fm of failed) {
       const nc = w.byType("Nonconformance").find((n) => n.fields.source_measurement === fm.id);
-      if (!nc || nc.state !== "closed") { blockers.push("failed_measurement_has_quality_path"); break; }
+      if (!nc || nc.state !== "closed") {
+        blockers.push("failed_measurement_has_quality_path");
+        break;
+      }
     }
     // report_definition_available (run-close-rules.yaml): a RunCloseReport definition must be available for
     // generation. Distinct from the quality-path rule; distinct from the generated-INSTANCE precondition in
@@ -523,29 +844,53 @@ export const HANDLERS: Record<string, H> = {
     // Gap 4: every serial named in this run's affected population must be remediated on its OWN — a closed
     // Nonconformance for a run that targeted THAT serial — not just listed in one batch NC (AS9100 8.7). The
     // run's own serial is remediated by its own closed NC; batch-mates need their own.
-    const runNcAliases = new Set(w.byType("Nonconformance").filter((n) => n.fields.run === run.id).map((n) => n.alias));
+    const runNcAliases = new Set(
+      w
+        .byType("Nonconformance")
+        .filter((n) => n.fields.run === run.id)
+        .map((n) => n.alias),
+    );
     const popSerials = new Set<string>();
-    for (const pop of w.byType("AffectedPopulation")) if (runNcAliases.has(pop.fields.nonconformance)) for (const s of pop.fields.serials ?? []) popSerials.add(s);
+    for (const pop of w.byType("AffectedPopulation"))
+      if (runNcAliases.has(pop.fields.nonconformance))
+        for (const s of pop.fields.serials ?? []) popSerials.add(s);
     const runPart = tryGet(w, run.fields.target_inventory)?.fields.part_revision;
-    const remediated = (serial: string) => w.byType("Nonconformance").some((n) => {
-      if (n.state !== "closed") return false;
-      const item = tryGet(w, w.records.get(n.fields.run)?.fields.target_inventory);
-      if (item?.fields.serial_number !== serial) return false;
-      // If part identity is known on both sides it must match — a same-serial unit of a DIFFERENT part is not a
-      // remediation of this batch (sprint-019 review: cross-part serial reuse falsely cleared the population).
-      if (runPart != null && item?.fields.part_revision != null && item.fields.part_revision !== runPart) return false;
-      return true;
-    });
+    const remediated = (serial: string) =>
+      w.byType("Nonconformance").some((n) => {
+        if (n.state !== "closed") return false;
+        const item = tryGet(w, w.records.get(n.fields.run)?.fields.target_inventory);
+        if (item?.fields.serial_number !== serial) return false;
+        // If part identity is known on both sides it must match — a same-serial unit of a DIFFERENT part is not a
+        // remediation of this batch (sprint-019 review: cross-part serial reuse falsely cleared the population).
+        if (
+          runPart != null &&
+          item?.fields.part_revision != null &&
+          item.fields.part_revision !== runPart
+        )
+          return false;
+        return true;
+      });
     const unremediated = [...popSerials].filter((s) => !remediated(s));
-    if (unremediated.length) blockers.push(`affected_population_not_remediated:${unremediated.join(",")}`);
+    if (unremediated.length)
+      blockers.push(`affected_population_not_remediated:${unremediated.join(",")}`);
     const blocked = blockers.length > 0;
-    const rcc = w.create("RunCloseCheck", i.run_close_check_alias, blocked ? "blocked" : "passed", { status: blocked ? "blocked" : "passed", run: run.id, blockers });
+    const rcc = w.create("RunCloseCheck", i.run_close_check_alias, blocked ? "blocked" : "passed", {
+      status: blocked ? "blocked" : "passed",
+      run: run.id,
+      blockers,
+    });
     w.emit("RUN_CLOSE_CHECK_STARTED", "RunCloseCheck", { run_close_check_id: rcc.id });
     if (blocked) {
       // One structured observation per blocker, each carrying its own registered blocker_rule.
       for (const b of blockers) {
-        w.create("RunCloseObservation", "", "created", { run_close_check: rcc.id, blocker_rule: b });
-        w.emit("RUN_CLOSE_OBSERVATION_CREATED", "RunCloseCheck", { run_close_check_id: rcc.id, blocker_rule: b });
+        w.create("RunCloseObservation", "", "created", {
+          run_close_check: rcc.id,
+          blocker_rule: b,
+        });
+        w.emit("RUN_CLOSE_OBSERVATION_CREATED", "RunCloseCheck", {
+          run_close_check_id: rcc.id,
+          blocker_rule: b,
+        });
       }
       w.emit("RUN_CLOSE_CHECK_BLOCKED", "RunCloseCheck", { run_close_check_id: rcc.id, blockers });
     } else {
@@ -554,20 +899,29 @@ export const HANDLERS: Record<string, H> = {
   },
   ApplyRunCloseResultToRun(w, i) {
     const run = w.get(i.run_alias);
-    if (run.state !== "close_check") throw new Error(`state_transition_forbidden: Run '${run.state}' via ApplyRunCloseResultToRun`);
+    if (run.state !== "close_check")
+      throw new Error(
+        `state_transition_forbidden: Run '${run.state}' via ApplyRunCloseResultToRun`,
+      );
     const rcc = w.get(i.run_close_check_alias);
     if (rcc.state === "blocked") {
       moveStateTo(run, "ApplyRunCloseResultToRun", "close_blocked");
       w.emit("RUN_CLOSE_STATE_BLOCKED", "ApplyRunCloseResultToRun", { run_id: run.id });
     } else {
-      const report = w.byType("GeneratedReport").find((r) => r.fields.run === run.id && r.state === "generated");
-      if (!report) throw new Error("precondition_failed: RunCloseReport not generated before close");
+      const report = w
+        .byType("GeneratedReport")
+        .find((r) => r.fields.run === run.id && r.state === "generated");
+      if (!report)
+        throw new Error("precondition_failed: RunCloseReport not generated before close");
       moveStateTo(run, "ApplyRunCloseResultToRun", "closed"); // registry guards: only from close_check
       w.emit("RUN_CLOSED", "ApplyRunCloseResultToRun", { run_id: run.id });
     }
   },
   RequestRunCloseReport(w, i) {
-    w.emit("RUN_CLOSE_REPORT_REQUESTED", "RequestRunCloseReport", { run_alias: i.run_alias, run_close_check_alias: i.run_close_check_alias });
+    w.emit("RUN_CLOSE_REPORT_REQUESTED", "RequestRunCloseReport", {
+      run_alias: i.run_alias,
+      run_close_check_alias: i.run_close_check_alias,
+    });
   },
   GenerateRunCloseReport(w, i) {
     const run = w.get(i.run_alias);
@@ -582,11 +936,20 @@ export const HANDLERS: Record<string, H> = {
     // filters at read time and never goes stale. Default controlled_export; an out-of-vocabulary value is
     // REFUSED (sprint-019 review: an unvalidated typo silently dodged the controlled_export staleness gate).
     const mode = i.filtering_mode ?? "controlled_export";
-    if (mode !== "controlled_export" && mode !== "dynamic_view_filter") throw new Error(`validation_error: filtering_mode must be controlled_export or dynamic_view_filter, got '${mode}'`);
+    if (mode !== "controlled_export" && mode !== "dynamic_view_filter")
+      throw new Error(
+        `validation_error: filtering_mode must be controlled_export or dynamic_view_filter, got '${mode}'`,
+      );
     const rep = w.create("GeneratedReport", i.report_alias, "generated", {
-      status: "generated", run: run.id, report_type: "RunCloseReport", report_definition_version: i.report_definition_version,
-      generated_at: i.generated_at, access_scope: scope, filtering_mode: mode,
-      regeneration_required: false, sections: assembleRunCloseReport(w, run, scope),
+      status: "generated",
+      run: run.id,
+      report_type: "RunCloseReport",
+      report_definition_version: i.report_definition_version,
+      generated_at: i.generated_at,
+      access_scope: scope,
+      filtering_mode: mode,
+      regeneration_required: false,
+      sections: assembleRunCloseReport(w, run, scope),
     });
     w.emit("REPORT_REQUESTED", "GenerateRunCloseReport", { report_id: rep.id });
     w.emit("REPORT_GENERATION_STARTED", "GenerateRunCloseReport", { report_id: rep.id });
@@ -599,7 +962,11 @@ export const HANDLERS: Record<string, H> = {
     // superseded/superseding ids + the regeneration trigger (a registered reports.yaml trigger). B-Q-28.
     const rep = w.get(i.report_alias);
     moveState(rep, "SupersedeReport"); // generated -> superseded
-    w.emit("REPORT_SUPERSEDED", "SupersedeReport", { superseded_report_id: rep.id, superseding_report_alias: i.superseding_report_alias, trigger: i.trigger });
+    w.emit("REPORT_SUPERSEDED", "SupersedeReport", {
+      superseded_report_id: rep.id,
+      superseding_report_alias: i.superseding_report_alias,
+      trigger: i.trigger,
+    });
   },
   EvaluateAccess(w, i) {
     // Deemed-export access decision by PERSON NATIONALITY (persona gap 5; ITAR 22 CFR 120.50: releasing
@@ -614,18 +981,41 @@ export const HANDLERS: Record<string, H> = {
     // resource, or a present-but-malformed export_control (not a non-empty nationality array), is DENIED — for
     // an export control the safe default is deny, since a fail-open leaks controlled technical data.
     let decision: string, reason: string | undefined;
-    if (!resource) { decision = "denied"; reason = "resource_not_found"; }
-    else if (ec === undefined || ec === null) { decision = "allowed"; } // no control declared -> uncontrolled
-    else if (!Array.isArray(ec.allowed_nationalities) || ec.allowed_nationalities.length === 0) { decision = "denied"; reason = "export_control_malformed"; }
-    else if (!ec.allowed_nationalities.includes(nationality)) { decision = "denied"; reason = "deemed_export_denied"; }
-    else { decision = "allowed"; }
+    if (!resource) {
+      decision = "denied";
+      reason = "resource_not_found";
+    } else if (ec === undefined || ec === null) {
+      decision = "allowed";
+    } // no control declared -> uncontrolled
+    else if (!Array.isArray(ec.allowed_nationalities) || ec.allowed_nationalities.length === 0) {
+      decision = "denied";
+      reason = "export_control_malformed";
+    } else if (!ec.allowed_nationalities.includes(nationality)) {
+      decision = "denied";
+      reason = "deemed_export_denied";
+    } else {
+      decision = "allowed";
+    }
     if (decision === "denied") {
-      w.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", { resource_alias: i.resource_alias, subject_nationality: nationality, reason });
-      w.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", { resource_alias: i.resource_alias, decision: "denied" });
+      w.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+        resource_alias: i.resource_alias,
+        subject_nationality: nationality,
+        reason,
+      });
+      w.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+        resource_alias: i.resource_alias,
+        decision: "denied",
+      });
       return { decision, reason };
     }
-    w.emit("ACCESS_DECISION_ALLOWED", "EvaluateAccess", { resource_alias: i.resource_alias, subject_nationality: nationality });
-    w.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", { resource_alias: i.resource_alias, decision: "allowed" });
+    w.emit("ACCESS_DECISION_ALLOWED", "EvaluateAccess", {
+      resource_alias: i.resource_alias,
+      subject_nationality: nationality,
+    });
+    w.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+      resource_alias: i.resource_alias,
+      decision: "allowed",
+    });
     return { decision: "allowed" };
   },
   BoundedDrillDown(w, i) {
@@ -635,7 +1025,18 @@ export const HANDLERS: Record<string, H> = {
     // Audit the drill-down request as a fact (Contract Spec §19: scoped, capped, access-filtered, AND
     // AUDITED; Harness §25). Registered op->event binding (events.yaml BOUNDED_DRILL_DOWN_REQUESTED) that
     // had no producer path until VF-014 — the audit half of the obligation.
-    w.emit("BOUNDED_DRILL_DOWN_REQUESTED", "BoundedDrillDown", { scope: i.scope, access_profile: i.access_profile, run_alias: i.run_alias, report_alias: i.report_alias });
-    return { access_filtered: true, scope: i.scope, access_profile: i.access_profile, visible: policy.visible ?? [], hidden: policy.hidden ?? [] };
+    w.emit("BOUNDED_DRILL_DOWN_REQUESTED", "BoundedDrillDown", {
+      scope: i.scope,
+      access_profile: i.access_profile,
+      run_alias: i.run_alias,
+      report_alias: i.report_alias,
+    });
+    return {
+      access_filtered: true,
+      scope: i.scope,
+      access_profile: i.access_profile,
+      visible: policy.visible ?? [],
+      hidden: policy.hidden ?? [],
+    };
   },
 };

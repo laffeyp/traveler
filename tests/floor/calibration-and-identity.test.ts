@@ -9,7 +9,22 @@ function seedField(d: any) {
   d.world.create("Run", "run", "in_process", {});
 }
 function capture(d: any, alias: string, instrument?: string, actor = "op_alice") {
-  return d.executeOperation("CaptureMeasurement", { measurement_alias: alias, run_alias: "run", run_step_alias: "rs", data_collection_field_alias: "field", value: 11, unit: "Nm", instrument_alias: instrument }, "operator", "s", undefined, actor);
+  return d.executeOperation(
+    "CaptureMeasurement",
+    {
+      measurement_alias: alias,
+      run_alias: "run",
+      run_step_alias: "rs",
+      data_collection_field_alias: "field",
+      value: 11,
+      unit: "Nm",
+      instrument_alias: instrument,
+    },
+    "operator",
+    "s",
+    undefined,
+    actor,
+  );
 }
 
 describe("calibration gate + operator identity (persona gaps 7 & 9)", () => {
@@ -17,7 +32,7 @@ describe("calibration gate + operator identity (persona gaps 7 & 9)", () => {
     const d = new InMemoryProductDriver();
     seedField(d);
     d.world.create("Instrument", "gauge_overdue", "active", { cal_status: "overdue" });
-    d.world.create("Instrument", "gauge_unknown", "active", {});                 // no cal_status recorded
+    d.world.create("Instrument", "gauge_unknown", "active", {}); // no cal_status recorded
     d.world.create("Instrument", "gauge_expired", "active", { cal_status: "expired" });
     d.world.create("Instrument", "gauge_ok", "active", { cal_status: "in_cal" });
 
@@ -46,7 +61,14 @@ describe("calibration gate + operator identity (persona gaps 7 & 9)", () => {
     const d = new InMemoryProductDriver();
     d.world.createInitial("RunStep", "rs1", { run: "run" });
     d.executeOperation("StartRunStep", { run_step_alias: "rs1" }, "operator", "s");
-    const rc = d.executeOperation("CompleteRunStep", { run_step_alias: "rs1" }, "operator", "s", undefined, "op_alice");
+    const rc = d.executeOperation(
+      "CompleteRunStep",
+      { run_step_alias: "rs1" },
+      "operator",
+      "s",
+      undefined,
+      "op_alice",
+    );
     expect(rc.succeeded).toBe(true);
     expect(d.readRecord("rs1").fields.completed_by).toBe("op_alice");
   });

@@ -28,7 +28,10 @@ describe("effectivity family (in-memory)", () => {
     expect(ev).not.toContain("EFFECTIVITY_RESOLVED"); // ambiguity did not resolve
     expect(vf007.driver.readRecord("effectivity_resolution_001").state).toBe("ambiguous");
     // effectivity is the SOLE, isolating build blocker (inventory is fully staged).
-    const blockers = vf007.driver.readEventTrace().filter((e: any) => e.type === "BUILD_BLOCKER_CREATED").map((e: any) => e.payload.blocker);
+    const blockers = vf007.driver
+      .readEventTrace()
+      .filter((e: any) => e.type === "BUILD_BLOCKER_CREATED")
+      .map((e: any) => e.payload.blocker);
     expect(blockers).toEqual(["effectivity_ambiguous"]);
     expect(vf007.driver.readRecord("run_001").state).toBe("blocked");
   });
@@ -38,9 +41,26 @@ describe("effectivity family (in-memory)", () => {
   it("distinguishes ambiguity (produced) from no-match (fails resolution)", () => {
     const d = new InMemoryProductDriver();
     // One rule for ProcedureVersion only; ManufacturingStructureVersion has no rule -> fail resolution.
-    d.executeOperation("CreateEffectivityRule", { effectivity_rule_alias: "r1", target_record_type: "ProcedureVersion", rule_type: "serial_cut_in", serial_condition: "S1", target_alias: "pv1", priority: 1 }, "planner", "nm-r1");
-    const r = d.executeOperation("ResolveEffectivity", { effectivity_resolution_alias: "res", target_serial: "S1", target_inventory_alias: "vb" }, "planner", "nm-res");
-    expect(r.succeeded).toBe(false);           // no-match FAILS resolution (throws precondition_failed)...
+    d.executeOperation(
+      "CreateEffectivityRule",
+      {
+        effectivity_rule_alias: "r1",
+        target_record_type: "ProcedureVersion",
+        rule_type: "serial_cut_in",
+        serial_condition: "S1",
+        target_alias: "pv1",
+        priority: 1,
+      },
+      "planner",
+      "nm-r1",
+    );
+    const r = d.executeOperation(
+      "ResolveEffectivity",
+      { effectivity_resolution_alias: "res", target_serial: "S1", target_inventory_alias: "vb" },
+      "planner",
+      "nm-res",
+    );
+    expect(r.succeeded).toBe(false); // no-match FAILS resolution (throws precondition_failed)...
     expect(r.failureClass).toBe("precondition_failed");
     const ev = d.readEventTrace().map((e: any) => e.type);
     expect(ev).not.toContain("EFFECTIVITY_AMBIGUOUS"); // ...it is NOT an ambiguity
@@ -53,7 +73,7 @@ describe("effectivity family (in-memory)", () => {
     const snap = vf008.driver.readRecord("run_context_snapshot_001");
     const res1 = vf008.driver.readRecord("effectivity_resolution_001");
     const res2 = vf008.driver.readRecord("effectivity_resolution_002");
-    expect(snap.fields.procedure_version).toBe("procedure_version_v1");     // snapshot did not follow the world
+    expect(snap.fields.procedure_version).toBe("procedure_version_v1"); // snapshot did not follow the world
     expect(res1.fields.selected_procedure_version).toBe("procedure_version_v1");
     expect(res2.fields.selected_procedure_version).toBe("procedure_version_v1b"); // the later rule genuinely re-selects
     expect(snap.fields.procedure_version).not.toBe(res2.fields.selected_procedure_version); // immutability has teeth
@@ -65,18 +85,77 @@ describe("effectivity family (in-memory)", () => {
   // a DECOY procedure_version_alias and confirm the snapshot ignores it and captures the resolution's v1.
   it("RunContextSnapshot captures the RESOLUTION's selection, not the CreateRun input literal", () => {
     const d = new InMemoryProductDriver();
-    d.executeOperation("CreateEffectivityRule", { effectivity_rule_alias: "erpv", target_record_type: "ProcedureVersion", rule_type: "serial_cut_in", serial_condition: "S", target_alias: "pv_resolved", priority: 1 }, "planner", "s-erpv");
-    d.executeOperation("CreateEffectivityRule", { effectivity_rule_alias: "ermsv", target_record_type: "ManufacturingStructureVersion", rule_type: "serial_cut_in", serial_condition: "S", target_alias: "msv_resolved", priority: 1 }, "planner", "s-ermsv");
-    d.executeOperation("ResolveEffectivity", { effectivity_resolution_alias: "eff", target_serial: "S", target_inventory_alias: "vb" }, "planner", "s-res");
-    d.executeOperation("CreateRun", { run_alias: "run", run_context_snapshot_alias: "snap", procedure_version_alias: "DECOY_pv", manufacturing_structure_alias: "DECOY_msv", effectivity_resolution_alias: "eff", target_inventory_alias: "vb", run_step_aliases: [] }, "planner", "s-run");
+    d.executeOperation(
+      "CreateEffectivityRule",
+      {
+        effectivity_rule_alias: "erpv",
+        target_record_type: "ProcedureVersion",
+        rule_type: "serial_cut_in",
+        serial_condition: "S",
+        target_alias: "pv_resolved",
+        priority: 1,
+      },
+      "planner",
+      "s-erpv",
+    );
+    d.executeOperation(
+      "CreateEffectivityRule",
+      {
+        effectivity_rule_alias: "ermsv",
+        target_record_type: "ManufacturingStructureVersion",
+        rule_type: "serial_cut_in",
+        serial_condition: "S",
+        target_alias: "msv_resolved",
+        priority: 1,
+      },
+      "planner",
+      "s-ermsv",
+    );
+    d.executeOperation(
+      "ResolveEffectivity",
+      { effectivity_resolution_alias: "eff", target_serial: "S", target_inventory_alias: "vb" },
+      "planner",
+      "s-res",
+    );
+    d.executeOperation(
+      "CreateRun",
+      {
+        run_alias: "run",
+        run_context_snapshot_alias: "snap",
+        procedure_version_alias: "DECOY_pv",
+        manufacturing_structure_alias: "DECOY_msv",
+        effectivity_resolution_alias: "eff",
+        target_inventory_alias: "vb",
+        run_step_aliases: [],
+      },
+      "planner",
+      "s-run",
+    );
     const snap = d.readRecord("snap");
-    expect(snap.fields.procedure_version).toBe("pv_resolved");           // captured from the resolution...
-    expect(snap.fields.procedure_version).not.toBe("DECOY_pv");          // ...NOT the caller's literal
+    expect(snap.fields.procedure_version).toBe("pv_resolved"); // captured from the resolution...
+    expect(snap.fields.procedure_version).not.toBe("DECOY_pv"); // ...NOT the caller's literal
     expect(snap.fields.manufacturing_structure).toBe("msv_resolved");
     // A later re-resolution to a different selection does NOT rewrite the existing snapshot.
-    d.executeOperation("CreateEffectivityRule", { effectivity_rule_alias: "erpv2", target_record_type: "ProcedureVersion", rule_type: "serial_cut_in", serial_condition: "S", target_alias: "pv_superseding", priority: 2 }, "planner", "s-erpv2");
-    d.executeOperation("ResolveEffectivity", { effectivity_resolution_alias: "eff2", target_serial: "S", target_inventory_alias: "vb" }, "planner", "s-res2");
+    d.executeOperation(
+      "CreateEffectivityRule",
+      {
+        effectivity_rule_alias: "erpv2",
+        target_record_type: "ProcedureVersion",
+        rule_type: "serial_cut_in",
+        serial_condition: "S",
+        target_alias: "pv_superseding",
+        priority: 2,
+      },
+      "planner",
+      "s-erpv2",
+    );
+    d.executeOperation(
+      "ResolveEffectivity",
+      { effectivity_resolution_alias: "eff2", target_serial: "S", target_inventory_alias: "vb" },
+      "planner",
+      "s-res2",
+    );
     expect(d.readRecord("eff2").fields.selected_procedure_version).toBe("pv_superseding"); // the world moved on
-    expect(d.readRecord("snap").fields.procedure_version).toBe("pv_resolved");             // the snapshot did not
+    expect(d.readRecord("snap").fields.procedure_version).toBe("pv_resolved"); // the snapshot did not
   });
 });

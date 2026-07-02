@@ -16,7 +16,11 @@
     "test:vf003:memory": "vitest run tests/vf-003/vf003.test.ts tests/vf-003/discrimination.test.ts",
     "test:vf003:backend": "node src/harness/run-backend.ts",
     "bench:smoke": "node src/harness/bench.ts smoke",
-    "bench": "node src/harness/bench.ts first_slice"
+    "bench": "node src/harness/bench.ts first_slice",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\""
   },
   "dependencies": {
     "ajv": "^8.17.1",
@@ -24,6 +28,15 @@
     "yaml": "^2.6.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.1.0",
+    "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-unicorn": "^70.0.0",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.4",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.1",
     "vitest": "^2.1.8"
   }
 }

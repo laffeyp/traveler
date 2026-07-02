@@ -7,10 +7,32 @@ import { describe, it, expect } from "vitest";
 import { InMemoryProductDriver } from "../../src/driver/engine.ts";
 import { runScenarioWithDriver } from "../../src/harness/run.ts";
 
-const gaps = (d: any) => [...d.world.records.values()].filter((r: any) => r.record_type === "GrammarGap");
-const norm = (d: any, alias: string) => d.executeOperation("NormalizeMachineEvidence", { evidence_alias: alias }, "worker", `n-${alias}`, `k-${alias}`);
+const gaps = (d: any) =>
+  [...d.world.records.values()].filter((r: any) => r.record_type === "GrammarGap");
+const norm = (d: any, alias: string) =>
+  d.executeOperation(
+    "NormalizeMachineEvidence",
+    { evidence_alias: alias },
+    "worker",
+    `n-${alias}`,
+    `k-${alias}`,
+  );
 const recv = (d: any, alias: string, payload_type: string, payload: any) =>
-  d.executeOperation("ReceiveMachineEvidence", { alias, machine_alias: "m", adapter_alias: "a", payload_type, occurred_at: "t", received_at: "t", payload }, "adapter", `r-${alias}`, `rk-${alias}`);
+  d.executeOperation(
+    "ReceiveMachineEvidence",
+    {
+      alias,
+      machine_alias: "m",
+      adapter_alias: "a",
+      payload_type,
+      occurred_at: "t",
+      received_at: "t",
+      payload,
+    },
+    "adapter",
+    `r-${alias}`,
+    `rk-${alias}`,
+  );
 
 describe("grammar-gap escalation (in-memory)", () => {
   const vf015 = runScenarioWithDriver("VF-015");
@@ -24,7 +46,7 @@ describe("grammar-gap escalation (in-memory)", () => {
     const ev = vf015.driver.readEventTrace().map((e: any) => e.type);
     expect(ev.filter((t: string) => t === "GRAMMAR_GAP_CREATED").length).toBe(1);
     expect(ev.filter((t: string) => t === "MACHINE_EVIDENCE_NORMALIZED").length).toBe(1); // only the good one
-    expect(vf015.driver.readRecord("bad_evidence_001").state).toBe("raw");                // false certainty avoided
+    expect(vf015.driver.readRecord("bad_evidence_001").state).toBe("raw"); // false certainty avoided
     expect(vf015.driver.readRecord("good_evidence_001").state).toBe("normalized");
     expect(gaps(vf015.driver)[0].fields.reason).toBe("unsupported_payload_type");
   });
@@ -37,7 +59,9 @@ describe("grammar-gap escalation (in-memory)", () => {
     const r1 = norm(d1, "e1");
     expect(r1.succeeded).toBe(true);
     expect(d1.readRecord("e1").state).toBe("raw");
-    expect(d1.readEventTrace().map((e: any) => e.type)).not.toContain("MACHINE_EVIDENCE_NORMALIZED");
+    expect(d1.readEventTrace().map((e: any) => e.type)).not.toContain(
+      "MACHINE_EVIDENCE_NORMALIZED",
+    );
     expect(gaps(d1)[0].fields.reason).toBe("unsupported_payload_type");
 
     // (2) known type but MISSING a required normalized key
@@ -45,7 +69,9 @@ describe("grammar-gap escalation (in-memory)", () => {
     recv(d2, "e2", "torque_trace", { serial_number: "S" }); // no measured_torque_nm
     norm(d2, "e2");
     expect(d2.readRecord("e2").state).toBe("raw");
-    expect(d2.readEventTrace().map((e: any) => e.type)).not.toContain("MACHINE_EVIDENCE_NORMALIZED");
+    expect(d2.readEventTrace().map((e: any) => e.type)).not.toContain(
+      "MACHINE_EVIDENCE_NORMALIZED",
+    );
     expect(gaps(d2)[0].fields.reason).toBe("missing_required_field");
 
     // (3) well-formed -> normalizes, NO gap (proves not a blanket refusal)
@@ -65,7 +91,9 @@ describe("grammar-gap escalation (in-memory)", () => {
       recv(d, "e", "torque_trace", { serial_number: "S", measured_torque_nm: badVal });
       norm(d, "e");
       expect(d.readRecord("e").state, `measured_torque_nm=${JSON.stringify(badVal)}`).toBe("raw");
-      expect(d.readEventTrace().map((x: any) => x.type)).not.toContain("MACHINE_EVIDENCE_NORMALIZED");
+      expect(d.readEventTrace().map((x: any) => x.type)).not.toContain(
+        "MACHINE_EVIDENCE_NORMALIZED",
+      );
       expect(gaps(d)[0].fields.reason).toBe("invalid_required_field");
     }
     // ...and an empty serial_number likewise escalates (string must be non-empty).
@@ -83,7 +111,7 @@ describe("grammar-gap escalation (in-memory)", () => {
       const d = new InMemoryProductDriver();
       recv(d, "e", evil, { serial_number: "S", measured_torque_nm: 11.1 });
       const r = norm(d, "e");
-      expect(r.succeeded, `payload_type=${evil}`).toBe(true);            // did not crash
+      expect(r.succeeded, `payload_type=${evil}`).toBe(true); // did not crash
       expect(gaps(d)[0].fields.reason).toBe("unsupported_payload_type"); // escalated as unknown type
       expect(d.readRecord("e").state).toBe("raw");
     }
@@ -94,15 +122,37 @@ describe("grammar-gap escalation (in-memory)", () => {
   it("re-normalize with a fresh key does not create a duplicate gap", () => {
     const d = new InMemoryProductDriver();
     recv(d, "e", "vibration_spectrum", { serial_number: "S" });
-    d.executeOperation("NormalizeMachineEvidence", { evidence_alias: "e" }, "worker", "n1", "key-1");
-    d.executeOperation("NormalizeMachineEvidence", { evidence_alias: "e" }, "worker", "n2", "key-2"); // different key
+    d.executeOperation(
+      "NormalizeMachineEvidence",
+      { evidence_alias: "e" },
+      "worker",
+      "n1",
+      "key-1",
+    );
+    d.executeOperation(
+      "NormalizeMachineEvidence",
+      { evidence_alias: "e" },
+      "worker",
+      "n2",
+      "key-2",
+    ); // different key
     expect(gaps(d).length).toBe(1);
     expect(d.readEventTrace().filter((x: any) => x.type === "GRAMMAR_GAP_CREATED").length).toBe(1);
   });
 
   it("CreateGrammarGap (the explicit op) also creates a gap + emits GRAMMAR_GAP_CREATED", () => {
     const d = new InMemoryProductDriver();
-    const r = d.executeOperation("CreateGrammarGap", { grammar_gap_alias: "g1", reason: "unsupported_redline_type", gap_type: "unsupported_change" }, "worker", "cg", "cgk");
+    const r = d.executeOperation(
+      "CreateGrammarGap",
+      {
+        grammar_gap_alias: "g1",
+        reason: "unsupported_redline_type",
+        gap_type: "unsupported_change",
+      },
+      "worker",
+      "cg",
+      "cgk",
+    );
     expect(r.succeeded).toBe(true);
     expect(d.readRecord("g1").fields.reason).toBe("unsupported_redline_type");
     expect(d.readEventTrace().map((e: any) => e.type)).toContain("GRAMMAR_GAP_CREATED");

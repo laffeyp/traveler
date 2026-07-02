@@ -1,0 +1,26 @@
+# Prettier is deliberately scoped to project TypeScript (src/, tests/) only.
+# Everything below is either a generated artifact, a governed contract/spec
+# document, or the read-only SDD kit — reformatting them is out of scope
+# (KIT_DIARY Entry 23: do not reshuffle spec-governed / generated files).
+#
+# Directory patterns are anchored with a leading "/" (top-level only). An
+# UNANCHORED name uses gitignore semantics and matches at any depth — a bare
+# "schemas" would also shadow the hand-authored src/schemas/*.ts and drop it
+# from the format gate (adversarial review finding, 2026-07). Extension globs
+# stay unanchored on purpose (they target generated JSON / governed YAML / docs
+# wherever they live).
+/node_modules
+/schemas
+/contracts
+/scenarios
+/signal-reports
+/sprints
+/reviews
+/artifacts
+/sdd-kit-2
+/persona-review-kit
+/manufacturing-software-doc-stack-build-ready
+*.json
+*.yaml
+*.yml
+*.md

@@ -43,7 +43,9 @@ describe("VF-003 against the backend skeleton (persistent, same scenario)", () =
     expect(fresh.readRecord("nonconformance_001").state).toBe("closed");
     expect(fresh.readRecord("torque_evidence_001").state).toBe("review_required");
     expect(fresh.readEventTrace().some((e: any) => e.type === "RUN_CLOSED")).toBe(true);
-    expect(fresh.readProjection("SerialHistory", "VB-001").event_types).toContain("MEASUREMENT_FAILED");
+    expect(fresh.readProjection("SerialHistory", "VB-001").event_types).toContain(
+      "MEASUREMENT_FAILED",
+    );
     // historical checkpoint genuinely rebuilt from the append-only event log (not a cached snapshot)
     expect(reconstructed.get("047")?.get("run_001")).toBe("close_blocked");
     fresh.close();

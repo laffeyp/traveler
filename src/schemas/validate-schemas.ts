@@ -15,9 +15,15 @@ const ajv = new Ajv2020({ allErrors: true, strict: false });
 addFormats(ajv as any);
 
 function loadSchema(relPath: string): any | null {
-  if (typeof relPath !== "string" || relPath.length === 0) { err(`missing/blank schema ref: ${JSON.stringify(relPath)}`); return null; }
+  if (typeof relPath !== "string" || relPath.length === 0) {
+    err(`missing/blank schema ref: ${JSON.stringify(relPath)}`);
+    return null;
+  }
   const abs = join(ROOT, relPath);
-  if (!existsSync(abs)) { err(`missing schema file: ${relPath}`); return null; }
+  if (!existsSync(abs)) {
+    err(`missing schema file: ${relPath}`);
+    return null;
+  }
   try {
     return JSON.parse(readFileSync(abs, "utf8"));
   } catch (e: any) {
@@ -30,7 +36,10 @@ const compiled = new Map<string, any>();
 function compile(relPath: string): any | null {
   if (compiled.has(relPath)) return compiled.get(relPath);
   const schema = loadSchema(relPath);
-  if (!schema) { compiled.set(relPath, null); return null; }
+  if (!schema) {
+    compiled.set(relPath, null);
+    return null;
+  }
   try {
     const v = ajv.compile(schema);
     compiled.set(relPath, v);
@@ -80,7 +89,10 @@ for (const op of vfOperations) {
 // 2. every VF-003 event: payload schema (path from the events registry) present + compiles
 for (const type of vfEvents) {
   const ev = eventByType.get(type);
-  if (!ev) { err(`VF-003 event ${type} not in events.yaml`); continue; }
+  if (!ev) {
+    err(`VF-003 event ${type} not in events.yaml`);
+    continue;
+  }
   if (compile(ev.payload_schema_ref)) evSchemas++;
 }
 
@@ -91,29 +103,42 @@ if (!report) err("RunCloseReport not in reports.yaml");
 else reportValidator = compile(report.payload_schema_ref);
 
 // 4. fixtures validate as declared
-const fixtures = JSON.parse(readFileSync(join(ROOT, "tests/fixtures/schema-fixtures.json"), "utf8")).fixtures ?? [];
+const fixtures =
+  JSON.parse(readFileSync(join(ROOT, "tests/fixtures/schema-fixtures.json"), "utf8")).fixtures ??
+  [];
 let fixturePass = 0;
 const fixtureSchemas = new Set<string>();
 for (const f of fixtures) {
   fixtureSchemas.add(f.schema);
   const validate = compile(f.schema);
-  if (!validate) { err(`fixture '${f.name}': schema failed to compile`); continue; }
+  if (!validate) {
+    err(`fixture '${f.name}': schema failed to compile`);
+    continue;
+  }
   const ok = validate(f.data) as boolean;
   if (ok !== f.valid) {
-    err(`fixture '${f.name}': expected valid=${f.valid} but ajv said ${ok}` + (ok ? "" : ` (${ajv.errorsText(validate.errors)})`));
+    err(
+      `fixture '${f.name}': expected valid=${f.valid} but ajv said ${ok}` +
+        (ok ? "" : ` (${ajv.errorsText(validate.errors)})`),
+    );
   } else {
     fixturePass++;
   }
 }
 // F3 (fail-closed): a green build must have actually exercised discrimination.
 if (fixtures.length === 0) err("no fixtures — discrimination was never tested");
-if (!fixtures.some((f: any) => f.valid === false)) err("no known-bad fixture — schemas were never shown to reject anything");
+if (!fixtures.some((f: any) => f.valid === false))
+  err("no known-bad fixture — schemas were never shown to reject anything");
 // F4: output schemas must be exercised against data, not only compile-checked.
 if (![...fixtureSchemas].some((s) => s.endsWith(".output.schema.json")))
-  err("no fixture targets an .output.schema.json — output schemas are only compile-checked (a wrong-but-compiling output schema would slip through)");
+  err(
+    "no fixture targets an .output.schema.json — output schemas are only compile-checked (a wrong-but-compiling output schema would slip through)",
+  );
 
 console.log("schema validation (contracts-0.4.1)");
-console.log(`  operation schemas compiled: ${opSchemas}  event payload schemas: ${evSchemas}  report: ${reportValidator ? 1 : 0}`);
+console.log(
+  `  operation schemas compiled: ${opSchemas}  event payload schemas: ${evSchemas}  report: ${reportValidator ? 1 : 0}`,
+);
 console.log(`  fixtures: ${fixturePass}/${fixtures.length} behaved as declared`);
 if (errors.length) {
   console.log(`  result: FAILED (${errors.length} errors)`);

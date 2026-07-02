@@ -14,8 +14,12 @@ describe("access-filtered serial history (in-memory)", () => {
   });
 
   it("the SAME serial reads FULL vs SUMMARY differently — controlled detail present under full, stripped under summary", () => {
-    const full = vf009.driver.readProjection("SerialHistory", "VB-001");                          // no profile -> full
-    const summary = vf009.driver.readProjection("SerialHistory", "VB-001", "customer_summary_access");
+    const full = vf009.driver.readProjection("SerialHistory", "VB-001"); // no profile -> full
+    const summary = vf009.driver.readProjection(
+      "SerialHistory",
+      "VB-001",
+      "customer_summary_access",
+    );
     expect(full.view).toBe("full");
     expect(summary.view).toBe("summary");
     // The controlled machine-evidence detail is visible under full, absent under summary (the teeth).
@@ -26,12 +30,16 @@ describe("access-filtered serial history (in-memory)", () => {
     // The controlled ENTRY is redacted in place, not dropped: its event type (review STATUS) survives.
     const sme = summary.entries.find((e: any) => e.controlled);
     expect(sme).toBeTruthy();
-    expect(sme.controlled_detail).toEqual([]);         // controlled tokens stripped...
+    expect(sme.controlled_detail).toEqual([]); // controlled tokens stripped...
     expect(sme.event_type).toContain("MACHINE_EVIDENCE"); // ...but the entry (review status) remains
   });
 
   it("summary is FILTERED, not emptied or denied — the summary-safe spine survives (Build Readiness §11.1)", () => {
-    const summary = vf009.driver.readProjection("SerialHistory", "VB-001", "customer_summary_access");
+    const summary = vf009.driver.readProjection(
+      "SerialHistory",
+      "VB-001",
+      "customer_summary_access",
+    );
     expect(summary.event_types).toContain("RUN_CLOSED");
     expect(summary.event_types).toContain("MACHINE_EVIDENCE_REVIEW_REQUIRED"); // review STATUS is summary-safe
     expect(summary.event_types).toContain("MEASUREMENT_PASSED");
@@ -40,8 +48,12 @@ describe("access-filtered serial history (in-memory)", () => {
 
   // Sprint-010 review [1]: a PRESENTED but unresolvable profile must FAIL CLOSED (denied), never leak full.
   it("an unresolvable access profile fails CLOSED to denied — no controlled-data leak", () => {
-    const bogus = vf009.driver.readProjection("SerialHistory", "VB-001", "revoked_or_typoed_credential");
-    expect(bogus.view).toBe("denied");                 // NOT "full" (the fail-open leak)
+    const bogus = vf009.driver.readProjection(
+      "SerialHistory",
+      "VB-001",
+      "revoked_or_typoed_credential",
+    );
+    expect(bogus.view).toBe("denied"); // NOT "full" (the fail-open leak)
     expect(bogus.entries).toEqual([]);
     expect(bogus.visible_detail).toEqual([]);
     // Contrast: an ABSENT profile is an internal full read and DOES see controlled detail.

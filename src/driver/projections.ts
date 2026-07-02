@@ -9,10 +9,20 @@ import type { World, Rec } from "./world.ts";
 /** AsBuilt tree: the installed children of a parent inventory item. */
 export function asBuiltProjection(w: World, parentAlias: string): any {
   const parentId = w.get(parentAlias).id;
-  const children = w.byType("InstallationEvent")
+  const children = w
+    .byType("InstallationEvent")
     .filter((e) => w.get(e.fields.parent).id === parentId)
-    .map((e) => ({ child_alias: e.fields.child, child_id: w.get(e.fields.child).id, serial_number: w.get(e.fields.child).fields.serial_number }));
-  return { projection: "AsBuiltProjection", parent_inventory_id: parentId, children, conflicted: false };
+    .map((e) => ({
+      child_alias: e.fields.child,
+      child_id: w.get(e.fields.child).id,
+      serial_number: w.get(e.fields.child).fields.serial_number,
+    }));
+  return {
+    projection: "AsBuiltProjection",
+    parent_inventory_id: parentId,
+    children,
+    conflicted: false,
+  };
 }
 
 // Which serial-history entries carry CONTROLLED detail, and under what token (B-Q-20). Machine-evidence
@@ -38,26 +48,52 @@ const CONTROLLED_DETAIL_TOKENS = ["controlled_machine_evidence_payload", "raw_ma
  */
 export function serialHistory(w: World, serial: string, access?: string): any {
   const policy = access ? (w.accessPolicies ?? []).find((p: any) => p.alias === access) : null;
-  const view = !access ? "full" : (!policy || policy.denied) ? "denied" : "summary";
+  const view = !access ? "full" : !policy || policy.denied ? "denied" : "summary";
   const denied = view === "denied";
   const hidden = new Set<string>(view === "summary" ? (policy?.hidden ?? []) : []);
   const item = w.byType("InventoryItem").find((r) => r.fields.serial_number === serial);
-  if (!item || denied) return { projection: "SerialHistory", serial_number: serial, access_profile: access ?? "full", view: denied ? "denied" : view, event_types: [], entries: [], visible_detail: [], access_filterable: true, conflicted: false };
-  const resolve = (v: any): string | null => (typeof v === "string" ? (w.aliasToId.get(v) ?? (w.records.has(v) ? v : null)) : null);
+  if (!item || denied)
+    return {
+      projection: "SerialHistory",
+      serial_number: serial,
+      access_profile: access ?? "full",
+      view: denied ? "denied" : view,
+      event_types: [],
+      entries: [],
+      visible_detail: [],
+      access_filterable: true,
+      conflicted: false,
+    };
+  const resolve = (v: any): string | null =>
+    typeof v === "string" ? (w.aliasToId.get(v) ?? (w.records.has(v) ? v : null)) : null;
   const owned = new Set<string>([item.id]);
-  for (const r of w.byType("Run")) { const t = resolve(r.fields.target_inventory); if (t === item.id) owned.add(r.id); }
+  for (const r of w.byType("Run")) {
+    const t = resolve(r.fields.target_inventory);
+    if (t === item.id) owned.add(r.id);
+  }
   let changed = true;
   while (changed) {
     changed = false;
     for (const rec of w.records.values()) {
       if (owned.has(rec.id)) continue;
-      for (const v of Object.values(rec.fields)) { const ref = resolve(v); if (ref && owned.has(ref)) { owned.add(rec.id); changed = true; break; } }
+      for (const v of Object.values(rec.fields)) {
+        const ref = resolve(v);
+        if (ref && owned.has(ref)) {
+          owned.add(rec.id);
+          changed = true;
+          break;
+        }
+      }
     }
   }
-  for (const mer of w.byType("MachineEvidenceRecord")) if (mer.fields.linked_serial === serial) owned.add(mer.id);
+  for (const mer of w.byType("MachineEvidenceRecord"))
+    if (mer.fields.linked_serial === serial) owned.add(mer.id);
   const inHistory = w.events.filter((e) => {
     if (e.payload?.serial_number === serial) return true;
-    return Object.values(e.payload ?? {}).some((v) => { const ref = resolve(v); return !!ref && owned.has(ref); });
+    return Object.values(e.payload ?? {}).some((v) => {
+      const ref = resolve(v);
+      return !!ref && owned.has(ref);
+    });
   });
   const event_types = [...new Set(inHistory.map((e) => e.type))];
   // Enrich entries to the Build Readiness §9.3 shape (entry_type / event_type / record_ref / summary) and
@@ -68,22 +104,38 @@ export function serialHistory(w: World, serial: string, access?: string): any {
     const detail = controlled ? CONTROLLED_DETAIL_TOKENS.filter((tok) => !hidden.has(tok)) : [];
     return {
       entry_type: controlled ? "machine_evidence" : "run_event",
-      event_type: e.type,               // event type (review STATUS) is summary-safe
-      record_ref: (e.payload && (e.payload.record_id ?? e.payload.run_id ?? e.payload.measurement_id)) ?? null,
+      event_type: e.type, // event type (review STATUS) is summary-safe
+      record_ref:
+        (e.payload && (e.payload.record_id ?? e.payload.run_id ?? e.payload.measurement_id)) ??
+        null,
       summary: e.type,
       controlled,
-      controlled_detail: detail,        // surviving controlled tokens (all under full, redacted under summary)
+      controlled_detail: detail, // surviving controlled tokens (all under full, redacted under summary)
     };
   });
   const visible_detail = [...new Set(entries.flatMap((en) => en.controlled_detail))];
-  return { projection: "SerialHistory", serial_number: serial, access_profile: access ?? "full", view, event_types, entries, visible_detail, access_filterable: true, conflicted: false };
+  return {
+    projection: "SerialHistory",
+    serial_number: serial,
+    access_profile: access ?? "full",
+    view,
+    event_types,
+    entries,
+    visible_detail,
+    access_filterable: true,
+    conflicted: false,
+  };
 }
 
 /**
  * Assemble the RunCloseReport body (Contract Spec §19). The `accessScope` this controlled_export binds is
  * captured in `access_policy_snapshot` at generation time and frozen there (see GenerateRunCloseReport).
  */
-export function assembleRunCloseReport(w: World, run: Rec, accessScope = "customer_summary_access"): any {
+export function assembleRunCloseReport(
+  w: World,
+  run: Rec,
+  accessScope = "customer_summary_access",
+): any {
   const steps = w.byType("RunStep").filter((s) => s.fields.run === run.id);
   const meas = w.byType("Measurement").filter((m) => m.fields.run === run.id);
   const nc = w.byType("Nonconformance").find((n) => n.fields.run === run.id);
@@ -94,17 +146,47 @@ export function assembleRunCloseReport(w: World, run: Rec, accessScope = "custom
     report_header: { title: "Run Close Report", run_status: run.state },
     run_context: { run_id: run.id },
     executed_steps: steps.map((s) => ({ run_step_id: s.id, status: s.state })),
-    measurement_summary: meas.map((m) => ({ measurement_id: m.id, value: m.fields.value, unit: m.fields.unit, result: m.fields.result })),
+    measurement_summary: meas.map((m) => ({
+      measurement_id: m.id,
+      value: m.fields.value,
+      unit: m.fields.unit,
+      result: m.fields.result,
+    })),
     quality_path: nc ? { nonconformance_id: nc.id, nonconformance_status: nc.state } : {},
     redline_history: { redline: w.byType("Redline")[0]?.state },
-    installed_inventory: installs.map((e) => ({ parent: e.fields.parent, child: e.fields.child, event_type: "INVENTORY_INSTALLED" })),
-    machine_evidence_summary: mer ? [{ evidence_id: mer.id, state: mer.state, accepted_as_measurement_source: false }] : [],
-    run_close_observations: rccs.map((c) => ({ run_close_check_id: c.id, status: c.state, blockers: c.fields.blockers })),
+    installed_inventory: installs.map((e) => ({
+      parent: e.fields.parent,
+      child: e.fields.child,
+      event_type: "INVENTORY_INSTALLED",
+    })),
+    machine_evidence_summary: mer
+      ? [{ evidence_id: mer.id, state: mer.state, accepted_as_measurement_source: false }]
+      : [],
+    run_close_observations: rccs.map((c) => ({
+      run_close_check_id: c.id,
+      status: c.state,
+      blockers: c.fields.blockers,
+    })),
     final_close_result: { run_status_at_generation: run.state, closed: run.state === "closed" },
     source_traceability: {
-      source_record_ids: [run.id, ...steps.map((s) => s.id), ...meas.map((m) => m.id), ...(nc ? [nc.id] : []), ...installs.map((e) => e.id)],
-      source_event_types: [...new Set(w.events.filter((e) => Object.values(e.payload ?? {}).includes(run.id)).map((e) => e.type))],
-      source_event_range: { first_seq: w.events[0]?.seq ?? null, last_seq: w.events[w.events.length - 1]?.seq ?? null },
+      source_record_ids: [
+        run.id,
+        ...steps.map((s) => s.id),
+        ...meas.map((m) => m.id),
+        ...(nc ? [nc.id] : []),
+        ...installs.map((e) => e.id),
+      ],
+      source_event_types: [
+        ...new Set(
+          w.events
+            .filter((e) => Object.values(e.payload ?? {}).includes(run.id))
+            .map((e) => e.type),
+        ),
+      ],
+      source_event_range: {
+        first_seq: w.events[0]?.seq ?? null,
+        last_seq: w.events[w.events.length - 1]?.seq ?? null,
+      },
       report_definition_version: 1,
     },
     access_policy_snapshot: { policy_alias: accessScope }, // the scope this controlled_export binds (frozen at generation)
