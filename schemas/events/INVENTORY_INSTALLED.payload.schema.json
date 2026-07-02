@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/INVENTORY_INSTALLED.payload.schema.json",
+  "title": "INVENTORY_INSTALLED payload (baseline; owning_module=installed_part_history)",
+  "type": "object"
+}

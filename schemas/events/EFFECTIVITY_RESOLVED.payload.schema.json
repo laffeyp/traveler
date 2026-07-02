@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/EFFECTIVITY_RESOLVED.payload.schema.json",
+  "title": "EFFECTIVITY_RESOLVED payload (baseline; owning_module=effectivity)",
+  "type": "object"
+}

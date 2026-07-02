@@ -1,0 +1,15 @@
+scenario_id: VF-015
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Harness Spec v0.1.2 §21/§24 (VF-015 unsupported machine payload creates GrammarGap) + Contract Spec grammar-gap
+note: >
+  Unsupported machine payload creates a GrammarGap. Brings the grammar-gap escalation path into the
+  executable slice: GRAMMAR_GAP_CREATED had a registered producer (CreateGrammarGap) with no handler, and
+  NormalizeMachineEvidence now auto-escalates (B-Q-26). The grammar_gap_created assertion evaluator was
+  registered but unimplemented (auto-failed) until now.
+operations: [ReceiveMachineEvidence, NormalizeMachineEvidence, CreateGrammarGap]
+events: [MACHINE_EVIDENCE_RECEIVED, MACHINE_EVIDENCE_NORMALIZED, GRAMMAR_GAP_CREATED]
+record_states:
+  MachineEvidenceRecord: [raw, normalized]
+assertion_types: [grammar_gap_created, record_state, event_emitted, event_not_emitted]
+caller_types: [adapter, system_worker]

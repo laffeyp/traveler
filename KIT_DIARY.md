@@ -1,0 +1,557 @@
+# KIT_DIARY.md — Distributed Factory Execution Record System
+
+*Per-sprint or per-phase: what worked, what got in the way, what this says about the next kit version. The diary is this project's accumulating memory about how sdd-kit-2 serves the work.*
+
+---
+
+## Entry 0 — Session start / onboarding (2026-06-30)
+
+**What worked.** The kit mapped onto the doc stack with almost no friction because the doc stack was itself authored in SDD doctrine. The manufacturing "operational grammar" is the 11-layer grammar stack; "run close as dual-contract verification" is the signal+artifact dual contract; "run close narration" is the Rubber Duck Pass; "halt is success" is halt-and-articulate; the grammar-gap proposal taxonomy is supervised grammar evolution. Recognizing that correspondence (rather than treating the kit and the docs as two unrelated bodies of text) made the contract registries legible immediately as this project's `signals/0.1.json`, and registry validation as the schema-at-the-speakers-mouth poka-yoke. ICL task-selection in action: the kit told me which already-known discipline to activate.
+
+The close read paid off *before any code*. Reading all eight docs in full (not skimming the long contract spec) surfaced six concrete cross-document tensions — a record with a lifecycle but no registered state machine; an operation invoked from a state its bare transition table does not list; a record-name conflict across authority levels; an event-cardinality ambiguity; a cross-module event-emission ownership question; a registry-count discrepancy. Each is exactly the kind of thing the executor rule says must become a recorded decision or a ContractGap rather than an invented behavior. The dual-contract / halt discipline earned its keep at design time, not just at grade time.
+
+**What got in the way.** Nothing structural yet. One tension worth noting for the kit: sdd-kit-2's vocabulary discipline assumes a *signal-emitting* runtime (emit at the speaker's mouth, capture a trace, narrate it). This project is contract-first and largely *non-emitting* at the build layer — the "vocabulary" is a set of YAML registries validated statically, and the "signals" are the product's own FactoryEvents asserted by a test oracle. The kit's concepts transfer cleanly, but the mechanical primitives (`lib/sdd.py`'s `SignalEmitter`) do not apply directly; the analog here is the registry validator + the harness Assertion Engine.
+
+**Hypothesis.** *For a contract-first build, the kit's "locked vocabulary" is the registry set and the "Rubber Duck Pass" is the harness run-close narration over the event trace.* Status: tentative — will firm up once VF-003 runs in memory and the first run-close narration is produced by the product rather than by me.
+
+**Hypothesis.** *The no-invention rule plus strict registry validation will make sprint failures legible rather than silent* — an unregistered name fails compilation loudly instead of shipping a subtly wrong behavior. Status: tentative; testable the first time an executor reaches for an unregistered operation.
+
+**Kit observation.** sdd-kit-2 has no project-class subsection for "contract-first / spec-executor" builds in `TECHNIQUES.md` Section 2. The closest is Backend / data-pipeline. If this project's contract-registry + assertion-oracle pattern stabilizes, it may be worth a back-propagated subsection (registry-as-vocabulary; static validation as poka-yoke; the harness as external check surface for the Rubber Duck Pass). Logged, not yet acted on.
+
+---
+
+## Entry 1 — Sprint 001 close (2026-06-30)
+
+**What worked.** The founding act resolved into a clean shape: author the 11 registries, build a static validator that mechanically enforces the Contract Spec §3/§24 gates, and let the validator be the poka-yoke. The bidirectional operation↔event consistency check (every `events_emitted` entry must list the operation as a producer, and vice versa) caught nothing on the final run — but only because authoring against that invariant forced the discipline up front; it is exactly the kind of check that would have flagged a single typo across 113 operations and 121 events. The contract registries really are this project's `signals/0.1.json`: once locked and validated, every downstream phase extends them without silent edits.
+
+The biggest payoff was separating *structural* verification (the validator: does everything resolve and cross-reference?) from *faithfulness* verification (the 6-critic adversarial pass: does the YAML match what the source docs actually say?). The validator can't catch a VF-003 event I forgot to put in the manifest, or a Run transition I transcribed wrong — but a critic re-deriving from Contract Spec §10.1 can. Five of six dimensions came back clean; the one finding was a restatement of an already-recorded decision (B-Q-3), not a defect. That is the dual-contract/Rubber-Duck discipline working at *design* time: the external check surfaces (validator, doc stack, critic panel) are real, so the self-grade is grounded, not theatre.
+
+**What got in the way.** Authoring ~250 lines of interdependent YAML by hand is error-prone in principle; the only thing that made it safe was running the validator and iterating. It happened to pass first try, but the right lesson is that the validator must exist *before* trusting any large registry edit. One genuine spec-internal inconsistency surfaced only by reading every doc in full: `BUILD_CHECK_FAILED` (TAD) vs `BUILD_CHECK_BLOCKED` (Build Readiness) — invisible to anyone who skimmed. Logged as B-Q-7.
+
+**Hypothesis update.** *No-invention + strict registry validation make failures loud, not silent* — supported but not yet stress-tested: nothing reached for an unregistered name this sprint because the registries were authored to be complete. The real test is the first scenario that references something missing; the compiler must emit a ContractGap there. *Registry-as-vocabulary / Rubber-Duck-as-run-close-narration* — still on paper; firms up when VF-003 runs and the product emits its own trace.
+
+**Kit observation (carried forward).** sdd-kit-2 still lacks a "contract-first / spec-executor" project-class subsection. This sprint is concrete evidence for one: registry-as-vocabulary, static validation as poka-yoke, a separate adversarial faithfulness pass as the external check surface for the Rubber Duck Pass. Worth back-propagating if the pattern holds across sprints 002+.
+
+---
+
+## Entry 2 — Sprint 002 close (2026-06-30)
+
+**What worked.** Generating the schemas from the registries (Build Readiness §8.1) rather than hand-authoring ~150 JSON files was the right call — one generator, uniform output, and the tight/baseline split kept faithfulness honest (verbatim where the docs specify, standard envelope where they are silent, nothing invented). The `validate:schemas` gate caught a real bug in itself on the first run: ajv registers each schema by `$id`, so compiling the same schema twice threw "already exists." That is the poka-yoke working — the gate refused to pass while its own tooling was wrong.
+
+The quick review earned its cost twice over. The most instructive finding (F1) was one where the critic was *right about the defect but wrong about the fix*: it flagged that the operation output schema under-enforced Build Readiness §4.3's "must include all 11 fields," and suggested adding six fields to `required`. But Harness §11's `OperationResult` interface — the higher authority, and the type the ProductDriver actually implements — marks eight of those optional. The correct resolution was the *reverse* of the suggestion: narrow `required` to the three fields §11 mandates. The lesson: a review finding is a signal, not a patch; every cross-document fix has to be re-checked against the authority order before applying. Recorded as B-Q-8.
+
+**What got in the way.** The review also exposed that the gate could **fail open** — empty op/event/fixture lists would run zero iterations, collect zero errors, and still print "fixtures discriminate" and exit 0. A gate that can pass without doing any work is worse than no gate. Added fail-closed lower bounds (assert non-empty lists, assert ≥1 known-bad fixture, assert output schemas are exercised, not just compiled). This is the "no silent caps" discipline applied to a validator: if coverage is bounded, the gate must *say so* by failing, not pass quietly.
+
+**Hypothesis update.** *Structural validation and faithfulness verification are distinct and both needed* — reconfirmed: the compile-only check passed on output schemas that were never validated against data, and only the review + a fixture caught it. *No-invention + strict validation make failures loud* — strengthened: the gate is now fail-closed, so a vanished fixture set is a red build, not a green one.
+
+**Kit observation (carried forward).** Two more data points for a "contract-first / spec-executor" project-class subsection: (1) generate artifacts from the vocabulary, don't hand-author them; (2) gates must be fail-closed and self-covering (assert they did work, and that every schema has ≥1 accepting and ≥1 rejecting fixture). Both are general enough to back-propagate.
+
+---
+
+## Entry 3 — Sprints 003-004 close: VF-003 end-to-end (2026-06-30)
+
+**What worked.** The write→run→read-signals→fix loop is the whole methodology, and it delivered. The first VF-003 run scored 133/152, and the assertion deltas didn't require debugging — they *named* the defect: five `not_implemented` operations, all in the quality-rework path. Adding those five handlers cascaded to 152/152 in one shot. This is exactly SDD's claim: the scenario is the confirmed-good capture (technique #38), the assertion engine is the external check surface, and the delta between expected and observed *is* the diagnosis. No print-debugging, no guessing.
+
+Building the driver registry-first paid off: `moveState` reads `contracts/state-machines.yaml` for allowed transitions, so the state-machine authority lives in the vocabulary, not scattered across 47 handlers. Most handlers are 2-4 lines because the executor does the transition work generically; only the ops with real logic (measurement evaluation, effectivity resolution, build check, close check, report assembly) carry custom code.
+
+**What got in the way — and the load-bearing lesson.** The green was a lie the first time, and only the adversarial review caught it. 152/152 looked like success, but three critics tasked with *distrusting* the green found that SerialHistory ignored its serial key (a tautology — even a nonexistent serial passed), RunBuildCheck was a rubber-stamp (empty world still passed), BoundedDrillDown returned a hardcoded constant equal to what the assertion expected, and two spec-mandated late-evidence invariants were merely coincidentally true because the harness had no temporal/checkpoint assertion support. The 11 findings were all real. **The lesson: a green test suite is only as trustworthy as its assertions' ability to fail.** "156 assertions pass" means nothing until you've shown that a regression makes them go red. So the fix wasn't just to implement the real logic — it was to add `tests/vf-003/discrimination.test.ts`, five negative probes that CI-enforce the teeth (RunBuildCheck blocks an empty world; SerialHistory distinguishes serials; BoundedDrillDown denies without a policy; MEASUREMENT_PASSED is provably singular). Discrimination is now a permanent gate, not a one-time check.
+
+This also validated the review pattern itself: the mechanical validators (registry, schema, compiler) prove *structure* and *resolution*; the assertion engine proves *behavior against expected*; but only an adversary tasked with breaking the green catches *fake-green* — assertions that pass for the wrong reason. All three layers are needed.
+
+One smaller trap: `compile.ts` had a top-level CLI block that ran `process.exit()` on *import*, so the runner (which imports the compiler) died silently before executing. Guarding CLI blocks with `import.meta.url === file://${process.argv[1]}` is now the pattern for every entry-point module.
+
+**Hypothesis updates.** *For a contract-first build, the Rubber Duck Pass is the product's own run-close narration* — now CONFIRMED with a runtime trace: VF-003 emits a real event sequence (RUN_CREATED … RUN_CLOSED) and the assertion engine narrates/checks it. *No-invention + strict validation make failures loud* — CONFIRMED and extended: the failure surface must also include *fake-green*, which needs an adversarial reviewer plus discrimination tests, not just a passing suite.
+
+**Kit observation (carried forward, now strong).** The "contract-first / spec-executor" project-class subsection should include a named technique: **prove the green can fail.** For every green scenario, ship discrimination tests that make a deliberate regression go red — otherwise the scenario is theater. This generalizes the review's finding into a reusable discipline and belongs in TECHNIQUES.md.
+
+---
+
+## Entry 4 — Sprint 005 close: backend skeleton, and "distrust the green" catches overstated proofs (2026-06-30)
+
+**What worked.** The driver-agnostic refactor paid off exactly as the architecture intended: the same scenario, compiler, and assertion engine ran against a completely different storage backend with zero scenario changes — `executeScenario` and `evaluateAssertions` don't know or care whether the driver is in-memory or SQLite. That is the Harness §11 "multiple drivers behind the same interface" principle made real, and it's the strongest evidence the contract-first design holds: behavior is defined by the registries + handlers, storage is a swappable concern.
+
+**The lesson, sharpened.** Sprint 004 taught "prove the green can fail." Sprint 005 taught the next layer: **a passing proof can be true and still claim more than it proves.** My first backend run genuinely passed 156/156 and a fresh instance "re-passed" — but the review showed ~60 of those 156 fresh-instance passes were decided by the *original run's in-memory caches*, never touching disk, and the checkpoint assertion was structurally impossible to satisfy from current-state-only storage. The code wasn't fake-green (sprint 004's failure mode); the *claim* was overstated. "A fresh instance re-passes every assertion" was false for 38% of them. The fix wasn't to make failing code pass — it was to make the claim honest: scope the durability proof to persisted STATE (96 assertions that genuinely round-trip disk), and explicitly exclude operation-outcome assertions as behavior, not stored facts.
+
+**The architecturally-right fix came from the docs.** The checkpoint problem — historical mid-run state unrecoverable from a current-state table — had a clean answer already written in the design theory: TAD §26/§27, "the log records what arrived; the projection records what the system currently believes," and the hybrid model of relational current-state + append-only event history. So instead of persisting per-step snapshots (a hack), I made the backend *replay the append-only event log* to rebuild historical record state. `run_001 @after_step_047 = close_blocked` is now genuinely reconstructed from the persisted events, not a cached snapshot. When a design question came up, the design theory was the north star and it had the answer.
+
+**A real latent bug, too.** The review also caught that the engine caught handler exceptions but didn't roll back partial mutations — violating Contract Spec §8 ("a failed operation persists no facts"). VF-003 never triggers it (all steps succeed), so no test would have caught it without an adversary reasoning about failure paths. Fixed with per-op snapshot/restore and a fault-injection test that deliberately throws mid-handler and asserts zero residue.
+
+**Hypothesis update.** *Distrust-the-green catches what passing suites can't* — reconfirmed and extended: it catches fake-green (sprint 004) AND overstated-green (sprint 005) AND latent failure-path bugs no happy-path scenario exercises. The adversarial review is not optional polish; it is the third leg of the check surface (mechanical validation → behavioral assertion → adversarial audit).
+
+**Kit observation (strengthened).** The "contract-first / spec-executor" technique set now has three named practices: (1) generate artifacts from the vocabulary; (2) prove the green can fail (discrimination tests); (3) **claim only what you prove** — an adversarial audit of every "this demonstrates X" claim, because a true-but-overstated proof is its own failure mode. All three belong in TECHNIQUES.md.
+
+---
+
+## Entry 5 — Sprint 006 close: the bench, and vacuous scenarios (2026-06-30)
+
+**What worked.** Growing the bench validated the whole contract-first bet: VF-001 and VF-002 are pure *data* — new scenarios exercising the existing 47 handlers on paths VF-003 never took — and they passed first try with zero handler changes. That is the payoff of separating vocabulary (registries) + behavior (handlers) from scenarios (data): new coverage is a YAML file, not new code. The bench runner running each scenario on *both* drivers (in-memory + persistent) in one command is the Harness §22 acceptance mechanism made real, and it's now the standing gate for "did we break anything."
+
+**The lesson, extended to data.** Sprints 4-5 taught that green *code* can be fake or overstated. Sprint 6 taught the same about green *scenarios*. VF-001 and VF-002 passed, but the review showed their headline discriminators were vacuous: VF-002's "the run does not close" could not fail because VF-002 never asked the product to close a run — a product that happily closed an unremediated failure would pass identically. A scenario that never invokes the code path it claims to test proves nothing about that path, no matter how green. The fix was to make VF-002 actually attempt the close and assert it BLOCKS (Contract Spec §16) — now a neutered block genuinely fails the scenario. Same principle as the discrimination tests, now applied to scenario design: **a scenario's assertions must be able to fail on the exact product decision the scenario exists to exercise.**
+
+A subtler version: VF-002 asserted "a nonconformance opened" (the event fired) but not "the nonconformance is linked to the failed measurement" (its stated purpose). The event firing is necessary but not sufficient — an NC with a null source would pass. Proving the *linkage* required a new capability (alias resolution in `record_field_equals`, so a stored record-id matches an expected alias). The pattern: assert the relationship, not just the presence.
+
+**Hypothesis update.** *Distrust-the-green is the third leg of the check surface* — reconfirmed across a fourth review, now covering scenario data, not just code. Each review this session found something real (fake-green, overstated-green, latent failure-path bug, vacuous-scenario) that a passing suite could not have surfaced. The adversarial audit is load-bearing, not decorative.
+
+**Kit observation (fourth practice).** The "contract-first / spec-executor" technique set: (1) generate artifacts from the vocabulary; (2) prove the green can fail (discrimination tests); (3) claim only what you prove (audit every "this demonstrates X"); (4) **a scenario must invoke the decision it claims to test** — a failure scenario must attempt the operation the failure should block, or it proves nothing. All four belong in TECHNIQUES.md.
+
+---
+
+## Entry 6 — Sprint 007 close: applying the SDD testing techniques, and vacuous test *tools* (2026-06-30)
+
+**What worked.** Re-reading the SDD testing techniques on request was not ceremony — it surfaced three primitives I had *registered but not implemented* or not used: `event_payload_contains` (Foundation 02's `assert_signal(tag, **partial_payload)`), `event_sequence_matches` (technique #42 signal-coverage — the confirmed-good capture as a regression fixture), and `idempotent_replay` (the backend idempotency observation contract, doc-08 Phase 9). Applying them was the point: the tests got closer to what SDD actually prescribes (assert against the designed signals, pin the trace, prove the write boundary), not just more assertions. And the contract-first payoff held again: the machine-evidence variants are pure scenario data, and building one (VF-003A) immediately surfaced a genuine gap — the Accept/Reject/Quarantine handlers were registered but never implemented because VF-003 only walked the review path. The scenario failed with `not_implemented`; I filled the handlers per §10.2/§7.6. That is the intended dynamic, working exactly as the docs describe.
+
+**The lesson, turned on the tools.** Sprints 4-6 taught that green code, green claims, and green scenarios can each be hollow. Sprint 7 taught the sharpest version: **a green test *primitive* can be a tautology.** My `idempotent_replay` re-executed a step with the same key and asserted "zero new facts" — but the driver's memo short-circuits on the key, so the handler never ran and "zero new facts" was trivially true. It proved the memo existed, not that any write boundary was idempotent (the handlers mint fresh ids; a cold-memo replay duplicates). The test could not fail. The fix was the same discipline applied one level up: a *negative discrimination test* proving the primitive catches the defect it exists to catch (a cold key re-runs the handler → duplicate → the check fails), plus honest scoping of the claim (in-instance `required_idempotency_key` memo per §6, not persistence-layer idempotency — B-Q-13). Likewise `event_sequence_matches` used scattered-subsequence matching that a later valid occurrence could bridge past a swap; I made it filtered-exact so it's a real fixture.
+
+The rule crystallizes: **every test primitive must ship with a proof that it can fail on the exact defect it targets.** A test you cannot make go red is not a test. This is "prove the green can fail" applied recursively — to the product, to the scenarios, and to the assertion engine itself.
+
+**Hypothesis update.** *Distrust-the-green is load-bearing* — a fifth review, a fifth real find, this time in the test tooling. The adversarial audit has caught, across the session: fake-green code, overstated-green claims, vacuous-green scenarios, and now tautological-green test primitives. Every layer needs an adversary.
+
+**Kit observation (fifth practice).** The contract-first / spec-executor technique set now: (1) generate artifacts from the vocabulary; (2) prove the green can fail (discrimination tests); (3) claim only what you prove; (4) a scenario must invoke the decision it claims to test; (5) **every assertion primitive ships with a negative case proving it can fail** — a test tool with no red is a false instrument. All five belong in TECHNIQUES.md.
+
+---
+
+## Entry 7 — Sprint 008 close: green that passes but is fragile, and phantom authority (2026-06-30)
+
+**What worked.** The contract-first loop ran twice in one sprint, exactly as the docs promise. Building VF-005 surfaced `QuarantineInventory` as registered-but-unimplemented (the VF-003A dynamic, third occurrence); building VF-004/005 surfaced the build check collapsing three distinct child-inventory failure modes into one `missing_bom_inventory` label. Both are pure scenario-data discoveries — I wrote no new coverage code, just YAML, and the gaps announced themselves as `not_implemented` and as a failing blocker assertion. And I captured the red before the green: VF-004 failed 48/49 and VF-005 46/50 against the pre-fix engine, so each scenario provably fails on the exact decision it claims (the fifth practice, now habitual).
+
+**The lesson, sharper than sprint 7.** Sprint 7 taught that a test *primitive* can be a tautology. Sprint 8 taught the next thing: **a genuinely-passing green can still be hiding a real logic bug — because the scenarios' inputs are too clean to trigger it.** My first-cut `wrong_part` detector searched the whole world for "a usable item not on any BOM line." VF-004/005/006 all passed 10/10 on both drivers. But the adversarial review drove the engine with *off-scenario* inputs — a stray unrelated item, two BOM lines — and the detector fell over: a genuinely MISSING child got mislabeled `wrong_part` whenever any stray item existed, and one stray got cross-attributed to every missing line. The scenarios passed only because their worlds happened to contain no stray item. This is not vacuous-green (the assertions had teeth) and not overstated-green (the claims matched the runs) — it is **fragile-green**: correct on the exact inputs exercised, wrong one input away. The green was honest about what it ran; it just didn't run enough. The cure is adversarial *inputs*, not just adversarial *reading* — and the off-scenario probes that found the bug became permanent regression tests ([3][4]). A scenario suite proves the implementation works on those scenarios; it does not prove the implementation is correct. Only adversarial inputs close that gap.
+
+**The second catch: phantom authority.** I wrote `// B-Q-14` in the engine and cited it in the test comments — before the B-Q-14 entry existed in the ledger. An auditor following that citation would find nothing. A dangling authority reference is worse than none: it *looks* documented. The executor rule's whole point is that invented-vs-authorized behavior is distinguishable by a real, followable record; a citation that doesn't resolve breaks that. Fixed by actually writing B-Q-14/15/16, including the run-created-then-blocked decision (B-Q-15) the review flagged as an unrecorded cross-doc resolution.
+
+**Hypothesis update.** *Distrust-the-green is load-bearing* — a fifth review, a fifth (really a sixth through ninth) real find, this time three of them genuine engine logic bugs in my own fix, plus governance-integrity holes. The adversarial audit has now caught, across the session: fake-green code, overstated-green claims, vacuous-green scenarios, tautological-green primitives, and now fragile-green (passes-but-wrong-off-input) logic. Every layer, including the fix for the last finding, needs an adversary — and the adversary must supply *inputs*, not just re-read the code.
+
+**Kit observation (sixth practice).** The contract-first / spec-executor technique set now: (1) generate artifacts from the vocabulary; (2) prove the green can fail (discrimination tests); (3) claim only what you prove; (4) a scenario must invoke the decision it claims to test; (5) every assertion primitive ships with a negative case proving it can fail; (6) **a passing scenario suite is not proof of correctness — probe the implementation with adversarial off-scenario inputs and keep the probes as regression tests.** And a governance corollary: (7) **every authority citation in code (a B-Q id, a spec section) must resolve to a real, followable record before the code lands.** All belong in TECHNIQUES.md.
+
+---
+
+## Entry 8 — Sprint 009 close: vacuous-green one level deeper, and the injection test (2026-06-30)
+
+**What worked.** The effectivity family confirmed the contract-first loop is now routine and predictive: VF-007 surfaced the registered `EFFECTIVITY_AMBIGUOUS` event's unexercised producer path (the engine threw on equal-priority matches instead of emitting it — the fifth instance of the VF-003A dynamic across the project), and the docs told me exactly what the faithful fix was — Contract Spec §17 and Harness §19 both say ambiguity is *created* ("creates ambiguity"), a produced outcome, distinct from no-match which *fails resolution*. I captured the red first (VF-007 50/56 pre-fix), fixed to the contract, and it went green. Grounding in the original documents before writing a line of engine code is now paying for itself every sprint — the fix was never a guess.
+
+**The lesson: the reviewer must supply a counterfactual, not just re-read.** Sprint 8 taught "fragile-green" — a passing suite hiding a bug because the inputs were too clean. Sprint 9 taught the deeper cut: **VF-008's headline assertion was vacuous, and it passed 54/54 honestly.** The scenario claimed to prove Contract Spec §17's "later effectivity changes do not rewrite RunContextSnapshot." But `CreateRun` set the snapshot's procedure version from its *input literal*, not from the effectivity resolution — and nothing in the engine ever rewrites a snapshot. So the immutability was *immutable by omission*: true, but for a reason that has nothing to do with the invariant, and untestable. The review didn't catch this by reading; it caught it by **injection** — forcing `ResolveEffectivity` to mis-select the version and observing that the snapshot assertion *stayed green*. That green-under-injection is the signature of a vacuous test. The fix had to be at the root: make `CreateRun` actually *snapshot the effectivity context* (capture the resolution's selection), and then add a provenance discrimination test that hands `CreateRun` a decoy input and proves the snapshot ignores it and follows the resolution. Now the assertion has a counterfactual under which it fails — which is the only thing that makes it a test.
+
+This generalizes the fifth practice sharply: a discrimination test that only perturbs *inputs the scenario already varies* can still miss a decoupled assertion. The strongest discrimination perturbs the *thing the assertion names* (here, the resolution's selection) and checks the assertion moves. If the assertion doesn't move when its subject changes, it isn't measuring its subject.
+
+**Hypothesis update.** *Distrust-the-green is load-bearing* — a sixth review, more real finds. The audit has now caught, across the project: fake-green code, overstated claims, vacuous scenarios, tautological primitives, fragile (passes-but-wrong-off-input) logic, and now decoupled-assertion vacuity that passes honestly and fully. The common thread: green is evidence of nothing until something has tried to make it red *for the specific reason the test claims to check*.
+
+**Kit observation (eighth practice).** The technique set now: (1) generate from vocabulary; (2) prove the green can fail; (3) claim only what you prove; (4) a scenario must invoke the decision it claims to test; (5) every primitive ships a negative case; (6) probe with adversarial off-scenario inputs; (7) every authority citation must resolve to a real record; (8) **an assertion must be coupled to its subject — perturb the exact thing it names (not just adjacent inputs) and confirm it goes red; a green that survives injection of a wrong value is measuring nothing.** For TECHNIQUES.md.
+
+---
+
+## Entry 9 — Sprint 010 close: the review found a real security hole, and the phase closed (2026-07-01)
+
+**What worked.** For the two biggest features left — access-filtered serial history and the missing-report-definition run-close rule — I front-loaded an *understanding sweep* (a parallel workflow: access-contract reader, report-contract reader, engine-truth reader, completeness critic) before writing a line. That paid off immediately: the critic's cross-check caught two traps the individual readers missed — that `record_field_equals` on an array is un-greenable (so the report blocker had to be pinned via the event payload string), and that the "reuse VF-003's projection assertions" path was fake-green (access-blind reads can't express role-relative hiding). Grounding the *orchestration step* in a map, not just the task, meant VF-009/VF-010 were built right the first time and the red I captured was the real one.
+
+**The lesson: distrust-the-green is also distrust-your-security.** Every prior review found correctness or fidelity defects. Sprint 10's review found the first genuine *security* defects — and they were the classic, dangerous kind: **fail-open access control.** My `serialHistory` resolved an *absent* profile to full (correct: internal read) but also resolved a *presented-but-unresolvable* profile to full — so a revoked or typo'd credential got the controlled machine-evidence payload instead of being denied. Worse, the backend never persisted access policies, so a fresh-from-disk instance served a summary reader the *full* history: the durability boundary itself leaked. Neither broke the green bench — no scenario exercised an unresolvable profile or a VF-009 reload — so both were invisible latent holes that a passing 14/14 bench happily concealed. The tell the reviewer used was *parity*: the sibling `BoundedDrillDown` fails **closed** on the same bad input, and a test already locked that; `serialHistory` diverged silently. The fix is the security default: an absent credential is an internal read, but a *presented* credential that doesn't resolve is **denied, never upgraded** — and the world config must survive the persistence boundary, proven by a reload durability test that reads the same serial three ways after a cold start.
+
+The general rule this crystallizes: **a green bench proves the paths it runs; it says nothing about the paths it doesn't — and the un-run paths are exactly where fail-open defects hide.** For any access/authorization surface, the adversary must supply the *malformed* credential, not just the valid ones, and must cross the *persistence* boundary, because "filtered correctly in-memory" and "filtered correctly after reload" are different claims. Access control is guilty until a fail-closed test proves it innocent.
+
+**Hypothesis update.** *Distrust-the-green is load-bearing* — seven reviews, and the finds have escalated in kind: fake-green → overstated → vacuous → tautological → fragile → decoupled → now **fail-open security**. Each was a real defect a passing suite hid. The method has not once come back empty. That is the strongest evidence in the project that the discipline, not the green, is what's load-bearing.
+
+**Kit observation (ninth practice).** The technique set now includes: (9) **for any access/authorization/redaction surface, the adversary must inject the MALFORMED credential and cross the PERSISTENCE boundary; default-deny is guilty-until-proven-innocent, verified by an explicit fail-closed test, and parity with sibling guards (does the neighbor fail closed on this input?) is a fast tell for asymmetric fail-open holes.** For TECHNIQUES.md.
+
+---
+
+## Phase boundary synthesis — first-slice virtual-factory bench COMPLETE (2026-07-01)
+
+**Acceptance met.** The first executable slice of the factory (Harness §22 first-slice bench, VF-001..010, plus the VF-003 machine-evidence variants VF-003A/B/C/E) is green at `required_pass_rate: 1.0` on BOTH the in-memory and the persistent `node:sqlite` backend drivers. 14 scenarios; 38 vitest tests across 7 suites; 4 backend cold-reload durability proofs (closed run, blocked run, effectivity snapshot, access dimension); 21 recorded B-Q decisions; 0 open ContractGaps. Every green was adversarially reviewed; every review found and fixed real defects.
+
+**The through-line.** What the first slice actually proves is the design dossier's core claim made executable: a factory that speaks in a typed vocabulary and *refuses to blur distinct states*. Across the ten scenarios the system now holds these distinctions under test — wrong ≠ quarantined ≠ missing child (VF-004/5/6), ambiguity ≠ failure ≠ resolution (VF-007), a run's context is immutable under a later rule change (VF-008), evidence ≠ production truth (VF-003A/B/C), close blocks for the *named* right reason (VF-002 quality path, VF-010 report definition), and the same record reads differently by who's asking without ever being mutated (VF-009) — and it fails *closed* when a credential doesn't resolve.
+
+**The compounding finding.** The single most important lesson across the whole slice is not any one scenario — it is that **the contract-first loop plus adversarial review is a defect-finding engine that did not miss.** Building each scenario as pure data surfaced an unexercised-path gap almost every time (disposition handlers, QuarantineInventory, EFFECTIVITY_AMBIGUOUS, the report rule, the access path); and reviewing each green surfaced a fake/vacuous/fragile/fail-open defect almost every time. Neither half alone would have produced an honest slice. The discipline is the product.
+
+**For the next kit version.** Nine practices are now stable enough to promote from this diary into TECHNIQUES.md (the fifth through ninth in particular: negative-case-per-primitive, off-scenario input probing, resolve-your-authority-citations, couple-assertion-to-its-subject via injection, and inject-malformed-credentials-across-persistence). They are the accreted teeth of "distrust the green."
+
+---
+
+## Entry 10 — Sprint 011 close: a test built on a bug, and the safety red (2026-07-01)
+
+**What worked.** The understanding sweep for the six extended scenarios paid for itself by *refusing* two of them: its critic established that VF-003D's invalidation op is a reserved-future operation and VF-012 needs a value-level assertion primitive the harness lacks, so both were recorded as documented B-Q deferrals rather than authored to fake a §18 cascade or a stale-report proof. Knowing what NOT to build — and why, with citations — is as much a product of the sweep as the build order. And the same-turn three all landed cleanly, with VF-013 producing the sharpest red of the sprint: pre-fix, a `decision: rejected` *force-approved* the redline and `ApplyRedline` then emitted `REDLINE_APPLIED` — a rejected controlled change got applied. The scenario existed precisely to catch that, and it did, on the first run.
+
+**The lesson: a passing test can be evidence of a bug, not of correctness.** The subtlest thing this sprint taught: when I scoped the idempotency memo to `required_idempotency_key` ops (fixing a review finding that the memo short-circuited *every* keyed op, including a `not_idempotent` read), a sprint-007 test went red. That test's "warm key dedups" control used `CreateInventoryItem` — which is `transactional_unique_constraint`, not memo-based. It had been *green for four sprints* only because the memo was wrong: over-broad, memoizing an op whose idempotency is supposed to live at the write boundary (B-Q-13), not in the in-instance memo. So the test was not validating idempotency; it was validating the bug. Fixing the engine correctly *falsified a test that had been passing* — and the honest response was to re-base the test onto an op that genuinely uses the memo, not to revert the fix to keep the green. The green had been lying, quietly, since sprint 7, and only a correctness fix elsewhere exposed it.
+
+This sharpens every prior "distrust the green" lesson into its most uncomfortable form: **green is not just uninformative until attacked — it can be actively certifying the wrong behavior, and a correct change is what reveals it.** When a fix breaks a previously-passing test, the first question is not "what did I break" but "was that test ever testing what it claimed" — sometimes the fix is right and the test was a fossil of an old bug.
+
+**And the review's own finds compounded the safety story.** The fix for the VF-013 safety bug introduced its *own* smaller hazard: coercing any non-"approved" decision (including an absent one) into an irreversible rejection — fail-safe in direction but wrong in kind (a typo becomes a valid, terminal decision; an audit trail loses what was submitted). Plus a latent durability bug: the cold-reload checkpoint replay couldn't reconstruct the rejected-redline history because those events carry an alias, not an id. Both fixed, the second locked by a fifth backend durability proof. The pattern holds: the fix for a finding is itself a green to be distrusted.
+
+**Hypothesis update.** *Distrust-the-green is load-bearing* — eight reviews, unbroken. And this sprint added a new failure mode to the taxonomy (fake / overstated / vacuous / tautological / fragile / decoupled / fail-open / and now **fossil-green: a test that passes only because of a bug elsewhere, exposed when that bug is fixed**). The through-line remains: the discipline, not the green, is the load-bearing thing.
+
+**Kit observation (tenth practice).** (10) **When a correctness fix turns a previously-passing test red, suspect the test before the fix — a long-green test can be a fossil certifying old wrong behavior; re-base it onto the correct invariant rather than reverting.** And a corollary already in practice: the fix for a review finding is a new green — review it too (the decision guard, the alias resolution). For TECHNIQUES.md.
+
+---
+
+## Entry 11 — Sprint 012 close: the feature that IS the executor rule, and the fix's own threat surface (2026-07-01)
+
+**What worked.** VF-015 is the most self-referential scenario in the project: the whole system exists to avoid false certainty, and VF-015 makes that avoidance an *operation* — the normalizer, handed a payload it cannot map to known grammar, escalates a typed GrammarGap instead of inventing a reading. The design theory, the executor rule, and the product feature became the same thing. The red captured it exactly (a payload with no torque value normalized anyway, emitting a reading of `undefined`), and the fix — auto-escalate, record stays raw, no measurement — discharged it. And the bidirectional op↔event validator did real work: my one-sided producer edit (event side only) failed the gate immediately, forcing both `events.yaml` and `operations.yaml` into agreement. The registry polices its own consistency.
+
+**The lesson: a safety feature has its own threat surface, and the adversary must attack the SHAPE of the bad input, not just its absence.** My first-cut trigger checked `payload[key] === undefined` — a payload is un-normalizable if a required key is *absent*. Green, discrimination-tested. But the review supplied the inputs I hadn't: a required field present but `null`, `NaN`, `""`, or the wrong type — a *failed sensor reading*, which is the harness's own threat model, not an exotic case. All of them normalized, fabricating a reading from garbage: the exact false certainty the feature exists to prevent, re-entering through the gap between "absent" and "invalid." And worse, an attacker-controlled `payload_type` of `"toString"` or `"__proto__"` made the grammar lookup return an inherited `Object.prototype` member, and the normalizer *crashed* instead of escalating — a prototype-pollution hole in the one code path whose entire job is to never fail unsafely. Both are the same meta-lesson: **when you build the mechanism that handles bad input, the review must feed it the input shapes you didn't imagine — null vs absent, garbage vs missing, malicious keys vs honest ones — because a safety feature is only as good as the worst input it actually sees, and "I only tested the clean bad case" is its own kind of green.**
+
+The fix is faithful, not invented: Build Readiness §8.4 *types* the fields (measured_torque_nm is a number, serial_number a string), so validating type is reading the contract, not adding to it; and a prototype-safe lookup is a language-hygiene fix, not a product decision.
+
+**Hypothesis update.** *Distrust-the-green is load-bearing* — nine reviews, still unbroken, and this one attacked a *safety feature* and found it unsafe in two ways on realistic inputs. The taxonomy of green-that-lies now spans: fake, overstated, vacuous, tautological, fragile, decoupled, fail-open, fossil, and now **false-secure — a safety mechanism that is itself unsafe on the input shapes its own tests omitted.** Every layer, including the layer whose job is safety, needs an adversary supplying the ugly inputs.
+
+**Kit observation (eleventh practice).** (11) **When building the mechanism that handles malformed/unsupported input, the adversary must vary the SHAPE of the bad input — null vs absent, wrong-type vs missing, empty vs valid, prototype-name vs honest key, oversized vs small — because a safety feature tested only on the clean bad case is a false-secure green. Type/validity comes from the contract (the schema), not the happy path.** For TECHNIQUES.md.
+
+---
+
+## Extended-arc synthesis — the harder half, done (buildable set) (2026-07-01)
+
+**Where it stands.** The extended adversarial arc (Harness §24) is complete for everything that can be honestly built on the first slice: VF-011 (duplicate-payload idempotency), VF-013 (redline rejected cannot be applied — a real safety bug fixed), VF-014 (bounded drill-down audit), VF-015 (GrammarGap escalation). VF-003D (accepted-evidence invalidation) and VF-012 (report regeneration after policy change) are documented deferrals (B-Q-22/23) — the first needs a reserved operation, the second a multi-sprint report-lifecycle + a value-level assertion primitive the harness lacks. 18 scenarios, 49 vitest tests across 10 suites, 6 backend cold-reload durability proofs, 26 B-Q decisions, 0 open ContractGaps.
+
+**The through-line of the harder half.** Where the first slice proved the factory holds distinct states under test, the extended arc proved it holds under *adversity*: a duplicate delivery doesn't double-count, a rejected change can't be applied, a drill-down is audited, and — the capstone — an unrepresentable input escalates a typed gap instead of a fabricated truth. And every one of these was found to have a real defect on review (a force-approve, a fail-open, a crash, a false-certainty), fixed before it shipped. The design dossier's deepest claim — *no false certainty* — is now not a principle but a tested operation.
+
+**For the next kit version.** Eleven practices are stable enough to promote to TECHNIQUES.md; the last three (couple-assertion-to-subject via injection, inject-malformed-credentials-across-persistence, vary-the-shape-of-bad-input) are the accreted teeth of "distrust the green" for the hardest surfaces: idempotency, access control, and unsupported-input handling.
+
+---
+
+## Entry 12 — Sprint 013 close: the clean-landing that still had review findings (2026-07-01)
+
+**What worked.** The emit poka-yoke — the runtime half of SDD's most central commitment (technique #2, "schema enforced at the speaker's mouth") — landed on all 18 scenarios first try, zero drift. That is itself a finding: the static bidirectional validator (added sprint 012) plus the discipline of writing every handler's emits to match the registry had *already* kept the code vocabulary-consistent, so turning on runtime enforcement changed nothing observable. The poka-yoke's value is now purely prospective — a future handler emitting a mis-attributed tag will fail its operation immediately instead of leaving a stray event in the log. Enforcing a commitment you've been honoring by discipline costs nothing when the discipline held; the enforcement is insurance against the sprint where it doesn't.
+
+**The lesson: "it passed clean" is the most dangerous green of all, and the fix's neighbors are where the bugs live.** Both hardening changes were green — all gates, all scenarios — and both were still wrong in ways the review found. The write-boundary idempotency worked perfectly for the case I tested (a duplicate write with the same key), but the review supplied the case I didn't: *two different operations sharing a key string*, which collided because the key was un-op-scoped — a `CreateManufacturingStructureVersion` silently suppressed because an unrelated `CreateInventoryItem` used the same key earlier. And the in-instance memo cached *failed* results, so a transient failure would poison a key forever. Neither was reachable by any locked scenario (the harness mints step-unique keys), so both were invisible green. The pattern that has held for thirteen sprints held again: **the adversary finds the input you were too close to the design to imagine — here, key *reuse across operations* and *failure* rather than success — and a clean-passing hardening change is exactly as suspect as a clean-passing feature.** The keys are now op-scoped and only successes are recorded, and — the major finding — the behavior is now locked by an actual bench scenario (IDEM-001), not just a unit test and a node proof, because a behavior with no scenario is a behavior the bench cannot regress.
+
+**Hypothesis update.** *Distrust-the-green is load-bearing* — nine reviews, unbroken, now including a review of a HARDENING pass whose entire purpose was to make the system safer, which the review found made it *un-op-safely* idempotent in two ways. The taxonomy is complete enough to name the meta-pattern: every green — feature, fix, or hardening — is a claim about the inputs it ran, and the review's job is the inputs it didn't.
+
+**Kit observation (twelfth practice).** (12) **A hardening/safety change is not exempt from distrust-the-green — review it with the same adversarial inputs as a feature, because a mechanism that enforces a rule can enforce it wrongly (over-broad, under-scoped, on the wrong condition). And a behavior worth hardening is worth a BENCH scenario that can regress it, not only a unit test — unit tests prove a code path, scenarios prove the product behavior on both drivers.** For TECHNIQUES.md.
+
+---
+
+## Entry 13 — Sprint 014 close: the review turned on the close itself, and single-agent still had teeth (2026-07-01)
+
+**What worked.** VF-012 was the last deferred scenario, and the understanding sweeps of prior sprints had already
+told me why it was deferred: it needed a value-level report assertion the harness lacked (B-Q-23) and it risked
+faking a §18 auto-cascade. So the build was scoped honestly from the start — fill the missing primitive
+(`report_field_equals`, a report-scoped dotted-path value read), build the OPERATOR-DRIVEN supersede+regenerate,
+and declare the automatic-cascade + controlled_export-read halves as deferred (B-Q-27/B-Q-28) in the scenario's own
+purpose statement. Two of the sprint's changes were the executor rule working as designed: `SupersedeReport` was
+registered-but-unhandled (the VF-003A dynamic, its sixth occurrence — the scenario failed loud instead of
+inventing), and the report's `access_policy_snapshot` was a hardcode that VF-012's DIFFERENT-valued T0/T1 pair made
+impossible to keep (a false-certainty constant can't produce two different snapshots), so de-hardcoding it to derive
+from the bound scope wasn't a nicety — the self-teething assertion pair forced it.
+
+**The lesson: when the workflow reviewer is unavailable, the review doesn't stop — it changes surface.** The
+multi-agent distrust-the-green workflow hit the weekly subagent limit (resets 12pm PT), so for the first time this
+project the adversarial pass had to run single-agent, inline. Technique #5 is explicit that intrinsic self-critique
+is contested and only defensible with an EXTERNAL check surface — so I didn't "reflect," I grounded the pass in
+surfaces that can mechanically say I'm wrong: fresh-from-disk probes (does the frozen snapshot actually reload, or
+did I assume it?), the code, and the doc stack. And it still found two real defects — but notice WHERE: not in the
+product logic (VF-012 was green and its teeth were real), but in **the integrity of my own close**. (A) I had
+written `B-Q-23(c)`, `B-Q-27`, `B-Q-28` into the engine, harness, scenario, and tests as authority citations —
+before those entries existed in the ledger. That is exactly the phantom-authority hole sprint 008 named as practice
+#7: a citation that doesn't resolve is worse than none because it LOOKS documented, and the executor rule's whole
+premise is that authorized-vs-invented is distinguishable by a followable record. (B) Every other durable path in
+the project (VF-003/006/008/009/013/015 + the write boundary) had a cold-reload proof; VF-012's superseded report +
+frozen snapshot did not — an asymmetry the parity tell (sprint 010) flags as suspect. Both were fixed: all three
+B-Q entries written so every citation resolves, and an 8th backend proof that reads S0 != S1 from disk (impossible
+if a supersede had silently overwritten the prior artifact, or if a snapshot were a constant).
+
+**The sharper version of the lesson.** Across the project the adversary has attacked product code, claims,
+scenarios, primitives, inputs, credentials, and safety features. Sprint 014 added the layer above all of them: **the
+close artifacts themselves — the citations, the durability proofs, the honesty of the scope statement — are a green
+to be distrusted.** A sprint that closes with a dangling B-Q id or a durable claim it never proved from disk is
+"green" in the same hollow way a vacuous assertion is. The review's target is not only "does the product lie" but
+"does the RECORD OF THE WORK lie" — and a single agent grounded in real check surfaces (the ledger, the disk) can
+audit that as well as a panel can, because both defects were detectable against an external surface, not a matter of
+opinion.
+
+**Hypothesis update.** *Distrust-the-green is load-bearing* — the review has now run against ten sprints without
+once coming back empty, including this one where it ran SINGLE-AGENT and still found two real items. That is a
+second-order confirmation of technique #5: the pass's power is in its external check surfaces, not in how many
+agents run it — a rate-limited solo pass grounded in probes + ledger + disk kept its teeth. The green-that-lies
+taxonomy (fake / overstated / vacuous / tautological / fragile / decoupled / fail-open / fossil / false-secure) now
+gains a governance sibling already implied by practice #7: **phantom-close — a sprint whose product is green but
+whose close cites unresolvable authority or claims durability it never proved from disk.**
+
+**Kit observation (thirteenth practice).** (13) **The close is a green to be distrusted like any other: every
+authority citation must resolve to a ledgered record BEFORE close (practice #7, now enforced as a close-time grep),
+every "survives a reload" claim needs a from-disk proof, and every deferred half must be named in the artifact's own
+scope — because a dangling citation or an unproven durable claim is a phantom-green close. And technique #5's
+corollary made concrete: when the multi-agent reviewer is unavailable, run the pass single-agent but ONLY against
+external check surfaces (probes, ledger, disk, doc stack) — grounded solo review keeps its teeth; ungrounded
+self-reflection does not.** For TECHNIQUES.md.
+
+---
+
+## Entry 14 — Sprint 015 close: the audit that came back empty, and why that is a result (2026-07-01)
+
+**What happened.** A consolidation "distrust-the-green" sweep over the entire codebase — engine, assertion engine,
+all 20 scenarios — looking for the taxonomy the project has been accreting (fake / overstated / vacuous /
+tautological / fragile / decoupled / fail-open / fossil / false-secure / phantom-close). For the first time in the
+project, it came back EMPTY: no defect. That is a genuinely different situation from every prior review, and it
+demanded a different discipline — because "I looked and it's fine" is exactly the ungrounded self-reflection
+technique #5 warns is worthless.
+
+**The lesson: an empty audit is only trustworthy if it was capable of being non-empty — so ground it in mutation,
+not inspection.** The whole point of the project's distrust-the-green record is that green means nothing until
+something tried to make it red. That applies to the AUDITOR too: a clean audit report is itself a green, and a clean
+report produced by reading code and nodding is the emptiest green of all. So I did not audit by reading — I audited
+by MUTATION. For each headline behavior I injected a targeted defect into the engine (force-approve, hardcoded
+report snapshot, no-op supersede, ambiguity-as-throw, input-literal snapshot, collapsed blockers) and required the
+matching scenario or discrimination test to turn RED. Six for six did. Then I probed the five accreted safety fixes
+(fail-closed access, write-boundary idempotency, op-scoping, emit poka-yoke, no-force-approve) directly. All held.
+Only THEN is "empty" a finding rather than a failure to look: the greens are green because the behavior is right,
+and I proved it by breaking the behavior and watching the tests catch it. The mutation battery is the external check
+surface that turns "I didn't find anything" into "nothing survives a defect injection" — a mechanically different,
+defensible claim.
+
+**Two false alarms, and the discipline of triaging them.** The first battery run reported two MISSes (mutations that
+survived). Neither was a defect. One was a broken probe — my mutation was a no-op placeholder that never actually
+mutated, so of course nothing went red; re-running it as a real mutation turned VF-004 red. The other was a mutation
+that survived the SCENARIO battery because the coupling it targets (the run-context snapshot's provenance) lives in a
+unit test the scenario-only battery structurally cannot observe — confirmed red by running the mutation directly
+against that test's setup. The lesson mirrors the fossil-green one (Entry 10): when a probe comes back green, the
+first question is "was the probe even capable of going red," and the honest move is to fix or re-aim the probe, not
+to record a false finding OR a false all-clear. A MISS is a claim to be distrusted exactly like a green.
+
+**The compounding payoff.** The audit's durable output is not the clean bill of health — reports rot. It is
+`tests/consolidation/coupling.test.ts`: the mutation battery and safety probes converted into 11 permanent tests
+(practice #6, keep the probes; technique #38, confirmed captures as fixtures). This matters most for what comes next.
+The arc-4 readability refactor's central risk is not that it breaks a test — a broken test goes red and I fix it —
+but that it silently DECOUPLES an assertion from its subject, leaving a test that passes without teeth (the
+decoupled-green of Entry 8). A behavior-preserving refactor guarded only by "the suite stays green" cannot detect
+that. Guarded ALSO by a suite that asserts the tests can still go RED under mutation, it can. So the consolidation
+audit's real product is the safety net for the refactor that follows it — the order of the arcs (audit before
+readability) turns out to be load-bearing.
+
+**Hypothesis update.** *Distrust-the-green is load-bearing* — the discipline has now run against eleven increments,
+and the eleventh was the audit auditing everything before it, coming back empty in a way that is itself evidence
+(mutation-proven) rather than a gap in looking. The taxonomy of green-that-lies is stable; sprint 015 adds no new
+failure mode but adds the meta-discipline: **the audit's own all-clear is a green, and it is only trustworthy when
+grounded in a mutation that proved the tests could have caught a defect.**
+
+**Kit observation (fourteenth practice).** (14) **A consolidation audit must be grounded in MUTATION, not
+inspection: inject a targeted defect for each headline behavior and require a real test to go red, then convert the
+battery into a permanent regression suite. An empty audit is a result ONLY if the mutation battery proved the greens
+can fail; an audit-by-reading is the emptiest green. And a mutation-coupling suite is the correct safety net BEFORE a
+behavior-preserving refactor — it catches the silent decoupling that "tests still pass" cannot.** For TECHNIQUES.md.
+
+---
+
+## Entry 15 — Sprint 016 close: the refactor the audit made safe, and research over dogma (2026-07-01)
+
+**What happened.** The first half of the readability pass: the dense ~660-line `engine.ts` split into five
+single-responsibility modules (registry / world / projections / handlers / driver) behind a thin re-export
+barrel, a pure behavior-preserving refactor (technique #43). It landed green on the first full run — bench 20/20
+both drivers, vitest 75/75, 8 backend proofs — with no product behavior and no public import changed.
+
+**The lesson: a behavior-preserving refactor has TWO obligations, and the second is the one that needs a tool.**
+"Same tests pass before and after" is necessary but not sufficient — Entry 14 named the real risk: a refactor can
+silently DECOUPLE an assertion from its subject, leaving a test that passes without teeth. The obligation is not
+just "stay green" but "stay green AND stay able to go red." That second obligation is not checkable by inspection;
+it needs the mutation-coupling suite built in sprint 015 (arc 3). And it paid off immediately and concretely: the
+coupling suite monkeypatches `HANDLERS`, which the split moved into `handlers.ts` and re-exported through the
+`engine.ts` barrel. The specific way a barrel can betray you is by breaking a shared reference — if `export *`
+had produced a fresh binding, the suite's mutations would no longer reach the `HANDLERS` object the driver
+dispatches through, the injected defects would stop turning scenarios red, and the suite's `toBe("failed")`
+assertions would fail. So vitest staying at 75 is not just "behavior preserved" — it is mechanical proof that the
+split preserved the coupling itself. The audit-before-refactor arc ordering (Entry 14) was load-bearing exactly
+here: without the coupling suite, "the refactor didn't decouple anything" would have been an unverifiable hope.
+
+**The second lesson: research the substrate before restructuring on it, and prefer primary sources + first
+principles over popular dogma.** The refactor sits on a specific substrate — Node's native type-stripping — with
+hard rules that are invisible until they bite: `.ts` import extensions are mandatory, non-erasable syntax
+(enums/namespaces/param-properties) errors at RUNTIME, and — the one that would have broken this split — a
+pure-type import without the `type` keyword is treated as a value import and runtime-errors. The project had ZERO
+cross-module type imports before the split (everything was one file), so the split created the first ones; getting
+`import type { Rec, Evt }` right was the difference between green and a runtime crash. I learned that from the Node
+docs (a PRIMARY source), not from a blog. And the one genuinely contested design call — whether a barrel file is
+acceptable — I deliberately did NOT settle by counting blog opinions (the "barrels are an anti-pattern" genre is
+loud and largely echo). I settled it on first principles for THIS codebase: the cited barrel hazards
+(tree-shaking, bundler cost, test over-inclusion) are moot when Node runs the `.ts` directly with no bundler, and
+the one real mechanism-level hazard — circular deps — is designed out by an acyclic module DAG. A barrel as a
+stable facade over an internal refactor is the narrow case where it earns its keep; the Architect's correction
+("don't overwait on tech blogs, don't use their tools") sharpened this into a rule now in the WORKING_AGREEMENT:
+primary sources + first principles, no blog authority, no third-party tooling.
+
+**Hypothesis update.** *Distrust-the-green is load-bearing* — this sprint extends it to distrust-your-refactor:
+a green refactor is a claim about behavior AND about coupling, and only the second, verified by the mutation
+suite, distinguishes a real behavior-preserving split from one that quietly gutted the tests' teeth. The
+consolidation audit's true payoff arrived one sprint later, as its safety net.
+
+**Kit observation (fifteenth practice).** (15) **A behavior-preserving refactor must satisfy TWO gates, not one:
+the existing suite stays green (behavior) AND a mutation-coupling suite still turns scenarios red (teeth) — the
+second catches the silent decoupling "tests still pass" cannot. And restructure only after researching the
+substrate's hard rules from PRIMARY sources (for a Node type-stripped project: mandatory `.ts` extensions,
+erasable-only syntax, `import type` for pure-type cross-module imports); settle contested design calls (e.g.
+barrel files) on first principles for the actual codebase, not on the loudest blog consensus.** For TECHNIQUES.md.
+
+---
+
+## Entry 16 — Sprint 017 close: the teeth-check must target what you refactored (2026-07-01)
+
+**What happened.** The second half of the readability pass: the ~200-line assertion-evaluator switch extracted
+from `run.ts` into a family-grouped `assertions.ts` `EVALUATORS` map, run.ts halved to thin orchestration
+(373 -> 173 lines). Green on the first full run; arc 4 complete.
+
+**The lesson: "prove it can still go red" (Entry 15) only holds if the red-check targets the surface you actually
+changed.** Sprint 016 refactored the engine, so the coupling suite (which mutates HANDLERS) was the right teeth
+check. Sprint 017 refactored the ASSERTION ENGINE — and the coupling suite would NOT have caught a weakened
+evaluator, because it injects defects into product handlers, not into the evaluators. The right teeth check here is
+a different external surface: the discrimination tests that call `evaluateAssertions` / `report_field_equals`
+DIRECTLY on crafted bad inputs and require failures (assertion-primitives, report-supersession's rfeFailures,
+discrimination.test). Those passing is the mechanical proof that the extracted evaluators still discriminate. The
+refined practice: a behavior-preserving refactor's second gate ("still able to go red") must be verified against the
+test surface that exercises the specific code you moved — not just "some mutation suite is green." Match the adversary
+to the refactor.
+
+**Kit observation (sixteenth practice).** (16) **When verifying a refactor's teeth ("can it still go red"), use the
+discrimination surface that exercises the CODE YOU MOVED: mutate-HANDLERS for an engine split, but call-the-evaluators-
+on-bad-input for an assertion-engine split. A green mutation suite that never touches the refactored code proves
+nothing about it.** For TECHNIQUES.md.
+
+---
+
+## Arc-4 synthesis — the readability pass, done (2026-07-01)
+
+**Where it stands.** The dense, "minified"-feeling core is now modular and documented, with zero behavior change:
+`engine.ts` (one ~660-line file) split into five single-responsibility modules behind a barrel facade (sprint 016);
+`run.ts` (373 lines) split into thin orchestration + a family-grouped `assertions.ts` (sprint 017). Both halves are
+TSDoc-documented, preserve every accreted "why" comment (the B-Q citations, the sprint-review rationale) verbatim,
+and were verified green on the full bench (20/20 both drivers) + vitest (75/75) AND still able to go red on their
+matching discrimination surfaces.
+
+**The through-line.** A readability refactor is a behavior-preserving change with a second, easily-forgotten
+obligation: preserve the tests' ability to fail. Arc 3 (the consolidation audit) built the coupling suite that made
+that obligation checkable, and arc 4 spent it — twice, each time against the right surface. The readability win is
+real (one 660-line monolith -> 5 focused modules; a 200-line switch -> a grouped evaluator map; run.ts halved), and
+it was bought without a single behavior regression because the refactor was disciplined: research the substrate
+first (Node type-stripping's hard rules), settle contested calls on first principles not blog dogma, move verbatim,
+and verify both green and red-capable after each step.
+
+**The whole program.** With arc 4 done, the "All 3!" + readability program is complete: hardening (sprint 013), the
+deferred pair (VF-012 built sprint 014, VF-003D faithfully deferred), the consolidation audit (sprint 015), and the
+readability refactor (sprints 016-017). 22 scenarios' worth of behavior across two drivers, 75 vitest tests, 8
+backend durability proofs, a permanent mutation-coupling suite, and a modular, documented codebase — every green
+adversarially checked, every refactor proven behavior- and teeth-preserving.
+
+---
+
+## Entry 17 — Sprint 018 close: the review that had to wait, convergence as signal, and a bug the refactor only surfaced (2026-07-01)
+
+**What happened.** The multi-agent "distrust-the-green" review over sprints 014-017 had been deferred because the
+weekly subagent limit was exhausted; once it reset, four parallel adversarial critics ran — each tasked to REFUTE a
+dimension with real probes, not to inspect. Two (VF-012, the coupling suite) could not refute their targets even
+after reverting real fixes in-source to confirm the tests bite. Two (assertion-extraction, refactor-fidelity)
+CONVERGED on a single LOW finding: the map dispatch lookups (`EVALUATORS[type]`, `HANDLERS[op]`) were
+prototype-unsafe — a plain object index walks the prototype chain, so a type/op named after an Object.prototype
+member bypasses the unknown/not_implemented guard. Fixed at all three sites with `Object.hasOwn`, locked by a
+red-capable regression test.
+
+**Lesson 1: convergence of independent adversaries is itself evidence.** Two critics, given different briefs and no
+knowledge of each other, produced the SAME finding with the SAME reproduced pre-fix output. That convergence is a
+high-confidence signal that this is the only real defect — far stronger than one critic's lone claim. It also
+sharpens what "verify the finding independently" means when reviews run in parallel: the second critic's independent
+reproduction IS the verification. The kit's multi-agent review earns its cost here not by volume but by independence
+— agreement across disjoint attacks is the signal; a finding only one adversary can produce deserves more scrutiny.
+
+**Lesson 2: a refactor review finds bugs the refactor didn't introduce.** The confirmed finding was message-only for
+the assertion dispatch (the compiler gates unregistered types, so no scenario flips green↔red). But critic A, while
+checking the split was faithful, noticed the SAME prototype-pollution class in the handler dispatch (`HANDLERS[op]`
+in driver.ts) — which is PRE-EXISTING (that map was always an object, never a switch) and MORE severe: a
+prototype-named op would resolve to an inherited Object method, bypass not_implemented, and falsely SUCCEED. The
+refactor didn't create it; the refactor review SURFACED it, by putting a skeptic on the exact code path with a
+mandate to break it. This is a real argument for reviewing refactors adversarially even when you're confident the
+move is faithful: the adversary's attention lands on code that hasn't been attacked before, and finds the latent
+hole that predates the change.
+
+**Lesson 3: the fix is consistency, not novelty — and the project already knew the class.** This is the same
+prototype-pollution class sprint 012 (B-Q-26) fixed in the engine's grammar lookup, and that `report_field_equals`
+already guards with `Object.hasOwn`. So the fix wasn't a new decision — it was applying an established project
+discipline uniformly. The tell that a finding is real and its fix is right: the codebase already treats the class as
+a hazard elsewhere. A prototype-safe map lookup is now the invariant across every dispatch in the engine and harness.
+
+**Meta: a rate-limited-then-resumed review kept full teeth because it was grounded in PROBES.** The review's power
+never depended on running immediately — it depended on each critic reverting real fixes, monkeypatching handlers,
+and driving evaluators on crafted bad input (external check surfaces), not on inspection. Deferring it cost nothing
+but time; running it inline earlier (single-agent) would have found the convergent finding too, but the parallel
+independent pass gave the convergence signal that made the LOW severity trustworthy.
+
+**Kit observation (seventeenth practice).** (17) **Treat convergence across independent adversaries as first-class
+evidence: when two critics with disjoint briefs reach the same finding, that agreement is the verification and a
+strong signal it is the only real issue; a lone finding warrants a third look. And review a behavior-preserving
+refactor adversarially even when you're sure the move is faithful — the skeptic's attention on the touched code path
+surfaces latent, PRE-EXISTING bugs of the same class the refactor merely sat next to (here, a false-success handler
+dispatch the split did not introduce but did reveal).** For TECHNIQUES.md.
+
+---
+
+## Entry 18 — Persona additions (going beyond the spec) + cross-project technique intake (2026-07-01)
+
+**What happened.** After the persona-review pass, the user (sole authority) said to just fix the gaps, plainly, and finish the list — no version ceremony. Built all nine cross-cutting gaps as additions beyond the original doc stack: segregation of duties, e-signature, typed disposition kinds + authority, affected-batch closure, deemed-export by nationality, serial-range effectivity, calibration gate, typed supplier certs, operator identity. Two persona items (offline-first, eBOM/FCA-PCA) declared as spec non-goals, not built. Then the user supplied two other projects' `ADDENDUMS.md` (substrate-ui, Cascade) to internalize.
+
+**Lesson 1: once you cross the spec boundary, start a ledger AT the boundary, not after.** The moment the work went beyond the governing documents, "what's spec vs what's ours" stopped being obvious — and a build whose additions aren't tracked loses the executor rule's whole value (authorized-vs-invented is distinguishable by a followable record). The fix the user prompted: a plain `ADDITIONS.md` that logs each addition with its standard, the new vocabulary it introduced (new record fields, failure reasons, kinds, rules), and its test. It is the beyond-spec twin of `CONTRACT_GAPS.md`: the gaps ledger tracks what the spec underspecified; the additions ledger tracks what we added on top. Start it at the first addition.
+
+**Lesson 2: keep the fix, drop the ceremony — plain beats a version bump.** The instinct (mine, and the review workflow's) was to frame each addition as a "contracts-0.5 evolution requiring ratification." The user cut that: they're the authority, and it's just fixing review gaps. The right SDD move was still there (record who authorized it, keep the tests green, log the new vocabulary) — but the version numbers and the ratification-gate language were pure ceremony that obscured a simple thing. When the discipline's *language* starts costing more comprehension than the discipline buys, strip the language and keep the check.
+
+**Lesson 3: intake another project's addendums by MAPPING, not adopting wholesale.** The substrate-ui and Cascade addendums are almost entirely UI/simulator/audio/physics harness mechanics — real, but for project classes this headless contract backend does not share. Force-fitting them would be cargo. The honest intake is a MAP: which cross-cutting lesson applies, and is it already present or a genuine gap. Most were already practiced here under different names (name+value+path assertions; verify-the-verifier via the mutation suite; multiple lenses; asymmetric fixtures; repo-scoped tooling; trace-first-on-contradiction). Exactly one was a real, unadopted improvement — **Cascade D1's diff-to-zero for a port claiming fidelity** — and it mapped perfectly: the two drivers are a port behind one interface, and we only graded them "both green," never byte-identical. Adopted it (a cross-driver trace diff-to-zero on the backend gate; 72/72 events identical for VF-003). The technique wasn't ours, but the *shape* it names was, and that's the test for whether an out-of-class addendum has anything for you.
+
+**Kit observation (eighteenth practice).** (18) **Start a beyond-spec ADDITIONS ledger at the first addition, not retroactively — the twin of the gaps ledger — logging each addition's standard, new vocabulary, and test; keep the language plain (record the authorization, keep tests green, drop the version/ratification ceremony when it costs more comprehension than it buys). And intake another project's ADDENDUMS by mapping cross-cutting lessons to your project class — adopt the one whose SHAPE matches (here: two-implementations-behind-one-interface -> grade by diff-to-zero, not both-green), and deliberately do not force-fit the out-of-class harness mechanics.** For TECHNIQUES.md.
+
+---
+
+## Entry 19 — the persona additions were fast, plain, and fail-open; the review is what made them correct (2026-07-01)
+
+**What happened.** The nine persona additions were built fast and plainly (the user cut the ceremony: just fix the
+gaps). Each got a test and shipped green. Then the distrust-the-green review ran and found 17 real defects, all
+reproduced by probes — and nearly every one was the SAME shape.
+
+**Lesson 1: a batch of guards built quickly defaults to FAIL-OPEN.** Almost every new check was written
+conditionally — `if (actor && ...)`, `if (kind is elevated && role && ...)`, `Array.isArray(allowed) && ...`,
+`cal_status === "overdue"` (only the one bad value named). Every one of those falls OPEN on the input the author
+did not picture: no actor, no role, a malformed control, a different out-of-cal representation. When you write a
+guard as "refuse IF I can see the bad thing," the absent/unexpected/malformed case slips through — which for a
+compliance or export control is exactly the dangerous direction. The uniform fix is to invert the default:
+**fail CLOSED** — require the input to be present and affirmatively good; treat absent / unknown / malformed as
+refuse or deny. The review turned a pile of fail-open guards into fail-closed ones with one repeated move.
+
+**Lesson 2: a test can CERTIFY the hole.** The sharpest single finding was a test I wrote that asserted the
+fail-open was correct — "degrades gracefully: a call with no caller identity is not blocked" asserted
+`succeeded === true`. A green test blessing the exact defect is worse than no test: it makes a future regression
+that widens the hole pass. When a control's test asserts that the control does NOT fire on some input, ask whether
+that input should actually be refused — often the "graceful degradation" you documented is a fail-open you
+rationalized. (Sibling: the `typeof signed_at === "string"` assertion that an empty string satisfies — a vacuous
+witness for a required timestamp.)
+
+**Lesson 3: fast + plain is fine IF the adversary still runs.** The user was right to cut the version/ratification
+ceremony — it bought nothing. But the ADVERSARIAL review is not ceremony; it is the thing that converts "fast and
+plain" into "fast and correct." The review also surfaced a defect that had nothing to do with the additions — the
+backend never restored its record-id counter on reload, so a post-reload write could overwrite a committed record
+(a latent corruption). The skeptic pointed at the persistence boundary and found a bug that predated all nine gaps.
+That is the recurring payoff (Entry 17): a review aimed at new work finds the old bug sitting next to it.
+
+**Kit observation (nineteenth practice).** (19) **A batch of guards written fast defaults to FAIL-OPEN — every
+conditional check (`if (x && ...)`) falls open on the input the author did not picture (absent / unknown /
+malformed), which for a compliance/security/safety control is the dangerous direction. Invert the default to FAIL
+CLOSED: require the input present and affirmatively good; refuse the rest. And distrust any test that asserts a
+control does NOT fire on some input — a "graceful degradation" test often certifies a fail-open. Building fast and
+plain is fine; skipping the adversarial review is not — it is what makes fast correct.** For TECHNIQUES.md.
+
+---
+
+## Entry 20 — Sprint 019 close: the deferred items built, the same fail-open shape a third time, and the line closed (2026-07-01)
+
+**What happened.** The user directed building everything still deferred. The three items (B-Q-22/27/28) had been faithfully NOT built earlier because they needed real vocabulary: an evidence-invalidation operation, a temporal policy-change representation, and a value-level report read. Built all three as additions on the locked vocabulary — `InvalidateAcceptedEvidence` (accepted evidence -> invalidated, cascading to mark the run's reports regeneration_required), the `world.access_policy_changes` timeline, and the `GetReport` read that surfaces freshness — plus the §19 two-mode contrast (a policy change staleness a controlled_export but never a dynamic_view_filter) and a new `operation_output_contains` assertion so a scenario can pin an op's returned output. Scenario VF-003D exercises the cascade end-to-end on both drivers.
+
+**Lesson 1: the fail-open default is not a one-time lesson — it recurs in every fast batch.** Entry 19 named it for the nine persona guards; this build reproduced it exactly, a third independent time. Eight review findings, the SAME shape: `InvalidateAcceptedEvidence` silently no-op'd when it couldn't resolve the affected run (a reconciliation that reconciles nothing, reported as success); a report with no `generated_at` was treated as fresh rather than unverifiable; the cascade trusted a caller-supplied `run_alias` over the evidence's own `linked_run`; `filtering_mode` was an unvalidated string; an unparseable policy-change date was swallowed as "not after generation." Each falls OPEN on the input the author didn't picture, and each was inverted to fail CLOSED — refuse the unresolvable run, treat unverifiable freshness as stale, take the evidence's own linkage as ground truth and reject a disagreeing caller, validate the mode against its enum, treat an unparseable date as staleness. The practice-19 move (invert the default) is now clearly not situational; it is what a fast batch of guards ALWAYS needs.
+
+**Lesson 2: the ground truth for a cascade is the record's own link, not the caller's claim.** The subtlest finding: the invalidation resolved which run to reconcile from a caller-passed `run_alias`. That is a decoupling hazard — the caller can name the wrong run and the cascade dutifully staleness the wrong reports. The fix roots the resolution in the evidence's OWN `linked_run` and treats a caller `run_alias` only as a cross-check that must AGREE (a mismatch is refused), never as an override. When an operation acts on relationships already recorded, the recorded relationship is the authority; a caller argument is at most a consistency assertion.
+
+**Lesson 3: distrust the deferral's release, and prove it durably.** These three items had been deferred for good reasons; releasing them is its own green to distrust. So the build got the full treatment — a value+path audit (clean: the three presence-only assertions are legitimate count checks), the adversarial review (the eight findings above), a backend reconciliation reload proof (invalidate, reload from disk, confirm the cascade survives), the whole-bench cross-driver diff-to-zero extended to all 22 scenarios, and a coupling mutation that turns VF-003D red if the cascade is defeated. Red-capability spot-checked on the highest-severity fix (revert the unresolvable-run guard -> the fail-closed test goes red; restore -> green). A deferred item built later gets the same teeth as one built on time, or the deferral just moved the risk.
+
+**Lesson 4 (the close-out find): a forward-only validator is a one-directional poka-yoke, and the gap is exactly where behavior escapes the contract.** Closing the line surfaced that two persona-gap ops (`CaptureCertificate` / `VerifyCertificate`) and two record types (`Certificate` / `Instrument`) had been HANDLER-ONLY for several sprints — real, tested, review-hardened behavior the locked registries never named. They ran because the driver dispatches any handler present; the contract validator passed because it only checks the FORWARD direction (every registered op resolves and cross-references), never the reverse (every handler maps to a registered op). For a project whose entire premise is vocabulary-as-contract, that is the sharpest possible breach, and it was invisible precisely because the green gate wasn't looking in that direction. Fixed by registering the four items and adding the missing reverse check (`tests/consolidation/handler-registration.test.ts`), with the asymmetry made explicit: a registered op with no handler is fine (it returns not_implemented — the spec registers the whole vocabulary, only the exercised subset is built), but a handler with no registered op is behavior outside the contract. The general lesson: when a poka-yoke enforces a correspondence, it must enforce it in BOTH directions — the un-checked direction is where the violation hides.
+
+**Kit observation (twentieth practice).** (20) **A correspondence poka-yoke must be bidirectional: a validator that checks "every registered name resolves" does NOT check "every implemented behavior is a registered name," and for a vocabulary-as-contract build the second direction is where behavior silently escapes the contract (here: handler-only ops + records invisible to a forward-only validator for several sprints). Add the reverse check — every speaker maps to registered vocabulary — with its asymmetry made explicit (registered-but-unimplemented is fine; implemented-but-unregistered is not).** For TECHNIQUES.md. And a confirmation, not a new mode: sprint 019 reconfirms practice #19 (fast guards default fail-open; invert to fail-closed) as a recurring law — its THIRD independent occurrence — and reinforces practice #8 (couple the action to its true subject — here the evidence's own link, not the caller's claim). The taxonomy of green-that-lies (fake / overstated / vacuous / tautological / fragile / decoupled / fail-open / fossil / false-secure / phantom-close) held for the twelfth straight increment. The line is closed: everything the spec deferred is built, reviewed, hardened, and now every handler is accounted for in the vocabulary.
+
+---
+
+## Hypothesis tracking
+
+| Hypothesis | Status | Evidence |
+|---|---|---|
+| For a contract-first build, the locked vocabulary is the registry set and the Rubber Duck Pass is the product's run-close narration. | tentative | Correspondence holds on paper; no runtime trace yet (sprint 001 produced registries, not runtime events). |
+| No-invention + strict registry validation make failures loud, not silent. | partially confirmed | Validator + bidirectional consistency check held across 113 ops / 121 events; not yet exercised against a genuinely missing reference. |
+| Structural validation and faithfulness verification are distinct and both needed. | confirmed (1 data point) | Validator passed but could not catch faithfulness gaps; the 6-critic pass independently confirmed faithfulness (5/6 clean, 1 non-defect). |
+
+---
+
+*KIT_DIARY.md for the Distributed Factory Execution Record System. Twenty entries plus phase syntheses, from the registry-extraction founding act through the closed line (first-slice bench, extended adversarial arc, consolidation audit + readability refactor, the nine persona additions, and the deferred-items build). The through-line it records: applying sdd-kit-2 to a contract-first manufacturing-execution build, where across twelve straight increments the distrust-the-green review never once came back empty by inspection — the discipline, not the green, was the load-bearing thing.*

@@ -1,0 +1,50 @@
+registry: projections
+registry_version: contracts-0.4.1
+source: Contract Spec v0.4.1 section 14 + Build Readiness Plan v0.2 section 9
+note: Projection handlers may use only registered source records and source events.
+
+projections:
+  - name: AsBuiltProjection
+    owning_module: installed_part_history
+    key: parent_inventory_id
+    conflict_behavior: mark_conflicted
+    source_records: [InstallationEvent, RemovalEvent, InventoryItem, BOMLine]
+    source_events: [INVENTORY_INSTALLED, INVENTORY_REMOVED]
+
+  - name: SerialHistory
+    owning_module: installed_part_history
+    key: serial_number
+    conflict_behavior: mark_conflicted
+    access_filterable: true
+    source_records:
+      [InventoryItem, Run, Measurement, Nonconformance, QualityContainmentAction,
+       Disposition, ReworkRun, Verification, Redline, ApprovalDecision,
+       InstallationEvent, MachineEvidenceRecord, RunCloseCheck, GeneratedReport]
+    source_events:
+      [RUN_CREATED, RUN_STARTED, MEASUREMENT_FAILED, NONCONFORMANCE_OPENED,
+       QUALITY_CONTAINMENT_STARTED, REDLINE_APPLIED, MEASUREMENT_PASSED,
+       INVENTORY_INSTALLED, MACHINE_EVIDENCE_REVIEW_REQUIRED, RUN_CLOSE_CHECK_BLOCKED,
+       VERIFICATION_COMPLETED, REPORT_GENERATED, RUN_CLOSED]
+
+  - name: RunCloseReadiness
+    owning_module: run_close
+    key: run_id
+    conflict_behavior: block_projection
+    source_records:
+      [Run, RunStep, Measurement, Nonconformance, MachineEvidenceRecord, Redline,
+       ApprovalDecision, InstallationEvent, RunCloseCheck, RunCloseObservation, GeneratedReport]
+    source_events: [RUN_CLOSE_CHECK_BLOCKED, RUN_CLOSE_CHECK_PASSED, REPORT_GENERATED, RUN_CLOSED]
+
+  - name: QualityQueue
+    owning_module: quality
+    key: quality_scope
+    conflict_behavior: produce_partial_summary
+    source_records: [Issue, Nonconformance, QualityContainmentAction]
+    source_events: [NONCONFORMANCE_OPENED, NONCONFORMANCE_CLOSED, QUALITY_CONTAINMENT_REQUIRED]
+
+  - name: ReportSourceIndex
+    owning_module: report
+    key: report_scope
+    conflict_behavior: mark_conflicted
+    source_records: [GeneratedReport]
+    source_events: [REPORT_GENERATED]

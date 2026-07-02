@@ -1,0 +1,159 @@
+scenario_id: VF-003
+scenario_version: "1.1"
+registry_version: contracts-0.4.1
+source: Executable VF-003 Scenario Spec v0.1.1 (sections 1.2, 8, 10, 11, 12, 15) + Harness Spec v0.1.2 section 25
+note: >
+  Reference manifest for the registry-extraction gate. Lists every contract name VF-003 depends on.
+  The full scenario package (scenario.yaml, inputs, assertions) is materialized in a later sprint
+  (doc 08 Phase 3); this manifest exists so sprint 001's validator can prove VF-003 references resolve.
+
+# Highlighted dependency table (VF-003 section 1.2 / Harness section 25). If any is missing -> ContractGap.
+dependency_table:
+  operations: [AddBOMLine, ActivateQualityContainment]
+  events: [RUN_ENTERED_CLOSE_CHECK, RUN_CLOSE_CHECK_BLOCKED, RUN_CLOSE_STATE_BLOCKED, RUN_CLOSED]
+  run_states: [close_blocked]
+  reports: [RunCloseReport]
+  projections: [AsBuiltProjection, SerialHistory, RunCloseReadiness, ReportSourceIndex]
+
+# Distinct operations across the 58-step trace (section 8).
+operations:
+  - CreateProcedureVersion
+  - SubmitProcedureVersionForReview
+  - ReleaseProcedureVersion
+  - CreateManufacturingStructureVersion
+  - AddBOMLine
+  - ReleaseManufacturingStructureVersion
+  - CreateInventoryItem
+  - ReceiveInventory
+  - ReleaseInventory
+  - ReserveInventory
+  - CreateEffectivityRule
+  - ResolveEffectivity
+  - RunBuildCheck
+  - CreateRun
+  - ApplyBuildCheckResultToRun
+  - StartRun
+  - StartRunWithInventory
+  - StartRunStep
+  - CaptureMeasurement
+  - OpenNonconformance
+  - DefineAffectedPopulation
+  - StartQualityContainment
+  - ActivateQualityContainment
+  - CreateRedlineDraft
+  - SubmitRedline
+  - ReviewRedline
+  - RequestApproval
+  - RecordApprovalDecision
+  - ApplyRedline
+  - CompleteRunStep
+  - InstallInventory
+  - ReceiveMachineEvidence
+  - NormalizeMachineEvidence
+  - LinkMachineEvidence
+  - RouteMachineEvidenceForReview
+  - CompleteRunSteps
+  - AttemptRunClose
+  - RunCloseCheck
+  - ApplyRunCloseResultToRun
+  - RecordDisposition
+  - StartRework
+  - CompleteRework
+  - VerifyRework
+  - CloseNonconformance
+  - RequestRunCloseReport
+  - GenerateRunCloseReport
+  - BoundedDrillDown
+
+# Distinct events across the required event sequence (section 10).
+events:
+  - PROCEDURE_VERSION_CREATED
+  - PROCEDURE_VERSION_SUBMITTED
+  - PROCEDURE_VERSION_RELEASED
+  - MANUFACTURING_STRUCTURE_CREATED
+  - BOM_LINE_CREATED
+  - MANUFACTURING_STRUCTURE_RELEASED
+  - INVENTORY_CREATED
+  - INVENTORY_RECEIVED
+  - INVENTORY_AVAILABLE
+  - INVENTORY_RESERVED
+  - EFFECTIVITY_RULE_CREATED
+  - EFFECTIVITY_RESOLVED
+  - BUILD_CHECK_STARTED
+  - BUILD_CHECK_PASSED
+  - RUN_CREATED
+  - RUN_READY
+  - RUN_STARTED
+  - INVENTORY_IN_WIP
+  - RUN_STEP_STARTED
+  - MEASUREMENT_CAPTURED
+  - MEASUREMENT_EVALUATED
+  - MEASUREMENT_FAILED
+  - NONCONFORMANCE_OPENED
+  - NONCONFORMANCE_DISPOSITION_PENDING
+  - QUALITY_CONTAINMENT_REQUIRED
+  - QUALITY_CONTAINMENT_STARTED
+  - REDLINE_DRAFT_CREATED
+  - REDLINE_SUBMITTED
+  - REDLINE_UNDER_REVIEW
+  - APPROVAL_REQUESTED
+  - APPROVAL_APPROVED
+  - REDLINE_APPROVED
+  - REDLINE_APPLIED
+  - MEASUREMENT_PASSED
+  - RUN_STEP_COMPLETED
+  - INVENTORY_INSTALLED
+  - MACHINE_EVIDENCE_RECEIVED
+  - MACHINE_EVIDENCE_NORMALIZED
+  - MACHINE_EVIDENCE_LINKED
+  - MACHINE_EVIDENCE_REVIEW_REQUIRED
+  - RUN_COMPLETED
+  - RUN_ENTERED_CLOSE_CHECK
+  - RUN_CLOSE_CHECK_STARTED
+  - RUN_CLOSE_OBSERVATION_CREATED
+  - RUN_CLOSE_CHECK_BLOCKED
+  - RUN_CLOSE_STATE_BLOCKED
+  - DISPOSITION_RECORDED
+  - REWORK_STARTED
+  - REWORK_COMPLETED
+  - VERIFICATION_PENDING
+  - VERIFICATION_COMPLETED
+  - NONCONFORMANCE_CLOSED
+  - RUN_CLOSE_CHECK_PASSED
+  - RUN_CLOSE_REPORT_REQUESTED
+  - REPORT_REQUESTED
+  - REPORT_GENERATION_STARTED
+  - REPORT_GENERATED
+  - RUN_CLOSED
+
+# Record states VF-003 asserts (section 11). Each must be a valid state of that record's state machine.
+record_states:
+  ProcedureVersion: [released]
+  ManufacturingStructureVersion: [released]
+  InventoryItem: [expected, received, available, reserved, in_wip, installed]
+  Run: [planned, ready, in_progress, complete, close_check, close_blocked, closed]
+  RunStep: [not_started, in_progress, complete]
+  Nonconformance: [open, disposition_pending, dispositioned, in_rework, verification_pending, verified, closed]
+  MachineEvidenceRecord: [review_required]
+  Redline: [applied]
+  ApprovalRequest: [approved]
+  GeneratedReport: [generated]
+
+projections: [AsBuiltProjection, SerialHistory, RunCloseReadiness, ReportSourceIndex]
+
+reports: [RunCloseReport]
+
+assertion_types:
+  - record_exists
+  - record_state
+  - record_field_equals
+  - event_emitted
+  - event_not_emitted
+  - report_generated
+  - projection_contains
+  - access_summary
+  - bounded_drill_down_filtered
+  - idempotent_replay
+  - operation_succeeded
+
+caller_types: [manufacturing_engineer, planner, operator, quality_engineer, adapter, system_worker, support_user]

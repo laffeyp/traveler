@@ -1,0 +1,99 @@
+scenario_id: VF-008
+scenario_version: "1"
+title: Effectivity snapshot survives a later rule change
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  First-slice bench VF-008 (Harness §22/§19): "CreateRun snapshots resolution" + "later rule changes do
+  not rewrite RunContextSnapshot" (Contract Spec §17: "CreateRun snapshots effectivity context. Later
+  effectivity changes do not rewrite RunContextSnapshot."). A run is created against a resolution that
+  selected procedure_version_v1. A NEW, higher-priority effectivity rule is then added selecting
+  procedure_version_v1b, and a FRESH resolution proves the rule change genuinely re-selects v1b — yet
+  the run's RunContextSnapshot still references v1. The discrimination has teeth: if the snapshot
+  followed the world (re-resolved or mutable) it would read v1b and the test fails.
+
+seed: { deterministic_seed: 30080 }
+clock: { start_at: "2026-06-29T08:00:00Z", timezone: "UTC", mode: controlled }
+
+actors:
+  - { actor_id: mfg_eng_1, actor_type: manufacturing_engineer, product_caller_type: manufacturing_engineer }
+  - { actor_id: planner_1, actor_type: planner,                product_caller_type: planner }
+  - { actor_id: report_worker_1, actor_type: system_worker,    product_caller_type: system_worker }
+
+aliases:
+  procedure_version_v1: ProcedureVersion
+  procedure_version_v1b: ProcedureVersion
+  procedure_step_torque: ProcedureStep
+  procedure_step_install_gasket: ProcedureStep
+  procedure_step_alt: ProcedureStep
+  data_field_torque: DataCollectionField
+  manufacturing_structure_v1: ManufacturingStructureVersion
+  bom_line_gasket: BOMLine
+  valve_body_001: InventoryItem
+  gasket_001: InventoryItem
+  effectivity_rule_procedure: EffectivityRule
+  effectivity_rule_structure: EffectivityRule
+  effectivity_rule_procedure_super: EffectivityRule
+  effectivity_resolution_001: EffectivityResolution
+  effectivity_resolution_002: EffectivityResolution
+  build_check_001: BuildCheckResult
+  run_001: Run
+  run_context_snapshot_001: RunContextSnapshot
+  run_step_torque: RunStep
+  run_step_install_gasket: RunStep
+
+world:
+  factory_node: node_la_001
+  part_revisions:
+    - { alias: valve_body_rev_a, part_number: VB-100, revision: A }
+    - { alias: gasket_rev_b, part_number: GK-200, revision: B }
+  inventory_truth:
+    - { alias: valve_body_001, part_revision: valve_body_rev_a, serial_number: VB-001 }
+    - { alias: gasket_001, part_revision: gasket_rev_b, serial_number: GK-001 }
+  access_policies: []
+
+steps:
+  - { step_id: "001", set_time: "2026-06-29T08:01:00Z", actor: mfg_eng_1, operation: CreateProcedureVersion, idempotency_key: vf008-001, input: { procedure_version_alias: procedure_version_v1, steps: [ { alias: procedure_step_torque, ordinal: 1, name: "Capture torque", data_collection_fields: [ { alias: data_field_torque, name: "Valve body torque", unit: Nm, lower_bound: 10.0, upper_bound: 12.0, nominal: 11.0, evaluation_mode: synchronous } ] }, { alias: procedure_step_install_gasket, ordinal: 2, name: "Install gasket", install_required: true } ] }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_CREATED] } }
+  - { step_id: "002", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf008-002, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUBMITTED] } }
+  - { step_id: "003", actor: mfg_eng_1, operation: ReleaseProcedureVersion, idempotency_key: vf008-003, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_RELEASED] } }
+  - { step_id: "004", actor: mfg_eng_1, operation: CreateProcedureVersion, idempotency_key: vf008-004, input: { procedure_version_alias: procedure_version_v1b, steps: [ { alias: procedure_step_alt, ordinal: 1, name: "Alt torque" } ] }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_CREATED] } }
+  - { step_id: "005", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf008-005, input: { procedure_version_alias: procedure_version_v1b }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUBMITTED] } }
+  - { step_id: "006", actor: mfg_eng_1, operation: ReleaseProcedureVersion, idempotency_key: vf008-006, input: { procedure_version_alias: procedure_version_v1b }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_RELEASED] } }
+  - { step_id: "007", actor: mfg_eng_1, operation: CreateManufacturingStructureVersion, idempotency_key: vf008-007, input: { manufacturing_structure_alias: manufacturing_structure_v1, part_revision: valve_body_rev_a }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_CREATED] } }
+  - { step_id: "008", actor: mfg_eng_1, operation: AddBOMLine, idempotency_key: vf008-008, input: { manufacturing_structure_alias: manufacturing_structure_v1, bom_line_alias: bom_line_gasket, part_revision: gasket_rev_b, install_required: true }, expect: { operation_succeeded: true, events_emitted: [BOM_LINE_CREATED] } }
+  - { step_id: "009", actor: mfg_eng_1, operation: ReleaseManufacturingStructureVersion, idempotency_key: vf008-009, input: { manufacturing_structure_alias: manufacturing_structure_v1 }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_RELEASED] } }
+  - { step_id: "010", set_time: "2026-06-29T08:05:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf008-010, input: { inventory_alias: valve_body_001, part_revision: valve_body_rev_a, serial_number: VB-001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "011", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf008-011, input: { inventory_alias: gasket_001, part_revision: gasket_rev_b, serial_number: GK-001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "012", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf008-012, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "013", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf008-013, input: { inventory_alias: gasket_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "014", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf008-014, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+  - { step_id: "015", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf008-015, input: { inventory_alias: gasket_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+  - { step_id: "016", actor: planner_1, operation: ReserveInventory, idempotency_key: vf008-016, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RESERVED] } }
+  - { step_id: "017", actor: planner_1, operation: ReserveInventory, idempotency_key: vf008-017, input: { inventory_alias: gasket_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RESERVED] } }
+  # Single-priority rules -> resolution selects procedure_version_v1.
+  - { step_id: "018", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf008-018, input: { effectivity_rule_alias: effectivity_rule_procedure, target_record_type: ProcedureVersion, rule_type: serial_cut_in, serial_condition: "VB-001", target_alias: procedure_version_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "019", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf008-019, input: { effectivity_rule_alias: effectivity_rule_structure, target_record_type: ManufacturingStructureVersion, rule_type: serial_cut_in, serial_condition: "VB-001", target_alias: manufacturing_structure_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "020", set_time: "2026-06-29T08:08:00Z", actor: planner_1, operation: ResolveEffectivity, idempotency_key: vf008-020, input: { effectivity_resolution_alias: effectivity_resolution_001, target_serial: "VB-001", target_inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RESOLVED] } }
+  - { step_id: "021", actor: planner_1, operation: RunBuildCheck, idempotency_key: vf008-021, input: { build_check_alias: build_check_001, target_inventory_alias: valve_body_001, effectivity_resolution_alias: effectivity_resolution_001 }, expect: { operation_succeeded: true, events_emitted: [BUILD_CHECK_STARTED, BUILD_CHECK_PASSED] } }
+  # CreateRun snapshots the resolution: RunContextSnapshot.procedure_version == procedure_version_v1.
+  - { step_id: "022", set_time: "2026-06-29T08:10:00Z", actor: planner_1, operation: CreateRun, idempotency_key: vf008-022, input: { run_alias: run_001, run_context_snapshot_alias: run_context_snapshot_001, procedure_version_alias: procedure_version_v1, manufacturing_structure_alias: manufacturing_structure_v1, effectivity_resolution_alias: effectivity_resolution_001, build_check_alias: build_check_001, target_inventory_alias: valve_body_001, run_step_aliases: [run_step_torque, run_step_install_gasket] }, expect: { operation_succeeded: true, events_emitted: [RUN_CREATED] } }
+  # A LATER, higher-priority rule supersedes the selection for a fresh resolution.
+  - { step_id: "023", set_time: "2026-06-29T09:00:00Z", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf008-023, input: { effectivity_rule_alias: effectivity_rule_procedure_super, target_record_type: ProcedureVersion, rule_type: serial_cut_in, serial_condition: "VB-001", target_alias: procedure_version_v1b, priority: 2 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  # Fresh resolution now selects procedure_version_v1b -> proves the rule change genuinely matters.
+  - { step_id: "024", actor: planner_1, operation: ResolveEffectivity, idempotency_key: vf008-024, input: { effectivity_resolution_alias: effectivity_resolution_002, target_serial: "VB-001", target_inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RESOLVED] } }
+
+assertions:
+  # The run's snapshot is pinned to the ORIGINAL selection...
+  - { assertion_id: vf008_snapshot_pins_v1, assertion_type: record_field_equals, severity: blocking, target: { record_type: RunContextSnapshot, alias: run_context_snapshot_001 }, expected: { procedure_version: procedure_version_v1 } }
+  # ...the original resolution selected v1...
+  - { assertion_id: vf008_resolution1_selected_v1, assertion_type: record_field_equals, severity: blocking, target: { record_type: EffectivityResolution, alias: effectivity_resolution_001 }, expected: { selected_procedure_version: procedure_version_v1, status: resolved } }
+  # ...and the LATER resolution genuinely re-selects v1b (the rule change is real, not inert) —
+  # yet the snapshot above still reads v1. That contrast is the immutability proof.
+  - { assertion_id: vf008_resolution2_selected_v1b, assertion_type: record_field_equals, severity: blocking, target: { record_type: EffectivityResolution, alias: effectivity_resolution_002 }, expected: { selected_procedure_version: procedure_version_v1b, status: resolved } }
+  - { assertion_id: vf008_run_created, assertion_type: record_exists, severity: blocking, target: { record_type: Run, alias: run_001 }, expected: {} }
+  - { assertion_id: vf008_snapshot_exists, assertion_type: record_exists, severity: blocking, target: { record_type: RunContextSnapshot, alias: run_context_snapshot_001 }, expected: {} }

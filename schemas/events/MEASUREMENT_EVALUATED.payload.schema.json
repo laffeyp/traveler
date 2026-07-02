@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/MEASUREMENT_EVALUATED.payload.schema.json",
+  "title": "MEASUREMENT_EVALUATED payload (baseline; owning_module=measurement)",
+  "type": "object"
+}

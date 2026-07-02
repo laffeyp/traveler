@@ -1,0 +1,14 @@
+scenario_id: VF-013
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Harness Spec v0.1.2 §24 (VF-013 redline rejected cannot be applied) + Contract Spec §10 (redline/approval)
+note: >
+  Redline rejected cannot be applied. Brings the REJECT path of RecordApprovalDecision into the executable
+  slice: REDLINE_REJECTED / APPROVAL_REJECTED were registered but never emitted (the handler force-approved).
+operations: [CreateRedlineDraft, SubmitRedline, ReviewRedline, RequestApproval, RecordApprovalDecision, ApplyRedline]
+events: [REDLINE_DRAFT_CREATED, REDLINE_SUBMITTED, REDLINE_UNDER_REVIEW, APPROVAL_REQUESTED, APPROVAL_REJECTED, REDLINE_REJECTED]
+record_states:
+  Redline: [draft, submitted, under_review, rejected]
+  ApprovalRequest: [requested, rejected]
+assertion_types: [event_emitted, event_not_emitted, record_state, operation_failed]
+caller_types: [manufacturing_engineer, planner, operator, system_worker]

@@ -1,0 +1,68 @@
+scenario_id: VF-006
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Harness Spec v0.1.2 §22 (first-slice bench VF-004/VF-005/VF-006) + Build Readiness §7.3
+note: >
+  Reference manifest for the build-check-failure family (VF-004 wrong child, VF-005 quarantined child,
+  VF-006 missing child). Its purpose beyond registry-resolution is to bring the build-check BLOCKED
+  path into the schema-generation set: VF-003 only exercises BUILD_CHECK_PASSED, so the blocked-path
+  events (BUILD_CHECK_FAILED, BUILD_BLOCKER_CREATED, RUN_BLOCKED) and the quality-hold path
+  (QuarantineInventory / INVENTORY_QUARANTINED) had no generated schema until this family was
+  materialized. The generator unions every scenarios/*/references.yaml, so these now get schemas.
+
+# Distinct operations across VF-004/005/006 (union). Most overlap VF-003; QuarantineInventory is new.
+operations:
+  - CreateProcedureVersion
+  - SubmitProcedureVersionForReview
+  - ReleaseProcedureVersion
+  - CreateManufacturingStructureVersion
+  - AddBOMLine
+  - ReleaseManufacturingStructureVersion
+  - CreateInventoryItem
+  - ReceiveInventory
+  - ReleaseInventory
+  - QuarantineInventory
+  - ReserveInventory
+  - CreateEffectivityRule
+  - ResolveEffectivity
+  - RunBuildCheck
+  - CreateRun
+  - ApplyBuildCheckResultToRun
+
+# Distinct events across VF-004/005/006 (union). The blocked-path events are the new coverage.
+events:
+  - PROCEDURE_VERSION_CREATED
+  - PROCEDURE_VERSION_SUBMITTED
+  - PROCEDURE_VERSION_RELEASED
+  - MANUFACTURING_STRUCTURE_CREATED
+  - BOM_LINE_CREATED
+  - MANUFACTURING_STRUCTURE_RELEASED
+  - INVENTORY_CREATED
+  - INVENTORY_RECEIVED
+  - INVENTORY_AVAILABLE
+  - INVENTORY_QUARANTINED
+  - INVENTORY_RESERVED
+  - EFFECTIVITY_RULE_CREATED
+  - EFFECTIVITY_RESOLVED
+  - BUILD_CHECK_STARTED
+  - BUILD_CHECK_FAILED
+  - BUILD_BLOCKER_CREATED
+  - RUN_CREATED
+  - RUN_BLOCKED
+
+record_states:
+  ProcedureVersion: [released]
+  ManufacturingStructureVersion: [released]
+  InventoryItem: [expected, received, available, quarantined, reserved]
+  BuildCheckResult: [blocked]
+  Run: [planned, blocked]
+
+assertion_types:
+  - record_state
+  - record_field_equals
+  - event_emitted
+  - event_not_emitted
+  - event_payload_contains
+  - operation_failed
+
+caller_types: [manufacturing_engineer, planner, quality_engineer, system_worker]

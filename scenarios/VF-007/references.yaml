@@ -1,0 +1,66 @@
+scenario_id: VF-007
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Harness Spec v0.1.2 §19/§22 (VF-007 ambiguous effectivity, VF-008 snapshot immutability) + Contract Spec §17
+note: >
+  Reference manifest for the effectivity family (VF-007 ambiguous effectivity blocks the run, VF-008
+  snapshot survives a later rule change). Brings the ambiguity incident path into the schema-generation
+  set: EFFECTIVITY_AMBIGUOUS is a registered event whose producer path (ResolveEffectivity on
+  equal-priority matches) was unexercised until VF-007 — the engine previously threw instead of emitting
+  it. The generator unions every scenarios/*/references.yaml, so it now gets a schema.
+
+operations:
+  - CreateProcedureVersion
+  - SubmitProcedureVersionForReview
+  - ReleaseProcedureVersion
+  - CreateManufacturingStructureVersion
+  - AddBOMLine
+  - ReleaseManufacturingStructureVersion
+  - CreateInventoryItem
+  - ReceiveInventory
+  - ReleaseInventory
+  - ReserveInventory
+  - CreateEffectivityRule
+  - ResolveEffectivity
+  - RunBuildCheck
+  - CreateRun
+  - ApplyBuildCheckResultToRun
+
+events:
+  - PROCEDURE_VERSION_CREATED
+  - PROCEDURE_VERSION_SUBMITTED
+  - PROCEDURE_VERSION_RELEASED
+  - MANUFACTURING_STRUCTURE_CREATED
+  - BOM_LINE_CREATED
+  - MANUFACTURING_STRUCTURE_RELEASED
+  - INVENTORY_CREATED
+  - INVENTORY_RECEIVED
+  - INVENTORY_AVAILABLE
+  - INVENTORY_RESERVED
+  - EFFECTIVITY_RULE_CREATED
+  - EFFECTIVITY_RESOLVED
+  - EFFECTIVITY_AMBIGUOUS
+  - BUILD_CHECK_STARTED
+  - BUILD_CHECK_FAILED
+  - BUILD_BLOCKER_CREATED
+  - BUILD_CHECK_PASSED
+  - RUN_CREATED
+  - RUN_BLOCKED
+
+record_states:
+  ProcedureVersion: [released]
+  ManufacturingStructureVersion: [released]
+  EffectivityResolution: [resolved, ambiguous]
+  BuildCheckResult: [blocked, passed]
+  Run: [planned, blocked]
+  RunContextSnapshot: [created]
+
+assertion_types:
+  - record_exists
+  - record_state
+  - record_field_equals
+  - event_emitted
+  - event_not_emitted
+  - event_payload_contains
+
+caller_types: [manufacturing_engineer, planner, system_worker]

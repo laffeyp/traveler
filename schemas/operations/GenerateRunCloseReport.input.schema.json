@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/operations/GenerateRunCloseReport.input.schema.json",
+  "title": "GenerateRunCloseReport input (Build Readiness §8)",
+  "type": "object",
+  "required": [
+    "operation",
+    "idempotency_key",
+    "input"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "operation": {
+      "const": "GenerateRunCloseReport"
+    },
+    "idempotency_key": {
+      "type": "string"
+    },
+    "input": {
+      "type": "object",
+      "required": [
+        "report_alias",
+        "report_type",
+        "run_alias",
+        "run_close_check_alias",
+        "report_definition_version",
+        "generated_at"
+      ],
+      "properties": {
+        "report_alias": {
+          "type": "string"
+        },
+        "report_type": {
+          "const": "RunCloseReport"
+        },
+        "run_alias": {
+          "type": "string"
+        },
+        "run_close_check_alias": {
+          "type": "string"
+        },
+        "report_definition_version": {
+          "type": "integer"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

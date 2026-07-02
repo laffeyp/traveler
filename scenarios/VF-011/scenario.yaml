@@ -1,0 +1,60 @@
+scenario_id: VF-011
+scenario_version: "1"
+title: Duplicate adapter payload is idempotent
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  Extended adversarial VF-011 (Harness §24): duplicate adapter payload idempotency. A machine adapter
+  delivers the SAME evidence payload twice under the SAME idempotency_key (a re-delivery / at-least-once
+  retry). Per Contract Spec §6 (ReceiveMachineEvidence is required_idempotency_key), the second delivery
+  must create ZERO new facts and return the prior result — exactly one MachineEvidenceRecord, exactly one
+  MACHINE_EVIDENCE_RECEIVED — and downstream disposition proceeds on the single record. HONEST SCOPE
+  (B-Q-13): this proves the in-instance required_idempotency_key memo, NOT write-boundary / cross-instance
+  dedup (no transactional_unique_constraint; the engine does not emit idempotency_conflict).
+
+seed: { deterministic_seed: 30110 }
+clock: { start_at: "2026-06-29T08:00:00Z", timezone: "UTC", mode: controlled }
+
+actors:
+  - { actor_id: machine_adapter_1, actor_type: adapter, product_caller_type: adapter }
+  - { actor_id: report_worker_1, actor_type: system_worker, product_caller_type: system_worker }
+
+aliases:
+  torque_evidence_001: MachineEvidenceRecord
+
+world:
+  factory_node: node_la_001
+  machines:
+    - { alias: torque_tool_001, machine_type: torque_tool, adapter: machine_adapter_1 }
+  access_policies: []
+
+steps:
+  # First delivery.
+  - { step_id: "001", set_time: "2026-06-29T08:40:00Z", actor: machine_adapter_1, operation: ReceiveMachineEvidence, idempotency_key: vf011-recv, input: { alias: torque_evidence_001, machine_alias: torque_tool_001, adapter_alias: machine_adapter_1, payload_type: torque_trace, occurred_at: "2026-06-29T08:34:30Z", received_at: "2026-06-29T08:40:00Z", payload: { serial_number: "VB-001", tool_id: "TT-001", measured_torque_nm: 11.1, trace_quality: acceptable } }, expect: { operation_succeeded: true, events_emitted: [MACHINE_EVIDENCE_RECEIVED] } }
+  # DUPLICATE re-delivery: SAME idempotency_key, SAME payload. The memo short-circuits -> zero new facts,
+  # returns the prior result. No events_emitted declared here (the duplicate emits nothing).
+  - { step_id: "002", set_time: "2026-06-29T08:40:00Z", actor: machine_adapter_1, operation: ReceiveMachineEvidence, idempotency_key: vf011-recv, input: { alias: torque_evidence_001, machine_alias: torque_tool_001, adapter_alias: machine_adapter_1, payload_type: torque_trace, occurred_at: "2026-06-29T08:34:30Z", received_at: "2026-06-29T08:40:00Z", payload: { serial_number: "VB-001", tool_id: "TT-001", measured_torque_nm: 11.1, trace_quality: acceptable } }, expect: { operation_succeeded: true } }
+  # Downstream disposition proceeds on the SINGLE record (proves the dedup left a usable record, not a stub).
+  - { step_id: "003", actor: report_worker_1, operation: NormalizeMachineEvidence, idempotency_key: vf011-normalize, input: { evidence_alias: torque_evidence_001 }, expect: { operation_succeeded: true, events_emitted: [MACHINE_EVIDENCE_NORMALIZED] } }
+
+# NOTE (sprint-011 review [1]): no idempotency_replay_checks block here. Re-replaying step 001's key would be
+# REDUNDANT — the key is already warm from steps 001+002, so the replay's zero-facts result is forced by the
+# memo and catches nothing the count assertions below don't. The load-bearing dedup proof is the exact-count
+# assertions + step 002 (a genuine second delivery). The cold-key handler-rerun teeth live in
+# tests/harness/assertion-primitives.test.ts (a never-used key), where a broken memo genuinely re-executes.
+
+assertions:
+  # The duplicate delivery did NOT produce a second receipt.
+  - { assertion_id: vf011_received_exactly_once, assertion_type: event_emitted, severity: blocking, target: { event_type: MACHINE_EVIDENCE_RECEIVED, producer_operation: ReceiveMachineEvidence }, expected: { count: 1 } }
+  # The single record exists and normalization proceeded on it (exactly one normalize, not two records).
+  - { assertion_id: vf011_record_exists, assertion_type: record_exists, severity: blocking, target: { record_type: MachineEvidenceRecord, alias: torque_evidence_001 }, expected: {} }
+  - { assertion_id: vf011_record_normalized_state, assertion_type: record_state, severity: blocking, target: { record_type: MachineEvidenceRecord, alias: torque_evidence_001 }, expected: { state: normalized } }
+  - { assertion_id: vf011_normalized_once, assertion_type: event_emitted, severity: blocking, target: { event_type: MACHINE_EVIDENCE_NORMALIZED, producer_operation: NormalizeMachineEvidence }, expected: { count: 1 } }
+  # The duplicate did not create a second record's worth of events (only step 001 emitted a receipt).
+  - { assertion_id: vf011_receipt_only_step_001, assertion_type: event_emitted, severity: blocking, target: { event_type: MACHINE_EVIDENCE_RECEIVED, step_id: "001" }, expected: { count: 1 } }
+  - { assertion_id: vf011_no_receipt_after_first, assertion_type: event_not_emitted, severity: blocking, target: { event_type: MACHINE_EVIDENCE_RECEIVED, after_step: "001" } }

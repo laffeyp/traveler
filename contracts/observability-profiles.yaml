@@ -1,0 +1,15 @@
+registry: observability-profiles
+registry_version: contracts-0.4.1
+source: Contract Spec v0.4.1 section 5
+note: Resolves B-Q-6 (the two profile registries the abbreviated bootstrap summary omitted).
+
+profiles:
+  - id: standard_mutating_operation_observability
+    applies_to: mutating operations (state-changing, event-emitting)
+    emits: [trace_span, audit_entry, operation_metric]
+  - id: standard_read_operation_observability
+    applies_to: read / query operations (no state change)
+    emits: [trace_span, read_metric]
+  - id: standard_worker_operation_observability
+    applies_to: background / worker operations (report generation, run-close apply, async evidence)
+    emits: [trace_span, audit_entry, worker_metric]

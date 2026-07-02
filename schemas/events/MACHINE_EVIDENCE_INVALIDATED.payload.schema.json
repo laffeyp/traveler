@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/MACHINE_EVIDENCE_INVALIDATED.payload.schema.json",
+  "title": "MACHINE_EVIDENCE_INVALIDATED payload (baseline; owning_module=machine_evidence)",
+  "type": "object"
+}

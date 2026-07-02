@@ -1,0 +1,15 @@
+scenario_id: VF-003D
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Contract Spec v0.4.1 §18 reconciliation (accepted evidence invalidation) + B-Q-22/27/28 (deferred, now built beyond the slice)
+note: >
+  Accepted machine evidence is later invalidated; the cascade marks the run's controlled_export report
+  regeneration_required, and GetReport surfaces the staleness fail-closed. Fills the reserved
+  InvalidateAcceptedEvidence + the registered-but-unhandled GetReport.
+operations: [ReceiveMachineEvidence, NormalizeMachineEvidence, LinkMachineEvidence, AcceptMachineEvidence, InvalidateAcceptedEvidence, GetReport, GenerateRunCloseReport, ApplyRunCloseResultToRun]
+events: [MACHINE_EVIDENCE_RECEIVED, MACHINE_EVIDENCE_NORMALIZED, MACHINE_EVIDENCE_LINKED, MACHINE_EVIDENCE_ACCEPTED, MACHINE_EVIDENCE_INVALIDATED, REPORT_GENERATED, RUN_CLOSED]
+record_states:
+  MachineEvidenceRecord: [raw, normalized, accepted, invalidated]
+  GeneratedReport: [generated]
+assertion_types: [record_state, event_emitted, record_field_equals, operation_succeeded, operation_output_contains]
+caller_types: [manufacturing_engineer, planner, operator, quality_engineer, adapter, system_worker]

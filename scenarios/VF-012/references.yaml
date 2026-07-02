@@ -1,0 +1,48 @@
+scenario_id: VF-012
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Harness Spec v0.1.2 §16/§17/§24 (VF-012 report access policy change after generation) + Contract Spec §15/§18/§19
+note: >
+  Report access-policy change after generation: supersede + regenerate, not overwrite. Brings the registered
+  SupersedeReport op + REPORT_SUPERSEDED event + generated->superseded transition into the executable slice
+  (previously not_implemented). Introduces report_field_equals (the value-level nested assertion primitive,
+  B-Q-23(c)). The automatic-detection cascade + GetReport read semantics remain deferred (B-Q-27/B-Q-28).
+operations:
+  - CreateProcedureVersion
+  - SubmitProcedureVersionForReview
+  - ReleaseProcedureVersion
+  - CreateManufacturingStructureVersion
+  - ReleaseManufacturingStructureVersion
+  - CreateInventoryItem
+  - ReceiveInventory
+  - ReleaseInventory
+  - ReserveInventory
+  - CreateEffectivityRule
+  - ResolveEffectivity
+  - RunBuildCheck
+  - CreateRun
+  - ApplyBuildCheckResultToRun
+  - StartRun
+  - StartRunStep
+  - CaptureMeasurement
+  - CompleteRunStep
+  - CompleteRunSteps
+  - AttemptRunClose
+  - RunCloseCheck
+  - RequestRunCloseReport
+  - GenerateRunCloseReport
+  - ApplyRunCloseResultToRun
+  - SupersedeReport
+events:
+  - RUN_CLOSE_CHECK_PASSED
+  - RUN_CLOSE_REPORT_REQUESTED
+  - REPORT_REQUESTED
+  - REPORT_GENERATION_STARTED
+  - REPORT_GENERATED
+  - RUN_CLOSED
+  - REPORT_SUPERSEDED
+record_states:
+  GeneratedReport: [generated, superseded]
+  Run: [closed]
+assertion_types: [record_state, record_exists, event_emitted, event_payload_contains, report_field_equals]
+caller_types: [manufacturing_engineer, planner, operator, system_worker]

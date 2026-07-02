@@ -1,0 +1,51 @@
+registry: records
+registry_version: contracts-0.4.1
+source: Build Readiness Plan v0.2 section 5.2 (canonicalized) + Contract Spec v0.4.1 + VF-003 aliases
+note: >
+  Canonical record names. Resolves B-Q-3: ReworkRun / Verification are canonical
+  (Contract Spec section 15 + TAD section 5.8 outrank Build Readiness section 5.2's
+  ReworkRecord / VerificationRecord). state_machine names a registered state machine
+  in state-machines.yaml, or false for status-light / result-valued records.
+
+records:
+  - { name: ProcedureVersion,            owning_module: procedure,              state_machine: ProcedureVersion }
+  - { name: ProcedureStep,               owning_module: procedure,              state_machine: false }
+  - { name: DataCollectionField,         owning_module: procedure,              state_machine: false }
+  - { name: ManufacturingStructureVersion, owning_module: manufacturing_structure, state_machine: ManufacturingStructureVersion }
+  - { name: BOMLine,                     owning_module: manufacturing_structure, state_machine: false }
+  - { name: InventoryItem,               owning_module: inventory,              state_machine: InventoryItem }
+  - { name: EffectivityRule,             owning_module: effectivity,            state_machine: false }
+  - { name: EffectivityResolution,       owning_module: effectivity,            state_machine: false }
+  - { name: BuildCheckResult,            owning_module: build_check,            state_machine: false }
+  - { name: Run,                         owning_module: run,                    state_machine: Run }
+  - { name: RunContextSnapshot,          owning_module: run,                    state_machine: false }
+  - { name: RunStep,                     owning_module: run,                    state_machine: RunStep }
+  - { name: Measurement,                 owning_module: measurement,            state_machine: false, note: "result-valued (not_evaluated|pass|fail|warning), not a state machine (Contract Spec section 11)" }
+  - { name: Issue,                       owning_module: quality,                state_machine: Issue }
+  - { name: Nonconformance,              owning_module: quality,                state_machine: Nonconformance }
+  - { name: AffectedPopulation,          owning_module: quality,                state_machine: false }
+  - { name: QualityContainmentAction,    owning_module: quality,                state_machine: QualityContainmentAction, note: "B-Q-1: lifecycle required->active is now a registered state machine" }
+  - { name: Disposition,                 owning_module: quality,                state_machine: false }
+  - { name: ReworkRun,                   owning_module: quality,                state_machine: false, note: "canonical name (B-Q-3); status-light required..complete" }
+  - { name: Verification,                owning_module: quality,                state_machine: false, note: "canonical name (B-Q-3); status-light" }
+  - { name: Redline,                     owning_module: redline,                state_machine: Redline }
+  - { name: RedlineDiff,                 owning_module: redline,                state_machine: false }
+  - { name: ApprovalRequest,             owning_module: approval,               state_machine: ApprovalRequest }
+  - { name: ApprovalDecision,            owning_module: approval,               state_machine: false }
+  - { name: InstallationEvent,           owning_module: installed_part_history, state_machine: false }
+  - { name: RemovalEvent,                owning_module: installed_part_history, state_machine: false }
+  - { name: Machine,                     owning_module: machine_evidence,       state_machine: false }
+  - { name: MachineAdapter,              owning_module: machine_evidence,       state_machine: false }
+  - { name: MachineEvidenceRecord,       owning_module: machine_evidence,       state_machine: MachineEvidenceRecord }
+  - { name: RunCloseCheck,               owning_module: run_close,              state_machine: false }
+  - { name: RunCloseObservation,         owning_module: run_close,              state_machine: false }
+  - { name: ReportDefinition,            owning_module: report,                 state_machine: false }
+  - { name: GeneratedReport,             owning_module: report,                 state_machine: GeneratedReport }
+  - { name: Attachment,                  owning_module: attachment,             state_machine: Attachment }
+  - { name: AccessDecision,              owning_module: access,                 state_machine: false }
+  - { name: AuditEntry,                  owning_module: access,                 state_machine: false, note: "cross-cutting audit record; homed under access for the first slice" }
+  - { name: GrammarGap,                  owning_module: grammar_gap,            state_machine: false, note: "GrammarGap lifecycle deferred beyond first slice; create+escalate only" }
+  # --- Beyond-spec additions (persona gaps 7-8; see ADDITIONS.md). Registered here so the vocabulary matches the
+  #     handlers — a handler was governing a record the registry did not name (surfaced at close-out, sprint 019). ---
+  - { name: Instrument,                  owning_module: measurement,            state_machine: false, note: "beyond-spec (persona gap 7; ISO 17025): status-light cal_status (in_cal|overdue|...); read by CaptureMeasurement's calibration gate" }
+  - { name: Certificate,                 owning_module: inventory,              state_machine: false, note: "beyond-spec (persona gap 8; AS9100 8.4.2): typed supplier cert (cert_type/serial_or_lot/cage_code/expires_at) on a received lot; status-light captured" }

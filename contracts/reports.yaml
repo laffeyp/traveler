@@ -1,0 +1,24 @@
+registry: reports
+registry_version: contracts-0.4.1
+source: Contract Spec v0.4.1 section 15 + Build Readiness Plan v0.2 section 10
+note: RunCloseReport is the first governed report. Prior official reports are not silently overwritten.
+
+reports:
+  - name: RunCloseReport
+    owning_module: report
+    report_definition_version: 1
+    payload_schema_ref: schemas/reports/RunCloseReport.schema.json
+    generated_by: GenerateRunCloseReport
+    source_projections: [AsBuiltProjection, SerialHistory, RunCloseReadiness, ReportSourceIndex]
+    source_records:
+      [Run, RunContextSnapshot, ProcedureVersion, ManufacturingStructureVersion, RunStep,
+       Measurement, MachineEvidenceRecord, Attachment, Nonconformance, AffectedPopulation,
+       QualityContainmentAction, Disposition, ReworkRun, Verification, Redline,
+       ApprovalDecision, InstallationEvent, RemovalEvent, RunCloseCheck, RunCloseObservation]
+    required_sections:
+      [report_header, run_context, executed_steps, measurement_summary, quality_path,
+       redline_history, installed_inventory, machine_evidence_summary, run_close_observations,
+       final_close_result, source_traceability, access_policy_snapshot]
+    regeneration_required_after:
+      [report_definition_change, reconciliation_resolution_affecting_run,
+       access_policy_change_for_controlled_export, source_record_correction]

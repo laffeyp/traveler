@@ -1,0 +1,170 @@
+registry: events
+registry_version: contracts-0.4.1
+source: Contract Spec v0.4.1 sections 7, 13, 21.2 + TAD v0.3 section 5
+note: >
+  First-slice event registry. owning_module is the event's home; producer_operations lists
+  the registered operations that may emit it (a producer may belong to a different module than
+  the owner -- see B-Q-5 REDLINE_APPROVED). Only events with a first-slice producer are
+  registered; deferred events without a first-slice producer are noted in CONTRACT_GAPS.md.
+  payload_schema_ref is declared here; the schema files are generated in the schema-generation
+  phase (doc 08 Phase 2), not this sprint. REPORT_REGENERATED is intentionally absent
+  (Contract Spec section 0.2.4).
+
+events:
+  # --- Procedure (domain) ---
+  - { type: PROCEDURE_VERSION_CREATED,   owning_module: procedure, event_category: domain_event, event_stratum: event,   producer_operations: [CreateProcedureVersion],            payload_schema_ref: schemas/events/PROCEDURE_VERSION_CREATED.payload.schema.json }
+  - { type: PROCEDURE_VERSION_SUBMITTED, owning_module: procedure, event_category: domain_event, event_stratum: event,   producer_operations: [SubmitProcedureVersionForReview],   payload_schema_ref: schemas/events/PROCEDURE_VERSION_SUBMITTED.payload.schema.json }
+  - { type: PROCEDURE_VERSION_RETURNED,  owning_module: procedure, event_category: domain_event, event_stratum: event,   producer_operations: [ReturnProcedureVersionToDraft],     payload_schema_ref: schemas/events/PROCEDURE_VERSION_RETURNED.payload.schema.json }
+  - { type: PROCEDURE_VERSION_RELEASED,  owning_module: procedure, event_category: domain_event, event_stratum: summary, producer_operations: [ReleaseProcedureVersion],          payload_schema_ref: schemas/events/PROCEDURE_VERSION_RELEASED.payload.schema.json }
+  - { type: PROCEDURE_VERSION_SUPERSEDED, owning_module: procedure, event_category: domain_event, event_stratum: event,  producer_operations: [SupersedeProcedureVersion],         payload_schema_ref: schemas/events/PROCEDURE_VERSION_SUPERSEDED.payload.schema.json }
+  - { type: PROCEDURE_VERSION_RETIRED,   owning_module: procedure, event_category: domain_event, event_stratum: event,   producer_operations: [RetireProcedureVersion],            payload_schema_ref: schemas/events/PROCEDURE_VERSION_RETIRED.payload.schema.json }
+
+  # --- Manufacturing Structure (domain) ---
+  - { type: MANUFACTURING_STRUCTURE_CREATED,    owning_module: manufacturing_structure, event_category: domain_event, event_stratum: event,   producer_operations: [CreateManufacturingStructureVersion], payload_schema_ref: schemas/events/MANUFACTURING_STRUCTURE_CREATED.payload.schema.json }
+  - { type: MANUFACTURING_STRUCTURE_SUBMITTED,  owning_module: manufacturing_structure, event_category: domain_event, event_stratum: event,   producer_operations: [SubmitManufacturingStructureForReview], payload_schema_ref: schemas/events/MANUFACTURING_STRUCTURE_SUBMITTED.payload.schema.json }
+  - { type: MANUFACTURING_STRUCTURE_RETURNED,   owning_module: manufacturing_structure, event_category: domain_event, event_stratum: event,   producer_operations: [ReturnManufacturingStructureToDraft], payload_schema_ref: schemas/events/MANUFACTURING_STRUCTURE_RETURNED.payload.schema.json }
+  - { type: MANUFACTURING_STRUCTURE_RELEASED,   owning_module: manufacturing_structure, event_category: domain_event, event_stratum: summary, producer_operations: [ReleaseManufacturingStructureVersion], payload_schema_ref: schemas/events/MANUFACTURING_STRUCTURE_RELEASED.payload.schema.json }
+  - { type: MANUFACTURING_STRUCTURE_SUPERSEDED, owning_module: manufacturing_structure, event_category: domain_event, event_stratum: event,   producer_operations: [SupersedeManufacturingStructureVersion], payload_schema_ref: schemas/events/MANUFACTURING_STRUCTURE_SUPERSEDED.payload.schema.json }
+  - { type: MANUFACTURING_STRUCTURE_RETIRED,    owning_module: manufacturing_structure, event_category: domain_event, event_stratum: event,   producer_operations: [RetireManufacturingStructureVersion], payload_schema_ref: schemas/events/MANUFACTURING_STRUCTURE_RETIRED.payload.schema.json }
+  - { type: BOM_LINE_CREATED, owning_module: manufacturing_structure, event_category: domain_event, event_stratum: event, producer_operations: [AddBOMLine],        payload_schema_ref: schemas/events/BOM_LINE_CREATED.payload.schema.json }
+  - { type: BOM_LINE_CHANGED, owning_module: manufacturing_structure, event_category: domain_event, event_stratum: event, producer_operations: [UpdateDraftBOMLine], payload_schema_ref: schemas/events/BOM_LINE_CHANGED.payload.schema.json }
+
+  # --- Effectivity (runtime) ---
+  - { type: EFFECTIVITY_RULE_CREATED, owning_module: effectivity, event_category: domain_event,  event_stratum: event,    producer_operations: [CreateEffectivityRule], payload_schema_ref: schemas/events/EFFECTIVITY_RULE_CREATED.payload.schema.json }
+  - { type: EFFECTIVITY_RESOLVED,     owning_module: effectivity, event_category: runtime_event, event_stratum: summary,  producer_operations: [ResolveEffectivity],    payload_schema_ref: schemas/events/EFFECTIVITY_RESOLVED.payload.schema.json }
+  - { type: EFFECTIVITY_AMBIGUOUS,    owning_module: effectivity, event_category: runtime_event, event_stratum: incident, producer_operations: [ResolveEffectivity],    payload_schema_ref: schemas/events/EFFECTIVITY_AMBIGUOUS.payload.schema.json }
+
+  # --- Build Check (runtime) ---
+  - { type: BUILD_CHECK_STARTED,   owning_module: build_check, event_category: runtime_event, event_stratum: event,    producer_operations: [RunBuildCheck], payload_schema_ref: schemas/events/BUILD_CHECK_STARTED.payload.schema.json }
+  - { type: BUILD_CHECK_PASSED,    owning_module: build_check, event_category: runtime_event, event_stratum: summary,  producer_operations: [RunBuildCheck], payload_schema_ref: schemas/events/BUILD_CHECK_PASSED.payload.schema.json }
+  - { type: BUILD_CHECK_FAILED,    owning_module: build_check, event_category: runtime_event, event_stratum: incident, producer_operations: [RunBuildCheck], payload_schema_ref: schemas/events/BUILD_CHECK_FAILED.payload.schema.json }
+  - { type: BUILD_BLOCKER_CREATED, owning_module: build_check, event_category: runtime_event, event_stratum: incident, producer_operations: [RunBuildCheck], payload_schema_ref: schemas/events/BUILD_BLOCKER_CREATED.payload.schema.json }
+
+  # --- Run (domain) ---
+  - { type: RUN_CREATED,             owning_module: run, event_category: domain_event, event_stratum: event,    producer_operations: [CreateRun],                 payload_schema_ref: schemas/events/RUN_CREATED.payload.schema.json }
+  - { type: RUN_READY,               owning_module: run, event_category: domain_event, event_stratum: event,    producer_operations: [ApplyBuildCheckResultToRun, ClearRunBlocker], payload_schema_ref: schemas/events/RUN_READY.payload.schema.json }
+  - { type: RUN_BLOCKED,             owning_module: run, event_category: domain_event, event_stratum: incident, producer_operations: [ApplyBuildCheckResultToRun, BlockRun],        payload_schema_ref: schemas/events/RUN_BLOCKED.payload.schema.json }
+  - { type: RUN_STARTED,             owning_module: run, event_category: domain_event, event_stratum: event,    producer_operations: [StartRun],                  payload_schema_ref: schemas/events/RUN_STARTED.payload.schema.json }
+  - { type: RUN_PAUSED,              owning_module: run, event_category: domain_event, event_stratum: event,    producer_operations: [PauseRun],                  payload_schema_ref: schemas/events/RUN_PAUSED.payload.schema.json }
+  - { type: RUN_RESUMED,             owning_module: run, event_category: domain_event, event_stratum: event,    producer_operations: [ResumeRun, ClearRunBlocker], payload_schema_ref: schemas/events/RUN_RESUMED.payload.schema.json }
+  - { type: RUN_COMPLETED,           owning_module: run, event_category: domain_event, event_stratum: summary,  producer_operations: [CompleteRunSteps],          payload_schema_ref: schemas/events/RUN_COMPLETED.payload.schema.json }
+  - { type: RUN_ENTERED_CLOSE_CHECK, owning_module: run, event_category: domain_event, event_stratum: event,    producer_operations: [AttemptRunClose],           payload_schema_ref: schemas/events/RUN_ENTERED_CLOSE_CHECK.payload.schema.json }
+  - { type: RUN_CLOSE_STATE_BLOCKED, owning_module: run, event_category: domain_event, event_stratum: incident, producer_operations: [ApplyRunCloseResultToRun],  payload_schema_ref: schemas/events/RUN_CLOSE_STATE_BLOCKED.payload.schema.json }
+  - { type: RUN_CLOSED,              owning_module: run, event_category: domain_event, event_stratum: summary,  producer_operations: [ApplyRunCloseResultToRun],  payload_schema_ref: schemas/events/RUN_CLOSED.payload.schema.json }
+  - { type: RUN_CANCELLED,           owning_module: run, event_category: domain_event, event_stratum: event,    producer_operations: [CancelRun],                 payload_schema_ref: schemas/events/RUN_CANCELLED.payload.schema.json }
+
+  # --- RunStep (domain) ---
+  - { type: RUN_STEP_READY,           owning_module: run, event_category: domain_event, event_stratum: event,    producer_operations: [AdvanceStepReadiness, ClearRunStepBlocker], payload_schema_ref: schemas/events/RUN_STEP_READY.payload.schema.json }
+  - { type: RUN_STEP_STARTED,         owning_module: run, event_category: domain_event, event_stratum: event,    producer_operations: [StartRunStep],          payload_schema_ref: schemas/events/RUN_STEP_STARTED.payload.schema.json }
+  - { type: RUN_STEP_BLOCKED,         owning_module: run, event_category: domain_event, event_stratum: incident, producer_operations: [BlockRunStep],          payload_schema_ref: schemas/events/RUN_STEP_BLOCKED.payload.schema.json }
+  - { type: RUN_STEP_COMPLETED,       owning_module: run, event_category: domain_event, event_stratum: event,    producer_operations: [CompleteRunStep],       payload_schema_ref: schemas/events/RUN_STEP_COMPLETED.payload.schema.json }
+  - { type: RUN_STEP_FAILED,          owning_module: run, event_category: domain_event, event_stratum: incident, producer_operations: [FailRunStep],           payload_schema_ref: schemas/events/RUN_STEP_FAILED.payload.schema.json }
+  - { type: RUN_STEP_REWORK_REQUIRED, owning_module: run, event_category: domain_event, event_stratum: incident, producer_operations: [RequireRunStepRework],  payload_schema_ref: schemas/events/RUN_STEP_REWORK_REQUIRED.payload.schema.json }
+  - { type: RUN_STEP_REWORK_STARTED,  owning_module: run, event_category: domain_event, event_stratum: event,    producer_operations: [StartRunStepRework],    payload_schema_ref: schemas/events/RUN_STEP_REWORK_STARTED.payload.schema.json }
+  - { type: RUN_STEP_SKIPPED,         owning_module: run, event_category: domain_event, event_stratum: event,    producer_operations: [SkipRunStep],           payload_schema_ref: schemas/events/RUN_STEP_SKIPPED.payload.schema.json }
+
+  # --- Measurement (domain / incident) ---
+  - { type: MEASUREMENT_CAPTURED,  owning_module: measurement, event_category: domain_event, event_stratum: event,    producer_operations: [CaptureMeasurement],                    payload_schema_ref: schemas/events/MEASUREMENT_CAPTURED.payload.schema.json }
+  - { type: MEASUREMENT_EVALUATED, owning_module: measurement, event_category: domain_event, event_stratum: event,    producer_operations: [CaptureMeasurement, EvaluateMeasurement], payload_schema_ref: schemas/events/MEASUREMENT_EVALUATED.payload.schema.json }
+  - { type: MEASUREMENT_PASSED,    owning_module: measurement, event_category: domain_event, event_stratum: event,    producer_operations: [CaptureMeasurement, EvaluateMeasurement], payload_schema_ref: schemas/events/MEASUREMENT_PASSED.payload.schema.json }
+  - { type: MEASUREMENT_FAILED,    owning_module: measurement, event_category: domain_event, event_stratum: incident, producer_operations: [CaptureMeasurement, EvaluateMeasurement], payload_schema_ref: schemas/events/MEASUREMENT_FAILED.payload.schema.json }
+  - { type: MEASUREMENT_WARNING,   owning_module: measurement, event_category: domain_event, event_stratum: incident, producer_operations: [CaptureMeasurement, EvaluateMeasurement], payload_schema_ref: schemas/events/MEASUREMENT_WARNING.payload.schema.json }
+
+  # --- Inventory (domain) ---
+  - { type: INVENTORY_CREATED,     owning_module: inventory, event_category: domain_event, event_stratum: event,    producer_operations: [CreateInventoryItem], payload_schema_ref: schemas/events/INVENTORY_CREATED.payload.schema.json }
+  - { type: INVENTORY_RECEIVED,    owning_module: inventory, event_category: domain_event, event_stratum: event,    producer_operations: [ReceiveInventory],    payload_schema_ref: schemas/events/INVENTORY_RECEIVED.payload.schema.json }
+  - { type: INVENTORY_AVAILABLE,   owning_module: inventory, event_category: domain_event, event_stratum: event,    producer_operations: [ReleaseInventory, ReleaseFromQuarantine, ReleaseRemovedInventory], payload_schema_ref: schemas/events/INVENTORY_AVAILABLE.payload.schema.json }
+  - { type: INVENTORY_QUARANTINED, owning_module: inventory, event_category: domain_event, event_stratum: incident, producer_operations: [QuarantineInventory, QuarantineRemovedInventory], payload_schema_ref: schemas/events/INVENTORY_QUARANTINED.payload.schema.json }
+  - { type: INVENTORY_RESERVED,    owning_module: inventory, event_category: domain_event, event_stratum: event,    producer_operations: [ReserveInventory],    payload_schema_ref: schemas/events/INVENTORY_RESERVED.payload.schema.json }
+  - { type: INVENTORY_KITTED,      owning_module: inventory, event_category: domain_event, event_stratum: event,    producer_operations: [KitInventory],        payload_schema_ref: schemas/events/INVENTORY_KITTED.payload.schema.json }
+  - { type: INVENTORY_IN_WIP,      owning_module: inventory, event_category: domain_event, event_stratum: event,    producer_operations: [StartRunWithInventory], payload_schema_ref: schemas/events/INVENTORY_IN_WIP.payload.schema.json }
+  - { type: INVENTORY_SCRAPPED,    owning_module: inventory, event_category: domain_event, event_stratum: incident, producer_operations: [ScrapInventory],      payload_schema_ref: schemas/events/INVENTORY_SCRAPPED.payload.schema.json }
+  - { type: INVENTORY_SHIPPED,     owning_module: inventory, event_category: domain_event, event_stratum: event,    producer_operations: [ShipInventory],       payload_schema_ref: schemas/events/INVENTORY_SHIPPED.payload.schema.json }
+
+  # --- Installed-Part History (domain) ---
+  - { type: INVENTORY_INSTALLED, owning_module: installed_part_history, event_category: domain_event, event_stratum: event, producer_operations: [InstallInventory], payload_schema_ref: schemas/events/INVENTORY_INSTALLED.payload.schema.json }
+  - { type: INVENTORY_REMOVED,   owning_module: installed_part_history, event_category: domain_event, event_stratum: event, producer_operations: [RemoveInventory],  payload_schema_ref: schemas/events/INVENTORY_REMOVED.payload.schema.json }
+
+  # --- Machine Evidence (machine_evidence) ---
+  - { type: MACHINE_REGISTERED,             owning_module: machine_evidence, event_category: machine_evidence_event, event_stratum: event,    producer_operations: [RegisterMachine],        payload_schema_ref: schemas/events/MACHINE_REGISTERED.payload.schema.json }
+  - { type: MACHINE_ADAPTER_REGISTERED,     owning_module: machine_evidence, event_category: machine_evidence_event, event_stratum: event,    producer_operations: [RegisterMachineAdapter], payload_schema_ref: schemas/events/MACHINE_ADAPTER_REGISTERED.payload.schema.json }
+  - { type: MACHINE_EVIDENCE_RECEIVED,      owning_module: machine_evidence, event_category: machine_evidence_event, event_stratum: event,    producer_operations: [ReceiveMachineEvidence], payload_schema_ref: schemas/events/MACHINE_EVIDENCE_RECEIVED.payload.schema.json }
+  - { type: MACHINE_EVIDENCE_NORMALIZED,    owning_module: machine_evidence, event_category: machine_evidence_event, event_stratum: event,    producer_operations: [NormalizeMachineEvidence], payload_schema_ref: schemas/events/MACHINE_EVIDENCE_NORMALIZED.payload.schema.json }
+  - { type: MACHINE_EVIDENCE_LINKED,        owning_module: machine_evidence, event_category: machine_evidence_event, event_stratum: event,    producer_operations: [LinkMachineEvidence],    payload_schema_ref: schemas/events/MACHINE_EVIDENCE_LINKED.payload.schema.json }
+  - { type: MACHINE_EVIDENCE_REVIEW_REQUIRED, owning_module: machine_evidence, event_category: machine_evidence_event, event_stratum: incident, producer_operations: [RouteMachineEvidenceForReview], payload_schema_ref: schemas/events/MACHINE_EVIDENCE_REVIEW_REQUIRED.payload.schema.json }
+  - { type: MACHINE_EVIDENCE_QUARANTINED,   owning_module: machine_evidence, event_category: machine_evidence_event, event_stratum: incident, producer_operations: [QuarantineMachineEvidence], payload_schema_ref: schemas/events/MACHINE_EVIDENCE_QUARANTINED.payload.schema.json }
+  - { type: MACHINE_EVIDENCE_ACCEPTED,      owning_module: machine_evidence, event_category: machine_evidence_event, event_stratum: event,    producer_operations: [AcceptMachineEvidence],  payload_schema_ref: schemas/events/MACHINE_EVIDENCE_ACCEPTED.payload.schema.json }
+  - { type: MACHINE_EVIDENCE_REJECTED,      owning_module: machine_evidence, event_category: machine_evidence_event, event_stratum: incident, producer_operations: [RejectMachineEvidence],  payload_schema_ref: schemas/events/MACHINE_EVIDENCE_REJECTED.payload.schema.json }
+  - { type: MACHINE_EVIDENCE_INVALIDATED,   owning_module: machine_evidence, event_category: machine_evidence_event, event_stratum: incident, producer_operations: [InvalidateAcceptedEvidence], payload_schema_ref: schemas/events/MACHINE_EVIDENCE_INVALIDATED.payload.schema.json }
+
+  # --- Quality (domain / incident) ---
+  - { type: ISSUE_OPENED,    owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [OpenIssue],    payload_schema_ref: schemas/events/ISSUE_OPENED.payload.schema.json }
+  - { type: ISSUE_TRIAGED,   owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [TriageIssue],  payload_schema_ref: schemas/events/ISSUE_TRIAGED.payload.schema.json }
+  - { type: ISSUE_RESOLVED,  owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [ResolveIssue], payload_schema_ref: schemas/events/ISSUE_RESOLVED.payload.schema.json }
+  - { type: ISSUE_CLOSED,    owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [CloseIssue],   payload_schema_ref: schemas/events/ISSUE_CLOSED.payload.schema.json }
+  - { type: ISSUE_CANCELLED, owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [CancelIssue],  payload_schema_ref: schemas/events/ISSUE_CANCELLED.payload.schema.json }
+  - { type: NONCONFORMANCE_OPENED,             owning_module: quality, event_category: domain_event, event_stratum: incident, producer_operations: [OpenNonconformance],        payload_schema_ref: schemas/events/NONCONFORMANCE_OPENED.payload.schema.json }
+  - { type: NONCONFORMANCE_DISPOSITION_PENDING, owning_module: quality, event_category: domain_event, event_stratum: event,   producer_operations: [DefineAffectedPopulation],  payload_schema_ref: schemas/events/NONCONFORMANCE_DISPOSITION_PENDING.payload.schema.json }
+  - { type: QUALITY_CONTAINMENT_REQUIRED,      owning_module: quality, event_category: domain_event, event_stratum: incident, producer_operations: [StartQualityContainment],   payload_schema_ref: schemas/events/QUALITY_CONTAINMENT_REQUIRED.payload.schema.json }
+  - { type: QUALITY_CONTAINMENT_STARTED,       owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [ActivateQualityContainment], payload_schema_ref: schemas/events/QUALITY_CONTAINMENT_STARTED.payload.schema.json }
+  - { type: DISPOSITION_RECORDED,    owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [RecordDisposition], payload_schema_ref: schemas/events/DISPOSITION_RECORDED.payload.schema.json }
+  - { type: REWORK_STARTED,          owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [StartRework],       payload_schema_ref: schemas/events/REWORK_STARTED.payload.schema.json }
+  - { type: REWORK_COMPLETED,        owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [CompleteRework],    payload_schema_ref: schemas/events/REWORK_COMPLETED.payload.schema.json }
+  - { type: VERIFICATION_PENDING,    owning_module: quality, event_category: domain_event, event_stratum: event,    producer_operations: [CompleteRework, RequireVerification], payload_schema_ref: schemas/events/VERIFICATION_PENDING.payload.schema.json }
+  - { type: VERIFICATION_COMPLETED,  owning_module: quality, event_category: domain_event, event_stratum: summary,  producer_operations: [VerifyRework],      payload_schema_ref: schemas/events/VERIFICATION_COMPLETED.payload.schema.json }
+  - { type: NONCONFORMANCE_CLOSED,   owning_module: quality, event_category: domain_event, event_stratum: summary,  producer_operations: [CloseNonconformance], payload_schema_ref: schemas/events/NONCONFORMANCE_CLOSED.payload.schema.json }
+  - { type: NONCONFORMANCE_CANCELLED, owning_module: quality, event_category: domain_event, event_stratum: event,   producer_operations: [CancelNonconformance], payload_schema_ref: schemas/events/NONCONFORMANCE_CANCELLED.payload.schema.json }
+
+  # --- Approval (domain) ---
+  - { type: APPROVAL_REQUESTED, owning_module: approval, event_category: domain_event, event_stratum: event, producer_operations: [RequestApproval],        payload_schema_ref: schemas/events/APPROVAL_REQUESTED.payload.schema.json }
+  - { type: APPROVAL_APPROVED,  owning_module: approval, event_category: domain_event, event_stratum: event, producer_operations: [RecordApprovalDecision], payload_schema_ref: schemas/events/APPROVAL_APPROVED.payload.schema.json }
+  - { type: APPROVAL_REJECTED,  owning_module: approval, event_category: domain_event, event_stratum: incident, producer_operations: [RecordApprovalDecision], payload_schema_ref: schemas/events/APPROVAL_REJECTED.payload.schema.json }
+  - { type: APPROVAL_CANCELLED, owning_module: approval, event_category: domain_event, event_stratum: event, producer_operations: [CancelApprovalRequest],  payload_schema_ref: schemas/events/APPROVAL_CANCELLED.payload.schema.json }
+  - { type: APPROVAL_EXPIRED,   owning_module: approval, event_category: domain_event, event_stratum: event, producer_operations: [ExpireApprovalRequest],  payload_schema_ref: schemas/events/APPROVAL_EXPIRED.payload.schema.json }
+
+  # --- Redline (domain). REDLINE_APPROVED/REDLINE_REJECTED producer is RecordApprovalDecision (Approval Module) -- B-Q-5 ---
+  - { type: REDLINE_DRAFT_CREATED,   owning_module: redline, event_category: domain_event, event_stratum: event, producer_operations: [CreateRedlineDraft],   payload_schema_ref: schemas/events/REDLINE_DRAFT_CREATED.payload.schema.json }
+  - { type: REDLINE_SUBMITTED,       owning_module: redline, event_category: domain_event, event_stratum: event, producer_operations: [SubmitRedline],        payload_schema_ref: schemas/events/REDLINE_SUBMITTED.payload.schema.json }
+  - { type: REDLINE_UNDER_REVIEW,    owning_module: redline, event_category: domain_event, event_stratum: event, producer_operations: [ReviewRedline],        payload_schema_ref: schemas/events/REDLINE_UNDER_REVIEW.payload.schema.json }
+  - { type: REDLINE_APPROVED,        owning_module: redline, event_category: domain_event, event_stratum: event, producer_operations: [RecordApprovalDecision], payload_schema_ref: schemas/events/REDLINE_APPROVED.payload.schema.json }
+  - { type: REDLINE_REJECTED,        owning_module: redline, event_category: domain_event, event_stratum: incident, producer_operations: [RecordApprovalDecision], payload_schema_ref: schemas/events/REDLINE_REJECTED.payload.schema.json }
+  - { type: REDLINE_APPLIED,         owning_module: redline, event_category: domain_event, event_stratum: event, producer_operations: [ApplyRedline],         payload_schema_ref: schemas/events/REDLINE_APPLIED.payload.schema.json }
+  - { type: REDLINE_MERGE_CANDIDATE, owning_module: redline, event_category: domain_event, event_stratum: event, producer_operations: [MarkRedlineAsMergeCandidate], payload_schema_ref: schemas/events/REDLINE_MERGE_CANDIDATE.payload.schema.json }
+  - { type: REDLINE_MERGED,          owning_module: redline, event_category: domain_event, event_stratum: event, producer_operations: [MergeRedlineIntoProcedureVersion], payload_schema_ref: schemas/events/REDLINE_MERGED.payload.schema.json }
+  - { type: REDLINE_CLOSED,          owning_module: redline, event_category: domain_event, event_stratum: event, producer_operations: [CloseRedline],         payload_schema_ref: schemas/events/REDLINE_CLOSED.payload.schema.json }
+
+  # --- Run Close (runtime) ---
+  - { type: RUN_CLOSE_CHECK_STARTED,      owning_module: run_close, event_category: runtime_event, event_stratum: event,    producer_operations: [RunCloseCheck],        payload_schema_ref: schemas/events/RUN_CLOSE_CHECK_STARTED.payload.schema.json }
+  - { type: RUN_CLOSE_OBSERVATION_CREATED, owning_module: run_close, event_category: runtime_event, event_stratum: event,   producer_operations: [RunCloseCheck],        payload_schema_ref: schemas/events/RUN_CLOSE_OBSERVATION_CREATED.payload.schema.json }
+  - { type: RUN_CLOSE_CHECK_PASSED,       owning_module: run_close, event_category: runtime_event, event_stratum: summary,  producer_operations: [RunCloseCheck],        payload_schema_ref: schemas/events/RUN_CLOSE_CHECK_PASSED.payload.schema.json }
+  - { type: RUN_CLOSE_CHECK_BLOCKED,      owning_module: run_close, event_category: runtime_event, event_stratum: incident, producer_operations: [RunCloseCheck],        payload_schema_ref: schemas/events/RUN_CLOSE_CHECK_BLOCKED.payload.schema.json }
+  - { type: RUN_CLOSE_CHECK_FAILED,       owning_module: run_close, event_category: runtime_event, event_stratum: incident, producer_operations: [RunCloseCheck],        payload_schema_ref: schemas/events/RUN_CLOSE_CHECK_FAILED.payload.schema.json }
+  - { type: RUN_CLOSE_REPORT_REQUESTED,   owning_module: run_close, event_category: runtime_event, event_stratum: event,    producer_operations: [RequestRunCloseReport], payload_schema_ref: schemas/events/RUN_CLOSE_REPORT_REQUESTED.payload.schema.json }
+
+  # --- Report (report_event) ---
+  - { type: REPORT_REQUESTED,           owning_module: report, event_category: report_event, event_stratum: event,   producer_operations: [RequestReportGeneration, GenerateRunCloseReport], payload_schema_ref: schemas/events/REPORT_REQUESTED.payload.schema.json }
+  - { type: REPORT_GENERATION_STARTED,  owning_module: report, event_category: report_event, event_stratum: event,   producer_operations: [StartReportGeneration, GenerateRunCloseReport],   payload_schema_ref: schemas/events/REPORT_GENERATION_STARTED.payload.schema.json }
+  - { type: REPORT_GENERATED,           owning_module: report, event_category: report_event, event_stratum: summary, producer_operations: [CompleteReportGeneration, GenerateRunCloseReport], payload_schema_ref: schemas/events/REPORT_GENERATED.payload.schema.json }
+  - { type: REPORT_FAILED,              owning_module: report, event_category: report_event, event_stratum: incident, producer_operations: [FailReportGeneration],   payload_schema_ref: schemas/events/REPORT_FAILED.payload.schema.json }
+  - { type: REPORT_RETRY_REQUESTED,     owning_module: report, event_category: report_event, event_stratum: event,   producer_operations: [RetryReportGeneration],  payload_schema_ref: schemas/events/REPORT_RETRY_REQUESTED.payload.schema.json }
+  - { type: REPORT_SUPERSEDED,          owning_module: report, event_category: report_event, event_stratum: event,   producer_operations: [SupersedeReport],        payload_schema_ref: schemas/events/REPORT_SUPERSEDED.payload.schema.json }
+  - { type: BOUNDED_DRILL_DOWN_REQUESTED, owning_module: report, event_category: report_event, event_stratum: event, producer_operations: [BoundedDrillDown],     payload_schema_ref: schemas/events/BOUNDED_DRILL_DOWN_REQUESTED.payload.schema.json }
+
+  # --- Access (access_event) ---
+  - { type: ACCESS_DECISION_ALLOWED, owning_module: access, event_category: access_event, event_stratum: event, producer_operations: [EvaluateAccess], payload_schema_ref: schemas/events/ACCESS_DECISION_ALLOWED.payload.schema.json }
+  - { type: ACCESS_DECISION_SUMMARY, owning_module: access, event_category: access_event, event_stratum: event, producer_operations: [EvaluateAccess], payload_schema_ref: schemas/events/ACCESS_DECISION_SUMMARY.payload.schema.json }
+  - { type: ACCESS_DECISION_DENIED,  owning_module: access, event_category: access_event, event_stratum: incident, producer_operations: [EvaluateAccess], payload_schema_ref: schemas/events/ACCESS_DECISION_DENIED.payload.schema.json }
+  - { type: ACCESS_DECISION_AUDITED, owning_module: access, event_category: audit_event,  event_stratum: event, producer_operations: [EvaluateAccess], payload_schema_ref: schemas/events/ACCESS_DECISION_AUDITED.payload.schema.json }
+
+  # --- Grammar Gap (grammar_event) ---
+  - { type: GRAMMAR_GAP_CREATED,   owning_module: grammar_gap, event_category: grammar_event, event_stratum: incident, producer_operations: [CreateGrammarGap, NormalizeMachineEvidence], payload_schema_ref: schemas/events/GRAMMAR_GAP_CREATED.payload.schema.json }
+  - { type: GRAMMAR_GAP_ESCALATED, owning_module: grammar_gap, event_category: grammar_event, event_stratum: incident, producer_operations: [EscalateGrammarGap], payload_schema_ref: schemas/events/GRAMMAR_GAP_ESCALATED.payload.schema.json }
+
+  # --- Attachment (domain) ---
+  - { type: ATTACHMENT_CREATED,          owning_module: attachment, event_category: domain_event, event_stratum: event, producer_operations: [CreateAttachment],          payload_schema_ref: schemas/events/ATTACHMENT_CREATED.payload.schema.json }
+  - { type: ATTACHMENT_LINKED,           owning_module: attachment, event_category: domain_event, event_stratum: event, producer_operations: [LinkAttachment],            payload_schema_ref: schemas/events/ATTACHMENT_LINKED.payload.schema.json }
+  - { type: ATTACHMENT_ACCEPTED,         owning_module: attachment, event_category: domain_event, event_stratum: event, producer_operations: [AcceptAttachmentAsEvidence], payload_schema_ref: schemas/events/ATTACHMENT_ACCEPTED.payload.schema.json }
+  - { type: ATTACHMENT_REVIEW_REQUIRED,  owning_module: attachment, event_category: domain_event, event_stratum: incident, producer_operations: [RouteAttachmentForReview], payload_schema_ref: schemas/events/ATTACHMENT_REVIEW_REQUIRED.payload.schema.json }
+  - { type: ATTACHMENT_REJECTED,         owning_module: attachment, event_category: domain_event, event_stratum: event, producer_operations: [RejectAttachmentAsEvidence], payload_schema_ref: schemas/events/ATTACHMENT_REJECTED.payload.schema.json }
+  - { type: ATTACHMENT_RESTRICTED,       owning_module: attachment, event_category: domain_event, event_stratum: event, producer_operations: [RestrictAttachment],       payload_schema_ref: schemas/events/ATTACHMENT_RESTRICTED.payload.schema.json }
+  - { type: ATTACHMENT_REFERENCE_DELETED, owning_module: attachment, event_category: domain_event, event_stratum: event, producer_operations: [DeleteAttachmentReference], payload_schema_ref: schemas/events/ATTACHMENT_REFERENCE_DELETED.payload.schema.json }

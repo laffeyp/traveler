@@ -1,0 +1,29 @@
+{
+  "name": "distributed-factory-execution-record-system",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "First executable slice of a distributed-factory execution-record system. Contract-first; VF-003 is the first scenario.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "validate:contracts": "node src/registry/validate.ts",
+    "generate:schemas": "node src/schemas/generate.ts",
+    "validate:schemas": "node src/schemas/validate-schemas.ts",
+    "compile:scenario": "node src/compiler/compile.ts",
+    "run:vf003": "node src/harness/run.ts VF-003",
+    "test:vf003:memory": "vitest run tests/vf-003/vf003.test.ts tests/vf-003/discrimination.test.ts",
+    "test:vf003:backend": "node src/harness/run-backend.ts",
+    "bench:smoke": "node src/harness/bench.ts smoke",
+    "bench": "node src/harness/bench.ts first_slice"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8"
+  }
+}

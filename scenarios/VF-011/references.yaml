@@ -1,0 +1,12 @@
+scenario_id: VF-011
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Harness Spec v0.1.2 §24 (VF-011 duplicate adapter payload idempotency) + Contract Spec §6
+note: >
+  Duplicate adapter payload idempotency. Introduces no new event type; exercises the in-instance
+  required_idempotency_key memo on ReceiveMachineEvidence (B-Q-13 scope). Ships a references.yaml per the
+  B-Q-16 discipline.
+operations: [ReceiveMachineEvidence, NormalizeMachineEvidence]
+events: [MACHINE_EVIDENCE_RECEIVED, MACHINE_EVIDENCE_NORMALIZED]
+assertion_types: [event_emitted, event_not_emitted, record_exists, record_state]
+caller_types: [adapter, system_worker]

@@ -1,0 +1,94 @@
+scenario_id: VF-010
+scenario_version: "1"
+title: Run close blocked by a missing report definition
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  First-slice bench VF-010 (Harness §22/§18): run close blocked by a missing report definition. A CLEAN
+  run (passing measurement, no nonconformance) must still be refused close — solely because the
+  RunCloseReport DEFINITION is unavailable — surfaced at RunCloseCheck as the registered run-close rule
+  `report_definition_available` (run-close-rules.yaml), a DISTINCT named blocker from
+  failed_measurement_has_quality_path (VF-002/003). Proves the run-close check consults the run-close-rule
+  registry, not just the quality path, and that the run lands close_blocked without closing. The blocker
+  string is the registered rule id (not an executor-invented encoding); the availability representation is
+  B-Q-21 (a world flag defaulting AVAILABLE so a normal run — VF-003 — is unaffected). VF-010 withholds it.
+
+seed: { deterministic_seed: 30100 }
+clock: { start_at: "2026-06-29T08:00:00Z", timezone: "UTC", mode: controlled }
+
+actors:
+  - { actor_id: mfg_eng_1, actor_type: manufacturing_engineer, product_caller_type: manufacturing_engineer }
+  - { actor_id: planner_1, actor_type: planner,                product_caller_type: planner }
+  - { actor_id: operator_1, actor_type: operator,              product_caller_type: operator }
+  - { actor_id: report_worker_1, actor_type: system_worker,    product_caller_type: system_worker }
+
+aliases:
+  procedure_version_v1: ProcedureVersion
+  procedure_step_torque: ProcedureStep
+  data_field_torque: DataCollectionField
+  manufacturing_structure_v1: ManufacturingStructureVersion
+  valve_body_001: InventoryItem
+  effectivity_rule_procedure: EffectivityRule
+  effectivity_rule_structure: EffectivityRule
+  effectivity_resolution_001: EffectivityResolution
+  build_check_001: BuildCheckResult
+  run_001: Run
+  run_context_snapshot_001: RunContextSnapshot
+  run_step_torque: RunStep
+  measurement_torque_passed: Measurement
+  run_close_check_001: RunCloseCheck
+
+world:
+  factory_node: node_la_001
+  part_revisions:
+    - { alias: valve_body_rev_a, part_number: VB-100, revision: A }
+  inventory_truth:
+    - { alias: valve_body_001, part_revision: valve_body_rev_a, serial_number: VB-001 }
+  # The RunCloseReport definition is WITHHELD for this run (default is available; VF-010 opts out). B-Q-21.
+  report_definition_available: false
+  access_policies: []
+
+steps:
+  - { step_id: "001", set_time: "2026-06-29T08:01:00Z", actor: mfg_eng_1, operation: CreateProcedureVersion, idempotency_key: vf010-001, input: { procedure_version_alias: procedure_version_v1, steps: [ { alias: procedure_step_torque, ordinal: 1, name: "Capture torque", data_collection_fields: [ { alias: data_field_torque, name: "Valve body torque", unit: Nm, lower_bound: 10.0, upper_bound: 12.0, nominal: 11.0, evaluation_mode: synchronous } ] } ] }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_CREATED] } }
+  - { step_id: "002", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf010-002, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUBMITTED] } }
+  - { step_id: "003", actor: mfg_eng_1, operation: ReleaseProcedureVersion, idempotency_key: vf010-003, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_RELEASED] } }
+  - { step_id: "004", actor: mfg_eng_1, operation: CreateManufacturingStructureVersion, idempotency_key: vf010-004, input: { manufacturing_structure_alias: manufacturing_structure_v1, part_revision: valve_body_rev_a }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_CREATED] } }
+  - { step_id: "005", actor: mfg_eng_1, operation: ReleaseManufacturingStructureVersion, idempotency_key: vf010-005, input: { manufacturing_structure_alias: manufacturing_structure_v1 }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_RELEASED] } }
+  - { step_id: "006", set_time: "2026-06-29T08:05:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf010-006, input: { inventory_alias: valve_body_001, part_revision: valve_body_rev_a, serial_number: VB-001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "007", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf010-007, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "008", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf010-008, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+  - { step_id: "009", actor: planner_1, operation: ReserveInventory, idempotency_key: vf010-009, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RESERVED] } }
+  - { step_id: "010", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf010-010, input: { effectivity_rule_alias: effectivity_rule_procedure, target_record_type: ProcedureVersion, rule_type: serial_cut_in, serial_condition: "VB-001", target_alias: procedure_version_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "011", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf010-011, input: { effectivity_rule_alias: effectivity_rule_structure, target_record_type: ManufacturingStructureVersion, rule_type: serial_cut_in, serial_condition: "VB-001", target_alias: manufacturing_structure_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "012", actor: planner_1, operation: ResolveEffectivity, idempotency_key: vf010-012, input: { effectivity_resolution_alias: effectivity_resolution_001, target_serial: "VB-001", target_inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RESOLVED] } }
+  - { step_id: "013", actor: planner_1, operation: RunBuildCheck, idempotency_key: vf010-013, input: { build_check_alias: build_check_001, target_inventory_alias: valve_body_001, effectivity_resolution_alias: effectivity_resolution_001 }, expect: { operation_succeeded: true, events_emitted: [BUILD_CHECK_STARTED, BUILD_CHECK_PASSED] } }
+  - { step_id: "014", set_time: "2026-06-29T08:10:00Z", actor: planner_1, operation: CreateRun, idempotency_key: vf010-014, input: { run_alias: run_001, run_context_snapshot_alias: run_context_snapshot_001, procedure_version_alias: procedure_version_v1, manufacturing_structure_alias: manufacturing_structure_v1, effectivity_resolution_alias: effectivity_resolution_001, build_check_alias: build_check_001, target_inventory_alias: valve_body_001, run_step_aliases: [run_step_torque] }, expect: { operation_succeeded: true, events_emitted: [RUN_CREATED] } }
+  - { step_id: "015", actor: report_worker_1, operation: ApplyBuildCheckResultToRun, idempotency_key: vf010-015, input: { run_alias: run_001, build_check_alias: build_check_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_READY] } }
+  - { step_id: "016", set_time: "2026-06-29T08:12:00Z", actor: operator_1, operation: StartRun, idempotency_key: vf010-016, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_STARTED] } }
+  - { step_id: "017", actor: operator_1, operation: StartRunStep, idempotency_key: vf010-017, input: { run_alias: run_001, run_step_alias: run_step_torque }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_STARTED] } }
+  - { step_id: "018", set_time: "2026-06-29T08:17:00Z", actor: operator_1, operation: CaptureMeasurement, idempotency_key: vf010-018-pass, input: { run_alias: run_001, run_step_alias: run_step_torque, data_collection_field_alias: data_field_torque, measurement_alias: measurement_torque_passed, value: 11.1, unit: Nm, source_type: operator_entry, captured_at: "2026-06-29T08:17:00Z" }, expect: { operation_succeeded: true, events_emitted: [MEASUREMENT_CAPTURED, MEASUREMENT_EVALUATED, MEASUREMENT_PASSED] } }
+  - { step_id: "019", actor: operator_1, operation: CompleteRunStep, idempotency_key: vf010-019, input: { run_alias: run_001, run_step_alias: run_step_torque }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_COMPLETED] } }
+  - { step_id: "020", actor: operator_1, operation: CompleteRunSteps, idempotency_key: vf010-020, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_COMPLETED] } }
+  - { step_id: "021", set_time: "2026-06-29T08:45:00Z", actor: operator_1, operation: AttemptRunClose, idempotency_key: vf010-021, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_ENTERED_CLOSE_CHECK] } }
+  # Clean run, but the report DEFINITION is missing -> RunCloseCheck blocks on report_definition_available.
+  - { step_id: "022", set_time: "2026-06-29T08:46:00Z", actor: report_worker_1, operation: RunCloseCheck, idempotency_key: vf010-022, input: { run_alias: run_001, run_close_check_alias: run_close_check_001, expected_result: blocked, expected_blockers: [report_definition_available] }, expect: { operation_succeeded: true, events_emitted: [RUN_CLOSE_CHECK_STARTED, RUN_CLOSE_OBSERVATION_CREATED, RUN_CLOSE_CHECK_BLOCKED] } }
+  - { step_id: "023", actor: report_worker_1, operation: ApplyRunCloseResultToRun, idempotency_key: vf010-023, input: { run_alias: run_001, run_close_check_alias: run_close_check_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_CLOSE_STATE_BLOCKED] } }
+
+assertions:
+  # THE discriminator: the block is the report-definition rule, by name.
+  - { assertion_id: vf010_blocker_rule_report_definition, assertion_type: event_payload_contains, severity: blocking, target: { event_type: RUN_CLOSE_OBSERVATION_CREATED, producer_operation: RunCloseCheck }, expected: { blocker_rule: report_definition_available } }
+  - { assertion_id: vf010_close_check_blocked, assertion_type: event_emitted, severity: blocking, target: { event_type: RUN_CLOSE_CHECK_BLOCKED, producer_operation: RunCloseCheck }, expected: { count: 1 } }
+  - { assertion_id: vf010_check_is_successful_op, assertion_type: operation_succeeded, severity: blocking, target: { step_id: "022", operation: RunCloseCheck }, expected: { succeeded: true } }
+  - { assertion_id: vf010_run_close_blocked, assertion_type: record_state, severity: blocking, target: { record_type: Run, alias: run_001 }, expected: { state: close_blocked } }
+  - { assertion_id: vf010_state_blocked_emitted, assertion_type: event_emitted, severity: blocking, target: { event_type: RUN_CLOSE_STATE_BLOCKED, producer_operation: ApplyRunCloseResultToRun }, expected: { count: 1 } }
+  # Proves it did NOT block via the quality path (the measurement passed; no failure).
+  - { assertion_id: vf010_measurement_passed, assertion_type: record_field_equals, severity: blocking, target: { record_type: Measurement, alias: measurement_torque_passed }, expected: { result: pass } }
+  - { assertion_id: vf010_no_measurement_failed, assertion_type: event_not_emitted, severity: blocking, target: { event_type: MEASUREMENT_FAILED } }
+  # Close did not sneak through.
+  - { assertion_id: vf010_not_closed, assertion_type: event_not_emitted, severity: blocking, target: { event_type: RUN_CLOSED } }
+  - { assertion_id: vf010_not_check_passed, assertion_type: event_not_emitted, severity: blocking, target: { event_type: RUN_CLOSE_CHECK_PASSED } }

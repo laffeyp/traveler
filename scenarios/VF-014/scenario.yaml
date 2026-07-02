@@ -1,0 +1,45 @@
+scenario_id: VF-014
+scenario_version: "1"
+title: Bounded drill-down filters controlled detail AND audits the request
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  Extended adversarial VF-014 (Harness §24/§25): bounded drill-down filters controlled detail AND audits
+  the request. Contract Spec §19 requires a bounded drill-down to be scoped, capped, access-filtered, AND
+  AUDITED; Harness §25 asserts "BoundedDrillDown audits request and filters inaccessible records". The
+  filter half is exercised by VF-003; the AUDIT half is not — the handler emits no BOUNDED_DRILL_DOWN_REQUESTED
+  fact (the VF-003A dynamic: registered op->event binding with no producer path). VF-014 pins BOTH: the
+  controlled tokens are hidden (never leaked) and the audit event fires with the scope + requesting profile.
+  Scope (B-Q-25): VF-014 discharges the access-filtered + audited facets of §19; "capped" and
+  "reject arbitrary predicates" are deferred (no cap magnitude is declared in the registry).
+
+seed: { deterministic_seed: 30140 }
+clock: { start_at: "2026-06-29T08:00:00Z", timezone: "UTC", mode: controlled }
+
+actors:
+  - { actor_id: customer_viewer_1, actor_type: access_limited_external_viewer, product_caller_type: support_user, access_profile: customer_summary_access }
+
+aliases: {}
+
+world:
+  factory_node: node_la_001
+  access_policies:
+    - alias: customer_summary_access
+      visible: [RunCloseReport.summary, SerialHistory.summary, BoundedDrillDown.summary]
+      hidden: [controlled_machine_evidence_payload, internal_quality_notes, raw_machine_payload]
+
+steps:
+  - { step_id: "001", set_time: "2026-06-29T09:10:00Z", actor: customer_viewer_1, operation: BoundedDrillDown, idempotency_key: vf014-001, input: { scope: run, access_profile: customer_summary_access }, expect: { operation_succeeded: true, access_filtered: true, events_emitted: [BOUNDED_DRILL_DOWN_REQUESTED] } }
+
+assertions:
+  # CONTROL half (already worked via VF-003): the controlled tokens are hidden, none leaked into visible.
+  - { assertion_id: vf014_filtered, assertion_type: bounded_drill_down_filtered, severity: blocking, target: { step_id: "001" }, expected: { hidden: [controlled_machine_evidence_payload, internal_quality_notes, raw_machine_payload] } }
+  # AUDIT half (the discriminator — 0 today): the drill-down request is recorded as a fact.
+  - { assertion_id: vf014_audited, assertion_type: event_emitted, severity: blocking, target: { event_type: BOUNDED_DRILL_DOWN_REQUESTED, producer_operation: BoundedDrillDown }, expected: { count: 1 } }
+  # The audit is not vacuous: it carries the scope + the requesting access profile.
+  - { assertion_id: vf014_audit_payload, assertion_type: event_payload_contains, severity: blocking, target: { event_type: BOUNDED_DRILL_DOWN_REQUESTED, producer_operation: BoundedDrillDown }, expected: { access_profile: customer_summary_access, scope: run } }

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/BOM_LINE_CREATED.payload.schema.json",
+  "title": "BOM_LINE_CREATED payload (baseline; owning_module=manufacturing_structure)",
+  "type": "object"
+}

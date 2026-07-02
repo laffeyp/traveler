@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/REPORT_GENERATION_STARTED.payload.schema.json",
+  "title": "REPORT_GENERATION_STARTED payload (baseline; owning_module=report)",
+  "type": "object"
+}

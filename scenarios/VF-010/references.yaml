@@ -1,0 +1,67 @@
+scenario_id: VF-010
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Harness Spec v0.1.2 §18/§22 (VF-010 run close blocked by missing report definition) + Contract Spec §16 + run-close-rules.yaml
+note: >
+  Reference manifest for VF-010. Introduces no new event type (the run-close block events are shared with
+  VF-002/003); its purpose is the B-Q-16 discipline (every materialized scenario ships a references.yaml)
+  and to record that VF-010 exercises the run-close rule report_definition_available (run-close-rules.yaml),
+  previously unevaluated — RunCloseCheck consulted only failed_measurement_has_quality_path.
+
+operations:
+  - CreateProcedureVersion
+  - SubmitProcedureVersionForReview
+  - ReleaseProcedureVersion
+  - CreateManufacturingStructureVersion
+  - ReleaseManufacturingStructureVersion
+  - CreateInventoryItem
+  - ReceiveInventory
+  - ReleaseInventory
+  - ReserveInventory
+  - CreateEffectivityRule
+  - ResolveEffectivity
+  - RunBuildCheck
+  - CreateRun
+  - ApplyBuildCheckResultToRun
+  - StartRun
+  - StartRunStep
+  - CaptureMeasurement
+  - CompleteRunStep
+  - CompleteRunSteps
+  - AttemptRunClose
+  - RunCloseCheck
+  - ApplyRunCloseResultToRun
+
+events:
+  - PROCEDURE_VERSION_RELEASED
+  - MANUFACTURING_STRUCTURE_RELEASED
+  - INVENTORY_RESERVED
+  - EFFECTIVITY_RESOLVED
+  - BUILD_CHECK_PASSED
+  - RUN_CREATED
+  - RUN_READY
+  - RUN_STARTED
+  - MEASUREMENT_PASSED
+  - RUN_COMPLETED
+  - RUN_ENTERED_CLOSE_CHECK
+  - RUN_CLOSE_CHECK_STARTED
+  - RUN_CLOSE_OBSERVATION_CREATED
+  - RUN_CLOSE_CHECK_BLOCKED
+  - RUN_CLOSE_STATE_BLOCKED
+
+record_states:
+  Run: [planned, ready, in_progress, complete, close_check, close_blocked]
+  Measurement: [pass]
+  RunCloseCheck: [blocked]
+
+run_close_rules: [report_definition_available]
+
+assertion_types:
+  - record_state
+  - record_field_equals
+  - event_emitted
+  - event_not_emitted
+  - event_payload_contains
+  - operation_succeeded
+
+caller_types: [manufacturing_engineer, planner, operator, system_worker]

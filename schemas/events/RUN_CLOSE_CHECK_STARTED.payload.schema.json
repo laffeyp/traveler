@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/RUN_CLOSE_CHECK_STARTED.payload.schema.json",
+  "title": "RUN_CLOSE_CHECK_STARTED payload (baseline; owning_module=run_close)",
+  "type": "object"
+}

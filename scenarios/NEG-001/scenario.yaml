@@ -1,0 +1,17 @@
+scenario_id: NEG-001
+scenario_version: "1"
+title: Negative-test fixture — compiler must emit ContractGap on an unregistered reference
+ci_eligible: true
+purpose: >
+  Permanent negative test. References an operation (ValidateExternalPayload, the Harness §4.2
+  ContractGap example) that is deliberately NOT in the active registry. Compiling this scenario
+  MUST fail with a ContractGap and exit 1. If it ever passes, the compiler has stopped failing
+  closed. Not part of any bench.
+
+clock: { start_at: "2026-06-29T08:00:00Z", timezone: "UTC", mode: controlled }
+actors:
+  - { actor_id: adapter_1, actor_type: adapter, product_caller_type: adapter }
+aliases: {}
+steps:
+  - { step_id: "001", actor: adapter_1, operation: ValidateExternalPayload, idempotency_key: neg-001, input: {}, expect: { operation_succeeded: true, events_emitted: [EXTERNAL_PAYLOAD_VALIDATED] } }
+assertions: []

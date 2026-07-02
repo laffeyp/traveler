@@ -1,0 +1,99 @@
+scenario_id: VF-016
+scenario_version: "1"
+title: A redline cannot be approved by its own author (segregation of duties)
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  Persona-review gap 1 (segregation of duties): an approval must be a SECOND person. A redline authored by
+  operator_1 cannot be approved by operator_1 — the same-person sign-off is REFUSED with
+  segregation_of_duties_violation, leaves the redline under_review (no facts, rolled back), and emits no
+  APPROVAL_APPROVED / REDLINE_APPROVED. A DISTINCT approver (mfg_eng_1) then approves normally. The pair is
+  self-teething: the refuse step and the succeed step differ only in WHO approves, so it cannot pass unless the
+  system actually checks the person. Grounds the AS9102 / AS9100-8.7 second-person control the persona reviews
+  named as the #1 gap.
+
+seed: { deterministic_seed: 30160 }
+clock: { start_at: "2026-06-29T08:00:00Z", timezone: "UTC", mode: controlled }
+
+actors:
+  - { actor_id: mfg_eng_1, actor_type: manufacturing_engineer, product_caller_type: manufacturing_engineer }
+  - { actor_id: planner_1, actor_type: planner,                product_caller_type: planner }
+  - { actor_id: operator_1, actor_type: operator,              product_caller_type: operator }
+  - { actor_id: report_worker_1, actor_type: system_worker,    product_caller_type: system_worker }
+
+aliases:
+  procedure_version_v1: ProcedureVersion
+  procedure_step_torque: ProcedureStep
+  data_field_torque: DataCollectionField
+  manufacturing_structure_v1: ManufacturingStructureVersion
+  valve_body_001: InventoryItem
+  effectivity_rule_procedure: EffectivityRule
+  effectivity_rule_structure: EffectivityRule
+  effectivity_resolution_001: EffectivityResolution
+  build_check_001: BuildCheckResult
+  run_001: Run
+  run_context_snapshot_001: RunContextSnapshot
+  run_step_torque: RunStep
+  redline_001: Redline
+  approval_request_001: ApprovalRequest
+  approval_decision_001: ApprovalDecision
+
+world:
+  factory_node: node_la_001
+  part_revisions:
+    - { alias: valve_body_rev_a, part_number: VB-100, revision: A }
+  inventory_truth:
+    - { alias: valve_body_001, part_revision: valve_body_rev_a, serial_number: VB-001 }
+  access_policies: []
+
+steps:
+  - { step_id: "001", set_time: "2026-06-29T08:01:00Z", actor: mfg_eng_1, operation: CreateProcedureVersion, idempotency_key: vf016-001, input: { procedure_version_alias: procedure_version_v1, steps: [ { alias: procedure_step_torque, ordinal: 1, name: "Capture torque", data_collection_fields: [ { alias: data_field_torque, name: "Valve body torque", unit: Nm, lower_bound: 10.0, upper_bound: 12.0, nominal: 11.0, evaluation_mode: synchronous } ] } ] }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_CREATED] } }
+  - { step_id: "002", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf016-002, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUBMITTED] } }
+  - { step_id: "003", actor: mfg_eng_1, operation: ReleaseProcedureVersion, idempotency_key: vf016-003, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_RELEASED] } }
+  - { step_id: "004", actor: mfg_eng_1, operation: CreateManufacturingStructureVersion, idempotency_key: vf016-004, input: { manufacturing_structure_alias: manufacturing_structure_v1, part_revision: valve_body_rev_a }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_CREATED] } }
+  - { step_id: "005", actor: mfg_eng_1, operation: ReleaseManufacturingStructureVersion, idempotency_key: vf016-005, input: { manufacturing_structure_alias: manufacturing_structure_v1 }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_RELEASED] } }
+  - { step_id: "006", set_time: "2026-06-29T08:05:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf016-006, input: { inventory_alias: valve_body_001, part_revision: valve_body_rev_a, serial_number: VB-001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "007", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf016-007, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "008", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf016-008, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+  - { step_id: "009", actor: planner_1, operation: ReserveInventory, idempotency_key: vf016-009, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RESERVED] } }
+  - { step_id: "010", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf016-010, input: { effectivity_rule_alias: effectivity_rule_procedure, target_record_type: ProcedureVersion, rule_type: serial_cut_in, serial_condition: "VB-001", target_alias: procedure_version_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "011", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf016-011, input: { effectivity_rule_alias: effectivity_rule_structure, target_record_type: ManufacturingStructureVersion, rule_type: serial_cut_in, serial_condition: "VB-001", target_alias: manufacturing_structure_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "012", actor: planner_1, operation: ResolveEffectivity, idempotency_key: vf016-012, input: { effectivity_resolution_alias: effectivity_resolution_001, target_serial: "VB-001", target_inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RESOLVED] } }
+  - { step_id: "013", actor: planner_1, operation: RunBuildCheck, idempotency_key: vf016-013, input: { build_check_alias: build_check_001, target_inventory_alias: valve_body_001, effectivity_resolution_alias: effectivity_resolution_001 }, expect: { operation_succeeded: true, events_emitted: [BUILD_CHECK_STARTED, BUILD_CHECK_PASSED] } }
+  - { step_id: "014", set_time: "2026-06-29T08:10:00Z", actor: planner_1, operation: CreateRun, idempotency_key: vf016-014, input: { run_alias: run_001, run_context_snapshot_alias: run_context_snapshot_001, procedure_version_alias: procedure_version_v1, manufacturing_structure_alias: manufacturing_structure_v1, effectivity_resolution_alias: effectivity_resolution_001, build_check_alias: build_check_001, target_inventory_alias: valve_body_001, run_step_aliases: [run_step_torque] }, expect: { operation_succeeded: true, events_emitted: [RUN_CREATED] } }
+  - { step_id: "015", actor: report_worker_1, operation: ApplyBuildCheckResultToRun, idempotency_key: vf016-015, input: { run_alias: run_001, build_check_alias: build_check_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_READY] } }
+  # A redline authored by operator_1.
+  - { step_id: "016", set_time: "2026-06-29T08:22:00Z", actor: operator_1, operation: CreateRedlineDraft, idempotency_key: vf016-016, input: { redline_alias: redline_001, run_alias: run_001, procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [REDLINE_DRAFT_CREATED] } }
+  - { step_id: "017", actor: operator_1, operation: SubmitRedline, idempotency_key: vf016-017, input: { redline_alias: redline_001 }, expect: { operation_succeeded: true, events_emitted: [REDLINE_SUBMITTED] } }
+  - { step_id: "018", actor: mfg_eng_1, operation: ReviewRedline, idempotency_key: vf016-018, input: { redline_alias: redline_001 }, expect: { operation_succeeded: true, events_emitted: [REDLINE_UNDER_REVIEW] } }
+  - { step_id: "019", actor: mfg_eng_1, operation: RequestApproval, idempotency_key: vf016-019, input: { approval_request_alias: approval_request_001, redline_alias: redline_001 }, expect: { operation_succeeded: true, events_emitted: [APPROVAL_REQUESTED] } }
+  # SELF-APPROVAL: operator_1 (the author) tries to approve their own redline -> REFUSED, no facts.
+  - { step_id: "020", set_time: "2026-06-29T08:24:00Z", actor: operator_1, operation: RecordApprovalDecision, idempotency_key: vf016-020, input: { approval_request_alias: approval_request_001, approval_decision_alias: approval_decision_001, redline_alias: redline_001, decision: approved }, expect: { operation_succeeded: false } }
+  # A DISTINCT approver (mfg_eng_1) approves normally.
+  - { step_id: "021", set_time: "2026-06-29T08:25:00Z", actor: mfg_eng_1, operation: RecordApprovalDecision, idempotency_key: vf016-021, input: { approval_request_alias: approval_request_001, approval_decision_alias: approval_decision_001, redline_alias: redline_001, decision: approved }, expect: { operation_succeeded: true, events_emitted: [APPROVAL_APPROVED, REDLINE_APPROVED] } }
+
+assertions:
+  # The self-approval is refused with the segregation-of-duties failure (not any failure).
+  - { assertion_id: vf016_self_approval_refused, assertion_type: operation_failed, severity: blocking, target: { step_id: "020", operation: RecordApprovalDecision }, expected: { failure_class: segregation_of_duties_violation } }
+  # The refused self-approval changed nothing: the redline is still under_review right after step 020.
+  - { assertion_id: vf016_redline_unchanged_after_self, assertion_type: record_state, severity: blocking, target: { record_type: Redline, alias: redline_001, checkpoint: after_step_020 }, expected: { state: under_review } }
+  # And it emitted no approval in the window between the request (019) and the real approval (021).
+  - { assertion_id: vf016_no_self_approve_event, assertion_type: event_not_emitted, severity: blocking, target: { event_type: APPROVAL_APPROVED, after_step: "019", before_step: "021" } }
+  - { assertion_id: vf016_no_self_redline_approved, assertion_type: event_not_emitted, severity: blocking, target: { event_type: REDLINE_APPROVED, after_step: "019", before_step: "021" } }
+  # The distinct approver succeeds: exactly one APPROVAL_APPROVED + REDLINE_APPROVED (from step 021 only).
+  - { assertion_id: vf016_distinct_approval_succeeds, assertion_type: operation_succeeded, severity: blocking, target: { step_id: "021", operation: RecordApprovalDecision }, expected: { succeeded: true } }
+  - { assertion_id: vf016_approved_once, assertion_type: event_emitted, severity: blocking, target: { event_type: APPROVAL_APPROVED, producer_operation: RecordApprovalDecision }, expected: { count: 1 } }
+  - { assertion_id: vf016_redline_approved_once, assertion_type: event_emitted, severity: blocking, target: { event_type: REDLINE_APPROVED, producer_operation: RecordApprovalDecision }, expected: { count: 1 } }
+  # The redline ends approved, and the decision records WHO approved (the distinct approver).
+  - { assertion_id: vf016_redline_final_approved, assertion_type: record_state, severity: blocking, target: { record_type: Redline, alias: redline_001 }, expected: { state: approved } }
+  - { assertion_id: vf016_decided_by_recorded, assertion_type: record_field_equals, severity: blocking, target: { record_type: ApprovalDecision, alias: approval_decision_001 }, expected: { decided_by: mfg_eng_1 } }
+  # The sign-off is a proper electronic signature: who (above), when, and what it attests (persona gap 2).
+  - { assertion_id: vf016_signed_at_recorded, assertion_type: record_field_equals, severity: blocking, target: { record_type: ApprovalDecision, alias: approval_decision_001 }, expected: { signed_at: "2026-06-29T08:25:00Z" } }
+  - { assertion_id: vf016_signature_meaning, assertion_type: record_field_equals, severity: blocking, target: { record_type: ApprovalDecision, alias: approval_decision_001 }, expected: { signature_meaning: "approval: authorizes this redline for application" } }
+  # And the redline records its author (the substrate the check compares against).
+  - { assertion_id: vf016_authored_by_recorded, assertion_type: record_field_equals, severity: blocking, target: { record_type: Redline, alias: redline_001 }, expected: { authored_by: operator_1 } }

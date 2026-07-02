@@ -1,0 +1,48 @@
+scenario_id: VF-003E
+scenario_version: "1"
+title: Machine evidence — forbidden dispositions are refused
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  Negative machine-evidence variant (Contract Spec §10.2 forbidden transitions). Locks in the
+  forbidden-transition guard that VF-003A/B/C only rely on implicitly: AcceptMachineEvidence from
+  `raw` (raw -> accepted is forbidden) must be REFUSED with state_transition_forbidden and leave the
+  record untouched; then, after a legitimate accept, RejectMachineEvidence (accepted -> rejected,
+  forbidden without a superseding review) must also be refused. Proves the by-omission guard actually
+  fails-closed, not by luck.
+
+seed: { deterministic_seed: 30035 }
+clock: { start_at: "2026-06-29T08:00:00Z", timezone: "UTC", mode: controlled }
+
+actors:
+  - { actor_id: machine_adapter_1, actor_type: adapter, product_caller_type: adapter }
+  - { actor_id: report_worker_1, actor_type: system_worker, product_caller_type: system_worker }
+  - { actor_id: quality_1, actor_type: quality_engineer, product_caller_type: quality_engineer }
+
+aliases:
+  torque_evidence_001: MachineEvidenceRecord
+
+world:
+  access_policies: []
+
+steps:
+  - { step_id: "001", set_time: "2026-06-29T08:40:00Z", actor: machine_adapter_1, operation: ReceiveMachineEvidence, idempotency_key: vf003e-001, input: { alias: torque_evidence_001, machine_alias: torque_tool_001, adapter_alias: machine_adapter_1, payload_type: torque_trace, occurred_at: "2026-06-29T08:34:30Z", received_at: "2026-06-29T08:40:00Z", payload: { serial_number: "VB-001", tool_id: "TT-001", measured_torque_nm: 11.1, trace_quality: acceptable } }, expect: { operation_succeeded: true, events_emitted: [MACHINE_EVIDENCE_RECEIVED] } }
+  # FORBIDDEN: raw -> accepted. Must fail and leave the record raw.
+  - { step_id: "002", actor: quality_1, operation: AcceptMachineEvidence, idempotency_key: vf003e-002, input: { evidence_alias: torque_evidence_001 }, expect: { operation_succeeded: false } }
+  - { step_id: "003", actor: report_worker_1, operation: NormalizeMachineEvidence, idempotency_key: vf003e-003, input: { evidence_alias: torque_evidence_001 }, expect: { operation_succeeded: true, events_emitted: [MACHINE_EVIDENCE_NORMALIZED] } }
+  - { step_id: "004", actor: quality_1, operation: AcceptMachineEvidence, idempotency_key: vf003e-004, input: { evidence_alias: torque_evidence_001 }, expect: { operation_succeeded: true, events_emitted: [MACHINE_EVIDENCE_ACCEPTED] } }
+  # FORBIDDEN: accepted -> rejected (without superseding review). Must fail and leave the record accepted.
+  - { step_id: "005", actor: quality_1, operation: RejectMachineEvidence, idempotency_key: vf003e-005, input: { evidence_alias: torque_evidence_001 }, expect: { operation_succeeded: false } }
+
+assertions:
+  - { assertion_id: vf003e_accept_from_raw_refused, assertion_type: operation_failed, severity: blocking, target: { step_id: "002", operation: AcceptMachineEvidence }, expected: { failure_class: state_transition_forbidden } }
+  - { assertion_id: vf003e_raw_after_refused_accept, assertion_type: record_state, severity: blocking, target: { record_type: MachineEvidenceRecord, alias: torque_evidence_001, checkpoint: after_step_002 }, expected: { state: raw } }
+  - { assertion_id: vf003e_reject_from_accepted_refused, assertion_type: operation_failed, severity: blocking, target: { step_id: "005", operation: RejectMachineEvidence }, expected: { failure_class: state_transition_forbidden } }
+  - { assertion_id: vf003e_final_state_accepted, assertion_type: record_state, severity: blocking, target: { record_type: MachineEvidenceRecord, alias: torque_evidence_001 }, expected: { state: accepted } }
+  - { assertion_id: vf003e_accepted_once, assertion_type: event_emitted, severity: blocking, target: { event_type: MACHINE_EVIDENCE_ACCEPTED, producer_operation: AcceptMachineEvidence }, expected: { count: 1 } }
+  - { assertion_id: vf003e_never_rejected, assertion_type: event_not_emitted, severity: blocking, target: { event_type: MACHINE_EVIDENCE_REJECTED } }

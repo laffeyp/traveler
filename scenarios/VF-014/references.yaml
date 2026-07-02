@@ -1,0 +1,11 @@
+scenario_id: VF-014
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Harness Spec v0.1.2 §24/§25 (VF-014 bounded drill-down audits + filters) + Contract Spec §19
+note: >
+  Bounded drill-down audits AND filters. Brings BOUNDED_DRILL_DOWN_REQUESTED (registered op->event binding,
+  no prior producer path) into the executable slice — the audit half of the Contract Spec §19 obligation.
+operations: [BoundedDrillDown]
+events: [BOUNDED_DRILL_DOWN_REQUESTED]
+assertion_types: [bounded_drill_down_filtered, event_emitted, event_payload_contains]
+caller_types: [support_user]

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/EFFECTIVITY_RULE_CREATED.payload.schema.json",
+  "title": "EFFECTIVITY_RULE_CREATED payload (baseline; owning_module=effectivity)",
+  "type": "object"
+}

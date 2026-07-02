@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/operations/CaptureMeasurement.input.schema.json",
+  "title": "CaptureMeasurement input (Build Readiness §8)",
+  "type": "object",
+  "required": [
+    "operation",
+    "idempotency_key",
+    "input"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "operation": {
+      "const": "CaptureMeasurement"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "input": {
+      "type": "object",
+      "required": [
+        "run_alias",
+        "run_step_alias",
+        "data_collection_field_alias",
+        "value",
+        "unit",
+        "source_type",
+        "captured_at"
+      ],
+      "properties": {
+        "run_alias": {
+          "type": "string"
+        },
+        "run_step_alias": {
+          "type": "string"
+        },
+        "data_collection_field_alias": {
+          "type": "string"
+        },
+        "value": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "source_type": {
+          "enum": [
+            "operator_entry",
+            "machine_adapter",
+            "import"
+          ]
+        },
+        "captured_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

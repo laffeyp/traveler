@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/PROCEDURE_VERSION_SUBMITTED.payload.schema.json",
+  "title": "PROCEDURE_VERSION_SUBMITTED payload (baseline; owning_module=procedure)",
+  "type": "object"
+}

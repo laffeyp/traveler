@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/APPROVAL_APPROVED.payload.schema.json",
+  "title": "APPROVAL_APPROVED payload (baseline; owning_module=approval)",
+  "type": "object"
+}

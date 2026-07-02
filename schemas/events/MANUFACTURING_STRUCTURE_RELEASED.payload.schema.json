@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/MANUFACTURING_STRUCTURE_RELEASED.payload.schema.json",
+  "title": "MANUFACTURING_STRUCTURE_RELEASED payload (baseline; owning_module=manufacturing_structure)",
+  "type": "object"
+}

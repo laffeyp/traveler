@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/VERIFICATION_COMPLETED.payload.schema.json",
+  "title": "VERIFICATION_COMPLETED payload (baseline; owning_module=quality)",
+  "type": "object"
+}

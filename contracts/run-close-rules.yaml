@@ -1,0 +1,48 @@
+registry: run-close-rules
+registry_version: contracts-0.4.1
+source: Contract Spec v0.4.1 section 16
+note: First run-close rules. All blocking by default unless stated.
+
+rules:
+  - id: required_steps_complete
+    blocking: true
+    description: All required RunStep records are complete or skipped.
+  - id: required_measurements_present
+    blocking: true
+    description: Every step requiring a measurement has one captured.
+  - id: failed_measurement_has_quality_path
+    blocking: true
+    description: >
+      Every failed Measurement has a linked Nonconformance and required verification is complete.
+      Resolution requires the required nonconformance, containment, disposition, rework, and
+      verification records. This is the rule that blocks the first VF-003 close attempt.
+  - id: required_installations_present
+    blocking: true
+    description: Every required BOM installation has an InstallationEvent.
+  - id: redline_approved_before_applied
+    blocking: true
+    description: Any applied Redline was approved before application.
+  - id: redline_applied_before_step_complete_if_affecting_step
+    blocking: true
+    description: A redline affecting a step was applied before that step completed.
+  - id: machine_evidence_reviewed_if_required
+    blocking: true
+    description: review_required machine evidence is represented in close observations and not used as measurement.
+  - id: nonconformance_disposition_recorded
+    blocking: true
+    description: Every open nonconformance for the run has a recorded disposition.
+  - id: nonconformance_verified_before_close_if_required
+    blocking: true
+    description: Nonconformances requiring verification are verified before close.
+  - id: no_blocking_reconciliation_conflict
+    blocking: true
+    description: No unresolved blocking reconciliation conflict touches the run's records.
+  - id: run_context_snapshot_exists
+    blocking: true
+    description: The run has a RunContextSnapshot.
+  - id: report_definition_available
+    blocking: true
+    description: A RunCloseReport definition is available for generation.
+  - id: access_policy_available
+    blocking: true
+    description: An access policy is available for the report and its controlled detail.

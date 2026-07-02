@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/BOUNDED_DRILL_DOWN_REQUESTED.payload.schema.json",
+  "title": "BOUNDED_DRILL_DOWN_REQUESTED payload (baseline; owning_module=report)",
+  "type": "object"
+}

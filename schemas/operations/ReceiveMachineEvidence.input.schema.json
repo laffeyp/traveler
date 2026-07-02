@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/operations/ReceiveMachineEvidence.input.schema.json",
+  "title": "ReceiveMachineEvidence input (Build Readiness §8)",
+  "type": "object",
+  "required": [
+    "operation",
+    "idempotency_key",
+    "input"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "operation": {
+      "const": "ReceiveMachineEvidence"
+    },
+    "idempotency_key": {
+      "type": "string"
+    },
+    "input": {
+      "type": "object",
+      "required": [
+        "alias",
+        "machine_alias",
+        "adapter_alias",
+        "payload_type",
+        "occurred_at",
+        "received_at",
+        "payload"
+      ],
+      "properties": {
+        "alias": {
+          "type": "string"
+        },
+        "machine_alias": {
+          "type": "string"
+        },
+        "adapter_alias": {
+          "type": "string"
+        },
+        "payload_type": {
+          "const": "torque_trace"
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "received_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "serial_number",
+            "tool_id",
+            "measured_torque_nm",
+            "trace_quality"
+          ],
+          "properties": {
+            "serial_number": {
+              "type": "string"
+            },
+            "tool_id": {
+              "type": "string"
+            },
+            "measured_torque_nm": {
+              "type": "number"
+            },
+            "trace_quality": {
+              "enum": [
+                "acceptable",
+                "suspect",
+                "invalid"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

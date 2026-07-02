@@ -1,0 +1,43 @@
+registry: modules
+registry_version: contracts-0.4.1
+source: TAD v0.3 section 5 (authoritative module ownership registry)
+note: >
+  Module identity registry. Ownership of each record / operation / event is recorded
+  on the record / operation / event itself (single source of truth), which satisfies the
+  "exactly one owning module" invariant by construction. first_slice=false modules are
+  registered for identity but own no first-slice operations or events.
+
+caller_types:
+  - manufacturing_engineer
+  - planner
+  - operator
+  - quality_engineer
+  - machine_integration_owner
+  - adapter
+  - system_worker
+  - access_admin
+  - service_account
+  - support_user
+
+modules:
+  - { id: procedure,              name: Procedure Module,                 first_slice: true }
+  - { id: manufacturing_structure, name: Manufacturing Structure Module,  first_slice: true }
+  - { id: run,                    name: Run Module,                       first_slice: true }
+  - { id: measurement,            name: Measurement Module,               first_slice: true }
+  - { id: inventory,              name: Inventory Module,                 first_slice: true }
+  - { id: installed_part_history, name: Installed-Part History Module,    first_slice: true }
+  - { id: machine_evidence,       name: Machine Evidence Module,          first_slice: true }
+  - { id: quality,                name: Quality Module,                   first_slice: true }
+  - { id: approval,               name: Approval Module,                  first_slice: true }
+  - { id: redline,                name: Redline Module,                   first_slice: true }
+  - { id: effectivity,            name: Effectivity Module,               first_slice: true }
+  - { id: build_check,            name: Build Check Module,               first_slice: true }
+  - { id: run_close,              name: Run Close Module,                 first_slice: true }
+  - { id: report,                 name: Report Module,                    first_slice: true }
+  - { id: access,                 name: Access / Visibility Module,       first_slice: true }
+  - { id: grammar_gap,            name: Grammar Gap Module,               first_slice: true }
+  - { id: attachment,             name: Attachment Module,                first_slice: true }
+  - { id: reconciliation,         name: Reconciliation Module,            first_slice: false }
+  - { id: adapter_runtime,        name: Adapter Runtime Module,           first_slice: false }
+  - { id: virtual_factory_harness, name: Virtual Factory Harness Module,  first_slice: false }
+  - { id: human_validation,       name: Human Validation Module,          first_slice: false }

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/QUALITY_CONTAINMENT_REQUIRED.payload.schema.json",
+  "title": "QUALITY_CONTAINMENT_REQUIRED payload (baseline; owning_module=quality)",
+  "type": "object"
+}

@@ -1,0 +1,271 @@
+registry: state-machines
+registry_version: contracts-0.4.1
+source: Contract Spec v0.4.1 section 10 + section 22 amendment ledger + Build Readiness Plan v0.2 section 7
+note: >
+  First-slice state machines. Each transition's `via` is one operation or a list of operations
+  (a composite worker may walk the same transition, e.g. GenerateRunCloseReport). `from: null`
+  is a creation transition. creation_transition=explicit means a null-> row is required
+  (Contract Spec section 0.1.4 mandates this for Run, InventoryItem, MachineEvidenceRecord,
+  Nonconformance, QualityContainmentAction); implicit_under names the operation that creates the
+  record without its own transition event (RunStep under CreateRun, Contract Spec section 0.2.7).
+  B-Q-1: QualityContainmentAction machine added. B-Q-2: Nonconformance has disposition_pending
+  self-loops for StartQualityContainment/ActivateQualityContainment so the VF-003 disposition-first
+  ordering emits the containment events without changing NC state.
+
+state_machines:
+  - record_type: ProcedureVersion
+    owning_module: procedure
+    state_field: status
+    initial_state: draft
+    terminal_states: [superseded, retired]
+    creation_transition: explicit
+    states: [draft, in_review, released, superseded, retired]
+    transitions:
+      - { from: null,      to: draft,      via: CreateProcedureVersion,          emits: PROCEDURE_VERSION_CREATED }
+      - { from: draft,     to: in_review,  via: SubmitProcedureVersionForReview,  emits: PROCEDURE_VERSION_SUBMITTED }
+      - { from: in_review, to: draft,      via: ReturnProcedureVersionToDraft,    emits: PROCEDURE_VERSION_RETURNED }
+      - { from: in_review, to: released,   via: ReleaseProcedureVersion,          emits: PROCEDURE_VERSION_RELEASED }
+      - { from: released,  to: superseded, via: SupersedeProcedureVersion,        emits: PROCEDURE_VERSION_SUPERSEDED }
+      - { from: released,  to: retired,    via: RetireProcedureVersion,           emits: PROCEDURE_VERSION_RETIRED }
+    forbidden: ["released -> draft", "released -> in_review", "superseded -> *", "retired -> *"]
+
+  - record_type: ManufacturingStructureVersion
+    owning_module: manufacturing_structure
+    state_field: status
+    initial_state: draft
+    terminal_states: [superseded, retired]
+    creation_transition: explicit
+    states: [draft, in_review, released, superseded, retired]
+    transitions:
+      - { from: null,      to: draft,      via: CreateManufacturingStructureVersion,    emits: MANUFACTURING_STRUCTURE_CREATED }
+      - { from: draft,     to: in_review,  via: SubmitManufacturingStructureForReview,  emits: MANUFACTURING_STRUCTURE_SUBMITTED }
+      - { from: in_review, to: draft,      via: ReturnManufacturingStructureToDraft,    emits: MANUFACTURING_STRUCTURE_RETURNED }
+      - { from: draft,     to: released,   via: ReleaseManufacturingStructureVersion,   emits: MANUFACTURING_STRUCTURE_RELEASED }
+      - { from: in_review, to: released,   via: ReleaseManufacturingStructureVersion,   emits: MANUFACTURING_STRUCTURE_RELEASED }
+      - { from: released,  to: superseded, via: SupersedeManufacturingStructureVersion, emits: MANUFACTURING_STRUCTURE_SUPERSEDED }
+      - { from: released,  to: retired,    via: RetireManufacturingStructureVersion,    emits: MANUFACTURING_STRUCTURE_RETIRED }
+    forbidden: ["released -> draft", "superseded -> *", "retired -> *"]
+
+  - record_type: Run
+    owning_module: run
+    state_field: status
+    initial_state: planned
+    terminal_states: [closed, cancelled]
+    creation_transition: explicit
+    states: [planned, ready, blocked, in_progress, paused, complete, close_check, close_blocked, closed, cancelled]
+    transitions:
+      - { from: null,         to: planned,      via: CreateRun,                 emits: RUN_CREATED }
+      - { from: planned,      to: ready,        via: ApplyBuildCheckResultToRun, emits: RUN_READY }
+      - { from: planned,      to: blocked,      via: ApplyBuildCheckResultToRun, emits: RUN_BLOCKED }
+      - { from: ready,        to: in_progress,  via: StartRun,                  emits: RUN_STARTED }
+      - { from: blocked,      to: ready,        via: ClearRunBlocker,           emits: RUN_READY }
+      - { from: in_progress,  to: paused,       via: PauseRun,                  emits: RUN_PAUSED }
+      - { from: paused,       to: in_progress,  via: ResumeRun,                 emits: RUN_RESUMED }
+      - { from: in_progress,  to: blocked,      via: BlockRun,                  emits: RUN_BLOCKED }
+      - { from: blocked,      to: in_progress,  via: ClearRunBlocker,           emits: RUN_RESUMED }
+      - { from: in_progress,  to: complete,     via: CompleteRunSteps,          emits: RUN_COMPLETED }
+      - { from: complete,     to: close_check,  via: AttemptRunClose,           emits: RUN_ENTERED_CLOSE_CHECK }
+      - { from: close_blocked, to: close_check, via: AttemptRunClose,           emits: RUN_ENTERED_CLOSE_CHECK }
+      - { from: close_check,  to: closed,       via: ApplyRunCloseResultToRun,  emits: RUN_CLOSED }
+      - { from: close_check,  to: close_blocked, via: ApplyRunCloseResultToRun, emits: RUN_CLOSE_STATE_BLOCKED }
+      - { from: planned,      to: cancelled,    via: CancelRun,                 emits: RUN_CANCELLED }
+      - { from: ready,        to: cancelled,    via: CancelRun,                 emits: RUN_CANCELLED }
+      - { from: blocked,      to: cancelled,    via: CancelRun,                 emits: RUN_CANCELLED }
+    forbidden: ["closed -> *", "cancelled -> *", "paused -> close_check", "close_blocked -> closed"]
+
+  - record_type: RunStep
+    owning_module: run
+    state_field: status
+    initial_state: not_started
+    terminal_states: [complete, skipped]
+    creation_transition: implicit_under_CreateRun
+    states: [not_started, ready, in_progress, blocked, complete, failed, rework_required, rework_in_progress, skipped]
+    transitions:
+      - { from: not_started,        to: ready,              via: AdvanceStepReadiness,  emits: RUN_STEP_READY }
+      - { from: not_started,        to: in_progress,        via: StartRunStep,          emits: RUN_STEP_STARTED }
+      - { from: ready,              to: in_progress,        via: StartRunStep,          emits: RUN_STEP_STARTED }
+      - { from: in_progress,        to: blocked,            via: BlockRunStep,          emits: RUN_STEP_BLOCKED }
+      - { from: blocked,            to: ready,              via: ClearRunStepBlocker,   emits: RUN_STEP_READY }
+      - { from: in_progress,        to: complete,           via: CompleteRunStep,       emits: RUN_STEP_COMPLETED }
+      - { from: rework_in_progress, to: complete,           via: CompleteRunStep,       emits: RUN_STEP_COMPLETED }
+      - { from: in_progress,        to: failed,             via: FailRunStep,           emits: RUN_STEP_FAILED }
+      - { from: failed,             to: rework_required,    via: RequireRunStepRework,  emits: RUN_STEP_REWORK_REQUIRED }
+      - { from: rework_required,    to: rework_in_progress, via: StartRunStepRework,    emits: RUN_STEP_REWORK_STARTED }
+      - { from: not_started,        to: skipped,            via: SkipRunStep,           emits: RUN_STEP_SKIPPED }
+      - { from: ready,              to: skipped,            via: SkipRunStep,           emits: RUN_STEP_SKIPPED }
+    forbidden: ["complete -> *", "skipped -> *"]
+
+  - record_type: InventoryItem
+    owning_module: inventory
+    state_field: status
+    initial_state: expected
+    terminal_states: [scrapped, shipped]
+    creation_transition: explicit
+    states: [expected, received, available, quarantined, reserved, kitted, in_wip, installed, removed, scrapped, shipped]
+    transitions:
+      - { from: null,        to: expected,    via: CreateInventoryItem,         emits: INVENTORY_CREATED }
+      - { from: expected,    to: received,    via: ReceiveInventory,            emits: INVENTORY_RECEIVED }
+      - { from: received,    to: available,   via: ReleaseInventory,            emits: INVENTORY_AVAILABLE }
+      - { from: received,    to: quarantined, via: QuarantineInventory,         emits: INVENTORY_QUARANTINED }
+      - { from: quarantined, to: available,   via: ReleaseFromQuarantine,       emits: INVENTORY_AVAILABLE }
+      - { from: available,   to: reserved,    via: ReserveInventory,            emits: INVENTORY_RESERVED }
+      - { from: reserved,    to: kitted,      via: KitInventory,                emits: INVENTORY_KITTED }
+      - { from: reserved,    to: in_wip,      via: StartRunWithInventory,       emits: INVENTORY_IN_WIP }
+      - { from: kitted,      to: in_wip,      via: StartRunWithInventory,       emits: INVENTORY_IN_WIP }
+      - { from: in_wip,      to: installed,   via: InstallInventory,            emits: INVENTORY_INSTALLED }
+      - { from: installed,   to: removed,     via: RemoveInventory,             emits: INVENTORY_REMOVED }
+      - { from: removed,     to: available,   via: ReleaseRemovedInventory,     emits: INVENTORY_AVAILABLE }
+      - { from: removed,     to: quarantined, via: QuarantineRemovedInventory,  emits: INVENTORY_QUARANTINED }
+      - { from: in_wip,      to: scrapped,    via: ScrapInventory,              emits: INVENTORY_SCRAPPED }
+      - { from: available,   to: scrapped,    via: ScrapInventory,              emits: INVENTORY_SCRAPPED }
+      - { from: available,   to: shipped,     via: ShipInventory,               emits: INVENTORY_SHIPPED }
+      - { from: installed,   to: shipped,     via: ShipInventory,               emits: INVENTORY_SHIPPED }
+    forbidden: ["scrapped -> *", "shipped -> *"]
+
+  - record_type: MachineEvidenceRecord
+    owning_module: machine_evidence
+    state_field: state
+    initial_state: raw
+    terminal_states: [rejected, invalidated]
+    creation_transition: explicit
+    states: [raw, normalized, quarantined, review_required, accepted, rejected, invalidated]
+    transitions:
+      - { from: null,            to: raw,             via: ReceiveMachineEvidence,       emits: MACHINE_EVIDENCE_RECEIVED }
+      # Contract Spec §18 reconciliation: accepted evidence can later be INVALIDATED (a superseding correction),
+      # cascading to mark dependent reports regeneration_required. Added beyond the original slice (see ADDITIONS.md).
+      - { from: accepted,        to: invalidated,     via: InvalidateAcceptedEvidence,   emits: MACHINE_EVIDENCE_INVALIDATED }
+      - { from: raw,             to: normalized,      via: NormalizeMachineEvidence,     emits: MACHINE_EVIDENCE_NORMALIZED }
+      # (raw -> quarantined via NormalizeMachineEvidence removed: Contract Spec §10.2 models quarantine
+      #  only via the explicit QuarantineMachineEvidence op; a same-(from,via) ambiguous row is a latent bug.)
+      - { from: raw,             to: quarantined,     via: QuarantineMachineEvidence,    emits: MACHINE_EVIDENCE_QUARANTINED }
+      - { from: normalized,      to: quarantined,     via: QuarantineMachineEvidence,    emits: MACHINE_EVIDENCE_QUARANTINED }
+      - { from: normalized,      to: review_required, via: RouteMachineEvidenceForReview, emits: MACHINE_EVIDENCE_REVIEW_REQUIRED }
+      - { from: normalized,      to: accepted,        via: AcceptMachineEvidence,        emits: MACHINE_EVIDENCE_ACCEPTED }
+      - { from: normalized,      to: rejected,        via: RejectMachineEvidence,        emits: MACHINE_EVIDENCE_REJECTED }
+      - { from: quarantined,     to: review_required, via: RouteMachineEvidenceForReview, emits: MACHINE_EVIDENCE_REVIEW_REQUIRED }
+      - { from: review_required, to: accepted,        via: AcceptMachineEvidence,        emits: MACHINE_EVIDENCE_ACCEPTED }
+      - { from: review_required, to: rejected,        via: RejectMachineEvidence,        emits: MACHINE_EVIDENCE_REJECTED }
+      - { from: review_required, to: quarantined,     via: QuarantineMachineEvidence,    emits: MACHINE_EVIDENCE_QUARANTINED }
+    forbidden: ["raw -> accepted", "quarantined -> accepted", "rejected -> accepted", "accepted -> rejected", "invalidated -> *"]
+
+  - record_type: Issue
+    owning_module: quality
+    state_field: status
+    initial_state: open
+    terminal_states: [closed, cancelled]
+    creation_transition: explicit
+    states: [open, triaged, resolved, closed, cancelled]
+    transitions:
+      - { from: null,     to: open,      via: OpenIssue,    emits: ISSUE_OPENED }
+      - { from: open,     to: triaged,   via: TriageIssue,  emits: ISSUE_TRIAGED }
+      - { from: triaged,  to: resolved,  via: ResolveIssue, emits: ISSUE_RESOLVED }
+      - { from: resolved, to: closed,    via: CloseIssue,   emits: ISSUE_CLOSED }
+      - { from: open,     to: cancelled, via: CancelIssue,  emits: ISSUE_CANCELLED }
+      - { from: triaged,  to: cancelled, via: CancelIssue,  emits: ISSUE_CANCELLED }
+    forbidden: ["closed -> *", "cancelled -> *"]
+
+  - record_type: Nonconformance
+    owning_module: quality
+    state_field: status
+    initial_state: open
+    terminal_states: [closed, cancelled]
+    creation_transition: explicit
+    states: [open, containment_required, disposition_pending, dispositioned, in_rework, verification_pending, verified, closed, cancelled]
+    transitions:
+      - { from: null,                 to: open,                 via: OpenNonconformance,        emits: NONCONFORMANCE_OPENED }
+      - { from: open,                 to: containment_required, via: StartQualityContainment,   emits: QUALITY_CONTAINMENT_REQUIRED }
+      - { from: containment_required, to: disposition_pending,  via: ActivateQualityContainment, emits: QUALITY_CONTAINMENT_STARTED }
+      - { from: open,                 to: disposition_pending,  via: DefineAffectedPopulation,  emits: NONCONFORMANCE_DISPOSITION_PENDING }
+      - { from: disposition_pending,  to: disposition_pending,  via: StartQualityContainment,   emits: QUALITY_CONTAINMENT_REQUIRED }
+      - { from: disposition_pending,  to: disposition_pending,  via: ActivateQualityContainment, emits: QUALITY_CONTAINMENT_STARTED }
+      - { from: disposition_pending,  to: dispositioned,        via: RecordDisposition,         emits: DISPOSITION_RECORDED }
+      - { from: dispositioned,        to: in_rework,            via: StartRework,               emits: REWORK_STARTED }
+      - { from: in_rework,            to: verification_pending, via: CompleteRework,            emits: VERIFICATION_PENDING }
+      - { from: dispositioned,        to: verification_pending, via: RequireVerification,       emits: VERIFICATION_PENDING }
+      - { from: verification_pending, to: verified,             via: VerifyRework,              emits: VERIFICATION_COMPLETED }
+      - { from: verified,             to: closed,               via: CloseNonconformance,       emits: NONCONFORMANCE_CLOSED }
+      - { from: open,                 to: cancelled,            via: CancelNonconformance,      emits: NONCONFORMANCE_CANCELLED }
+    forbidden: ["closed -> *", "cancelled -> *"]
+
+  - record_type: QualityContainmentAction
+    owning_module: quality
+    state_field: status
+    initial_state: required
+    terminal_states: [active]
+    creation_transition: explicit
+    states: [required, active]
+    transitions:
+      - { from: null,     to: required, via: StartQualityContainment,    emits: QUALITY_CONTAINMENT_REQUIRED }
+      - { from: required, to: active,   via: ActivateQualityContainment, emits: QUALITY_CONTAINMENT_STARTED }
+    forbidden: []
+
+  - record_type: Redline
+    owning_module: redline
+    state_field: status
+    initial_state: draft
+    terminal_states: [closed, rejected]
+    creation_transition: explicit
+    states: [draft, submitted, under_review, approved, rejected, applied, merge_candidate, merged, closed]
+    transitions:
+      - { from: null,           to: draft,           via: CreateRedlineDraft,            emits: REDLINE_DRAFT_CREATED }
+      - { from: draft,          to: submitted,       via: SubmitRedline,                 emits: REDLINE_SUBMITTED }
+      - { from: submitted,      to: under_review,    via: ReviewRedline,                 emits: REDLINE_UNDER_REVIEW }
+      - { from: under_review,   to: approved,        via: RecordApprovalDecision,        emits: REDLINE_APPROVED }
+      - { from: under_review,   to: rejected,        via: RecordApprovalDecision,        emits: REDLINE_REJECTED }
+      - { from: approved,       to: applied,         via: ApplyRedline,                  emits: REDLINE_APPLIED }
+      - { from: approved,       to: merge_candidate, via: MarkRedlineAsMergeCandidate,   emits: REDLINE_MERGE_CANDIDATE }
+      - { from: applied,        to: merge_candidate, via: MarkRedlineAsMergeCandidate,   emits: REDLINE_MERGE_CANDIDATE }
+      - { from: merge_candidate, to: merged,         via: MergeRedlineIntoProcedureVersion, emits: REDLINE_MERGED }
+      - { from: applied,        to: closed,          via: CloseRedline,                  emits: REDLINE_CLOSED }
+      - { from: merged,         to: closed,          via: CloseRedline,                  emits: REDLINE_CLOSED }
+    forbidden: ["closed -> *", "rejected -> *"]
+
+  - record_type: ApprovalRequest
+    owning_module: approval
+    state_field: status
+    initial_state: requested
+    terminal_states: [approved, rejected, cancelled, expired]
+    creation_transition: explicit
+    states: [requested, approved, rejected, cancelled, expired]
+    transitions:
+      - { from: null,      to: requested, via: RequestApproval,        emits: APPROVAL_REQUESTED }
+      - { from: requested, to: approved,  via: RecordApprovalDecision, emits: APPROVAL_APPROVED }
+      - { from: requested, to: rejected,  via: RecordApprovalDecision, emits: APPROVAL_REJECTED }
+      - { from: requested, to: cancelled, via: CancelApprovalRequest,  emits: APPROVAL_CANCELLED }
+      - { from: requested, to: expired,   via: ExpireApprovalRequest,  emits: APPROVAL_EXPIRED }
+    forbidden: ["approved -> *", "rejected -> *", "cancelled -> *", "expired -> *"]
+
+  - record_type: GeneratedReport
+    owning_module: report
+    state_field: status
+    initial_state: requested
+    terminal_states: [superseded]
+    creation_transition: explicit
+    states: [requested, generating, generated, failed, superseded]
+    transitions:
+      - { from: null,       to: requested,  via: [RequestReportGeneration, GenerateRunCloseReport], emits: REPORT_REQUESTED }
+      - { from: requested,  to: generating, via: [StartReportGeneration, GenerateRunCloseReport],   emits: REPORT_GENERATION_STARTED }
+      - { from: generating, to: generated,  via: [CompleteReportGeneration, GenerateRunCloseReport], emits: REPORT_GENERATED }
+      - { from: generating, to: failed,     via: FailReportGeneration,  emits: REPORT_FAILED }
+      - { from: failed,     to: requested,  via: RetryReportGeneration, emits: REPORT_RETRY_REQUESTED }
+      - { from: generated,  to: superseded, via: SupersedeReport,       emits: REPORT_SUPERSEDED }
+    forbidden: ["superseded -> *"]
+
+  - record_type: Attachment
+    owning_module: attachment
+    state_field: status
+    initial_state: uploaded
+    terminal_states: [deleted_reference]
+    creation_transition: explicit
+    states: [uploaded, linked, accepted, review_required, rejected, restricted, deleted_reference]
+    transitions:
+      - { from: null,            to: uploaded,         via: CreateAttachment,          emits: ATTACHMENT_CREATED }
+      - { from: uploaded,        to: linked,           via: LinkAttachment,            emits: ATTACHMENT_LINKED }
+      - { from: linked,          to: accepted,         via: AcceptAttachmentAsEvidence, emits: ATTACHMENT_ACCEPTED }
+      - { from: linked,          to: review_required,  via: RouteAttachmentForReview,  emits: ATTACHMENT_REVIEW_REQUIRED }
+      - { from: review_required, to: accepted,         via: AcceptAttachmentAsEvidence, emits: ATTACHMENT_ACCEPTED }
+      - { from: review_required, to: rejected,         via: RejectAttachmentAsEvidence, emits: ATTACHMENT_REJECTED }
+      - { from: linked,          to: rejected,         via: RejectAttachmentAsEvidence, emits: ATTACHMENT_REJECTED }
+      - { from: accepted,        to: restricted,       via: RestrictAttachment,        emits: ATTACHMENT_RESTRICTED }
+      - { from: restricted,      to: deleted_reference, via: DeleteAttachmentReference, emits: ATTACHMENT_REFERENCE_DELETED }
+    forbidden: ["deleted_reference -> *"]

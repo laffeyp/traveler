@@ -1,0 +1,12 @@
+scenario_id: IDEM-001
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Contract Spec §6 + Build Readiness §4.5 (idempotency) — hardening regression for B-Q-13 (write-boundary)
+note: >
+  Locks write-boundary idempotency (transactional_unique_constraint) in the bench: a duplicate CreateInventoryItem
+  with the same idempotency_key returns idempotency_conflict with zero facts. Exercises the harness
+  operation_failed(idempotency_conflict) path at the scenario level (otherwise only the node backend proof + vitest).
+operations: [CreateInventoryItem]
+events: [INVENTORY_CREATED]
+assertion_types: [operation_failed, event_emitted, event_not_emitted, record_exists]
+caller_types: [planner]

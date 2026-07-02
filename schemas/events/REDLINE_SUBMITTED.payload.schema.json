@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/REDLINE_SUBMITTED.payload.schema.json",
+  "title": "REDLINE_SUBMITTED payload (baseline; owning_module=redline)",
+  "type": "object"
+}

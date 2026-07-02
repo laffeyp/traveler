@@ -1,0 +1,33 @@
+registry: scenario-assertions
+registry_version: contracts-0.4.1
+source: Virtual Factory Harness Spec v0.1.2 section 13
+note: First assertion types. All first-slice contract assertions are blocking by default.
+
+assertion_types:
+  - record_exists
+  - record_state
+  - record_field_equals
+  - event_emitted
+  - event_not_emitted
+  - event_payload_contains
+  - event_sequence_matches
+  - projection_contains
+  - projection_not_contains
+  - projection_conflicted
+  - report_generated
+  - report_payload_contains
+  - report_field_equals   # B-Q-23(c): value-level read of a nested report field via dotted path (report_payload_contains is section-key-presence only)
+  - access_full
+  - access_summary
+  - access_denied
+  - grammar_gap_created
+  - bounded_drill_down_filtered
+  - idempotent_replay
+  - clock_field_equals
+  - time_ordering_valid
+  - operation_succeeded
+  - operation_failed
+  - operation_output_contains   # sprint-019: value-level read of an operation's RETURNED output (e.g. GetReport freshness), so a scenario can assert what a read op returned, not only the record it read
+
+  - transition_succeeded
+  - transition_blocked

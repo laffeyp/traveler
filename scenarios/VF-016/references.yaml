@@ -1,0 +1,15 @@
+scenario_id: VF-016
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Persona-review gap 1 (segregation of duties) + Contract Spec §10 (redline/approval) + AS9102 / AS9100-8.7 second-person control
+note: >
+  A redline cannot be approved by its own author. The approver-must-differ-from-author check refuses a
+  same-person sign-off (segregation_of_duties_violation, no facts) and a distinct approver then approves. Records
+  who authored (Redline.authored_by) and who decided (ApprovalDecision.decided_by).
+operations: [CreateRedlineDraft, SubmitRedline, ReviewRedline, RequestApproval, RecordApprovalDecision]
+events: [REDLINE_DRAFT_CREATED, REDLINE_SUBMITTED, REDLINE_UNDER_REVIEW, APPROVAL_REQUESTED, APPROVAL_APPROVED, REDLINE_APPROVED]
+record_states:
+  Redline: [draft, submitted, under_review, approved]
+  ApprovalRequest: [requested, approved]
+assertion_types: [operation_failed, operation_succeeded, record_state, event_emitted, event_not_emitted, record_field_equals]
+caller_types: [manufacturing_engineer, planner, operator, system_worker]

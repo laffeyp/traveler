@@ -1,0 +1,15 @@
+registry: compatibility-profiles
+registry_version: contracts-0.4.1
+source: Contract Spec v0.4.1 section 5
+note: Resolves B-Q-6. GenerateRunCloseReport uses standard_report_operation_v1_compatibility (Contract Spec section 0.2.2).
+
+profiles:
+  - id: standard_operation_v1_compatibility
+    applies_to: standard mutating/read operations
+    rules: [additive_input_fields_only, additive_output_fields_only, no_breaking_enum_removal]
+  - id: standard_worker_operation_v1_compatibility
+    applies_to: worker operations
+    rules: [additive_input_fields_only, additive_output_fields_only, idempotent_retry_safe]
+  - id: standard_report_operation_v1_compatibility
+    applies_to: report-generating operations
+    rules: [report_definition_versioned, regeneration_does_not_overwrite_prior_official_report, additive_payload_sections_only]

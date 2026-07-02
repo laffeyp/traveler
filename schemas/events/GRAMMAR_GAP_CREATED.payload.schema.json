@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/GRAMMAR_GAP_CREATED.payload.schema.json",
+  "title": "GRAMMAR_GAP_CREATED payload (baseline; owning_module=grammar_gap)",
+  "type": "object"
+}

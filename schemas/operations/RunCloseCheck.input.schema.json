@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/operations/RunCloseCheck.input.schema.json",
+  "title": "RunCloseCheck input (Build Readiness §8)",
+  "type": "object",
+  "required": [
+    "operation",
+    "idempotency_key",
+    "input"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "operation": {
+      "const": "RunCloseCheck"
+    },
+    "idempotency_key": {
+      "type": "string"
+    },
+    "input": {
+      "type": "object",
+      "required": [
+        "run_alias"
+      ],
+      "properties": {
+        "run_alias": {
+          "type": "string"
+        },
+        "expected_result": {
+          "enum": [
+            "blocked",
+            "passed"
+          ]
+        },
+        "expected_blockers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

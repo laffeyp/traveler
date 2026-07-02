@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/operations/InstallInventory.input.schema.json",
+  "title": "InstallInventory input (Build Readiness §8)",
+  "type": "object",
+  "required": [
+    "operation",
+    "idempotency_key",
+    "input"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "operation": {
+      "const": "InstallInventory"
+    },
+    "idempotency_key": {
+      "type": "string"
+    },
+    "input": {
+      "type": "object",
+      "required": [
+        "run_alias",
+        "run_step_alias",
+        "parent_inventory_alias",
+        "child_inventory_alias",
+        "bom_line_alias",
+        "installed_at"
+      ],
+      "properties": {
+        "run_alias": {
+          "type": "string"
+        },
+        "run_step_alias": {
+          "type": "string"
+        },
+        "parent_inventory_alias": {
+          "type": "string"
+        },
+        "child_inventory_alias": {
+          "type": "string"
+        },
+        "bom_line_alias": {
+          "type": "string"
+        },
+        "installed_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

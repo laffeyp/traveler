@@ -1,0 +1,109 @@
+scenario_id: VF-012
+scenario_version: "1"
+title: Report access policy change after generation supersedes, not overwrites
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  Extended adversarial VF-012 (Harness §16/§17/§24): a controlled_export report access-policy change after
+  generation. A RunCloseReport is generated at T0 bound to access scope S0 (customer_summary_access). An
+  access-policy change effective at T1 > T0 (a REGISTERED regeneration trigger,
+  access_policy_change_for_controlled_export, reports.yaml) makes the prior artifact regeneration-required:
+  a NEW report is generated bound to the new scope S1 (customer_extended_access) and the prior report is
+  SUPERSEDED (generated -> superseded, terminal), never silently overwritten (Contract Spec §15/§18/§19;
+  Harness §16 "does not silently overwrite prior generated reports"). The prior report's access_policy_snapshot
+  stays FROZEN at S0; the new report's reads S1 — the pair (different expected values) is self-teething: it
+  cannot pass against a hardcoded snapshot. SCOPE (honest): VF-012 proves the operator-driven supersede +
+  regenerate + frozen-snapshot invariant. The AUTOMATIC detection cascade (engine reads
+  regeneration_required_after) and the controlled_export GetReport READ semantics remain deferred
+  (B-Q-27/B-Q-28); VF-012 drives SupersedeReport as an explicit worker step and does not claim them.
+
+seed: { deterministic_seed: 30120 }
+clock: { start_at: "2026-06-29T08:00:00Z", timezone: "UTC", mode: controlled }
+
+actors:
+  - { actor_id: mfg_eng_1, actor_type: manufacturing_engineer, product_caller_type: manufacturing_engineer }
+  - { actor_id: planner_1, actor_type: planner,                product_caller_type: planner }
+  - { actor_id: operator_1, actor_type: operator,              product_caller_type: operator }
+  - { actor_id: report_worker_1, actor_type: system_worker,    product_caller_type: system_worker }
+
+aliases:
+  procedure_version_v1: ProcedureVersion
+  procedure_step_torque: ProcedureStep
+  data_field_torque: DataCollectionField
+  manufacturing_structure_v1: ManufacturingStructureVersion
+  valve_body_001: InventoryItem
+  effectivity_rule_procedure: EffectivityRule
+  effectivity_rule_structure: EffectivityRule
+  effectivity_resolution_001: EffectivityResolution
+  build_check_001: BuildCheckResult
+  run_001: Run
+  run_context_snapshot_001: RunContextSnapshot
+  run_step_torque: RunStep
+  measurement_torque_passed: Measurement
+  run_close_check_001: RunCloseCheck
+  run_close_report_t0: GeneratedReport
+  run_close_report_t1: GeneratedReport
+
+world:
+  factory_node: node_la_001
+  part_revisions:
+    - { alias: valve_body_rev_a, part_number: VB-100, revision: A }
+  inventory_truth:
+    - { alias: valve_body_001, part_revision: valve_body_rev_a, serial_number: VB-001 }
+  access_policies:
+    - { alias: customer_summary_access, visible: [RunCloseReport.summary], hidden: [controlled_machine_evidence_payload] }
+    - { alias: customer_extended_access, visible: [RunCloseReport.summary, RunCloseReport.detail], hidden: [raw_machine_payload] }
+
+steps:
+  - { step_id: "001", set_time: "2026-06-29T08:01:00Z", actor: mfg_eng_1, operation: CreateProcedureVersion, idempotency_key: vf012-001, input: { procedure_version_alias: procedure_version_v1, steps: [ { alias: procedure_step_torque, ordinal: 1, name: "Capture torque", data_collection_fields: [ { alias: data_field_torque, name: "Valve body torque", unit: Nm, lower_bound: 10.0, upper_bound: 12.0, nominal: 11.0, evaluation_mode: synchronous } ] } ] }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_CREATED] } }
+  - { step_id: "002", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf012-002, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUBMITTED] } }
+  - { step_id: "003", actor: mfg_eng_1, operation: ReleaseProcedureVersion, idempotency_key: vf012-003, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_RELEASED] } }
+  - { step_id: "004", actor: mfg_eng_1, operation: CreateManufacturingStructureVersion, idempotency_key: vf012-004, input: { manufacturing_structure_alias: manufacturing_structure_v1, part_revision: valve_body_rev_a }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_CREATED] } }
+  - { step_id: "005", actor: mfg_eng_1, operation: ReleaseManufacturingStructureVersion, idempotency_key: vf012-005, input: { manufacturing_structure_alias: manufacturing_structure_v1 }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_RELEASED] } }
+  - { step_id: "006", set_time: "2026-06-29T08:05:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf012-006, input: { inventory_alias: valve_body_001, part_revision: valve_body_rev_a, serial_number: VB-001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "007", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf012-007, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "008", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf012-008, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+  - { step_id: "009", actor: planner_1, operation: ReserveInventory, idempotency_key: vf012-009, input: { inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RESERVED] } }
+  - { step_id: "010", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf012-010, input: { effectivity_rule_alias: effectivity_rule_procedure, target_record_type: ProcedureVersion, rule_type: serial_cut_in, serial_condition: "VB-001", target_alias: procedure_version_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "011", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf012-011, input: { effectivity_rule_alias: effectivity_rule_structure, target_record_type: ManufacturingStructureVersion, rule_type: serial_cut_in, serial_condition: "VB-001", target_alias: manufacturing_structure_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "012", actor: planner_1, operation: ResolveEffectivity, idempotency_key: vf012-012, input: { effectivity_resolution_alias: effectivity_resolution_001, target_serial: "VB-001", target_inventory_alias: valve_body_001 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RESOLVED] } }
+  - { step_id: "013", actor: planner_1, operation: RunBuildCheck, idempotency_key: vf012-013, input: { build_check_alias: build_check_001, target_inventory_alias: valve_body_001, effectivity_resolution_alias: effectivity_resolution_001 }, expect: { operation_succeeded: true, events_emitted: [BUILD_CHECK_STARTED, BUILD_CHECK_PASSED] } }
+  - { step_id: "014", set_time: "2026-06-29T08:10:00Z", actor: planner_1, operation: CreateRun, idempotency_key: vf012-014, input: { run_alias: run_001, run_context_snapshot_alias: run_context_snapshot_001, procedure_version_alias: procedure_version_v1, manufacturing_structure_alias: manufacturing_structure_v1, effectivity_resolution_alias: effectivity_resolution_001, build_check_alias: build_check_001, target_inventory_alias: valve_body_001, run_step_aliases: [run_step_torque] }, expect: { operation_succeeded: true, events_emitted: [RUN_CREATED] } }
+  - { step_id: "015", actor: report_worker_1, operation: ApplyBuildCheckResultToRun, idempotency_key: vf012-015, input: { run_alias: run_001, build_check_alias: build_check_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_READY] } }
+  - { step_id: "016", set_time: "2026-06-29T08:12:00Z", actor: operator_1, operation: StartRun, idempotency_key: vf012-016, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_STARTED] } }
+  - { step_id: "017", actor: operator_1, operation: StartRunStep, idempotency_key: vf012-017, input: { run_alias: run_001, run_step_alias: run_step_torque }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_STARTED] } }
+  - { step_id: "018", set_time: "2026-06-29T08:17:00Z", actor: operator_1, operation: CaptureMeasurement, idempotency_key: vf012-018-pass, input: { run_alias: run_001, run_step_alias: run_step_torque, data_collection_field_alias: data_field_torque, measurement_alias: measurement_torque_passed, value: 11.1, unit: Nm, source_type: operator_entry, captured_at: "2026-06-29T08:17:00Z" }, expect: { operation_succeeded: true, events_emitted: [MEASUREMENT_CAPTURED, MEASUREMENT_EVALUATED, MEASUREMENT_PASSED] } }
+  - { step_id: "019", actor: operator_1, operation: CompleteRunStep, idempotency_key: vf012-019, input: { run_alias: run_001, run_step_alias: run_step_torque }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_COMPLETED] } }
+  - { step_id: "020", actor: operator_1, operation: CompleteRunSteps, idempotency_key: vf012-020, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_COMPLETED] } }
+  - { step_id: "021", set_time: "2026-06-29T08:45:00Z", actor: operator_1, operation: AttemptRunClose, idempotency_key: vf012-021, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_ENTERED_CLOSE_CHECK] } }
+  - { step_id: "022", actor: report_worker_1, operation: RunCloseCheck, idempotency_key: vf012-022, input: { run_alias: run_001, run_close_check_alias: run_close_check_001, expected_result: passed }, expect: { operation_succeeded: true, events_emitted: [RUN_CLOSE_CHECK_STARTED, RUN_CLOSE_CHECK_PASSED] } }
+  - { step_id: "023", actor: report_worker_1, operation: RequestRunCloseReport, idempotency_key: vf012-023, input: { run_alias: run_001, run_close_check_alias: run_close_check_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_CLOSE_REPORT_REQUESTED] } }
+  # T0: the controlled_export is generated bound to scope S0 (customer_summary_access).
+  - { step_id: "024", set_time: "2026-06-29T08:47:00Z", actor: report_worker_1, operation: GenerateRunCloseReport, idempotency_key: vf012-024, input: { report_alias: run_close_report_t0, report_type: RunCloseReport, run_alias: run_001, run_close_check_alias: run_close_check_001, report_definition_version: 1, generated_at: "2026-06-29T08:47:00Z", access_scope: customer_summary_access }, expect: { operation_succeeded: true, events_emitted: [REPORT_REQUESTED, REPORT_GENERATION_STARTED, REPORT_GENERATED] } }
+  - { step_id: "025", set_time: "2026-06-29T08:48:00Z", actor: report_worker_1, operation: ApplyRunCloseResultToRun, idempotency_key: vf012-025, input: { run_alias: run_001, run_close_check_alias: run_close_check_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_CLOSED] } }
+  # T1 (> T0): access policy changed for controlled export. Regenerate bound to the new scope S1, then
+  # supersede the prior report (never overwrite it).
+  - { step_id: "026", set_time: "2026-06-29T09:30:00Z", actor: report_worker_1, operation: GenerateRunCloseReport, idempotency_key: vf012-026, input: { report_alias: run_close_report_t1, report_type: RunCloseReport, run_alias: run_001, run_close_check_alias: run_close_check_001, report_definition_version: 1, generated_at: "2026-06-29T09:30:00Z", access_scope: customer_extended_access }, expect: { operation_succeeded: true, events_emitted: [REPORT_REQUESTED, REPORT_GENERATION_STARTED, REPORT_GENERATED] } }
+  - { step_id: "027", set_time: "2026-06-29T09:30:30Z", actor: report_worker_1, operation: SupersedeReport, idempotency_key: vf012-027, input: { report_alias: run_close_report_t0, superseding_report_alias: run_close_report_t1, trigger: access_policy_change_for_controlled_export }, expect: { operation_succeeded: true, events_emitted: [REPORT_SUPERSEDED] } }
+
+assertions:
+  # The prior report is superseded (terminal) — regeneration-required, not overwritten.
+  - { assertion_id: vf012_prior_superseded, assertion_type: record_state, severity: blocking, target: { record_type: GeneratedReport, alias: run_close_report_t0 }, expected: { state: superseded } }
+  - { assertion_id: vf012_superseded_emitted, assertion_type: event_emitted, severity: blocking, target: { event_type: REPORT_SUPERSEDED, producer_operation: SupersedeReport }, expected: { count: 1 } }
+  - { assertion_id: vf012_supersede_trigger, assertion_type: event_payload_contains, severity: blocking, target: { event_type: REPORT_SUPERSEDED, producer_operation: SupersedeReport }, expected: { trigger: access_policy_change_for_controlled_export } }
+  # The pair with DIFFERENT expected values is self-teething: it cannot pass against a hardcoded snapshot.
+  # The prior report's snapshot is FROZEN at S0...
+  - { assertion_id: vf012_prior_snapshot_frozen, assertion_type: report_field_equals, severity: blocking, target: { alias: run_close_report_t0, path: "sections.access_policy_snapshot.policy_alias" }, expected: { value: customer_summary_access } }
+  # ...while the new report's reads S1.
+  - { assertion_id: vf012_new_snapshot_scope, assertion_type: report_field_equals, severity: blocking, target: { alias: run_close_report_t1, path: "sections.access_policy_snapshot.policy_alias" }, expected: { value: customer_extended_access } }
+  # The new report is generated (a fresh artifact), and both reports still exist — not silently overwritten.
+  - { assertion_id: vf012_new_generated, assertion_type: record_state, severity: blocking, target: { record_type: GeneratedReport, alias: run_close_report_t1 }, expected: { state: generated } }
+  - { assertion_id: vf012_prior_exists, assertion_type: record_exists, severity: blocking, target: { record_type: GeneratedReport, alias: run_close_report_t0 }, expected: {} }
+  - { assertion_id: vf012_new_exists, assertion_type: record_exists, severity: blocking, target: { record_type: GeneratedReport, alias: run_close_report_t1 }, expected: {} }
+  # The prior report captured its generation time (T0), enabling the effective_at(T1) > generated_at(T0) framing.
+  - { assertion_id: vf012_prior_generated_at, assertion_type: report_field_equals, severity: blocking, target: { alias: run_close_report_t0, path: "generated_at" }, expected: { value: "2026-06-29T08:47:00Z" } }

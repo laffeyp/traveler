@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/operations/CreateManufacturingStructureVersion.input.schema.json",
+  "title": "CreateManufacturingStructureVersion input (standard envelope, Build Readiness §4.2)",
+  "type": "object",
+  "required": [
+    "operation",
+    "idempotency_key",
+    "input"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "operation": {
+      "const": "CreateManufacturingStructureVersion"
+    },
+    "idempotency_key": {
+      "type": "string"
+    },
+    "input": {
+      "type": "object"
+    }
+  }
+}

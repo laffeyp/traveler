@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/reports/RunCloseReport.schema.json",
+  "title": "RunCloseReport payload (Build Readiness §10.2)",
+  "type": "object",
+  "required": [
+    "report_type",
+    "report_definition_version",
+    "run_id",
+    "run_context_snapshot_id",
+    "generated_at",
+    "sections"
+  ],
+  "properties": {
+    "report_type": {
+      "const": "RunCloseReport"
+    },
+    "report_definition_version": {
+      "type": "integer"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "run_context_snapshot_id": {
+      "type": "string"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sections": {
+      "type": "object",
+      "required": [
+        "report_header",
+        "run_context",
+        "executed_steps",
+        "measurement_summary",
+        "quality_path",
+        "redline_history",
+        "installed_inventory",
+        "machine_evidence_summary",
+        "run_close_observations",
+        "final_close_result",
+        "source_traceability",
+        "access_policy_snapshot"
+      ],
+      "properties": {
+        "report_header": {
+          "type": "object"
+        },
+        "run_context": {
+          "type": "object"
+        },
+        "executed_steps": {
+          "type": [
+            "object",
+            "array"
+          ]
+        },
+        "measurement_summary": {
+          "type": [
+            "object",
+            "array"
+          ]
+        },
+        "quality_path": {
+          "type": "object"
+        },
+        "redline_history": {
+          "type": "object"
+        },
+        "installed_inventory": {
+          "type": [
+            "object",
+            "array"
+          ]
+        },
+        "machine_evidence_summary": {
+          "type": [
+            "object",
+            "array"
+          ]
+        },
+        "run_close_observations": {
+          "type": [
+            "object",
+            "array"
+          ]
+        },
+        "final_close_result": {
+          "type": "object"
+        },
+        "source_traceability": {
+          "type": "object"
+        },
+        "access_policy_snapshot": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

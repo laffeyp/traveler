@@ -1,0 +1,72 @@
+scenario_id: VF-009
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Harness Spec v0.1.2 §11/§17/§19/§22 (VF-009 access-filtered serial history) + Contract Spec §14.2/§19 + projections.yaml
+note: >
+  Reference manifest for VF-009 (access-filtered serial history). Introduces no new event type; its purpose
+  is the B-Q-16 discipline and to record that VF-009 exercises the previously access-BLIND SerialHistory
+  read path (Harness §11 actorContext on readProjection) + the access_full/access_summary assertion
+  evaluators (scenario-assertions.yaml, previously unimplemented). Machine-evidence + run-close events supply
+  the controlled + summary-safe entries the full/summary views discriminate on.
+
+operations:
+  - CreateProcedureVersion
+  - SubmitProcedureVersionForReview
+  - ReleaseProcedureVersion
+  - CreateManufacturingStructureVersion
+  - ReleaseManufacturingStructureVersion
+  - CreateInventoryItem
+  - ReceiveInventory
+  - ReleaseInventory
+  - ReserveInventory
+  - CreateEffectivityRule
+  - ResolveEffectivity
+  - RunBuildCheck
+  - CreateRun
+  - ApplyBuildCheckResultToRun
+  - StartRun
+  - StartRunStep
+  - CaptureMeasurement
+  - CompleteRunStep
+  - ReceiveMachineEvidence
+  - NormalizeMachineEvidence
+  - LinkMachineEvidence
+  - RouteMachineEvidenceForReview
+  - CompleteRunSteps
+  - AttemptRunClose
+  - RunCloseCheck
+  - RequestRunCloseReport
+  - GenerateRunCloseReport
+  - ApplyRunCloseResultToRun
+
+events:
+  - PROCEDURE_VERSION_RELEASED
+  - MANUFACTURING_STRUCTURE_RELEASED
+  - INVENTORY_RESERVED
+  - EFFECTIVITY_RESOLVED
+  - BUILD_CHECK_PASSED
+  - RUN_CREATED
+  - RUN_READY
+  - RUN_STARTED
+  - MEASUREMENT_PASSED
+  - MACHINE_EVIDENCE_RECEIVED
+  - MACHINE_EVIDENCE_NORMALIZED
+  - MACHINE_EVIDENCE_LINKED
+  - MACHINE_EVIDENCE_REVIEW_REQUIRED
+  - RUN_COMPLETED
+  - RUN_CLOSE_CHECK_PASSED
+  - REPORT_GENERATED
+  - RUN_CLOSED
+
+projections: [SerialHistory]
+
+record_states:
+  Run: [closed]
+
+assertion_types:
+  - record_state
+  - access_full
+  - access_summary
+  - access_denied
+
+caller_types: [manufacturing_engineer, planner, operator, quality_engineer, adapter, system_worker, support_user]

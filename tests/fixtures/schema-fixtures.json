@@ -1,0 +1,238 @@
+{
+  "_note": "Known-good (and a few known-bad) fixtures for the validate:schemas gate. Good fixtures are taken from Executable VF-003 Scenario Spec v0.1.1 §9 (representative inputs) and Build Readiness §10.2 (RunCloseReport payload). Bad fixtures prove the schemas discriminate.",
+  "fixtures": [
+    {
+      "name": "CaptureMeasurement failed torque (VF-003 §9.1)",
+      "schema": "schemas/operations/CaptureMeasurement.input.schema.json",
+      "valid": true,
+      "data": {
+        "operation": "CaptureMeasurement",
+        "idempotency_key": "vf003-024-capture-failed-torque",
+        "input": {
+          "run_alias": "run_001",
+          "run_step_alias": "run_step_torque",
+          "data_collection_field_alias": "data_field_torque",
+          "value": 8.2,
+          "unit": "Nm",
+          "source_type": "operator_entry",
+          "captured_at": "2026-06-29T08:17:00Z"
+        }
+      }
+    },
+    {
+      "name": "CaptureMeasurement passing torque (VF-003 §9.2)",
+      "schema": "schemas/operations/CaptureMeasurement.input.schema.json",
+      "valid": true,
+      "data": {
+        "operation": "CaptureMeasurement",
+        "idempotency_key": "vf003-035-capture-passing-torque",
+        "input": {
+          "run_alias": "run_001",
+          "run_step_alias": "run_step_torque",
+          "data_collection_field_alias": "data_field_torque",
+          "value": 11.1,
+          "unit": "Nm",
+          "source_type": "operator_entry",
+          "captured_at": "2026-06-29T08:30:00Z"
+        }
+      }
+    },
+    {
+      "name": "CaptureMeasurement missing required value (must reject)",
+      "schema": "schemas/operations/CaptureMeasurement.input.schema.json",
+      "valid": false,
+      "data": {
+        "operation": "CaptureMeasurement",
+        "idempotency_key": "x",
+        "input": {
+          "run_alias": "run_001",
+          "run_step_alias": "run_step_torque",
+          "data_collection_field_alias": "data_field_torque",
+          "unit": "Nm",
+          "source_type": "operator_entry",
+          "captured_at": "2026-06-29T08:30:00Z"
+        }
+      }
+    },
+    {
+      "name": "ReceiveMachineEvidence torque trace (VF-003 §9.3)",
+      "schema": "schemas/operations/ReceiveMachineEvidence.input.schema.json",
+      "valid": true,
+      "data": {
+        "operation": "ReceiveMachineEvidence",
+        "idempotency_key": "vf003-040-receive-machine-evidence",
+        "input": {
+          "alias": "torque_evidence_001",
+          "machine_alias": "torque_tool_001",
+          "adapter_alias": "machine_adapter_1",
+          "payload_type": "torque_trace",
+          "occurred_at": "2026-06-29T08:34:30Z",
+          "received_at": "2026-06-29T08:40:00Z",
+          "payload": {
+            "serial_number": "VB-001",
+            "tool_id": "TT-001",
+            "measured_torque_nm": 11.1,
+            "trace_quality": "acceptable"
+          }
+        }
+      }
+    },
+    {
+      "name": "ReceiveMachineEvidence bad trace_quality enum (must reject)",
+      "schema": "schemas/operations/ReceiveMachineEvidence.input.schema.json",
+      "valid": false,
+      "data": {
+        "operation": "ReceiveMachineEvidence",
+        "idempotency_key": "x",
+        "input": {
+          "alias": "torque_evidence_001",
+          "machine_alias": "torque_tool_001",
+          "adapter_alias": "machine_adapter_1",
+          "payload_type": "torque_trace",
+          "occurred_at": "2026-06-29T08:34:30Z",
+          "received_at": "2026-06-29T08:40:00Z",
+          "payload": {
+            "serial_number": "VB-001",
+            "tool_id": "TT-001",
+            "measured_torque_nm": 11.1,
+            "trace_quality": "bogus"
+          }
+        }
+      }
+    },
+    {
+      "name": "InstallInventory gasket (VF-003 §8.3 / step 38)",
+      "schema": "schemas/operations/InstallInventory.input.schema.json",
+      "valid": true,
+      "data": {
+        "operation": "InstallInventory",
+        "idempotency_key": "vf003-038-install-gasket",
+        "input": {
+          "run_alias": "run_001",
+          "run_step_alias": "run_step_install_gasket",
+          "parent_inventory_alias": "valve_body_001",
+          "child_inventory_alias": "gasket_001",
+          "bom_line_alias": "bom_line_gasket",
+          "installed_at": "2026-06-29T08:35:00Z"
+        }
+      }
+    },
+    {
+      "name": "RunCloseCheck first attempt (VF-003 §8.5 / step 46)",
+      "schema": "schemas/operations/RunCloseCheck.input.schema.json",
+      "valid": true,
+      "data": {
+        "operation": "RunCloseCheck",
+        "idempotency_key": "vf003-046-run-close-check-first",
+        "input": {
+          "run_alias": "run_001",
+          "expected_result": "blocked",
+          "expected_blockers": ["failed_measurement_has_quality_path"]
+        }
+      }
+    },
+    {
+      "name": "GenerateRunCloseReport input (VF-003 §8.6 / step 56)",
+      "schema": "schemas/operations/GenerateRunCloseReport.input.schema.json",
+      "valid": true,
+      "data": {
+        "operation": "GenerateRunCloseReport",
+        "idempotency_key": "vf003-056-generate-run-close-report",
+        "input": {
+          "report_alias": "run_close_report_001",
+          "report_type": "RunCloseReport",
+          "run_alias": "run_001",
+          "run_close_check_alias": "run_close_check_002",
+          "report_definition_version": 1,
+          "generated_at": "2026-06-29T09:07:00Z"
+        }
+      }
+    },
+    {
+      "name": "StartRun baseline envelope input (VF-003 step 21)",
+      "schema": "schemas/operations/StartRun.input.schema.json",
+      "valid": true,
+      "data": {
+        "operation": "StartRun",
+        "idempotency_key": "vf003-021-start-run",
+        "input": { "run_alias": "run_001" }
+      }
+    },
+    {
+      "name": "StartRun wrong operation const (must reject)",
+      "schema": "schemas/operations/StartRun.input.schema.json",
+      "valid": false,
+      "data": {
+        "operation": "PauseRun",
+        "idempotency_key": "x",
+        "input": {}
+      }
+    },
+    {
+      "name": "RunCloseReport payload (Build Readiness §10.2)",
+      "schema": "schemas/reports/RunCloseReport.schema.json",
+      "valid": true,
+      "data": {
+        "report_type": "RunCloseReport",
+        "report_definition_version": 1,
+        "run_id": "run_001",
+        "run_context_snapshot_id": "run_context_snapshot_001",
+        "generated_at": "2026-06-29T09:07:00Z",
+        "sections": {
+          "report_header": { "title": "Run Close Report", "run_status": "close_check" },
+          "run_context": { "procedure_version_id": "procedure_version_v1", "manufacturing_structure_version_id": "manufacturing_structure_v1", "effectivity_resolution_id": "effectivity_resolution_001" },
+          "executed_steps": [ { "run_step_id": "run_step_torque", "status": "complete" }, { "run_step_id": "run_step_install_gasket", "status": "complete" } ],
+          "measurement_summary": [ { "measurement_id": "measurement_torque_failed", "value": 8.2, "unit": "Nm", "result": "fail" }, { "measurement_id": "measurement_torque_passed", "value": 11.1, "unit": "Nm", "result": "pass" } ],
+          "quality_path": { "nonconformance_id": "nonconformance_001", "containment_status": "active_or_completed", "disposition": "rework_required", "rework_status": "complete", "verification_status": "verified", "nonconformance_status": "closed" },
+          "redline_history": { "redline_id": "redline_001", "approval_request_id": "approval_request_001", "approval_decision_id": "approval_decision_001", "status": "applied" },
+          "installed_inventory": [ { "parent_inventory_id": "valve_body_001", "child_inventory_id": "gasket_001", "bom_line_id": "bom_line_gasket", "event_type": "INVENTORY_INSTALLED" } ],
+          "machine_evidence_summary": [ { "evidence_id": "torque_evidence_001", "state": "review_required", "accepted_as_measurement_source": false } ],
+          "run_close_observations": [ { "run_close_check_id": "run_close_check_001", "status": "blocked", "blocker_rule": "failed_measurement_has_quality_path" }, { "run_close_check_id": "run_close_check_002", "status": "passed" } ],
+          "final_close_result": { "event_type": "RUN_CLOSED" },
+          "source_traceability": { "source_record_ids": [], "source_event_types": [], "source_event_range": {}, "report_definition_version": 1 },
+          "access_policy_snapshot": { "policy_alias": "customer_summary_access" }
+        }
+      }
+    },
+    {
+      "name": "RunCloseReport missing a required section (must reject)",
+      "schema": "schemas/reports/RunCloseReport.schema.json",
+      "valid": false,
+      "data": {
+        "report_type": "RunCloseReport",
+        "report_definition_version": 1,
+        "run_id": "run_001",
+        "run_context_snapshot_id": "run_context_snapshot_001",
+        "generated_at": "2026-06-29T09:07:00Z",
+        "sections": { "report_header": { "title": "x" } }
+      }
+    },
+    {
+      "name": "CaptureMeasurement output envelope (Harness §11 OperationResult, optional fields present)",
+      "schema": "schemas/operations/CaptureMeasurement.output.schema.json",
+      "valid": true,
+      "data": {
+        "operationName": "CaptureMeasurement",
+        "succeeded": true,
+        "failureClass": null,
+        "output": {},
+        "recordsWritten": [{ "recordType": "Measurement", "id": "measurement_torque_failed" }],
+        "eventsEmitted": [{ "type": "MEASUREMENT_FAILED" }],
+        "correlationId": "corr_024",
+        "idempotencyKey": "vf003-024-capture-failed-torque",
+        "contractVersion": "contracts-0.4.1",
+        "operationContractVersion": "CaptureMeasurement.v1",
+        "productBuild": "build_001"
+      }
+    },
+    {
+      "name": "CaptureMeasurement output missing required succeeded (must reject)",
+      "schema": "schemas/operations/CaptureMeasurement.output.schema.json",
+      "valid": false,
+      "data": {
+        "operationName": "CaptureMeasurement",
+        "correlationId": "corr_024"
+      }
+    }
+  ]
+}
