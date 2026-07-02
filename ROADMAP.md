@@ -34,9 +34,9 @@
 
 ---
 
-## Planning today — the next two parallel phases
+## Planning now — the next two phases (run sequentially)
 
-These are the natural completions of work just shipped: each finishes a story that is currently only partly true. They touch mostly-disjoint subsystems — Phase A is in the persistence / eventing layer (`backend.ts`), Phase B is in the quality handlers (`handlers.ts`) — so they run **in parallel**, with the shared event registry (`events.yaml`) as the only coordination point.
+These are the natural completions of work just shipped: each finishes a story that is currently only partly true. They touch mostly-disjoint subsystems — Phase A is in the persistence / eventing layer (`backend.ts`), Phase B is in the quality handlers (`handlers.ts`), sharing only the event registry (`events.yaml`) — so they *could* run in parallel, but we are doing them **one at a time: Phase B first, then Phase A**, to avoid two build lines in flight at once.
 
 ### Phase A — Outbox delivery leg (at-least-once eventing)
 - **Why now.** The events table and the outbox rows are written transactionally, but there is no consumer. The at-least-once eventing story (TAD §12) is currently aspirational — reload rebuilds directly from records+events. This is the one place the design claims more than the code delivers.
