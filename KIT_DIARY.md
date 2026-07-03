@@ -598,6 +598,20 @@ plain is fine; skipping the adversarial review is not — it is what makes fast 
 
 ---
 
+## Entry 25 — "deferred because the tool isn't available" was really "the tool is buildable" (2026-07-02)
+
+**What happened.** Entry 24 deferred single-letter locals as needing a code-aware rename the harness didn't offer (the LSP tool exposed is read-only — findReferences, not rename). The user pushed to finish them anyway. Rather than risk-rename with regex (the exact landmine Entry 24 named), built a ~90-line rename tool on the TypeScript compiler API — `ts.createLanguageService(...).findRenameLocations(file, pos)` is precisely the primitive an IDE's "rename symbol" calls: per-symbol, scope-correct, and it excludes strings and comments. That turned the deferred item into ~1000 safe renames across all of src.
+
+**Lesson 1: a missing capability in the harness is not a missing capability in the environment — check what the installed deps already expose.** The blocker was framed as "no rename tool." But `typescript` had just been installed (for `tsc`), and its compiler API ships the exact rename primitive. The general move: before deferring for lack of a tool, ask whether a dependency already in the tree exposes the operation programmatically. The language service also made the two-landmine problem from Entry 24 (multi-meaning tokens, English-word prose) vanish — it renames a SYMBOL, not a string, so `be`→`backendResult` no longer threatens the comment "cannot be approved."
+
+**Lesson 2: a semantic rename catches wrong-BINDING but not wrong-NAMING — the compiler is only half the net.** findRenameLocations + `tsc` at 0 guarantees no orphaned reference and no collision. It does NOT guarantee the new name is RIGHT: when an anchor for a multi-meaning split missed (Prettier had wrapped the line), the fallback sweep renamed an actors loop's `a` to `assertion` and an effectivity candidate's `c` to `certificate` — both type-clean, both wrong. tsc stayed 0; only reading the result caught them. So for meaning-bearing renames, the invariant chain is: tsc-0 (binding correctness) + behavior gates (semantics) + a human read of the multi-meaning splits (naming correctness). Watch the tool's own "0 sites — anchor NOT FOUND" line; a missed split is a silent misname waiting downstream.
+
+**Lesson 3: know where to stop — idiomatic loop/index vars are not the enemy the pervasive ones are.** Eliminated single letters from every domain-logic and orchestration file, but stopped at a handful of `(v, i) => ...` `.every` callbacks and `for (const f of [dbPath, journal])` loops in the two least-read files (a CLI proof script + a contract gate). Expanding a throwaway index pair to `(value, index)` or a file-loop var adds keystrokes without adding comprehension — the goal was legibility, not a zero-single-letter trophy. The comprehension-blocking singles (w/i/a/t/e/r spanning many lines) were the real target; trivial one-line scopes are where the idiom is clearer than the expansion.
+
+**Kit observation (one new practice).** (22) **Before deferring work for a missing tool, check whether a dependency already in the tree exposes the operation programmatically (here: the `typescript` compiler API's `findRenameLocations` = IDE rename-symbol, once TS was installed for typechecking). And when scripting semantic renames, remember the compiler validates BINDING, not NAMING: pair tsc-0 + behavior gates with a human read of every multi-meaning split, and treat a tool's "anchor not found" as a silent-misname alarm.** For TECHNIQUES.md.
+
+---
+
 ## Hypothesis tracking
 
 | Hypothesis | Status | Evidence |
