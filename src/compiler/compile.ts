@@ -38,7 +38,7 @@ export interface CompileResult {
 
 export function compileScenario(id: string): CompileResult {
   const r = loadRegistries();
-  const scn = readYaml(`scenarios/${id}/scenario.yaml`);
+  const scenario = readYaml(`scenarios/${id}/scenario.yaml`);
 
   const moduleIds = new Set<string>((r.modules?.modules ?? []).map((m: any) => m.id));
   void moduleIds;
@@ -70,10 +70,10 @@ export function compileScenario(id: string): CompileResult {
   };
 
   // clock (Harness §8): CI-eligible scenarios must be controlled.
-  if (scn.ci_eligible && scn.clock?.mode !== "controlled")
+  if (scenario.ci_eligible && scenario.clock?.mode !== "controlled")
     errors.push({
       error_type: "clock_not_controlled",
-      reference: scn.clock?.mode,
+      reference: scenario.clock?.mode,
       source_path: "clock.mode",
     });
 
@@ -91,13 +91,13 @@ export function compileScenario(id: string): CompileResult {
     "measurement_requirement",
     "report_definition_available",
   ]);
-  for (const k of Object.keys(scn.world ?? {}))
+  for (const k of Object.keys(scenario.world ?? {}))
     if (!KNOWN_WORLD_KEYS.has(k))
       errors.push({ error_type: "unknown_world_key", reference: k, source_path: `world.${k}` });
 
   // actors -> registered caller types (Harness §9)
   const actorIds = new Set<string>();
-  for (const a of scn.actors ?? []) {
+  for (const a of scenario.actors ?? []) {
     actorIds.add(a.actor_id);
     if (!callerTypes.has(a.product_caller_type))
       gap(
@@ -108,13 +108,13 @@ export function compileScenario(id: string): CompileResult {
   }
 
   // aliases -> record types
-  for (const [alias, recType] of Object.entries(scn.aliases ?? {})) {
-    if (!recordNames.has(recType as string))
-      gap("unregistered_record", recType as string, `aliases.${alias}`);
+  for (const [alias, recordType] of Object.entries(scenario.aliases ?? {})) {
+    if (!recordNames.has(recordType as string))
+      gap("unregistered_record", recordType as string, `aliases.${alias}`);
   }
 
   // steps: operation registered, actor known, inline expects resolve + expand
-  const steps = scn.steps ?? [];
+  const steps = scenario.steps ?? [];
   if (steps.length === 0)
     errors.push({ error_type: "empty_step_list", reference: id, source_path: "steps" });
 
@@ -142,14 +142,15 @@ export function compileScenario(id: string): CompileResult {
       });
       inlineCount++;
     }
-    for (const evt of ex.events_emitted ?? []) {
-      if (!eventTypes.has(evt)) gap("unregistered_event", evt, `${where}.expect.events_emitted`);
+    for (const eventType of ex.events_emitted ?? []) {
+      if (!eventTypes.has(eventType))
+        gap("unregistered_event", eventType, `${where}.expect.events_emitted`);
       compiled.push({
-        assertion_id: `${s.step_id}_emits_${evt}`,
+        assertion_id: `${s.step_id}_emits_${eventType}`,
         assertion_type: "event_emitted",
         severity: "blocking",
         source: `inline:${s.step_id}`,
-        target: { step_id: s.step_id, event_type: evt },
+        target: { step_id: s.step_id, event_type: eventType },
         expected: { at_least: 1 },
       });
       inlineCount++;
@@ -169,7 +170,7 @@ export function compileScenario(id: string): CompileResult {
 
   // post-scenario assertions: type + target references registered
   let postCount = 0;
-  for (const a of scn.assertions ?? []) {
+  for (const a of scenario.assertions ?? []) {
     if (!assertionTypes.has(a.assertion_type))
       gap("unregistered_assertion_type", a.assertion_type, `assertions.${a.assertion_id}`);
     const t = a.target ?? {};
@@ -189,7 +190,7 @@ export function compileScenario(id: string): CompileResult {
     if (
       (a.assertion_type === "access_full" || a.assertion_type === "access_summary") &&
       t.access_profile &&
-      !(scn.world?.access_policies ?? []).some((p: any) => p.alias === t.access_profile)
+      !(scenario.world?.access_policies ?? []).some((p: any) => p.alias === t.access_profile)
     )
       gap("unregistered_access_profile", t.access_profile, `assertions.${a.assertion_id}.target`);
     if (t.record_type && t.status_path) {
@@ -216,8 +217,8 @@ export function compileScenario(id: string): CompileResult {
 
   const status = errors.length === 0 ? "passed" : "failed";
   return {
-    scenario_id: scn.scenario_id ?? id,
-    scenario_version: String(scn.scenario_version ?? "?"),
+    scenario_id: scenario.scenario_id ?? id,
+    scenario_version: String(scenario.scenario_version ?? "?"),
     registry_version: r.modules?.registry_version ?? "contracts-0.4.1",
     status,
     errors,

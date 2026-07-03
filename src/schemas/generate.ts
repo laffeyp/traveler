@@ -14,14 +14,14 @@ const DRAFT = "https://json-schema.org/draft/2020-12/schema";
 // first-slice bench grows (VF-004/005/006 add the build-check BLOCKED path and QuarantineInventory),
 // their references.yaml brings the newly-exercised events/ops into the schema-generation set so the
 // schema gate covers the whole executable slice (Build Readiness §8.1).
-const refFiles = readdirSync(join(ROOT, "scenarios"))
+const referenceFiles = readdirSync(join(ROOT, "scenarios"))
   .map((d) => join("scenarios", d, "references.yaml"))
   .filter((p) => existsSync(join(ROOT, p)));
-const vfOps: string[] = [];
+const vfOperations: string[] = [];
 const vfEvents: string[] = [];
-for (const p of refFiles) {
+for (const p of referenceFiles) {
   const ref = readYaml(p);
-  for (const o of ref.operations ?? []) if (!vfOps.includes(o)) vfOps.push(o);
+  for (const o of ref.operations ?? []) if (!vfOperations.includes(o)) vfOperations.push(o);
   for (const e of ref.events ?? []) if (!vfEvents.includes(e)) vfEvents.push(e);
 }
 const events = readYaml("contracts/events.yaml");
@@ -265,7 +265,7 @@ function runCloseReportSchema(): any {
 // ---- emit -------------------------------------------------------------------
 let opCount = 0;
 let evCount = 0;
-for (const op of vfOps) {
+for (const op of vfOperations) {
   write(
     `schemas/operations/${op}.input.schema.json`,
     TIGHT_INPUTS[op] ? tightInput(op) : baselineInput(op),

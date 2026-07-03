@@ -49,10 +49,10 @@ const machineByRecord = new Map<string, any>(machines.map((m) => [m.record_type,
 const projectionNames = new Set<string>((r.projections?.projections ?? []).map((p: any) => p.name));
 const reportNames = new Set<string>((r.reports?.reports ?? []).map((p: any) => p.name));
 const assertionTypes = new Set<string>(r.scenarioAssertions?.assertion_types ?? []);
-const obsProfiles = new Set<string>(
+const observabilityProfiles = new Set<string>(
   (r.observabilityProfiles?.profiles ?? []).map((p: any) => p.id),
 );
-const compatProfiles = new Set<string>(
+const compatibilityProfiles = new Set<string>(
   (r.compatibilityProfiles?.profiles ?? []).map((p: any) => p.id),
 );
 
@@ -106,17 +106,17 @@ for (const op of operations) {
     if (!EXPOSURES.has(ex)) err(`[operations] ${op.name}: invalid exposure '${ex}'`);
   if (!IDEMPOTENCY.has(op.idempotency))
     err(`[operations] ${op.name}: invalid idempotency '${op.idempotency}'`);
-  if (!obsProfiles.has(op.observability_ref))
+  if (!observabilityProfiles.has(op.observability_ref))
     err(`[operations] ${op.name}: observability_ref '${op.observability_ref}' not registered`);
-  if (!compatProfiles.has(op.compatibility_ref))
+  if (!compatibilityProfiles.has(op.compatibility_ref))
     err(`[operations] ${op.name}: compatibility_ref '${op.compatibility_ref}' not registered`);
   for (const e of asArray(op.events_emitted)) {
     if (!eventTypes.has(e)) {
       err(`[operations] ${op.name}: emits unregistered event '${e}'`);
       continue;
     }
-    const prod = asArray(eventByType.get(e).producer_operations);
-    if (!prod.includes(op.name))
+    const producers = asArray(eventByType.get(e).producer_operations);
+    if (!producers.includes(op.name))
       err(
         `[consistency] ${op.name} emits ${e} but ${e}.producer_operations does not list ${op.name}`,
       );
@@ -133,10 +133,10 @@ for (const ev of events) {
     err(`[events] ${ev.type}: invalid event_stratum '${ev.event_stratum}'`);
   if (typeof ev.payload_schema_ref !== "string" || ev.payload_schema_ref.length === 0)
     err(`[events] ${ev.type}: missing payload_schema_ref`);
-  const prod = asArray(ev.producer_operations);
-  if (prod.length === 0)
+  const producers = asArray(ev.producer_operations);
+  if (producers.length === 0)
     err(`[events] ${ev.type}: no producer operation (Contract Spec section 3)`);
-  for (const p of prod) {
+  for (const p of producers) {
     if (!operationNames.has(p)) {
       err(`[events] ${ev.type}: producer '${p}' not registered`);
       continue;
@@ -267,13 +267,13 @@ for (const [rec, sts] of Object.entries(vf.record_states ?? {})) {
     if (!states.has(s)) err(`[VF-003] ${rec}: state '${s}' not in its state machine`);
 }
 // dependency table (VF-003 section 1.2 highlighted)
-const dt = vf.dependency_table ?? {};
-resolve(dt.operations, operationNames, "dependency operation");
-resolve(dt.events, eventTypes, "dependency event");
-resolve(dt.reports, reportNames, "dependency report");
-resolve(dt.projections, projectionNames, "dependency projection");
+const dependencyTable = vf.dependency_table ?? {};
+resolve(dependencyTable.operations, operationNames, "dependency operation");
+resolve(dependencyTable.events, eventTypes, "dependency event");
+resolve(dependencyTable.reports, reportNames, "dependency report");
+resolve(dependencyTable.projections, projectionNames, "dependency projection");
 const runStates = new Set<string>(asArray(machineByRecord.get("Run")?.states));
-for (const s of asArray(dt.run_states))
+for (const s of asArray(dependencyTable.run_states))
   if (!runStates.has(s)) err(`[VF-003] dependency Run state '${s}' not in Run state machine`);
 
 // ---- 10. vf003 flag vs manifest drift (warnings) ----------------------------

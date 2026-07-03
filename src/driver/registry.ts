@@ -46,10 +46,10 @@ export const NORMALIZE_GRAMMAR: Record<string, Record<string, string>> = {
   torque_trace: { serial_number: "string", measured_torque_nm: "number" },
 };
 
-/** True iff `val` is present and matches the grammar's declared `type` (a null/NaN/wrong-type field is not). */
-export function keyPresentAndValid(val: any, type: string): boolean {
-  if (val === undefined || val === null) return false;
-  if (type === "number") return typeof val === "number" && Number.isFinite(val);
-  if (type === "string") return typeof val === "string" && val.length > 0;
+/** True iff `value` is present and matches the grammar's declared `type` (a null/NaN/wrong-type field is not). */
+export function keyPresentAndValid(value: any, type: string): boolean {
+  if (value === undefined || value === null) return false;
+  if (type === "number") return typeof value === "number" && Number.isFinite(value);
+  if (type === "string") return typeof value === "string" && value.length > 0;
   return true;
 }
