@@ -37,22 +37,30 @@ export interface CompileResult {
 }
 
 export function compileScenario(id: string): CompileResult {
-  const r = loadRegistries();
+  const registries = loadRegistries();
   const scenario = readYaml(`scenarios/${id}/scenario.yaml`);
 
-  const moduleIds = new Set<string>((r.modules?.modules ?? []).map((m: any) => m.id));
-  void moduleIds;
-  const callerTypes = new Set<string>(r.modules?.caller_types ?? []);
-  const recordNames = new Set<string>((r.records?.records ?? []).map((x: any) => x.name));
-  const operationNames = new Set<string>((r.operations?.operations ?? []).map((o: any) => o.name));
-  const eventTypes = new Set<string>((r.events?.events ?? []).map((e: any) => e.type));
-  const projectionNames = new Set<string>(
-    (r.projections?.projections ?? []).map((p: any) => p.name),
+  const moduleIds = new Set<string>(
+    (registries.modules?.modules ?? []).map((moduleDef: any) => moduleDef.id),
   );
-  const reportNames = new Set<string>((r.reports?.reports ?? []).map((p: any) => p.name));
-  const assertionTypes = new Set<string>(r.scenarioAssertions?.assertion_types ?? []);
+  void moduleIds;
+  const callerTypes = new Set<string>(registries.modules?.caller_types ?? []);
+  const recordNames = new Set<string>(
+    (registries.records?.records ?? []).map((record: any) => record.name),
+  );
+  const operationNames = new Set<string>(
+    (registries.operations?.operations ?? []).map((o: any) => o.name),
+  );
+  const eventTypes = new Set<string>((registries.events?.events ?? []).map((e: any) => e.type));
+  const projectionNames = new Set<string>(
+    (registries.projections?.projections ?? []).map((entry: any) => entry.name),
+  );
+  const reportNames = new Set<string>(
+    (registries.reports?.reports ?? []).map((entry: any) => entry.name),
+  );
+  const assertionTypes = new Set<string>(registries.scenarioAssertions?.assertion_types ?? []);
   const machineByRecord = new Map<string, any>(
-    (r.stateMachines?.state_machines ?? []).map((m: any) => [m.record_type, m]),
+    (registries.stateMachines?.state_machines ?? []).map((m: any) => [m.record_type, m]),
   );
 
   const errors: any[] = [];
@@ -91,19 +99,23 @@ export function compileScenario(id: string): CompileResult {
     "measurement_requirement",
     "report_definition_available",
   ]);
-  for (const k of Object.keys(scenario.world ?? {}))
-    if (!KNOWN_WORLD_KEYS.has(k))
-      errors.push({ error_type: "unknown_world_key", reference: k, source_path: `world.${k}` });
+  for (const worldKey of Object.keys(scenario.world ?? {}))
+    if (!KNOWN_WORLD_KEYS.has(worldKey))
+      errors.push({
+        error_type: "unknown_world_key",
+        reference: worldKey,
+        source_path: `world.${worldKey}`,
+      });
 
   // actors -> registered caller types (Harness §9)
   const actorIds = new Set<string>();
-  for (const a of scenario.actors ?? []) {
-    actorIds.add(a.actor_id);
-    if (!callerTypes.has(a.product_caller_type))
+  for (const actor of scenario.actors ?? []) {
+    actorIds.add(actor.actor_id);
+    if (!callerTypes.has(actor.product_caller_type))
       gap(
         "unregistered_caller_type",
-        a.product_caller_type,
-        `actors.${a.actor_id}.product_caller_type`,
+        actor.product_caller_type,
+        `actors.${actor.actor_id}.product_caller_type`,
       );
   }
 
@@ -120,24 +132,24 @@ export function compileScenario(id: string): CompileResult {
 
   const compiled: CompiledAssertion[] = [];
   let inlineCount = 0;
-  for (const s of steps) {
-    const where = `steps[${s.step_id}]`;
-    if (!operationNames.has(s.operation))
-      gap("unregistered_operation", s.operation, `${where}.operation`);
-    if (!actorIds.has(s.actor))
+  for (const step of steps) {
+    const where = `steps[${step.step_id}]`;
+    if (!operationNames.has(step.operation))
+      gap("unregistered_operation", step.operation, `${where}.operation`);
+    if (!actorIds.has(step.actor))
       errors.push({
         error_type: "unknown_actor",
-        reference: s.actor,
+        reference: step.actor,
         source_path: `${where}.actor`,
       });
-    const ex = s.expect ?? {};
+    const ex = step.expect ?? {};
     if (ex.operation_succeeded !== undefined) {
       compiled.push({
-        assertion_id: `${s.step_id}_op_succeeded`,
+        assertion_id: `${step.step_id}_op_succeeded`,
         assertion_type: "operation_succeeded",
         severity: "blocking",
-        source: `inline:${s.step_id}`,
-        target: { step_id: s.step_id, operation: s.operation },
+        source: `inline:${step.step_id}`,
+        target: { step_id: step.step_id, operation: step.operation },
         expected: { succeeded: ex.operation_succeeded },
       });
       inlineCount++;
@@ -146,22 +158,22 @@ export function compileScenario(id: string): CompileResult {
       if (!eventTypes.has(eventType))
         gap("unregistered_event", eventType, `${where}.expect.events_emitted`);
       compiled.push({
-        assertion_id: `${s.step_id}_emits_${eventType}`,
+        assertion_id: `${step.step_id}_emits_${eventType}`,
         assertion_type: "event_emitted",
         severity: "blocking",
-        source: `inline:${s.step_id}`,
-        target: { step_id: s.step_id, event_type: eventType },
+        source: `inline:${step.step_id}`,
+        target: { step_id: step.step_id, event_type: eventType },
         expected: { at_least: 1 },
       });
       inlineCount++;
     }
     if (ex.access_filtered !== undefined) {
       compiled.push({
-        assertion_id: `${s.step_id}_access_filtered`,
+        assertion_id: `${step.step_id}_access_filtered`,
         assertion_type: "bounded_drill_down_filtered",
         severity: "blocking",
-        source: `inline:${s.step_id}`,
-        target: { step_id: s.step_id, operation: s.operation },
+        source: `inline:${step.step_id}`,
+        target: { step_id: step.step_id, operation: step.operation },
         expected: { access_filtered: ex.access_filtered },
       });
       inlineCount++;
@@ -170,47 +182,66 @@ export function compileScenario(id: string): CompileResult {
 
   // post-scenario assertions: type + target references registered
   let postCount = 0;
-  for (const a of scenario.assertions ?? []) {
-    if (!assertionTypes.has(a.assertion_type))
-      gap("unregistered_assertion_type", a.assertion_type, `assertions.${a.assertion_id}`);
-    const t = a.target ?? {};
-    if (t.record_type && !recordNames.has(t.record_type))
-      gap("unregistered_record", t.record_type, `assertions.${a.assertion_id}.target`);
-    if (t.event_type && !eventTypes.has(t.event_type))
-      gap("unregistered_event", t.event_type, `assertions.${a.assertion_id}.target`);
-    if (t.projection && !projectionNames.has(t.projection))
-      gap("unregistered_projection", t.projection, `assertions.${a.assertion_id}.target`);
-    if (t.report_type && !reportNames.has(t.report_type))
-      gap("unregistered_report", t.report_type, `assertions.${a.assertion_id}.target`);
-    if (t.producer_operation && !operationNames.has(t.producer_operation))
-      gap("unregistered_operation", t.producer_operation, `assertions.${a.assertion_id}.target`);
+  for (const assertion of scenario.assertions ?? []) {
+    if (!assertionTypes.has(assertion.assertion_type))
+      gap(
+        "unregistered_assertion_type",
+        assertion.assertion_type,
+        `assertions.${assertion.assertion_id}`,
+      );
+    const target = assertion.target ?? {};
+    if (target.record_type && !recordNames.has(target.record_type))
+      gap("unregistered_record", target.record_type, `assertions.${assertion.assertion_id}.target`);
+    if (target.event_type && !eventTypes.has(target.event_type))
+      gap("unregistered_event", target.event_type, `assertions.${assertion.assertion_id}.target`);
+    if (target.projection && !projectionNames.has(target.projection))
+      gap(
+        "unregistered_projection",
+        target.projection,
+        `assertions.${assertion.assertion_id}.target`,
+      );
+    if (target.report_type && !reportNames.has(target.report_type))
+      gap("unregistered_report", target.report_type, `assertions.${assertion.assertion_id}.target`);
+    if (target.producer_operation && !operationNames.has(target.producer_operation))
+      gap(
+        "unregistered_operation",
+        target.producer_operation,
+        `assertions.${assertion.assertion_id}.target`,
+      );
     // An access_full/access_summary assertion's access_profile MUST resolve to a declared world access
     // policy — else the read silently degrades (fail-closed to denied at runtime, but the intent is lost).
     // access_denied may intentionally present an unresolvable profile (proving fail-closed), so skip it.
     if (
-      (a.assertion_type === "access_full" || a.assertion_type === "access_summary") &&
-      t.access_profile &&
-      !(scenario.world?.access_policies ?? []).some((p: any) => p.alias === t.access_profile)
+      (assertion.assertion_type === "access_full" ||
+        assertion.assertion_type === "access_summary") &&
+      target.access_profile &&
+      !(scenario.world?.access_policies ?? []).some(
+        (entry: any) => entry.alias === target.access_profile,
+      )
     )
-      gap("unregistered_access_profile", t.access_profile, `assertions.${a.assertion_id}.target`);
-    if (t.record_type && t.status_path) {
-      const m = machineByRecord.get(t.record_type);
-      const states = new Set<string>(m?.states ?? []);
-      for (const st of t.status_path)
-        if (!states.has(st))
+      gap(
+        "unregistered_access_profile",
+        target.access_profile,
+        `assertions.${assertion.assertion_id}.target`,
+      );
+    if (target.record_type && target.status_path) {
+      const machine = machineByRecord.get(target.record_type);
+      const states = new Set<string>(machine?.states ?? []);
+      for (const stateName of target.status_path)
+        if (!states.has(stateName))
           errors.push({
             error_type: "invalid_state",
-            reference: `${t.record_type}.${st}`,
-            source_path: `assertions.${a.assertion_id}`,
+            reference: `${target.record_type}.${stateName}`,
+            source_path: `assertions.${assertion.assertion_id}`,
           });
     }
     compiled.push({
-      assertion_id: a.assertion_id,
-      assertion_type: a.assertion_type,
-      severity: a.severity ?? "blocking",
+      assertion_id: assertion.assertion_id,
+      assertion_type: assertion.assertion_type,
+      severity: assertion.severity ?? "blocking",
       source: "post_scenario",
-      target: a.target,
-      expected: a.expected,
+      target: assertion.target,
+      expected: assertion.expected,
     });
     postCount++;
   }
@@ -219,7 +250,7 @@ export function compileScenario(id: string): CompileResult {
   return {
     scenario_id: scenario.scenario_id ?? id,
     scenario_version: String(scenario.scenario_version ?? "?"),
-    registry_version: r.modules?.registry_version ?? "contracts-0.4.1",
+    registry_version: registries.modules?.registry_version ?? "contracts-0.4.1",
     status,
     errors,
     contract_gaps: contractGaps,

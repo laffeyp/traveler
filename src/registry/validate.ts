@@ -31,29 +31,33 @@ const warnings: string[] = [];
 const err = (m: string) => errors.push(m);
 const warn = (m: string) => warnings.push(m);
 
-const r = loadRegistries();
+const registries = loadRegistries();
 
 // ---- index sets -------------------------------------------------------------
-const moduleIds = new Set<string>((r.modules?.modules ?? []).map((m: any) => m.id));
-const callerTypes = new Set<string>(r.modules?.caller_types ?? []);
-const records: any[] = r.records?.records ?? [];
-const recordNames = new Set<string>(records.map((x) => x.name));
-const operations: any[] = r.operations?.operations ?? [];
-const operationByName = new Map<string, any>(operations.map((o) => [o.name, o]));
+const moduleIds = new Set<string>((registries.modules?.modules ?? []).map((m: any) => m.id));
+const callerTypes = new Set<string>(registries.modules?.caller_types ?? []);
+const records: any[] = registries.records?.records ?? [];
+const recordNames = new Set<string>(records.map((record) => record.name));
+const operations: any[] = registries.operations?.operations ?? [];
+const operationByName = new Map<string, any>(
+  operations.map((operation) => [operation.name, operation]),
+);
 const operationNames = new Set<string>(operationByName.keys());
-const events: any[] = r.events?.events ?? [];
+const events: any[] = registries.events?.events ?? [];
 const eventByType = new Map<string, any>(events.map((e) => [e.type, e]));
 const eventTypes = new Set<string>(eventByType.keys());
-const machines: any[] = r.stateMachines?.state_machines ?? [];
+const machines: any[] = registries.stateMachines?.state_machines ?? [];
 const machineByRecord = new Map<string, any>(machines.map((m) => [m.record_type, m]));
-const projectionNames = new Set<string>((r.projections?.projections ?? []).map((p: any) => p.name));
-const reportNames = new Set<string>((r.reports?.reports ?? []).map((p: any) => p.name));
-const assertionTypes = new Set<string>(r.scenarioAssertions?.assertion_types ?? []);
+const projectionNames = new Set<string>(
+  (registries.projections?.projections ?? []).map((p: any) => p.name),
+);
+const reportNames = new Set<string>((registries.reports?.reports ?? []).map((p: any) => p.name));
+const assertionTypes = new Set<string>(registries.scenarioAssertions?.assertion_types ?? []);
 const observabilityProfiles = new Set<string>(
-  (r.observabilityProfiles?.profiles ?? []).map((p: any) => p.id),
+  (registries.observabilityProfiles?.profiles ?? []).map((p: any) => p.id),
 );
 const compatibilityProfiles = new Set<string>(
-  (r.compatibilityProfiles?.profiles ?? []).map((p: any) => p.id),
+  (registries.compatibilityProfiles?.profiles ?? []).map((p: any) => p.id),
 );
 
 const asArray = (v: any): any[] =>
@@ -62,17 +66,17 @@ const asArray = (v: any): any[] =>
 // ---- 1. uniqueness ----------------------------------------------------------
 function dupes(names: string[], label: string) {
   const seen = new Set<string>();
-  for (const n of names) {
-    if (seen.has(n)) err(`[${label}] duplicate entry: ${n}`);
-    seen.add(n);
+  for (const name of names) {
+    if (seen.has(name)) err(`[${label}] duplicate entry: ${name}`);
+    seen.add(name);
   }
 }
 dupes(
-  records.map((x) => x.name),
+  records.map((record) => record.name),
   "records",
 );
 dupes(
-  operations.map((o) => o.name),
+  operations.map((operation) => operation.name),
   "operations",
 );
 dupes(
@@ -84,7 +88,7 @@ dupes(
   "state-machines",
 );
 dupes(
-  (r.runCloseRules?.rules ?? []).map((x: any) => x.id),
+  (registries.runCloseRules?.rules ?? []).map((record: any) => record.id),
   "run-close-rules",
 );
 
@@ -213,24 +217,27 @@ for (const m of machines) {
 }
 
 // ---- 6. projections ---------------------------------------------------------
-for (const p of r.projections?.projections ?? []) {
+for (const p of registries.projections?.projections ?? []) {
   if (!moduleIds.has(p.owning_module))
     err(`[projections] ${p.name}: owning_module '${p.owning_module}' not in modules.yaml`);
-  for (const sr of asArray(p.source_records))
-    if (!recordNames.has(sr)) err(`[projections] ${p.name}: source_record '${sr}' not registered`);
-  for (const se of asArray(p.source_events))
-    if (!eventTypes.has(se)) err(`[projections] ${p.name}: source_event '${se}' not registered`);
+  for (const sourceRecord of asArray(p.source_records))
+    if (!recordNames.has(sourceRecord))
+      err(`[projections] ${p.name}: source_record '${sourceRecord}' not registered`);
+  for (const sourceEvent of asArray(p.source_events))
+    if (!eventTypes.has(sourceEvent))
+      err(`[projections] ${p.name}: source_event '${sourceEvent}' not registered`);
 }
 
 // ---- 7. reports -------------------------------------------------------------
-for (const rep of r.reports?.reports ?? []) {
+for (const rep of registries.reports?.reports ?? []) {
   if (!moduleIds.has(rep.owning_module))
     err(`[reports] ${rep.name}: owning_module '${rep.owning_module}' not in modules.yaml`);
-  for (const sr of asArray(rep.source_records))
-    if (!recordNames.has(sr)) err(`[reports] ${rep.name}: source_record '${sr}' not registered`);
-  for (const sp of asArray(rep.source_projections))
-    if (!projectionNames.has(sp))
-      err(`[reports] ${rep.name}: source_projection '${sp}' not registered`);
+  for (const sourceRecord of asArray(rep.source_records))
+    if (!recordNames.has(sourceRecord))
+      err(`[reports] ${rep.name}: source_record '${sourceRecord}' not registered`);
+  for (const sourceProjection of asArray(rep.source_projections))
+    if (!projectionNames.has(sourceProjection))
+      err(`[reports] ${rep.name}: source_projection '${sourceProjection}' not registered`);
   if (typeof rep.payload_schema_ref !== "string" || rep.payload_schema_ref.length === 0)
     err(`[reports] ${rep.name}: missing payload_schema_ref`);
   if (rep.generated_by && !operationNames.has(rep.generated_by))
@@ -238,7 +245,7 @@ for (const rep of r.reports?.reports ?? []) {
 }
 
 // ---- 8. run-close rules -----------------------------------------------------
-for (const rule of r.runCloseRules?.rules ?? []) {
+for (const rule of registries.runCloseRules?.rules ?? []) {
   if (!rule.id) err(`[run-close-rules] rule missing id`);
   if (typeof rule.blocking !== "boolean")
     err(`[run-close-rules] ${rule.id}: blocking must be boolean`);
@@ -246,9 +253,10 @@ for (const rule of r.runCloseRules?.rules ?? []) {
 }
 
 // ---- 9. VF-003 reference resolution -----------------------------------------
-const vf = r.vf003 ?? {};
+const vf = registries.vf003 ?? {};
 const resolve = (names: any, set: Set<string>, label: string) => {
-  for (const n of asArray(names)) if (!set.has(n)) err(`[VF-003] unresolved ${label}: ${n}`);
+  for (const name of asArray(names))
+    if (!set.has(name)) err(`[VF-003] unresolved ${label}: ${name}`);
 };
 resolve(vf.operations, operationNames, "operation");
 resolve(vf.events, eventTypes, "event");
@@ -256,14 +264,14 @@ resolve(vf.projections, projectionNames, "projection");
 resolve(vf.reports, reportNames, "report");
 resolve(vf.assertion_types, assertionTypes, "assertion_type");
 resolve(vf.caller_types, callerTypes, "caller_type");
-for (const [rec, sts] of Object.entries(vf.record_states ?? {})) {
+for (const [rec, recordStates] of Object.entries(vf.record_states ?? {})) {
   const m = machineByRecord.get(rec);
   if (!m) {
     err(`[VF-003] record '${rec}' has no state machine`);
     continue;
   }
   const states = new Set<string>(asArray(m.states));
-  for (const s of asArray(sts))
+  for (const s of asArray(recordStates))
     if (!states.has(s)) err(`[VF-003] ${rec}: state '${s}' not in its state machine`);
 }
 // dependency table (VF-003 section 1.2 highlighted)
@@ -286,7 +294,7 @@ for (const op of operations) {
 }
 // modules owning first-slice contracts should be first_slice:true (warning)
 const firstSliceModule = new Map<string, boolean>(
-  (r.modules?.modules ?? []).map((m: any) => [m.id, m.first_slice]),
+  (registries.modules?.modules ?? []).map((m: any) => [m.id, m.first_slice]),
 );
 for (const op of operations)
   if (firstSliceModule.get(op.owning_module) === false)
@@ -301,7 +309,7 @@ const counts = {
   stateMachines: machines.length,
   projections: projectionNames.size,
   reports: reportNames.size,
-  runCloseRules: (r.runCloseRules?.rules ?? []).length,
+  runCloseRules: (registries.runCloseRules?.rules ?? []).length,
   assertionTypes: assertionTypes.size,
 };
 console.log("contract registry validation (contracts-0.4.1)");

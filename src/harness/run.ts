@@ -48,15 +48,15 @@ export function executeScenario(id: string, driver: Driver): Execution {
     return { scenario, compiled, stepResults, checkpoints, executed: 0 };
 
   const callerOf = new Map<string, string>(
-    (scenario.actors ?? []).map((a: any) => [a.actor_id, a.product_caller_type]),
+    (scenario.actors ?? []).map((actor: any) => [actor.actor_id, actor.product_caller_type]),
   );
   driver.world.accessPolicies = scenario.world?.access_policies ?? [];
   // Load part identity (part_number + revision) so the build check can distinguish a wrong revision
   // of the same part from a missing part (VF-004 vs VF-006). Both drivers share this World.
   driver.world.partRevisions = new Map(
-    (scenario.world?.part_revisions ?? []).map((p: any) => [
-      p.alias,
-      { part_number: p.part_number, revision: p.revision },
+    (scenario.world?.part_revisions ?? []).map((part: any) => [
+      part.alias,
+      { part_number: part.part_number, revision: part.revision },
     ]),
   );
   // Governed-report definition availability (run-close rule report_definition_available). Defaults
@@ -67,20 +67,21 @@ export function executeScenario(id: string, driver: Driver): Execution {
   // still carries a real timestamp (sprint-019 review: signed_at was the empty string when the clock was unset).
   if (scenario.clock?.start_at) driver.setClock(scenario.clock.start_at);
   let executed = 0;
-  for (const s of scenario.steps ?? []) {
-    if (s.set_time) driver.setClock(s.set_time);
+  for (const step of scenario.steps ?? []) {
+    if (step.set_time) driver.setClock(step.set_time);
     const result = driver.executeOperation(
-      s.operation,
-      s.input ?? {},
-      callerOf.get(s.actor) ?? "unknown",
-      s.step_id,
-      s.idempotency_key,
-      s.actor,
+      step.operation,
+      step.input ?? {},
+      callerOf.get(step.actor) ?? "unknown",
+      step.step_id,
+      step.idempotency_key,
+      step.actor,
     );
-    stepResults.set(s.step_id, result);
+    stepResults.set(step.step_id, result);
     const snap = new Map<string, string>();
-    for (const rec of driver.world.records.values()) if (rec.alias) snap.set(rec.alias, rec.state);
-    checkpoints.set(s.step_id, snap);
+    for (const record of driver.world.records.values())
+      if (record.alias) snap.set(record.alias, record.state);
+    checkpoints.set(step.step_id, snap);
     executed++;
   }
   return { scenario, compiled, stepResults, checkpoints, executed };
@@ -101,7 +102,7 @@ export function evaluateAssertions(
   const context: AssertContext = { driver, events, stepResults, checkpoints };
   const failures: { assertion_id: string; message: string }[] = [];
   let passed = 0;
-  for (const a of compiled.compiled_assertions) {
+  for (const assertion of compiled.compiled_assertions) {
     let ok = false,
       msg = "";
     try {
@@ -111,17 +112,17 @@ export function evaluateAssertions(
       // method and BYPASS the unknown-type branch. The compiler already gates unregistered types, so this only
       // bites a direct evaluateAssertions() caller — but it must still report "unknown assertion_type", not a
       // stray message or throw (sprint-017 review: two independent critics; matches the engine's own discipline).
-      const evaluate = Object.hasOwn(EVALUATORS, a.assertion_type)
-        ? EVALUATORS[a.assertion_type]
+      const evaluate = Object.hasOwn(EVALUATORS, assertion.assertion_type)
+        ? EVALUATORS[assertion.assertion_type]
         : undefined;
-      if (!evaluate) msg = `unknown assertion_type ${a.assertion_type}`;
-      else ({ ok, msg } = evaluate(a, context));
+      if (!evaluate) msg = `unknown assertion_type ${assertion.assertion_type}`;
+      else ({ ok, msg } = evaluate(assertion, context));
     } catch (err: any) {
       ok = false;
       msg = `assertion threw: ${err.message}`;
     }
     if (ok) passed++;
-    else failures.push({ assertion_id: a.assertion_id, message: msg });
+    else failures.push({ assertion_id: assertion.assertion_id, message: msg });
   }
   return { total: compiled.compiled_assertions.length, passed, failures };
 }
@@ -143,7 +144,7 @@ export function evaluateDurable(
 ) {
   const durable = {
     compiled_assertions: compiled.compiled_assertions.filter(
-      (a: any) => !NON_DURABLE.has(a.assertion_type),
+      (assertion: any) => !NON_DURABLE.has(assertion.assertion_type),
     ),
   };
   const evaluation = evaluateAssertions(durable, driver, new Map(), reconstructedCheckpoints);
@@ -167,7 +168,9 @@ export function runIdempotencyReplay(
   scenario: any,
 ): { assertion_id: string; message: string }[] {
   const failures: { assertion_id: string; message: string }[] = [];
-  const stepById = new Map<string, any>((scenario.steps ?? []).map((s: any) => [s.step_id, s]));
+  const stepById = new Map<string, any>(
+    (scenario.steps ?? []).map((step: any) => [step.step_id, step]),
+  );
   for (const check of scenario.idempotency_replay_checks ?? []) {
     const step = stepById.get(check.step_id);
     if (!step) {
@@ -266,7 +269,10 @@ export function runScenarioOnDriver(
   writeFileSync(
     join(outDir, "operation_trace.json"),
     JSON.stringify(
-      [...execution.stepResults.entries()].map(([step_id, r]) => ({ step_id, ...r })),
+      [...execution.stepResults.entries()].map(([step_id, stepResult]) => ({
+        step_id,
+        ...stepResult,
+      })),
       null,
       2,
     ) + "\n",
@@ -293,14 +299,18 @@ export function runScenario(id: string): ScenarioResult {
 // CLI
 if (import.meta.url === `file://${process.argv[1]}`) {
   const id = process.argv[2] ?? "VF-003";
-  const r = runScenario(id);
-  console.log(`scenario run: ${r.scenario_id} v${r.scenario_version} [${r.driver}]`);
-  console.log(`  compilation: ${r.compilation_status}  steps executed: ${r.steps_executed}`);
+  const scenarioResult = runScenario(id);
   console.log(
-    `  assertions: ${r.assertions.passed}/${r.assertions.total} passed, ${r.assertions.failed} failed`,
+    `scenario run: ${scenarioResult.scenario_id} v${scenarioResult.scenario_version} [${scenarioResult.driver}]`,
   );
-  console.log(`  status: ${r.status}`);
-  for (const f of r.failed_assertions.slice(0, 40))
-    console.log(`    FAIL ${f.assertion_id}: ${f.message}`);
-  process.exit(r.status === "passed" ? 0 : 1);
+  console.log(
+    `  compilation: ${scenarioResult.compilation_status}  steps executed: ${scenarioResult.steps_executed}`,
+  );
+  console.log(
+    `  assertions: ${scenarioResult.assertions.passed}/${scenarioResult.assertions.total} passed, ${scenarioResult.assertions.failed} failed`,
+  );
+  console.log(`  status: ${scenarioResult.status}`);
+  for (const failure of scenarioResult.failed_assertions.slice(0, 40))
+    console.log(`    FAIL ${failure.assertion_id}: ${failure.message}`);
+  process.exit(scenarioResult.status === "passed" ? 0 : 1);
 }
