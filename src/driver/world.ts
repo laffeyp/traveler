@@ -90,14 +90,14 @@ export class World {
   /** Resolve a record by alias or id; throws `not_found` if neither resolves. */
   get(aliasOrId: string): FactoryRecord {
     const id = this.aliasToId.get(aliasOrId) ?? aliasOrId;
-    const r = this.records.get(id);
-    if (!r) throw new Error(`not_found: ${aliasOrId}`);
-    return r;
+    const record = this.records.get(id);
+    if (!record) throw new Error(`not_found: ${aliasOrId}`);
+    return record;
   }
 
   /** All records of a given type. */
   byType(type: string): FactoryRecord[] {
-    return [...this.records.values()].filter((r) => r.record_type === type);
+    return [...this.records.values()].filter((record) => record.record_type === type);
   }
 
   /**
@@ -107,9 +107,9 @@ export class World {
    */
   reseedIdCounter() {
     let max = 0;
-    for (const r of this.records.values()) {
-      const n = parseInt(String(r.id).split("-").pop() ?? "", 10);
-      if (Number.isFinite(n) && n > max) max = n;
+    for (const record of this.records.values()) {
+      const idNumber = parseInt(String(record.id).split("-").pop() ?? "", 10);
+      if (Number.isFinite(idNumber) && idNumber > max) max = idNumber;
     }
     this.idCounter = max;
   }
