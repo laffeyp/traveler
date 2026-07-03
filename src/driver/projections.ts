@@ -11,11 +11,11 @@ export function asBuiltProjection(world: World, parentAlias: string): any {
   const parentId = world.get(parentAlias).id;
   const children = world
     .byType("InstallationEvent")
-    .filter((e) => world.get(e.fields.parent).id === parentId)
-    .map((e) => ({
-      child_alias: e.fields.child,
-      child_id: world.get(e.fields.child).id,
-      serial_number: world.get(e.fields.child).fields.serial_number,
+    .filter((event) => world.get(event.fields.parent).id === parentId)
+    .map((event) => ({
+      child_alias: event.fields.child,
+      child_id: world.get(event.fields.child).id,
+      serial_number: world.get(event.fields.child).fields.serial_number,
     }));
   return {
     projection: "AsBuiltProjection",
@@ -47,11 +47,15 @@ const CONTROLLED_DETAIL_TOKENS = ["controlled_machine_evidence_payload", "raw_ma
  * controlled detail.
  */
 export function serialHistory(world: World, serial: string, access?: string): any {
-  const policy = access ? (world.accessPolicies ?? []).find((p: any) => p.alias === access) : null;
+  const policy = access
+    ? (world.accessPolicies ?? []).find((policy: any) => policy.alias === access)
+    : null;
   const view = !access ? "full" : !policy || policy.denied ? "denied" : "summary";
   const denied = view === "denied";
   const hidden = new Set<string>(view === "summary" ? (policy?.hidden ?? []) : []);
-  const item = world.byType("InventoryItem").find((r) => r.fields.serial_number === serial);
+  const item = world
+    .byType("InventoryItem")
+    .find((record) => record.fields.serial_number === serial);
   if (!item || denied)
     return {
       projection: "SerialHistory",
@@ -64,22 +68,24 @@ export function serialHistory(world: World, serial: string, access?: string): an
       access_filterable: true,
       conflicted: false,
     };
-  const resolve = (v: any): string | null =>
-    typeof v === "string" ? (world.aliasToId.get(v) ?? (world.records.has(v) ? v : null)) : null;
+  const resolve = (fieldValue: any): string | null =>
+    typeof fieldValue === "string"
+      ? (world.aliasToId.get(fieldValue) ?? (world.records.has(fieldValue) ? fieldValue : null))
+      : null;
   const owned = new Set<string>([item.id]);
-  for (const r of world.byType("Run")) {
-    const t = resolve(r.fields.target_inventory);
-    if (t === item.id) owned.add(r.id);
+  for (const record of world.byType("Run")) {
+    const targetRef = resolve(record.fields.target_inventory);
+    if (targetRef === item.id) owned.add(record.id);
   }
   let changed = true;
   while (changed) {
     changed = false;
-    for (const rec of world.records.values()) {
-      if (owned.has(rec.id)) continue;
-      for (const v of Object.values(rec.fields)) {
-        const ref = resolve(v);
-        if (ref && owned.has(ref)) {
-          owned.add(rec.id);
+    for (const record of world.records.values()) {
+      if (owned.has(record.id)) continue;
+      for (const fieldValue of Object.values(record.fields)) {
+        const reference = resolve(fieldValue);
+        if (reference && owned.has(reference)) {
+          owned.add(record.id);
           changed = true;
           break;
         }
@@ -88,32 +94,33 @@ export function serialHistory(world: World, serial: string, access?: string): an
   }
   for (const evidenceRecord of world.byType("MachineEvidenceRecord"))
     if (evidenceRecord.fields.linked_serial === serial) owned.add(evidenceRecord.id);
-  const inHistory = world.events.filter((e) => {
-    if (e.payload?.serial_number === serial) return true;
-    return Object.values(e.payload ?? {}).some((v) => {
-      const ref = resolve(v);
-      return !!ref && owned.has(ref);
+  const inHistory = world.events.filter((event) => {
+    if (event.payload?.serial_number === serial) return true;
+    return Object.values(event.payload ?? {}).some((fieldValue) => {
+      const reference = resolve(fieldValue);
+      return !!reference && owned.has(reference);
     });
   });
-  const event_types = [...new Set(inHistory.map((e) => e.type))];
+  const event_types = [...new Set(inHistory.map((event) => event.type))];
   // Enrich entries to the Build Readiness §9.3 shape (entry_type / event_type / record_ref / summary) and
   // carry controlled detail, stripping it when the reader's policy hides the token (summary view).
-  const entries = inHistory.map((e) => {
-    const controlled = e.type.startsWith(CONTROLLED_EVENT_PREFIX);
+  const entries = inHistory.map((event) => {
+    const controlled = event.type.startsWith(CONTROLLED_EVENT_PREFIX);
     // Under summary, strip the controlled tokens the policy hides; keep the rest visible. Under full, all visible.
-    const detail = controlled ? CONTROLLED_DETAIL_TOKENS.filter((tok) => !hidden.has(tok)) : [];
+    const detail = controlled ? CONTROLLED_DETAIL_TOKENS.filter((token) => !hidden.has(token)) : [];
     return {
       entry_type: controlled ? "machine_evidence" : "run_event",
-      event_type: e.type, // event type (review STATUS) is summary-safe
+      event_type: event.type, // event type (review STATUS) is summary-safe
       record_ref:
-        (e.payload && (e.payload.record_id ?? e.payload.run_id ?? e.payload.measurement_id)) ??
+        (event.payload &&
+          (event.payload.record_id ?? event.payload.run_id ?? event.payload.measurement_id)) ??
         null,
-      summary: e.type,
+      summary: event.type,
       controlled,
       controlled_detail: detail, // surviving controlled tokens (all under full, redacted under summary)
     };
   });
-  const visible_detail = [...new Set(entries.flatMap((en) => en.controlled_detail))];
+  const visible_detail = [...new Set(entries.flatMap((entry) => entry.controlled_detail))];
   return {
     projection: "SerialHistory",
     serial_number: serial,
@@ -136,29 +143,35 @@ export function assembleRunCloseReport(
   run: FactoryRecord,
   accessScope = "customer_summary_access",
 ): any {
-  const steps = world.byType("RunStep").filter((s) => s.fields.run === run.id);
-  const measurements = world.byType("Measurement").filter((m) => m.fields.run === run.id);
-  const nonconformance = world.byType("Nonconformance").find((n) => n.fields.run === run.id);
+  const steps = world.byType("RunStep").filter((step) => step.fields.run === run.id);
+  const measurements = world
+    .byType("Measurement")
+    .filter((measurement) => measurement.fields.run === run.id);
+  const nonconformance = world
+    .byType("Nonconformance")
+    .find((candidate) => candidate.fields.run === run.id);
   const evidenceRecord = world.byType("MachineEvidenceRecord")[0];
-  const runCloseChecks = world.byType("RunCloseCheck").filter((c) => c.fields.run === run.id);
+  const runCloseChecks = world
+    .byType("RunCloseCheck")
+    .filter((check) => check.fields.run === run.id);
   const installs = world.byType("InstallationEvent");
   return {
     report_header: { title: "Run Close Report", run_status: run.state },
     run_context: { run_id: run.id },
-    executed_steps: steps.map((s) => ({ run_step_id: s.id, status: s.state })),
-    measurement_summary: measurements.map((m) => ({
-      measurement_id: m.id,
-      value: m.fields.value,
-      unit: m.fields.unit,
-      result: m.fields.result,
+    executed_steps: steps.map((step) => ({ run_step_id: step.id, status: step.state })),
+    measurement_summary: measurements.map((measurement) => ({
+      measurement_id: measurement.id,
+      value: measurement.fields.value,
+      unit: measurement.fields.unit,
+      result: measurement.fields.result,
     })),
     quality_path: nonconformance
       ? { nonconformance_id: nonconformance.id, nonconformance_status: nonconformance.state }
       : {},
     redline_history: { redline: world.byType("Redline")[0]?.state },
-    installed_inventory: installs.map((e) => ({
-      parent: e.fields.parent,
-      child: e.fields.child,
+    installed_inventory: installs.map((event) => ({
+      parent: event.fields.parent,
+      child: event.fields.child,
       event_type: "INVENTORY_INSTALLED",
     })),
     machine_evidence_summary: evidenceRecord
@@ -170,25 +183,25 @@ export function assembleRunCloseReport(
           },
         ]
       : [],
-    run_close_observations: runCloseChecks.map((c) => ({
-      run_close_check_id: c.id,
-      status: c.state,
-      blockers: c.fields.blockers,
+    run_close_observations: runCloseChecks.map((check) => ({
+      run_close_check_id: check.id,
+      status: check.state,
+      blockers: check.fields.blockers,
     })),
     final_close_result: { run_status_at_generation: run.state, closed: run.state === "closed" },
     source_traceability: {
       source_record_ids: [
         run.id,
-        ...steps.map((s) => s.id),
-        ...measurements.map((m) => m.id),
+        ...steps.map((step) => step.id),
+        ...measurements.map((measurement) => measurement.id),
         ...(nonconformance ? [nonconformance.id] : []),
-        ...installs.map((e) => e.id),
+        ...installs.map((event) => event.id),
       ],
       source_event_types: [
         ...new Set(
           world.events
-            .filter((e) => Object.values(e.payload ?? {}).includes(run.id))
-            .map((e) => e.type),
+            .filter((event) => Object.values(event.payload ?? {}).includes(run.id))
+            .map((event) => event.type),
         ),
       ],
       source_event_range: {

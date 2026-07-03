@@ -13,7 +13,9 @@ import { readYaml } from "../registry/load.ts";
 export const machines: any[] = readYaml("contracts/state-machines.yaml").state_machines ?? [];
 
 /** record_type -> its state machine, for transition validation. */
-export const machineByRecord = new Map<string, any>(machines.map((m) => [m.record_type, m]));
+export const machineByRecord = new Map<string, any>(
+  machines.map((machine) => [machine.record_type, machine]),
+);
 
 /**
  * operation name -> its idempotency classification (Contract Spec §6). The in-instance memo applies ONLY to
@@ -21,7 +23,10 @@ export const machineByRecord = new Map<string, any>(machines.map((m) => [m.recor
  * re-execute on every call, not be silently short-circuited by a shared key (sprint-011 review [7]).
  */
 export const opIdempotency = new Map<string, string>(
-  (readYaml("contracts/operations.yaml").operations ?? []).map((o: any) => [o.name, o.idempotency]),
+  (readYaml("contracts/operations.yaml").operations ?? []).map((operation: any) => [
+    operation.name,
+    operation.idempotency,
+  ]),
 );
 
 /**
@@ -31,8 +36,8 @@ export const opIdempotency = new Map<string, string>(
  * This moves vocabulary enforcement from static-only to runtime, so no stray/mis-attributed tag can survive.
  */
 export const eventProducers = new Map<string, Set<string>>();
-for (const e of readYaml("contracts/events.yaml").events ?? []) {
-  eventProducers.set(e.type, new Set<string>(e.producer_operations ?? []));
+for (const event of readYaml("contracts/events.yaml").events ?? []) {
+  eventProducers.set(event.type, new Set<string>(event.producer_operations ?? []));
 }
 
 /**

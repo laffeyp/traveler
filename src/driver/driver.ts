@@ -42,9 +42,9 @@ export class InMemoryProductDriver {
     idempotencyKey?: string,
     actorId?: string,
   ): OperationResult {
-    const idemClass = opIdempotency.get(op);
-    const memoized = idemClass === "required_idempotency_key";
-    const writeBounded = idemClass === "transactional_unique_constraint";
+    const idempotencyClass = opIdempotency.get(op);
+    const memoized = idempotencyClass === "required_idempotency_key";
+    const writeBounded = idempotencyClass === "transactional_unique_constraint";
     // Idempotency keys are OP-SCOPED (Build Readiness §4.5: idempotency is per-operation + semantic input).
     // Without this, two DIFFERENT ops sharing a key string collide — a write-bounded op would suppress an
     // unrelated write, and a memoized op would return another op's result object (sprint-013 review [2]/[3]).
@@ -89,19 +89,19 @@ export class InMemoryProductDriver {
     } else {
       // snapshot for per-operation rollback (Contract Spec §8: a failed operation persists no facts)
       const snapRecords = new Map<string, { state: string; fields: any }>();
-      for (const [id, r] of this.world.records)
-        snapRecords.set(id, { state: r.state, fields: structuredClone(r.fields) });
+      for (const [id, record] of this.world.records)
+        snapRecords.set(id, { state: record.state, fields: structuredClone(record.fields) });
       const snapAliases = new Map(this.world.aliasToId);
       const snapEventsLen = this.world.events.length;
       const snapSeq = this.world.seq;
       try {
         const handlerOutput = handler(this.world, input, actorId, actorCallerType) ?? {};
         const eventsEmitted = this.world.events
-          .filter((e) => e.seq > before)
-          .map((e) => ({ type: e.type }));
+          .filter((event) => event.seq > before)
+          .map((event) => ({ type: event.type }));
         const recordsWritten = [...this.world.records.values()]
-          .filter((r) => !beforeRecords.has(r.id))
-          .map((r) => ({ recordType: r.record_type, id: r.id }));
+          .filter((record) => !beforeRecords.has(record.id))
+          .map((record) => ({ recordType: record.record_type, id: record.id }));
         result = {
           operationName: op,
           succeeded: true,
@@ -115,24 +115,24 @@ export class InMemoryProductDriver {
           operationContractVersion: `${op}.v1`,
           productBuild: "build_001",
         };
-      } catch (e: any) {
+      } catch (error: any) {
         // roll back any partial mutation so a failed op leaves zero facts (§8)
         for (const id of [...this.world.records.keys()])
           if (!snapRecords.has(id)) this.world.records.delete(id);
         for (const [id, snapshot] of snapRecords) {
-          const r = this.world.records.get(id)!;
-          r.state = snapshot.state;
-          r.fields = snapshot.fields;
+          const record = this.world.records.get(id)!;
+          record.state = snapshot.state;
+          record.fields = snapshot.fields;
         }
         this.world.aliasToId = snapAliases;
         this.world.events.length = snapEventsLen;
         this.world.seq = snapSeq;
-        const [errorClass] = String(e.message).split(":");
+        const [errorClass] = String(error.message).split(":");
         result = {
           operationName: op,
           succeeded: false,
           failureClass: errorClass || "handler_error",
-          output: { error: e.message },
+          output: { error: error.message },
           correlationId: this.world.correlation,
           idempotencyKey,
           contractVersion: "contracts-0.4.1",

@@ -10,12 +10,12 @@ import { DatabaseSync } from "node:sqlite";
 import { InMemoryProductDriver, machineByRecord } from "./engine.ts";
 
 export class BackendProductDriver {
-  private db: DatabaseSync;
-  private mem = new InMemoryProductDriver();
+  private database: DatabaseSync;
+  private memoryDriver = new InMemoryProductDriver();
 
   constructor(dbPath: string) {
-    this.db = new DatabaseSync(dbPath);
-    this.db.exec(`
+    this.database = new DatabaseSync(dbPath);
+    this.database.exec(`
       CREATE TABLE IF NOT EXISTS records (id TEXT PRIMARY KEY, record_type TEXT, alias TEXT, state TEXT, fields TEXT);
       CREATE TABLE IF NOT EXISTS events (seq INTEGER PRIMARY KEY, type TEXT, producer_operation TEXT, step_id TEXT, occurred_at TEXT, correlation_id TEXT, payload TEXT);
       CREATE TABLE IF NOT EXISTS outbox (id INTEGER PRIMARY KEY AUTOINCREMENT, event_seq INTEGER UNIQUE, delivered INTEGER DEFAULT 0);
@@ -32,21 +32,21 @@ export class BackendProductDriver {
 
   // Reconstruct the World from the persisted store (records + append-only event history).
   private loadFromDisk() {
-    const w = this.mem.world;
-    for (const row of this.db.prepare("SELECT * FROM records").all() as any[]) {
-      const rec = {
+    const world = this.memoryDriver.world;
+    for (const row of this.database.prepare("SELECT * FROM records").all() as any[]) {
+      const record = {
         id: row.id,
         record_type: row.record_type,
         alias: row.alias ?? "",
         state: row.state,
         fields: JSON.parse(row.fields),
       };
-      w.records.set(rec.id, rec);
-      if (rec.alias) w.aliasToId.set(rec.alias, rec.id);
+      world.records.set(record.id, record);
+      if (record.alias) world.aliasToId.set(record.alias, record.id);
     }
     let maxSeq = 0;
-    for (const row of this.db.prepare("SELECT * FROM events ORDER BY seq").all() as any[]) {
-      w.events.push({
+    for (const row of this.database.prepare("SELECT * FROM events ORDER BY seq").all() as any[]) {
+      world.events.push({
         seq: row.seq,
         type: row.type,
         producer_operation: row.producer_operation,
@@ -57,70 +57,82 @@ export class BackendProductDriver {
       });
       maxSeq = Math.max(maxSeq, row.seq);
     }
-    w.seq = maxSeq;
+    world.seq = maxSeq;
     // Reconstruct the world CONFIG (access policies, report-definition availability, part identities). Without
     // this, a fresh-from-disk instance had EMPTY access policies, so a summary reader's profile failed to
     // resolve — a controlled-data durability leak (sprint-010 review). Now the access dimension survives reload.
-    const cfgRow = this.db.prepare("SELECT config FROM world_config WHERE id = 1").get() as any;
-    if (cfgRow) {
-      const cfg = JSON.parse(cfgRow.config);
-      w.accessPolicies = cfg.accessPolicies ?? [];
-      w.accessPolicyChanges = cfg.accessPolicyChanges ?? [];
-      w.reportDefinitionAvailable = cfg.reportDefinitionAvailable ?? true;
-      w.partRevisions = new Map(cfg.partRevisions ?? []);
-      w.txIdempotencyKeys = new Set(cfg.txIdempotencyKeys ?? []); // write-boundary unique constraint survives reload (B-Q-13)
+    const configRow = this.database
+      .prepare("SELECT config FROM world_config WHERE id = 1")
+      .get() as any;
+    if (configRow) {
+      const config = JSON.parse(configRow.config);
+      world.accessPolicies = config.accessPolicies ?? [];
+      world.accessPolicyChanges = config.accessPolicyChanges ?? [];
+      world.reportDefinitionAvailable = config.reportDefinitionAvailable ?? true;
+      world.partRevisions = new Map(config.partRevisions ?? []);
+      world.txIdempotencyKeys = new Set(config.txIdempotencyKeys ?? []); // write-boundary unique constraint survives reload (B-Q-13)
     }
-    w.reseedIdCounter(); // resume ids past the persisted max so a post-reload write cannot overwrite a record (sprint-019 review)
+    world.reseedIdCounter(); // resume ids past the persisted max so a post-reload write cannot overwrite a record (sprint-019 review)
   }
 
   // One transaction per operation: current-state records + new events + outbox (TAD §12 transactional outbox).
   private persist(beforeSeq: number) {
-    const w = this.mem.world;
-    this.db.exec("BEGIN");
+    const world = this.memoryDriver.world;
+    this.database.exec("BEGIN");
     try {
-      const up = this.db.prepare(
+      const upsertRecord = this.database.prepare(
         "INSERT OR REPLACE INTO records(id, record_type, alias, state, fields) VALUES(?,?,?,?,?)",
       );
-      for (const r of w.records.values())
-        up.run(r.id, r.record_type, r.alias || null, r.state, JSON.stringify(r.fields));
-      const ie = this.db.prepare(
+      for (const record of world.records.values())
+        upsertRecord.run(
+          record.id,
+          record.record_type,
+          record.alias || null,
+          record.state,
+          JSON.stringify(record.fields),
+        );
+      const insertEvent = this.database.prepare(
         "INSERT OR IGNORE INTO events(seq, type, producer_operation, step_id, occurred_at, correlation_id, payload) VALUES(?,?,?,?,?,?,?)",
       );
-      const io = this.db.prepare("INSERT OR IGNORE INTO outbox(event_seq) VALUES(?)"); // one outbox row per event (event_seq UNIQUE)
-      for (const ev of w.events)
-        if (ev.seq > beforeSeq) {
-          ie.run(
-            ev.seq,
-            ev.type,
-            ev.producer_operation,
-            ev.step_id,
-            ev.occurred_at,
-            ev.correlation_id,
-            JSON.stringify(ev.payload),
+      const insertOutbox = this.database.prepare(
+        "INSERT OR IGNORE INTO outbox(event_seq) VALUES(?)",
+      ); // one outbox row per event (event_seq UNIQUE)
+      for (const event of world.events)
+        if (event.seq > beforeSeq) {
+          insertEvent.run(
+            event.seq,
+            event.type,
+            event.producer_operation,
+            event.step_id,
+            event.occurred_at,
+            event.correlation_id,
+            JSON.stringify(event.payload),
           );
-          io.run(ev.seq);
+          insertOutbox.run(event.seq);
         }
       // Persist the world config so the access dimension + report-definition availability survive a reload.
-      const cfg = JSON.stringify({
-        accessPolicies: w.accessPolicies,
-        accessPolicyChanges: w.accessPolicyChanges,
-        reportDefinitionAvailable: w.reportDefinitionAvailable,
-        partRevisions: [...w.partRevisions.entries()],
-        txIdempotencyKeys: [...w.txIdempotencyKeys],
+      const config = JSON.stringify({
+        accessPolicies: world.accessPolicies,
+        accessPolicyChanges: world.accessPolicyChanges,
+        reportDefinitionAvailable: world.reportDefinitionAvailable,
+        partRevisions: [...world.partRevisions.entries()],
+        txIdempotencyKeys: [...world.txIdempotencyKeys],
       });
-      this.db.prepare("INSERT OR REPLACE INTO world_config(id, config) VALUES(1, ?)").run(cfg);
-      this.db.exec("COMMIT");
+      this.database
+        .prepare("INSERT OR REPLACE INTO world_config(id, config) VALUES(1, ?)")
+        .run(config);
+      this.database.exec("COMMIT");
     } catch (e) {
-      this.db.exec("ROLLBACK");
+      this.database.exec("ROLLBACK");
       throw e;
     }
   }
 
-  setClock(t: string) {
-    this.mem.setClock(t);
+  setClock(time: string) {
+    this.memoryDriver.setClock(time);
   }
   get world() {
-    return this.mem.world;
+    return this.memoryDriver.world;
   }
 
   executeOperation(
@@ -131,24 +143,31 @@ export class BackendProductDriver {
     idempotencyKey?: string,
     actorId?: string,
   ) {
-    const beforeSeq = this.mem.world.seq;
-    const res = this.mem.executeOperation(op, input, caller, stepId, idempotencyKey, actorId);
-    if (res.succeeded) this.persist(beforeSeq); // only committed operations persist facts
-    return res;
+    const beforeSeq = this.memoryDriver.world.seq;
+    const result = this.memoryDriver.executeOperation(
+      op,
+      input,
+      caller,
+      stepId,
+      idempotencyKey,
+      actorId,
+    );
+    if (result.succeeded) this.persist(beforeSeq); // only committed operations persist facts
+    return result;
   }
 
   // reads are served from the World, which was reconstructed from the persisted store on construction.
   readRecord(alias: string) {
-    return this.mem.readRecord(alias);
+    return this.memoryDriver.readRecord(alias);
   }
   readProjection(name: string, key: string, actorContext?: string) {
-    return this.mem.readProjection(name, key, actorContext);
+    return this.memoryDriver.readProjection(name, key, actorContext);
   }
   readReport(alias: string) {
-    return this.mem.readReport(alias);
+    return this.memoryDriver.readReport(alias);
   }
   readEventTrace() {
-    return this.mem.readEventTrace();
+    return this.memoryDriver.readEventTrace();
   }
 
   // Rebuild historical record-state snapshots by REPLAYING the append-only event log (TAD §12/§27/§26:
@@ -159,7 +178,7 @@ export class BackendProductDriver {
   rebuildCheckpointsFromEvents(): Map<string, Map<string, string>> {
     const idMeta = new Map<string, { alias: string; type: string }>();
     const aliasToId = new Map<string, string>();
-    for (const row of this.db
+    for (const row of this.database
       .prepare("SELECT id, alias, record_type FROM records")
       .all() as any[]) {
       idMeta.set(row.id, { alias: row.alias, type: row.record_type });
@@ -167,27 +186,29 @@ export class BackendProductDriver {
     }
     const state = new Map<string, string>();
     const checkpoints = new Map<string, Map<string, string>>();
-    for (const ev of this.db.prepare("SELECT * FROM events ORDER BY seq").all() as any[]) {
-      const payload = JSON.parse(ev.payload);
-      for (const raw of Object.values(payload)) {
-        if (typeof raw !== "string") continue;
+    for (const event of this.database.prepare("SELECT * FROM events ORDER BY seq").all() as any[]) {
+      const payload = JSON.parse(event.payload);
+      for (const rawValue of Object.values(payload)) {
+        if (typeof rawValue !== "string") continue;
         // Event payloads reference their record by id OR by alias (e.g. REDLINE_REJECTED carries
         // redline_alias). Resolve either to the record id so alias-carrying transitions replay too
         // (sprint-011 review [5]: rejected-redline historical state was lost on cold reload).
-        const v = idMeta.has(raw) ? raw : aliasToId.get(raw);
-        if (!v || !idMeta.has(v)) continue;
-        const m = machineByRecord.get(idMeta.get(v)!.type);
-        if (!m) continue;
-        const cur = state.get(v) ?? null;
-        const t = (m.transitions ?? []).find((tr: any) => tr.emits === ev.type && tr.from === cur);
-        if (t) state.set(v, t.to);
+        const resolvedId = idMeta.has(rawValue) ? rawValue : aliasToId.get(rawValue);
+        if (!resolvedId || !idMeta.has(resolvedId)) continue;
+        const machine = machineByRecord.get(idMeta.get(resolvedId)!.type);
+        if (!machine) continue;
+        const currentState = state.get(resolvedId) ?? null;
+        const transition = (machine.transitions ?? []).find(
+          (tr: any) => tr.emits === event.type && tr.from === currentState,
+        );
+        if (transition) state.set(resolvedId, transition.to);
       }
-      const snap = new Map<string, string>();
-      for (const [id, st] of state) {
+      const snapshot = new Map<string, string>();
+      for (const [id, recordState] of state) {
         const meta = idMeta.get(id);
-        if (meta?.alias) snap.set(meta.alias, st);
+        if (meta?.alias) snapshot.set(meta.alias, recordState);
       }
-      checkpoints.set(ev.step_id, snap);
+      checkpoints.set(event.step_id, snapshot);
     }
     return checkpoints;
   }
@@ -213,34 +234,36 @@ export class BackendProductDriver {
     delivered: number;
     order: number[];
   } {
-    const undelivered = this.db
+    const undelivered = this.database
       .prepare("SELECT event_seq FROM outbox WHERE delivered = 0 ORDER BY event_seq")
       .all() as any[];
     let applied = 0,
       skipped = 0,
       orphaned = 0;
     const order: number[] = [];
-    const insertProj = this.db.prepare(
+    const insertProj = this.database.prepare(
       "INSERT OR IGNORE INTO delivery_projection(event_seq, type) SELECT seq, type FROM events WHERE seq = ?",
     );
-    const bumpCount = this.db.prepare(
+    const bumpCount = this.database.prepare(
       "INSERT INTO projection_counts(type, count) SELECT type, 1 FROM events WHERE seq = ? ON CONFLICT(type) DO UPDATE SET count = count + 1",
     );
-    const existsProj = this.db.prepare("SELECT 1 FROM delivery_projection WHERE event_seq = ?");
-    const mark = this.db.prepare("UPDATE outbox SET delivered = 1 WHERE event_seq = ?");
+    const existsProj = this.database.prepare(
+      "SELECT 1 FROM delivery_projection WHERE event_seq = ?",
+    );
+    const mark = this.database.prepare("UPDATE outbox SET delivered = 1 WHERE event_seq = ?");
     for (const row of undelivered) {
       // (1) apply the idempotent projection in its own transaction.
       let justApplied = false;
-      this.db.exec("BEGIN");
+      this.database.exec("BEGIN");
       try {
-        const res = insertProj.run(row.event_seq);
-        if (res.changes > 0) {
+        const result = insertProj.run(row.event_seq);
+        if (result.changes > 0) {
           bumpCount.run(row.event_seq);
           justApplied = true;
         }
-        this.db.exec("COMMIT");
+        this.database.exec("COMMIT");
       } catch (e) {
-        this.db.exec("ROLLBACK");
+        this.database.exec("ROLLBACK");
         throw e;
       }
       // orphan guard: no projection row means there was no event to apply — do NOT mark it delivered (fail-safe).
@@ -251,12 +274,12 @@ export class BackendProductDriver {
       if (justApplied) applied++;
       else skipped++; // skipped == a genuine redelivery (already projected)
       // (2) mark delivered in a SEPARATE transaction — a crash before this commit forces a safe redelivery.
-      this.db.exec("BEGIN");
+      this.database.exec("BEGIN");
       try {
         mark.run(row.event_seq);
-        this.db.exec("COMMIT");
+        this.database.exec("COMMIT");
       } catch (e) {
-        this.db.exec("ROLLBACK");
+        this.database.exec("ROLLBACK");
         throw e;
       }
       order.push(row.event_seq);
@@ -267,16 +290,17 @@ export class BackendProductDriver {
   // durable-store introspection for the persistence + delivery proofs (test-only, not a product read model).
   countPersisted() {
     return {
-      records: (this.db.prepare("SELECT COUNT(*) c FROM records").get() as any).c,
-      events: (this.db.prepare("SELECT COUNT(*) c FROM events").get() as any).c,
-      outbox: (this.db.prepare("SELECT COUNT(*) c FROM outbox").get() as any).c,
+      records: (this.database.prepare("SELECT COUNT(*) c FROM records").get() as any).c,
+      events: (this.database.prepare("SELECT COUNT(*) c FROM events").get() as any).c,
+      outbox: (this.database.prepare("SELECT COUNT(*) c FROM outbox").get() as any).c,
       undelivered: (
-        this.db.prepare("SELECT COUNT(*) c FROM outbox WHERE delivered = 0").get() as any
+        this.database.prepare("SELECT COUNT(*) c FROM outbox WHERE delivered = 0").get() as any
       ).c,
-      projectionRows: (this.db.prepare("SELECT COUNT(*) c FROM delivery_projection").get() as any)
-        .c,
+      projectionRows: (
+        this.database.prepare("SELECT COUNT(*) c FROM delivery_projection").get() as any
+      ).c,
       projectionTotal: (
-        this.db.prepare("SELECT COALESCE(SUM(count),0) c FROM projection_counts").get() as any
+        this.database.prepare("SELECT COALESCE(SUM(count),0) c FROM projection_counts").get() as any
       ).c,
     };
   }
@@ -285,11 +309,11 @@ export class BackendProductDriver {
   // projection rows persist, so re-running deliverOutbox must re-apply them idempotently (no double count). This is
   // an in-process simulation of that durable state, not a real process kill / fsync-recovery test.
   __test_loseDeliveryMarks(n: number): number {
-    const rows = this.db
+    const rows = this.database
       .prepare("SELECT id FROM outbox WHERE delivered = 1 ORDER BY event_seq DESC LIMIT ?")
       .all(n) as any[];
-    const reset = this.db.prepare("UPDATE outbox SET delivered = 0 WHERE id = ?");
-    for (const r of rows) reset.run(r.id);
+    const reset = this.database.prepare("UPDATE outbox SET delivered = 0 WHERE id = ?");
+    for (const record of rows) reset.run(record.id);
     return rows.length;
   }
   // TEST-ONLY: rewrite the undelivered outbox so ROW-INSERTION order (rowid) is the REVERSE of event_seq order.
@@ -297,16 +321,16 @@ export class BackendProductDriver {
   // in rowid order (descending seq) and fail the ascending-order assertion. Makes the ordering claim falsifiable.
   __test_reverseOutboxRowOrder(): number {
     const seqs = (
-      this.db
+      this.database
         .prepare("SELECT event_seq FROM outbox WHERE delivered = 0 ORDER BY event_seq DESC")
         .all() as any[]
-    ).map((r) => r.event_seq);
-    this.db.exec("DELETE FROM outbox WHERE delivered = 0");
-    const ins = this.db.prepare("INSERT INTO outbox(event_seq) VALUES(?)"); // re-inserted DESC -> rowids ascend as seq descends
-    for (const s of seqs) ins.run(s);
+    ).map((record) => record.event_seq);
+    this.database.exec("DELETE FROM outbox WHERE delivered = 0");
+    const ins = this.database.prepare("INSERT INTO outbox(event_seq) VALUES(?)"); // re-inserted DESC -> rowids ascend as seq descends
+    for (const seq of seqs) ins.run(seq);
     return seqs.length;
   }
   close() {
-    this.db.close();
+    this.database.close();
   }
 }
