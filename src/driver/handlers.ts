@@ -481,8 +481,12 @@ export const HANDLERS: Record<string, H> = {
         `validation_error: disposition must be one of ${[...DISPOSITION_KINDS].join("/")}, got '${kind}'`,
       );
     // Fail CLOSED: an elevated disposition requires an AUTHORIZED role. An absent / empty / unrecognized role
-    // is refused, not waved through (sprint-019 review: the `role &&` conjunct failed this open).
-    if (ELEVATED_DISPOSITIONS.has(kind) && !DISPOSITION_AUTHORITY_ROLES.has(role))
+    // is refused, not waved through (sprint-019 review: the `role &&` conjunct failed this open). The
+    // `role === undefined ||` guard both keeps this fail-closed AND narrows role to string for the Set lookup.
+    if (
+      ELEVATED_DISPOSITIONS.has(kind) &&
+      (role === undefined || !DISPOSITION_AUTHORITY_ROLES.has(role))
+    )
       throw new Error(
         `disposition_authority_violation: '${kind}' requires quality or engineering authority, not '${role || "(none)"}'`,
       );

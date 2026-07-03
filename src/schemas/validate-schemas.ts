@@ -3,8 +3,13 @@
 // (every known-bad fixture is rejected). Reports all errors; exits 1 if any.
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import Ajv2020 from "ajv/dist/2020.js";
-import addFormats from "ajv-formats";
+import { Ajv2020 } from "ajv/dist/2020.js";
+import addFormatsPlugin from "ajv-formats";
+import type { FormatsPlugin } from "ajv-formats";
+// Node binds ajv-formats' CJS default export to the plugin FUNCTION at runtime (the schema gate proves
+// it). TS under NodeNext instead types the default import as a namespace, so cast to the package's own
+// exported call signature (FormatsPlugin) rather than to `any` — the call site stays type-checked.
+const addFormats = addFormatsPlugin as unknown as FormatsPlugin;
 import { readYaml } from "../registry/load.ts";
 
 const ROOT = process.cwd();
