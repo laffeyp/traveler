@@ -31,8 +31,8 @@ function loadSchema(relPath: string): any | null {
   }
   try {
     return JSON.parse(readFileSync(abs, "utf8"));
-  } catch (e: any) {
-    err(`schema does not parse: ${relPath} (${e.message})`);
+  } catch (error: any) {
+    err(`schema does not parse: ${relPath} (${error.message})`);
     return null;
   }
 }
@@ -46,11 +46,11 @@ function compile(relPath: string): any | null {
     return null;
   }
   try {
-    const v = ajv.compile(schema);
-    compiled.set(relPath, v);
-    return v;
-  } catch (e: any) {
-    err(`schema does not compile: ${relPath} (${e.message})`);
+    const validator = ajv.compile(schema);
+    compiled.set(relPath, validator);
+    return validator;
+  } catch (error: any) {
+    err(`schema does not compile: ${relPath} (${error.message})`);
     compiled.set(relPath, null);
     return null;
   }
@@ -62,18 +62,21 @@ function compile(relPath: string): any | null {
 // generated but never validated — a cosmetic gate. Mirror the generator's union so the gate covers
 // the whole executable slice.
 const refFiles = readdirSync("scenarios")
-  .map((d) => `scenarios/${d}/references.yaml`)
-  .filter((p) => existsSync(p));
+  .map((dirName) => `scenarios/${dirName}/references.yaml`)
+  .filter((path) => existsSync(path));
 const events = readYaml("contracts/events.yaml");
 const reports = readYaml("contracts/reports.yaml");
-const eventByType = new Map<string, any>((events.events ?? []).map((e: any) => [e.type, e]));
+const eventByType = new Map<string, any>(
+  (events.events ?? []).map((event: any) => [event.type, event]),
+);
 
 const vfOperations: string[] = [];
 const vfEvents: string[] = [];
-for (const p of refFiles) {
-  const ref = readYaml(p);
-  for (const o of ref.operations ?? []) if (!vfOperations.includes(o)) vfOperations.push(o);
-  for (const e of ref.events ?? []) if (!vfEvents.includes(e)) vfEvents.push(e);
+for (const path of refFiles) {
+  const ref = readYaml(path);
+  for (const operation of ref.operations ?? [])
+    if (!vfOperations.includes(operation)) vfOperations.push(operation);
+  for (const event of ref.events ?? []) if (!vfEvents.includes(event)) vfEvents.push(event);
 }
 
 // F3 (fail-closed): the gate must never pass on empty inputs — a vanished op/event/fixture
@@ -93,12 +96,12 @@ for (const op of vfOperations) {
 
 // 2. every VF-003 event: payload schema (path from the events registry) present + compiles
 for (const type of vfEvents) {
-  const ev = eventByType.get(type);
-  if (!ev) {
+  const eventDef = eventByType.get(type);
+  if (!eventDef) {
     err(`VF-003 event ${type} not in events.yaml`);
     continue;
   }
-  if (compile(ev.payload_schema_ref)) evSchemas++;
+  if (compile(eventDef.payload_schema_ref)) evSchemas++;
 }
 
 // 3. RunCloseReport schema (path from the reports registry) present + compiles
@@ -113,17 +116,17 @@ const fixtures =
   [];
 let fixturePass = 0;
 const fixtureSchemas = new Set<string>();
-for (const f of fixtures) {
-  fixtureSchemas.add(f.schema);
-  const validate = compile(f.schema);
+for (const fixture of fixtures) {
+  fixtureSchemas.add(fixture.schema);
+  const validate = compile(fixture.schema);
   if (!validate) {
-    err(`fixture '${f.name}': schema failed to compile`);
+    err(`fixture '${fixture.name}': schema failed to compile`);
     continue;
   }
-  const ok = validate(f.data) as boolean;
-  if (ok !== f.valid) {
+  const ok = validate(fixture.data) as boolean;
+  if (ok !== fixture.valid) {
     err(
-      `fixture '${f.name}': expected valid=${f.valid} but ajv said ${ok}` +
+      `fixture '${fixture.name}': expected valid=${fixture.valid} but ajv said ${ok}` +
         (ok ? "" : ` (${ajv.errorsText(validate.errors)})`),
     );
   } else {
@@ -132,7 +135,7 @@ for (const f of fixtures) {
 }
 // F3 (fail-closed): a green build must have actually exercised discrimination.
 if (fixtures.length === 0) err("no fixtures — discrimination was never tested");
-if (!fixtures.some((f: any) => f.valid === false))
+if (!fixtures.some((fixture: any) => fixture.valid === false))
   err("no known-bad fixture — schemas were never shown to reject anything");
 // F4: output schemas must be exercised against data, not only compile-checked.
 if (![...fixtureSchemas].some((s) => s.endsWith(".output.schema.json")))
@@ -147,7 +150,7 @@ console.log(
 console.log(`  fixtures: ${fixturePass}/${fixtures.length} behaved as declared`);
 if (errors.length) {
   console.log(`  result: FAILED (${errors.length} errors)`);
-  for (const e of errors) console.log(`    error: ${e}`);
+  for (const errorMessage of errors) console.log(`    error: ${errorMessage}`);
   process.exit(1);
 } else {
   console.log("  result: ok (all schema refs resolve, compile, and fixtures discriminate)");

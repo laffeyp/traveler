@@ -26,33 +26,33 @@ type H = (world: World, input: any, actor?: string, role?: string) => any;
 // product). Persona gap 3.
 // Serial sequence number (the trailing digits of a serial like "VB-047" -> 47), for effectivity RANGE
 // membership (persona gap 6). Null if the serial carries no numeric suffix.
-function serialNum(s: any): number | null {
-  const m = String(s ?? "").match(/(\d+)$/);
-  return m ? parseInt(m[1], 10) : null;
+function serialNum(serial: any): number | null {
+  const matchResult = String(serial ?? "").match(/(\d+)$/);
+  return matchResult ? parseInt(matchResult[1], 10) : null;
 }
 // The non-numeric PREFIX of a serial ("VB-047" -> "VB-"). A serial range only applies within one part family;
 // matching on the numeric suffix alone (sprint-019 review: prefix-blind) let a foreign family (XY-050) fall
 // inside a VB range and resolve to the wrong procedure/structure.
-function serialPrefix(s: any): string {
-  return String(s ?? "").replace(/\d+$/, "");
+function serialPrefix(serial: any): string {
+  return String(serial ?? "").replace(/\d+$/, "");
 }
 // Does an effectivity rule apply to a serial? A rule with serial_from/serial_to matches by RANGE membership
 // (cut-in/cut-out, EIA-649C) — but ONLY within the same part-family prefix as the range bounds; otherwise it
 // falls back to the existing exact serial_condition match.
 function ruleAppliesToSerial(rule: any, serial: string): boolean {
-  const f = rule.fields;
-  if (f.serial_from !== undefined && f.serial_to !== undefined) {
-    const n = serialNum(serial),
-      lo = serialNum(f.serial_from),
-      hi = serialNum(f.serial_to);
-    if (n === null || lo === null || hi === null) return false;
-    const p = serialPrefix(serial),
-      pf = serialPrefix(f.serial_from),
-      pt = serialPrefix(f.serial_to);
-    if (p !== pf || pf !== pt) return false; // same family only; a foreign prefix never matches a range
-    return n >= lo && n <= hi;
+  const field = rule.fields;
+  if (field.serial_from !== undefined && field.serial_to !== undefined) {
+    const serialNumber = serialNum(serial),
+      lowerBound = serialNum(field.serial_from),
+      upperBound = serialNum(field.serial_to);
+    if (serialNumber === null || lowerBound === null || upperBound === null) return false;
+    const prefix = serialPrefix(serial),
+      fromPrefix = serialPrefix(field.serial_from),
+      toPrefix = serialPrefix(field.serial_to);
+    if (prefix !== fromPrefix || fromPrefix !== toPrefix) return false; // same family only; a foreign prefix never matches a range
+    return serialNumber >= lowerBound && serialNumber <= upperBound;
   }
-  return f.serial_condition === serial;
+  return field.serial_condition === serial;
 }
 
 const DISPOSITION_KINDS = new Set(["scrap", "rework", "repair", "use_as_is", "return_to_supplier"]);
@@ -66,14 +66,14 @@ export const HANDLERS: Record<string, H> = {
       input.procedure_version_alias,
       { steps: input.steps },
     );
-    for (const s of input.steps ?? []) {
-      world.createInitial("ProcedureStep", s.alias, {
-        ordinal: s.ordinal,
-        name: s.name,
-        install_required: !!s.install_required,
+    for (const step of input.steps ?? []) {
+      world.createInitial("ProcedureStep", step.alias, {
+        ordinal: step.ordinal,
+        name: step.name,
+        install_required: !!step.install_required,
       });
-      for (const f of s.data_collection_fields ?? [])
-        world.createInitial("DataCollectionField", f.alias, f);
+      for (const field of step.data_collection_fields ?? [])
+        world.createInitial("DataCollectionField", field.alias, field);
     }
     world.emit("PROCEDURE_VERSION_CREATED", "CreateProcedureVersion", {
       procedure_version_id: procedureVersion.id,
@@ -84,7 +84,7 @@ export const HANDLERS: Record<string, H> = {
   ReleaseProcedureVersion: (world, input) =>
     step(world, world.get(input.procedure_version_alias), "ReleaseProcedureVersion"),
   CreateManufacturingStructureVersion(world, input) {
-    const m = world.createInitial(
+    const structureVersion = world.createInitial(
       "ManufacturingStructureVersion",
       input.manufacturing_structure_alias,
       {
@@ -92,7 +92,7 @@ export const HANDLERS: Record<string, H> = {
       },
     );
     world.emit("MANUFACTURING_STRUCTURE_CREATED", "CreateManufacturingStructureVersion", {
-      manufacturing_structure_version_id: m.id,
+      manufacturing_structure_version_id: structureVersion.id,
     });
   },
   AddBOMLine(world, input) {
@@ -153,7 +153,7 @@ export const HANDLERS: Record<string, H> = {
     // distinct per Harness §19 and must not be conflated.
     const rules = world
       .byType("EffectivityRule")
-      .filter((r) => ruleAppliesToSerial(r, input.target_serial)); // exact OR range (gap 6)
+      .filter((rule) => ruleAppliesToSerial(rule, input.target_serial)); // exact OR range (gap 6)
     const required = ["ProcedureVersion", "ManufacturingStructureVersion"];
     const selected: any = {};
     const matchedRuleIds: string[] = [];
@@ -161,17 +161,21 @@ export const HANDLERS: Record<string, H> = {
     const missing: string[] = [];
     for (const type of required) {
       const cands = rules
-        .filter((r) => r.fields.target_record_type === type)
-        .sort((a, b) => (a.fields.priority ?? 0) - (b.fields.priority ?? 0));
+        .filter((rule) => rule.fields.target_record_type === type)
+        .sort((ruleA, ruleB) => (ruleA.fields.priority ?? 0) - (ruleB.fields.priority ?? 0));
       if (cands.length === 0) {
         missing.push(type);
         continue;
       } // "no required match fails resolution"
       const top = cands.filter(
-        (c) => c.fields.priority === cands[cands.length - 1].fields.priority,
+        (candidateRule) =>
+          candidateRule.fields.priority === cands[cands.length - 1].fields.priority,
       );
       if (top.length > 1) {
-        ambiguities.push({ target_record_type: type, rule_ids: top.map((t) => t.alias) });
+        ambiguities.push({
+          target_record_type: type,
+          rule_ids: top.map((topRule) => topRule.alias),
+        });
         continue;
       } // "equal-priority creates ambiguity"
       selected[type] = cands[cands.length - 1].fields.target_alias;
@@ -274,13 +278,15 @@ export const HANDLERS: Record<string, H> = {
     // part_number in a different revision — the classic wrong-revision pick.
     const identity = (alias: string) =>
       world.partRevisions.get(alias) ?? { part_number: alias, revision: "" };
-    const requiredLines = world.byType("BOMLine").filter((b) => b.fields.install_required);
+    const requiredLines = world
+      .byType("BOMLine")
+      .filter((bomLine) => bomLine.fields.install_required);
     const targetId = target?.id;
     const candidates = world
       .byType("InventoryItem")
       .filter((inventoryItem) => inventoryItem.id !== targetId);
-    for (const b of requiredLines) {
-      const reqAlias = b.fields.part_revision;
+    for (const bomLine of requiredLines) {
+      const reqAlias = bomLine.fields.part_revision;
       const req = identity(reqAlias);
       const exact = candidates.filter((inventoryItem) => {
         const id = identity(inventoryItem.fields.part_revision);
@@ -386,9 +392,9 @@ export const HANDLERS: Record<string, H> = {
       throw new Error(
         `calibration_not_current: instrument '${input.instrument_alias}' is not confirmed in-calibration (cal_status='${instrument.fields.cal_status ?? "(none)"}'); measurement refused`,
       );
-    const lo = field.fields.lower_bound,
-      hi = field.fields.upper_bound;
-    const result = input.value < lo || input.value > hi ? "fail" : "pass";
+    const lowerBound = field.fields.lower_bound,
+      upperBound = field.fields.upper_bound;
+    const result = input.value < lowerBound || input.value > upperBound ? "fail" : "pass";
     const run = world.get(input.run_alias);
     // captured_by (persona gap 9): who took the reading is recorded on the measurement.
     const meas = world.create("Measurement", input.measurement_alias, result, {
@@ -556,9 +562,11 @@ export const HANDLERS: Record<string, H> = {
   },
   CompleteRework(world, input) {
     world.get(input.rework_run_alias).state = "complete";
-    const t = moveState(world.get(input.nonconformance_alias), "CompleteRework"); // in_rework->verification_pending
+    const transition = moveState(world.get(input.nonconformance_alias), "CompleteRework"); // in_rework->verification_pending
     world.emit("REWORK_COMPLETED", "CompleteRework", { rework_run_alias: input.rework_run_alias });
-    world.emit(t.emits, "CompleteRework", { nonconformance_alias: input.nonconformance_alias }); // VERIFICATION_PENDING (exactly one, B-Q per §0.1.1)
+    world.emit(transition.emits, "CompleteRework", {
+      nonconformance_alias: input.nonconformance_alias,
+    }); // VERIFICATION_PENDING (exactly one, B-Q per §0.1.1)
   },
   VerifyRework(world, input, actor) {
     // Segregation of duties: the verifier cannot be the person who performed the rework (AS9102). Checked
@@ -571,7 +579,8 @@ export const HANDLERS: Record<string, H> = {
       );
     const performer = world
       .byType("ReworkRun")
-      .find((r) => r.fields.nonconformance === input.nonconformance_alias)?.fields.performed_by;
+      .find((rule) => rule.fields.nonconformance === input.nonconformance_alias)
+      ?.fields.performed_by;
     if (performer && actor === performer)
       throw new Error(
         `segregation_of_duties_violation: the verifier (${actor}) must differ from the rework performer (${performer})`,
@@ -625,23 +634,25 @@ export const HANDLERS: Record<string, H> = {
     const certs = world
       .byType("Certificate")
       .filter(
-        (c) =>
-          c.fields.serial_or_lot === input.serial_or_lot &&
-          (!input.cert_type || c.fields.cert_type === input.cert_type),
+        (certificate) =>
+          certificate.fields.serial_or_lot === input.serial_or_lot &&
+          (!input.cert_type || certificate.fields.cert_type === input.cert_type),
       );
     if (certs.length === 0) return { valid: false, reason: "no_certificate" };
     // Compare dates CHRONOLOGICALLY, not lexically (sprint-019 review: "2026-9-1" >= "2026-10-01" is lexically
     // true but chronologically expired). A cert with a missing or unparseable expiry cannot be verified -> not
     // valid (fail closed); an unparseable as_of likewise cannot verify anything.
     const asOfT = Date.parse(input.as_of ?? world.clock);
-    const ok = certs.find((c) => {
-      const expT = Date.parse(c.fields.expires_at ?? "");
+    const ok = certs.find((certificate) => {
+      const expT = Date.parse(certificate.fields.expires_at ?? "");
       return Number.isFinite(expT) && Number.isFinite(asOfT) && expT >= asOfT;
     });
     if (ok) return { valid: true, certificate_id: ok.id };
     return {
       valid: false,
-      reason: certs.every((c) => c.fields.expires_at == null) ? "no_expiry" : "certificate_expired",
+      reason: certs.every((certificate) => certificate.fields.expires_at == null)
+        ? "no_expiry"
+        : "certificate_expired",
     };
   },
   ReceiveMachineEvidence(world, input) {
@@ -665,10 +676,11 @@ export const HANDLERS: Record<string, H> = {
     // escalating — the very thing a GrammarGap exists to prevent).
     const spec = Object.hasOwn(NORMALIZE_GRAMMAR, type) ? NORMALIZE_GRAMMAR[type] : undefined;
     const keys = spec ? Object.keys(spec) : [];
-    const absent = keys.filter((k) => evidenceRecord.fields.payload?.[k] === undefined);
+    const absent = keys.filter((key) => evidenceRecord.fields.payload?.[key] === undefined);
     const invalid = keys.filter(
-      (k) =>
-        !absent.includes(k) && !keyPresentAndValid(evidenceRecord.fields.payload?.[k], spec![k]),
+      (key) =>
+        !absent.includes(key) &&
+        !keyPresentAndValid(evidenceRecord.fields.payload?.[key], spec![key]),
     );
     const reason = !spec
       ? "unsupported_payload_type"
@@ -682,7 +694,9 @@ export const HANDLERS: Record<string, H> = {
       // normalized result (B-Q-16/B-Q-26). Record stays raw; no MACHINE_EVIDENCE_NORMALIZED, no Measurement.
       // Idempotent per-record: if this evidence already escalated, do not create a duplicate gap under the
       // same alias (a re-normalize with a fresh key must not orphan the first gap; sprint-012 review [3]).
-      if (!world.byType("GrammarGap").some((g) => g.fields.source_evidence === evidenceRecord.id)) {
+      if (
+        !world.byType("GrammarGap").some((gap) => gap.fields.source_evidence === evidenceRecord.id)
+      ) {
         createGrammarGap(
           world,
           `grammar_gap_${input.evidence_alias}`,
@@ -798,7 +812,7 @@ export const HANDLERS: Record<string, H> = {
       runOpen &&
       !world
         .byType("RunCloseObservation")
-        .some((o) => o.fields.source_evidence === evidenceRecord.id)
+        .some((observation) => observation.fields.source_evidence === evidenceRecord.id)
     ) {
       world.create("RunCloseObservation", "", "created", {
         run: runId,
@@ -817,7 +831,11 @@ export const HANDLERS: Record<string, H> = {
     // was ACCEPTED, so an artifact's acceptability depended on it -> open a quality Issue for review. Issue (a
     // review), not Nonconformance (an asserted non-conformity), is the proportionate response to "may". Prefer a
     // false review over a missed one. Idempotent: one issue per invalidated evidence.
-    if (!world.byType("Issue").some((is) => is.fields.source_evidence === evidenceRecord.id)) {
+    if (
+      !world
+        .byType("Issue")
+        .some((issueRecord) => issueRecord.fields.source_evidence === evidenceRecord.id)
+    ) {
       const issue = world.createInitial("Issue", `issue_${input.evidence_alias}`, {
         source_evidence: evidenceRecord.id,
         run: runId,
@@ -852,9 +870,9 @@ export const HANDLERS: Record<string, H> = {
         stale = true;
         reason = "unverifiable_generated_at";
       } else if (
-        (world.accessPolicyChanges ?? []).some((c) => {
-          if (c.policy_alias !== report.fields.access_scope) return false;
-          const effT = Date.parse(c.effective_at ?? "");
+        (world.accessPolicyChanges ?? []).some((policyChange) => {
+          if (policyChange.policy_alias !== report.fields.access_scope) return false;
+          const effT = Date.parse(policyChange.effective_at ?? "");
           return !Number.isFinite(effT) || effT > genT; // unparseable change date -> assume it staled (fail closed)
         })
       ) {
@@ -876,7 +894,9 @@ export const HANDLERS: Record<string, H> = {
     const run = world.get(input.run_alias);
     const open = world
       .byType("RunStep")
-      .filter((s) => s.fields.run === run.id && !["complete", "skipped"].includes(s.state));
+      .filter(
+        (serial) => serial.fields.run === run.id && !["complete", "skipped"].includes(serial.state),
+      );
     if (open.length)
       throw new Error(`precondition_failed: ${open.length} run steps not complete/skipped`);
     moveState(run, "CompleteRunSteps");
@@ -889,12 +909,16 @@ export const HANDLERS: Record<string, H> = {
     // string is the REGISTERED rule id, so emitting it is faithful (not an executor-invented encoding).
     const failed = world
       .byType("Measurement")
-      .filter((m) => m.fields.run === run.id && m.fields.result === "fail");
+      .filter(
+        (measurement) => measurement.fields.run === run.id && measurement.fields.result === "fail",
+      );
     const blockers: string[] = [];
-    for (const fm of failed) {
+    for (const failedMeasurement of failed) {
       const nonconformance = world
         .byType("Nonconformance")
-        .find((n) => n.fields.source_measurement === fm.id);
+        .find(
+          (nonconformance) => nonconformance.fields.source_measurement === failedMeasurement.id,
+        );
       if (!nonconformance || nonconformance.state !== "closed") {
         blockers.push("failed_measurement_has_quality_path");
         break;
@@ -910,18 +934,21 @@ export const HANDLERS: Record<string, H> = {
     const runNcAliases = new Set(
       world
         .byType("Nonconformance")
-        .filter((n) => n.fields.run === run.id)
-        .map((n) => n.alias),
+        .filter((nonconformance) => nonconformance.fields.run === run.id)
+        .map((nonconformance) => nonconformance.alias),
     );
     const popSerials = new Set<string>();
     for (const pop of world.byType("AffectedPopulation"))
       if (runNcAliases.has(pop.fields.nonconformance))
-        for (const s of pop.fields.serials ?? []) popSerials.add(s);
+        for (const serial of pop.fields.serials ?? []) popSerials.add(serial);
     const runPart = tryGet(world, run.fields.target_inventory)?.fields.part_revision;
     const remediated = (serial: string) =>
-      world.byType("Nonconformance").some((n) => {
-        if (n.state !== "closed") return false;
-        const item = tryGet(world, world.records.get(n.fields.run)?.fields.target_inventory);
+      world.byType("Nonconformance").some((nonconformance) => {
+        if (nonconformance.state !== "closed") return false;
+        const item = tryGet(
+          world,
+          world.records.get(nonconformance.fields.run)?.fields.target_inventory,
+        );
         if (item?.fields.serial_number !== serial) return false;
         // If part identity is known on both sides it must match — a same-serial unit of a DIFFERENT part is not a
         // remediation of this batch (sprint-019 review: cross-part serial reuse falsely cleared the population).
@@ -933,7 +960,7 @@ export const HANDLERS: Record<string, H> = {
           return false;
         return true;
       });
-    const unremediated = [...popSerials].filter((s) => !remediated(s));
+    const unremediated = [...popSerials].filter((serial) => !remediated(serial));
     if (unremediated.length)
       blockers.push(`affected_population_not_remediated:${unremediated.join(",")}`);
     const blocked = blockers.length > 0;
@@ -952,14 +979,14 @@ export const HANDLERS: Record<string, H> = {
     });
     if (blocked) {
       // One structured observation per blocker, each carrying its own registered blocker_rule.
-      for (const b of blockers) {
+      for (const bomLine of blockers) {
         world.create("RunCloseObservation", "", "created", {
           run_close_check: runCloseCheck.id,
-          blocker_rule: b,
+          blocker_rule: bomLine,
         });
         world.emit("RUN_CLOSE_OBSERVATION_CREATED", "RunCloseCheck", {
           run_close_check_id: runCloseCheck.id,
-          blocker_rule: b,
+          blocker_rule: bomLine,
         });
       }
       world.emit("RUN_CLOSE_CHECK_BLOCKED", "RunCloseCheck", {
@@ -985,7 +1012,7 @@ export const HANDLERS: Record<string, H> = {
     } else {
       const report = world
         .byType("GeneratedReport")
-        .find((r) => r.fields.run === run.id && r.state === "generated");
+        .find((rule) => rule.fields.run === run.id && rule.state === "generated");
       if (!report)
         throw new Error("precondition_failed: RunCloseReport not generated before close");
       moveStateTo(run, "ApplyRunCloseResultToRun", "closed"); // registry guards: only from close_check
@@ -1098,7 +1125,9 @@ export const HANDLERS: Record<string, H> = {
   },
   BoundedDrillDown(world, input) {
     // Access-filter from the resolved policy (not a hardcoded list). Harness §17 / Build Readiness §11.
-    const policy = (world.accessPolicies ?? []).find((p) => p.alias === input.access_profile);
+    const policy = (world.accessPolicies ?? []).find(
+      (prefix) => prefix.alias === input.access_profile,
+    );
     if (!policy) throw new Error(`access_filtered: no access policy '${input.access_profile}'`);
     // Audit the drill-down request as a fact (Contract Spec §19: scoped, capped, access-filtered, AND
     // AUDITED; Harness §25). Registered op->event binding (events.yaml BOUNDED_DRILL_DOWN_REQUESTED) that

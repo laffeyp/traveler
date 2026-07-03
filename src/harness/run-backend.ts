@@ -16,8 +16,10 @@ const run = runScenarioOnDriver("VF-003", backend, "backend", "VF-003-backend");
 console.log(
   `backend run: VF-003 [backend/node:sqlite]  status=${run.result.status}  assertions=${run.result.assertions.passed}/${run.result.assertions.total}`,
 );
-const c = backend.countPersisted();
-console.log(`  persisted: records=${c.records} events=${c.events} outbox=${c.outbox}`);
+const persistedCounts = backend.countPersisted();
+console.log(
+  `  persisted: records=${persistedCounts.records} events=${persistedCounts.events} outbox=${persistedCounts.outbox}`,
+);
 
 // durability proof: a fresh instance loads ONLY from disk (never executed the scenario). It re-checks the
 // persisted-state assertions with no cached step results; checkpoints are replayed from the event log.
@@ -42,8 +44,8 @@ const ok =
   durable.total > 80 && // the persisted-state assertion set is substantial, not a trivial subset
   fresh.readRecord("run_001")?.state === "closed" &&
   reconstructed.get("047")?.get("run_001") === "close_blocked" && // historical state genuinely rebuilt from disk
-  c.outbox === c.events &&
-  c.events > 60; // full VF-003 spine (70 events) persisted
+  persistedCounts.outbox === persistedCounts.events &&
+  persistedCounts.events > 60; // full VF-003 spine (70 events) persisted
 console.log(`  backend skeleton proof (VF-003 closed path): ${ok ? "PASS" : "FAIL"}`);
 
 // Cross-driver DIFF-TO-ZERO equivalence over the WHOLE bench (inspired by Cascade ADDENDUMS D1 — a port
@@ -86,23 +88,28 @@ const EQUIV_SCENARIOS = [
 let equivOk = true;
 const equivFailures: string[] = [];
 for (const id of EQUIV_SCENARIOS) {
-  const dbe = join(tmpdir(), `equiv-${id}.db`);
-  for (const f of [dbe, dbe + "-journal"]) if (existsSync(f)) rmSync(f);
-  const mem = runScenarioOnDriver(id, new InMemoryProductDriver(), "in_memory", `${id}-mem-eq`);
-  const bk = runScenarioOnDriver(id, new BackendProductDriver(dbe), "backend", `${id}-back-eq`);
-  const mn = normTrace(mem.driver.readEventTrace()),
-    bn = normTrace(bk.driver.readEventTrace());
-  if (JSON.stringify(mn) !== JSON.stringify(bn)) {
+  const equivDbPath = join(tmpdir(), `equiv-${id}.db`);
+  for (const f of [equivDbPath, equivDbPath + "-journal"]) if (existsSync(f)) rmSync(f);
+  const memRun = runScenarioOnDriver(id, new InMemoryProductDriver(), "in_memory", `${id}-mem-eq`);
+  const backendRun = runScenarioOnDriver(
+    id,
+    new BackendProductDriver(equivDbPath),
+    "backend",
+    `${id}-back-eq`,
+  );
+  const memTrace = normTrace(memRun.driver.readEventTrace()),
+    backendTrace = normTrace(backendRun.driver.readEventTrace());
+  if (JSON.stringify(memTrace) !== JSON.stringify(backendTrace)) {
     equivOk = false;
     equivFailures.push(id);
-    let fd = -1;
-    for (let k = 0; k < Math.max(mn.length, bn.length); k++)
-      if (JSON.stringify(mn[k]) !== JSON.stringify(bn[k])) {
-        fd = k;
+    let firstDivergence = -1;
+    for (let k = 0; k < Math.max(memTrace.length, backendTrace.length); k++)
+      if (JSON.stringify(memTrace[k]) !== JSON.stringify(backendTrace[k])) {
+        firstDivergence = k;
         break;
       }
     console.log(
-      `    DIVERGE ${id} at event ${fd}: mem=${JSON.stringify(mn[fd])}  back=${JSON.stringify(bn[fd])}`,
+      `    DIVERGE ${id} at event ${firstDivergence}: mem=${JSON.stringify(memTrace[firstDivergence])}  back=${JSON.stringify(backendTrace[firstDivergence])}`,
     );
   }
 }

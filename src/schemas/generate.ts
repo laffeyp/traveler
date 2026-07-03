@@ -15,18 +15,21 @@ const DRAFT = "https://json-schema.org/draft/2020-12/schema";
 // their references.yaml brings the newly-exercised events/ops into the schema-generation set so the
 // schema gate covers the whole executable slice (Build Readiness §8.1).
 const referenceFiles = readdirSync(join(ROOT, "scenarios"))
-  .map((d) => join("scenarios", d, "references.yaml"))
-  .filter((p) => existsSync(join(ROOT, p)));
+  .map((dirName) => join("scenarios", dirName, "references.yaml"))
+  .filter((path) => existsSync(join(ROOT, path)));
 const vfOperations: string[] = [];
 const vfEvents: string[] = [];
-for (const p of referenceFiles) {
-  const ref = readYaml(p);
-  for (const o of ref.operations ?? []) if (!vfOperations.includes(o)) vfOperations.push(o);
-  for (const e of ref.events ?? []) if (!vfEvents.includes(e)) vfEvents.push(e);
+for (const path of referenceFiles) {
+  const ref = readYaml(path);
+  for (const operation of ref.operations ?? [])
+    if (!vfOperations.includes(operation)) vfOperations.push(operation);
+  for (const event of ref.events ?? []) if (!vfEvents.includes(event)) vfEvents.push(event);
 }
 const events = readYaml("contracts/events.yaml");
 const reports = readYaml("contracts/reports.yaml");
-const eventByType = new Map<string, any>((events.events ?? []).map((e: any) => [e.type, e]));
+const eventByType = new Map<string, any>(
+  (events.events ?? []).map((event: any) => [event.type, event]),
+);
 
 function write(relPath: string, schema: any) {
   const abs = join(ROOT, relPath);
@@ -179,7 +182,7 @@ const TIGHT_INPUTS: Record<string, any> = {
 };
 
 function tightInput(op: string): any {
-  const t = TIGHT_INPUTS[op];
+  const tightSpec = TIGHT_INPUTS[op];
   return {
     $schema: DRAFT,
     $id: `schemas/operations/${op}.input.schema.json`,
@@ -190,18 +193,18 @@ function tightInput(op: string): any {
     properties: {
       operation: { const: op },
       idempotency_key: idempotencyKeySchema(op),
-      input: { type: "object", required: t.required, properties: t.properties },
+      input: { type: "object", required: tightSpec.required, properties: tightSpec.properties },
     },
   };
 }
 
 // ---- event payload (permissive baseline; FactoryEvent payload is an object) ---
 function eventPayload(type: string): any {
-  const ev = eventByType.get(type);
+  const eventDef = eventByType.get(type);
   return {
     $schema: DRAFT,
     $id: `schemas/events/${type}.payload.schema.json`,
-    title: `${type} payload (baseline; owning_module=${ev?.owning_module ?? "?"})`,
+    title: `${type} payload (baseline; owning_module=${eventDef?.owning_module ?? "?"})`,
     type: "object",
   };
 }
@@ -223,14 +226,14 @@ const REQUIRED_SECTIONS = [
 ];
 function runCloseReportSchema(): any {
   const sectionProps: Record<string, any> = {};
-  for (const s of REQUIRED_SECTIONS) {
-    sectionProps[s] =
-      s.endsWith("s") ||
-      s === "executed_steps" ||
-      s === "measurement_summary" ||
-      s === "installed_inventory" ||
-      s === "machine_evidence_summary" ||
-      s === "run_close_observations"
+  for (const section of REQUIRED_SECTIONS) {
+    sectionProps[section] =
+      section.endsWith("s") ||
+      section === "executed_steps" ||
+      section === "measurement_summary" ||
+      section === "installed_inventory" ||
+      section === "machine_evidence_summary" ||
+      section === "run_close_observations"
         ? { type: ["object", "array"] }
         : { type: "object" };
   }
