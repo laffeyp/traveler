@@ -11,6 +11,7 @@
 # wherever they live).
 /node_modules
 /schemas
+/src/generated
 /contracts
 /scenarios
 /signal-reports

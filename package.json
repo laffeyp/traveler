@@ -10,6 +10,8 @@
   "scripts": {
     "validate:contracts": "node src/registry/validate.ts",
     "generate:schemas": "node src/schemas/generate.ts",
+    "generate:types": "node src/schemas/generate-vocab-types.ts",
+    "verify:types": "node src/schemas/generate-vocab-types.ts --check",
     "validate:schemas": "node src/schemas/validate-schemas.ts",
     "compile:scenario": "node src/compiler/compile.ts",
     "run:vf003": "node src/harness/run.ts VF-003",

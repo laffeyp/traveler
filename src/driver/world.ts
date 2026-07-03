@@ -5,6 +5,7 @@
  * validates every transition against it. Depends only on `registry.ts`.
  */
 import { machineByRecord, eventProducers } from "./registry.ts";
+import type { EventType } from "../generated/vocabulary.ts";
 
 /** A product record: a typed, aliased, state-bearing row with a free-form `fields` bag. */
 export interface FactoryRecord {
@@ -119,7 +120,7 @@ export class World {
    * rolled back, so a vocabulary violation fails the operation loudly rather than surviving as a
    * stray/mis-attributed tag.
    */
-  emit(type: string, producer: string, payload: any = {}) {
+  emit(type: EventType, producer: string, payload: any = {}) {
     const producers = eventProducers.get(type);
     if (!producers) throw new Error(`emit_vocabulary_violation: unregistered event '${type}'`);
     if (!producers.has(producer))

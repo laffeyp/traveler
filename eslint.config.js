@@ -22,6 +22,7 @@ export default tseslint.config(
     ignores: [
       "node_modules/**",
       "schemas/**",
+      "src/generated/**",
       "sdd-kit-2/**",
       "persona-review-kit/**",
       "manufacturing-software-doc-stack-build-ready/**",
