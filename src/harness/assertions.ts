@@ -85,13 +85,14 @@ export const EVALUATORS: Record<string, Evaluator> = {
         msg: `operation_output_contains ${assertion.assertion_id} has empty expected`,
       };
     const stepResult = stepResults.get(target.step_id);
-    const out = stepResult?.output ?? {};
-    const ok = !!stepResult && Object.entries(expected).every(([k, v]) => out[k] === v);
+    const output = stepResult?.output ?? {};
+    const ok =
+      !!stepResult && Object.entries(expected).every(([key, value]) => output[key] === value);
     return {
       ok,
       msg: ok
         ? ""
-        : `step ${target.step_id} (${target.operation}) output ${JSON.stringify(out)} does not contain ${JSON.stringify(expected)}`,
+        : `step ${target.step_id} (${target.operation}) output ${JSON.stringify(output)} does not contain ${JSON.stringify(expected)}`,
     };
   },
   operation_failed(assertion, { stepResults }) {
@@ -142,10 +143,10 @@ export const EVALUATORS: Record<string, Evaluator> = {
     if (target.producer_operation)
       matches = matches.filter((ev) => ev.producer_operation === target.producer_operation);
     const ok = matches.some((ev) =>
-      Object.entries(expected).every(([k, v]) => {
-        const got = ev.payload?.[k];
-        if (got === v) return true;
-        const resolved = typeof v === "string" ? driver.readRecord(v) : null;
+      Object.entries(expected).every(([key, value]) => {
+        const got = ev.payload?.[key];
+        if (got === value) return true;
+        const resolved = typeof value === "string" ? driver.readRecord(value) : null;
         return !!resolved && got === resolved.id;
       }),
     );
@@ -169,10 +170,10 @@ export const EVALUATORS: Record<string, Evaluator> = {
         msg: `event_sequence_matches ${assertion.assertion_id} has empty expected sequence`,
       };
     const set = new Set(expectedSequence);
-    const filtered = events.map((ev) => ev.type).filter((ty) => set.has(ty));
+    const filtered = events.map((ev) => ev.type).filter((typeName) => set.has(typeName));
     const ok =
       filtered.length === expectedSequence.length &&
-      filtered.every((ty, i) => ty === expectedSequence[i]);
+      filtered.every((typeName, index) => typeName === expectedSequence[index]);
     return {
       ok,
       msg: ok
@@ -209,8 +210,8 @@ export const EVALUATORS: Record<string, Evaluator> = {
     const want = expected.status ?? expected.state;
     let stateAt: string | undefined;
     if (target.checkpoint) {
-      const k = String(target.checkpoint).replace("after_step_", "");
-      stateAt = checkpoints.get(k)?.get(target.alias);
+      const key = String(target.checkpoint).replace("after_step_", "");
+      stateAt = checkpoints.get(key)?.get(target.alias);
     } else stateAt = driver.readRecord(target.alias)?.state;
     const ok = stateAt === want;
     return {
@@ -226,11 +227,11 @@ export const EVALUATORS: Record<string, Evaluator> = {
     const record = driver.readRecord(target.alias);
     const ok =
       !!record &&
-      Object.entries(expected).every(([k, v]) => {
-        if (recEq(record, k, v)) return true;
+      Object.entries(expected).every(([key, value]) => {
+        if (recEq(record, key, value)) return true;
         // the field may hold a record id while the expected value is that record's alias — resolve it
-        const resolved = typeof v === "string" ? driver.readRecord(v) : null;
-        return !!resolved && record.fields[k] === resolved.id;
+        const resolved = typeof value === "string" ? driver.readRecord(value) : null;
+        return !!resolved && record.fields[key] === resolved.id;
       });
     return {
       ok,
@@ -251,23 +252,27 @@ export const EVALUATORS: Record<string, Evaluator> = {
       expected = assertion.expected ?? {};
     if (target.projection === "AsBuiltProjection") {
       const projection = driver.readProjection("AsBuiltProjection", target.key_alias);
-      const ok = projection.children.some((c: any) => c.child_alias === expected.child_alias);
+      const ok = projection.children.some(
+        (child: any) => child.child_alias === expected.child_alias,
+      );
       return {
         ok,
         msg: ok
           ? ""
-          : `AsBuilt(${target.key_alias}) children=${JSON.stringify(projection.children.map((c: any) => c.child_alias))} missing ${expected.child_alias}`,
+          : `AsBuilt(${target.key_alias}) children=${JSON.stringify(projection.children.map((child: any) => child.child_alias))} missing ${expected.child_alias}`,
       };
     }
     if (target.projection === "SerialHistory") {
       const projection = driver.readProjection("SerialHistory", target.key_serial);
-      const exp = expected.event_types ?? [];
-      if (exp.length === 0)
+      const expectedList = expected.event_types ?? [];
+      if (expectedList.length === 0)
         return {
           ok: false,
           msg: `SerialHistory assertion ${assertion.assertion_id} has empty expected.event_types`,
         };
-      const missing = exp.filter((x: string) => !projection.event_types.includes(x));
+      const missing = expectedList.filter(
+        (eventTypeName: string) => !projection.event_types.includes(eventTypeName),
+      );
       const ok = missing.length === 0;
       return {
         ok,
@@ -283,8 +288,8 @@ export const EVALUATORS: Record<string, Evaluator> = {
       expected = assertion.expected ?? {};
     if (target.projection === "SerialHistory") {
       const projection = driver.readProjection("SerialHistory", target.key_serial);
-      const present = (expected.event_types ?? []).filter((x: string) =>
-        projection.event_types.includes(x),
+      const present = (expected.event_types ?? []).filter((eventTypeName: string) =>
+        projection.event_types.includes(eventTypeName),
       );
       const ok = present.length === 0;
       return {
@@ -323,19 +328,23 @@ export const EVALUATORS: Record<string, Evaluator> = {
     const bdd = [...stepResults.values()].find(
       (record) => record.operationName === "BoundedDrillDown",
     );
-    const out = bdd?.output ?? {};
+    const output = bdd?.output ?? {};
     if (expected.hidden) {
-      const missing = expected.hidden.filter((h: string) => !(out.hidden ?? []).includes(h));
-      const leaked = expected.hidden.filter((h: string) => (out.visible ?? []).includes(h));
-      const ok = out.access_filtered === true && missing.length === 0 && leaked.length === 0;
+      const missing = expected.hidden.filter(
+        (hiddenToken: string) => !(output.hidden ?? []).includes(hiddenToken),
+      );
+      const leaked = expected.hidden.filter((hiddenToken: string) =>
+        (output.visible ?? []).includes(hiddenToken),
+      );
+      const ok = output.access_filtered === true && missing.length === 0 && leaked.length === 0;
       return {
         ok,
         msg: ok
           ? ""
-          : `BoundedDrillDown hidden=${JSON.stringify(out.hidden)} visible=${JSON.stringify(out.visible)} missing ${JSON.stringify(missing)} leaked ${JSON.stringify(leaked)}`,
+          : `BoundedDrillDown hidden=${JSON.stringify(output.hidden)} visible=${JSON.stringify(output.visible)} missing ${JSON.stringify(missing)} leaked ${JSON.stringify(leaked)}`,
       };
     }
-    const ok = out.access_filtered === true;
+    const ok = output.access_filtered === true;
     return { ok, msg: ok ? "" : `BoundedDrillDown not access_filtered` };
   },
 
@@ -351,7 +360,9 @@ export const EVALUATORS: Record<string, Evaluator> = {
       expected = assertion.expected ?? {};
     const record = driver.readRecord(target.alias);
     const sections = record?.fields?.sections ?? {};
-    const missing = (expected.sections ?? []).filter((s: string) => !(s in sections));
+    const missing = (expected.sections ?? []).filter(
+      (sectionName: string) => !(sectionName in sections),
+    );
     const ok = !!record && missing.length === 0;
     return {
       ok,
@@ -418,7 +429,7 @@ export const EVALUATORS: Record<string, Evaluator> = {
         problems.push(`GRAMMAR_GAP_CREATED count ${created.length} != ${expected.count}`);
     } else if (created.length < 1) problems.push(`no GRAMMAR_GAP_CREATED emitted`);
     if (gaps.length < 1) problems.push(`no GrammarGap record`);
-    if (expected.reason && !gaps.some((g: any) => g.fields.reason === expected.reason))
+    if (expected.reason && !gaps.some((gap: any) => gap.fields.reason === expected.reason))
       problems.push(`no GrammarGap with reason '${expected.reason}'`);
     const ok = problems.length === 0;
     return { ok, msg: ok ? "" : problems.join("; ") };
@@ -442,27 +453,28 @@ function accessFullOrSummary(
     target.key_serial,
     target.access_profile,
   );
-  const vd = projection.visible_detail ?? [];
-  const et = projection.event_types ?? [];
+  const visibleDetail = projection.visible_detail ?? [];
+  const eventTypeList = projection.event_types ?? [];
   const problems: string[] = [];
-  for (const m of expected.visible_detail_contains ?? [])
-    if (!vd.includes(m))
-      problems.push(`missing controlled detail ${m} under ${target.access_profile ?? "full"}`);
+  for (const marker of expected.visible_detail_contains ?? [])
+    if (!visibleDetail.includes(marker))
+      problems.push(`missing controlled detail ${marker} under ${target.access_profile ?? "full"}`);
   // A "not_contains" token must be one that IS exposed under FULL — else the redaction claim is vacuous (a
   // token that never appears is trivially absent). Read the full view and require it there.
   const fullVd = (expected.visible_detail_not_contains ?? []).length
     ? (driver.readProjection("SerialHistory", target.key_serial).visible_detail ?? [])
     : [];
-  for (const m of expected.visible_detail_not_contains ?? []) {
-    if (!fullVd.includes(m))
+  for (const marker of expected.visible_detail_not_contains ?? []) {
+    if (!fullVd.includes(marker))
       problems.push(
-        `visible_detail_not_contains ${m} is vacuous — ${m} is not exposed under full either`,
+        `visible_detail_not_contains ${marker} is vacuous — ${marker} is not exposed under full either`,
       );
-    else if (vd.includes(m))
-      problems.push(`leaked controlled detail ${m} under ${target.access_profile ?? "full"}`);
+    else if (visibleDetail.includes(marker))
+      problems.push(`leaked controlled detail ${marker} under ${target.access_profile ?? "full"}`);
   }
-  for (const x of expected.event_types_contain ?? [])
-    if (!et.includes(x)) problems.push(`missing summary-safe event ${x}`);
+  for (const eventTypeName of expected.event_types_contain ?? [])
+    if (!eventTypeList.includes(eventTypeName))
+      problems.push(`missing summary-safe event ${eventTypeName}`);
   if (
     (expected.visible_detail_contains ?? []).length === 0 &&
     (expected.visible_detail_not_contains ?? []).length === 0 &&

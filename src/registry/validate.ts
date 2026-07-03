@@ -28,13 +28,15 @@ const EXPOSURES = new Set(["bff_exposed", "internal", "adapter_facing", "system_
 
 const errors: string[] = [];
 const warnings: string[] = [];
-const err = (m: string) => errors.push(m);
-const warn = (m: string) => warnings.push(m);
+const err = (message: string) => errors.push(message);
+const warn = (message: string) => warnings.push(message);
 
 const registries = loadRegistries();
 
 // ---- index sets -------------------------------------------------------------
-const moduleIds = new Set<string>((registries.modules?.modules ?? []).map((m: any) => m.id));
+const moduleIds = new Set<string>(
+  (registries.modules?.modules ?? []).map((moduleDef: any) => moduleDef.id),
+);
 const callerTypes = new Set<string>(registries.modules?.caller_types ?? []);
 const records: any[] = registries.records?.records ?? [];
 const recordNames = new Set<string>(records.map((record) => record.name));
@@ -44,10 +46,12 @@ const operationByName = new Map<string, any>(
 );
 const operationNames = new Set<string>(operationByName.keys());
 const events: any[] = registries.events?.events ?? [];
-const eventByType = new Map<string, any>(events.map((e) => [e.type, e]));
+const eventByType = new Map<string, any>(events.map((event) => [event.type, event]));
 const eventTypes = new Set<string>(eventByType.keys());
 const machines: any[] = registries.stateMachines?.state_machines ?? [];
-const machineByRecord = new Map<string, any>(machines.map((m) => [m.record_type, m]));
+const machineByRecord = new Map<string, any>(
+  machines.map((machine) => [machine.record_type, machine]),
+);
 const projectionNames = new Set<string>(
   (registries.projections?.projections ?? []).map((p: any) => p.name),
 );
@@ -80,11 +84,11 @@ dupes(
   "operations",
 );
 dupes(
-  events.map((e) => e.type),
+  events.map((event) => event.type),
   "events",
 );
 dupes(
-  machines.map((m) => m.record_type),
+  machines.map((machine) => machine.record_type),
   "state-machines",
 );
 dupes(
@@ -114,15 +118,15 @@ for (const op of operations) {
     err(`[operations] ${op.name}: observability_ref '${op.observability_ref}' not registered`);
   if (!compatibilityProfiles.has(op.compatibility_ref))
     err(`[operations] ${op.name}: compatibility_ref '${op.compatibility_ref}' not registered`);
-  for (const e of asArray(op.events_emitted)) {
-    if (!eventTypes.has(e)) {
-      err(`[operations] ${op.name}: emits unregistered event '${e}'`);
+  for (const emittedEventType of asArray(op.events_emitted)) {
+    if (!eventTypes.has(emittedEventType)) {
+      err(`[operations] ${op.name}: emits unregistered event '${emittedEventType}'`);
       continue;
     }
-    const producers = asArray(eventByType.get(e).producer_operations);
+    const producers = asArray(eventByType.get(emittedEventType).producer_operations);
     if (!producers.includes(op.name))
       err(
-        `[consistency] ${op.name} emits ${e} but ${e}.producer_operations does not list ${op.name}`,
+        `[consistency] ${op.name} emits ${emittedEventType} but ${emittedEventType}.producer_operations does not list ${op.name}`,
       );
   }
 }
@@ -151,31 +155,37 @@ for (const ev of events) {
 }
 
 // ---- 5. state machines ------------------------------------------------------
-for (const m of machines) {
-  if (!recordNames.has(m.record_type))
-    err(`[state-machines] ${m.record_type}: not a registered record`);
-  if (!moduleIds.has(m.owning_module))
+for (const machine of machines) {
+  if (!recordNames.has(machine.record_type))
+    err(`[state-machines] ${machine.record_type}: not a registered record`);
+  if (!moduleIds.has(machine.owning_module))
     err(
-      `[state-machines] ${m.record_type}: owning_module '${m.owning_module}' not in modules.yaml`,
+      `[state-machines] ${machine.record_type}: owning_module '${machine.owning_module}' not in modules.yaml`,
     );
-  const states = new Set<string>(asArray(m.states));
-  if (!states.has(m.initial_state))
-    err(`[state-machines] ${m.record_type}: initial_state '${m.initial_state}' not in states`);
-  for (const t of asArray(m.terminal_states))
+  const states = new Set<string>(asArray(machine.states));
+  if (!states.has(machine.initial_state))
+    err(
+      `[state-machines] ${machine.record_type}: initial_state '${machine.initial_state}' not in states`,
+    );
+  for (const t of asArray(machine.terminal_states))
     if (!states.has(t))
-      err(`[state-machines] ${m.record_type}: terminal_state '${t}' not in states`);
+      err(`[state-machines] ${machine.record_type}: terminal_state '${t}' not in states`);
   let hasCreation = false;
-  for (const t of asArray(m.transitions)) {
+  for (const t of asArray(machine.transitions)) {
     if (t.from === null) hasCreation = true;
     else if (!states.has(t.from))
-      err(`[state-machines] ${m.record_type}: transition from '${t.from}' not in states`);
+      err(`[state-machines] ${machine.record_type}: transition from '${t.from}' not in states`);
     if (!states.has(t.to))
-      err(`[state-machines] ${m.record_type}: transition to '${t.to}' not in states`);
+      err(`[state-machines] ${machine.record_type}: transition to '${t.to}' not in states`);
     if (!eventTypes.has(t.emits))
-      err(`[state-machines] ${m.record_type}: transition emits unregistered event '${t.emits}'`);
+      err(
+        `[state-machines] ${machine.record_type}: transition emits unregistered event '${t.emits}'`,
+      );
     for (const via of asArray(t.via)) {
       if (!operationNames.has(via)) {
-        err(`[state-machines] ${m.record_type}: transition via unregistered operation '${via}'`);
+        err(
+          `[state-machines] ${machine.record_type}: transition via unregistered operation '${via}'`,
+        );
         continue;
       }
       if (
@@ -183,34 +193,34 @@ for (const m of machines) {
         !asArray(operationByName.get(via).events_emitted).includes(t.emits)
       )
         err(
-          `[consistency] ${m.record_type} transition via ${via} emits ${t.emits}, but ${via}.events_emitted omits it`,
+          `[consistency] ${machine.record_type} transition via ${via} emits ${t.emits}, but ${via}.events_emitted omits it`,
         );
     }
   }
-  if (m.creation_transition === "explicit" && !hasCreation)
+  if (machine.creation_transition === "explicit" && !hasCreation)
     err(
-      `[state-machines] ${m.record_type}: creation_transition=explicit but no 'from: null' transition (Contract Spec section 0.1.4)`,
+      `[state-machines] ${machine.record_type}: creation_transition=explicit but no 'from: null' transition (Contract Spec section 0.1.4)`,
     );
   if (
-    typeof m.creation_transition === "string" &&
-    m.creation_transition.startsWith("implicit") &&
+    typeof machine.creation_transition === "string" &&
+    machine.creation_transition.startsWith("implicit") &&
     hasCreation
   )
     err(
-      `[state-machines] ${m.record_type}: creation_transition=${m.creation_transition} but has a 'from: null' transition`,
+      `[state-machines] ${machine.record_type}: creation_transition=${machine.creation_transition} but has a 'from: null' transition`,
     );
   // a `forbidden` entry ('X -> Y' or 'X -> *') must NOT also be a registered transition (else the
   // transition silently wins and the ban is a lie). Keeps the two lists from drifting into contradiction.
-  for (const f of asArray(m.forbidden)) {
+  for (const f of asArray(machine.forbidden)) {
     const p = String(f)
       .split("->")
       .map((s) => s.trim());
     if (p.length !== 2) continue;
-    for (const t of asArray(m.transitions)) {
+    for (const t of asArray(machine.transitions)) {
       const tf = t.from === null ? "null" : t.from;
       if (tf === p[0] && (p[1] === "*" || t.to === p[1]))
         err(
-          `[state-machines] ${m.record_type}: forbidden '${f}' is also a registered transition (${tf} -> ${t.to})`,
+          `[state-machines] ${machine.record_type}: forbidden '${f}' is also a registered transition (${tf} -> ${t.to})`,
         );
     }
   }
@@ -265,12 +275,12 @@ resolve(vf.reports, reportNames, "report");
 resolve(vf.assertion_types, assertionTypes, "assertion_type");
 resolve(vf.caller_types, callerTypes, "caller_type");
 for (const [rec, recordStates] of Object.entries(vf.record_states ?? {})) {
-  const m = machineByRecord.get(rec);
-  if (!m) {
+  const machine = machineByRecord.get(rec);
+  if (!machine) {
     err(`[VF-003] record '${rec}' has no state machine`);
     continue;
   }
-  const states = new Set<string>(asArray(m.states));
+  const states = new Set<string>(asArray(machine.states));
   for (const s of asArray(recordStates))
     if (!states.has(s)) err(`[VF-003] ${rec}: state '${s}' not in its state machine`);
 }
@@ -294,7 +304,10 @@ for (const op of operations) {
 }
 // modules owning first-slice contracts should be first_slice:true (warning)
 const firstSliceModule = new Map<string, boolean>(
-  (registries.modules?.modules ?? []).map((m: any) => [m.id, m.first_slice]),
+  (registries.modules?.modules ?? []).map((moduleDef: any) => [
+    moduleDef.id,
+    moduleDef.first_slice,
+  ]),
 );
 for (const op of operations)
   if (firstSliceModule.get(op.owning_module) === false)
@@ -316,11 +329,11 @@ console.log("contract registry validation (contracts-0.4.1)");
 console.log(`  loaded: 11 registries  ${JSON.stringify(counts)}`);
 if (warnings.length) {
   console.log(`  warnings: ${warnings.length}`);
-  for (const w of warnings) console.log(`    warn: ${w}`);
+  for (const warning of warnings) console.log(`    warn: ${warning}`);
 }
 if (errors.length) {
   console.log(`  consistency: FAILED (${errors.length} errors)`);
-  for (const e of errors) console.log(`    error: ${e}`);
+  for (const errorMessage of errors) console.log(`    error: ${errorMessage}`);
   console.log(`  VF-003 references: NOT resolved`);
   process.exit(1);
 } else {

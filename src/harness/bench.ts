@@ -89,24 +89,24 @@ console.log(`bench: ${name}  (required_pass_rate ${bench.required_pass_rate})`);
 let passed = 0;
 const rows: { id: string; ok: boolean; detail: string }[] = [];
 for (const id of bench.scenarios) {
-  let mem,
-    be,
+  let inMemoryResult,
+    backendResult,
     ok = false,
     detail = "";
   try {
-    mem = runScenario(id); // in-memory
+    inMemoryResult = runScenario(id); // in-memory
     const dbPath = join(tmpdir(), `bench-${id}.db`);
-    for (const f of [dbPath, dbPath + "-journal"]) if (existsSync(f)) rmSync(f);
-    be = runScenarioOnDriver(
+    for (const file of [dbPath, dbPath + "-journal"]) if (existsSync(file)) rmSync(file);
+    backendResult = runScenarioOnDriver(
       id,
       new BackendProductDriver(dbPath),
       "backend",
       `${id}-backend`,
     ).result;
-    ok = mem.status === "passed" && be.status === "passed";
-    detail = `in_memory=${mem.status}(${mem.assertions.passed}/${mem.assertions.total})  backend=${be.status}(${be.assertions.passed}/${be.assertions.total})`;
-  } catch (e: any) {
-    detail = `ERROR: ${e.message}`;
+    ok = inMemoryResult.status === "passed" && backendResult.status === "passed";
+    detail = `in_memory=${inMemoryResult.status}(${inMemoryResult.assertions.passed}/${inMemoryResult.assertions.total})  backend=${backendResult.status}(${backendResult.assertions.passed}/${backendResult.assertions.total})`;
+  } catch (error: any) {
+    detail = `ERROR: ${error.message}`;
   }
   rows.push({ id, ok, detail });
   if (ok) passed++;
