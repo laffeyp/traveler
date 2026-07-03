@@ -13,13 +13,13 @@ import { NORMALIZE_GRAMMAR, keyPresentAndValid } from "./registry.ts";
 import { assembleRunCloseReport } from "./projections.ts";
 
 /**
- * An operation handler: mutate the World for `i` (the operation input), emitting events explicitly. `actor` is
+ * An operation handler: mutate the World for `input` (the operation input), emitting events explicitly. `actor` is
  * the person who called the operation (the scenario's actor_id, e.g. "operator_1") — most handlers ignore it,
  * but the ones with a "second person" rule (approval, verification) use it to record who did the action and to
  * refuse a same-person sign-off (segregation of duties). This is the person, not the role: two different
  * people can share a role, so the check is on identity, not caller type.
  */
-type H = (w: World, i: any, actor?: string, role?: string) => any;
+type H = (world: World, input: any, actor?: string, role?: string) => any;
 
 // Disposition kinds (AS9100 8.7). scrap / rework / return_to_supplier are org-level; use_as_is and repair
 // need design/quality authority (the design-responsible org signs off on accepting or repairing off-nominal
@@ -60,82 +60,100 @@ const ELEVATED_DISPOSITIONS = new Set(["use_as_is", "repair"]);
 const DISPOSITION_AUTHORITY_ROLES = new Set(["manufacturing_engineer", "quality_engineer"]);
 
 export const HANDLERS: Record<string, H> = {
-  CreateProcedureVersion(w, i) {
-    const pv = w.createInitial("ProcedureVersion", i.procedure_version_alias, { steps: i.steps });
-    for (const s of i.steps ?? []) {
-      w.createInitial("ProcedureStep", s.alias, {
+  CreateProcedureVersion(world, input) {
+    const procedureVersion = world.createInitial(
+      "ProcedureVersion",
+      input.procedure_version_alias,
+      { steps: input.steps },
+    );
+    for (const s of input.steps ?? []) {
+      world.createInitial("ProcedureStep", s.alias, {
         ordinal: s.ordinal,
         name: s.name,
         install_required: !!s.install_required,
       });
       for (const f of s.data_collection_fields ?? [])
-        w.createInitial("DataCollectionField", f.alias, f);
+        world.createInitial("DataCollectionField", f.alias, f);
     }
-    w.emit("PROCEDURE_VERSION_CREATED", "CreateProcedureVersion", { procedure_version_id: pv.id });
-  },
-  SubmitProcedureVersionForReview: (w, i) =>
-    step(w, w.get(i.procedure_version_alias), "SubmitProcedureVersionForReview"),
-  ReleaseProcedureVersion: (w, i) =>
-    step(w, w.get(i.procedure_version_alias), "ReleaseProcedureVersion"),
-  CreateManufacturingStructureVersion(w, i) {
-    const m = w.createInitial("ManufacturingStructureVersion", i.manufacturing_structure_alias, {
-      part_revision: i.part_revision,
+    world.emit("PROCEDURE_VERSION_CREATED", "CreateProcedureVersion", {
+      procedure_version_id: procedureVersion.id,
     });
-    w.emit("MANUFACTURING_STRUCTURE_CREATED", "CreateManufacturingStructureVersion", {
+  },
+  SubmitProcedureVersionForReview: (world, input) =>
+    step(world, world.get(input.procedure_version_alias), "SubmitProcedureVersionForReview"),
+  ReleaseProcedureVersion: (world, input) =>
+    step(world, world.get(input.procedure_version_alias), "ReleaseProcedureVersion"),
+  CreateManufacturingStructureVersion(world, input) {
+    const m = world.createInitial(
+      "ManufacturingStructureVersion",
+      input.manufacturing_structure_alias,
+      {
+        part_revision: input.part_revision,
+      },
+    );
+    world.emit("MANUFACTURING_STRUCTURE_CREATED", "CreateManufacturingStructureVersion", {
       manufacturing_structure_version_id: m.id,
     });
   },
-  AddBOMLine(w, i) {
-    w.create("BOMLine", i.bom_line_alias, "created", {
-      manufacturing_structure: i.manufacturing_structure_alias,
-      part_revision: i.part_revision,
-      install_required: !!i.install_required,
+  AddBOMLine(world, input) {
+    world.create("BOMLine", input.bom_line_alias, "created", {
+      manufacturing_structure: input.manufacturing_structure_alias,
+      part_revision: input.part_revision,
+      install_required: !!input.install_required,
     });
-    w.emit("BOM_LINE_CREATED", "AddBOMLine", { bom_line_alias: i.bom_line_alias });
+    world.emit("BOM_LINE_CREATED", "AddBOMLine", { bom_line_alias: input.bom_line_alias });
   },
-  ReleaseManufacturingStructureVersion: (w, i) =>
-    step(w, w.get(i.manufacturing_structure_alias), "ReleaseManufacturingStructureVersion"),
-  CreateInventoryItem(w, i) {
-    const inv = w.createInitial("InventoryItem", i.inventory_alias, {
-      serial_number: i.serial_number,
-      part_revision: i.part_revision,
+  ReleaseManufacturingStructureVersion: (world, input) =>
+    step(
+      world,
+      world.get(input.manufacturing_structure_alias),
+      "ReleaseManufacturingStructureVersion",
+    ),
+  CreateInventoryItem(world, input) {
+    const inventoryItem = world.createInitial("InventoryItem", input.inventory_alias, {
+      serial_number: input.serial_number,
+      part_revision: input.part_revision,
     });
-    w.emit("INVENTORY_CREATED", "CreateInventoryItem", {
-      inventory_id: inv.id,
-      serial_number: i.serial_number,
+    world.emit("INVENTORY_CREATED", "CreateInventoryItem", {
+      inventory_id: inventoryItem.id,
+      serial_number: input.serial_number,
     });
   },
-  ReceiveInventory: (w, i) => step(w, w.get(i.inventory_alias), "ReceiveInventory"),
-  ReleaseInventory: (w, i) => step(w, w.get(i.inventory_alias), "ReleaseInventory"),
-  ReserveInventory: (w, i) => step(w, w.get(i.inventory_alias), "ReserveInventory"),
+  ReceiveInventory: (world, input) =>
+    step(world, world.get(input.inventory_alias), "ReceiveInventory"),
+  ReleaseInventory: (world, input) =>
+    step(world, world.get(input.inventory_alias), "ReleaseInventory"),
+  ReserveInventory: (world, input) =>
+    step(world, world.get(input.inventory_alias), "ReserveInventory"),
   // QuarantineInventory (registered but unexercised until VF-005): received -> quarantined, emits
   // INVENTORY_QUARANTINED via the state-machine transition. Places a unit on quality hold.
-  QuarantineInventory: (w, i) => step(w, w.get(i.inventory_alias), "QuarantineInventory"),
-  CreateEffectivityRule(w, i) {
+  QuarantineInventory: (world, input) =>
+    step(world, world.get(input.inventory_alias), "QuarantineInventory"),
+  CreateEffectivityRule(world, input) {
     // serial_from/serial_to carry a cut-in/cut-out RANGE (gap 6); absent for the existing exact serial_condition
     // rules, which keep matching by exact serial.
-    w.create("EffectivityRule", i.effectivity_rule_alias, "active", {
-      target_record_type: i.target_record_type,
-      rule_type: i.rule_type,
-      serial_condition: i.serial_condition,
-      serial_from: i.serial_from,
-      serial_to: i.serial_to,
-      target_alias: i.target_alias,
-      priority: i.priority,
+    world.create("EffectivityRule", input.effectivity_rule_alias, "active", {
+      target_record_type: input.target_record_type,
+      rule_type: input.rule_type,
+      serial_condition: input.serial_condition,
+      serial_from: input.serial_from,
+      serial_to: input.serial_to,
+      target_alias: input.target_alias,
+      priority: input.priority,
     });
-    w.emit("EFFECTIVITY_RULE_CREATED", "CreateEffectivityRule", {
-      effectivity_rule_alias: i.effectivity_rule_alias,
+    world.emit("EFFECTIVITY_RULE_CREATED", "CreateEffectivityRule", {
+      effectivity_rule_alias: input.effectivity_rule_alias,
     });
   },
-  ResolveEffectivity(w, i) {
+  ResolveEffectivity(world, input) {
     // serial_cut_in matching (Contract Spec §17): one highest-priority match per required target type.
     // Three outcomes: RESOLVE (unique highest), CREATE AMBIGUITY (equal-priority matches — a produced
     // outcome, NOT a throw; emits the registered EFFECTIVITY_AMBIGUOUS incident), FAIL RESOLUTION (no
     // match for a required type — precondition_failed). "creates ambiguity" vs "fails resolution" are
     // distinct per Harness §19 and must not be conflated.
-    const rules = w
+    const rules = world
       .byType("EffectivityRule")
-      .filter((r) => ruleAppliesToSerial(r, i.target_serial)); // exact OR range (gap 6)
+      .filter((r) => ruleAppliesToSerial(r, input.target_serial)); // exact OR range (gap 6)
     const required = ["ProcedureVersion", "ManufacturingStructureVersion"];
     const selected: any = {};
     const matchedRuleIds: string[] = [];
@@ -172,65 +190,79 @@ export const HANDLERS: Record<string, H> = {
       selected_manufacturing_structure_version: selected.ManufacturingStructureVersion,
     };
     if (ambiguities.length > 0) {
-      const res = w.create("EffectivityResolution", i.effectivity_resolution_alias, "ambiguous", {
-        status: "ambiguous",
-        target_serial: i.target_serial,
-        selected,
-        ...flat,
-        matched_rule_ids: matchedRuleIds,
-        explanation: {
-          target_serial: i.target_serial,
-          matched_rule_ids: matchedRuleIds,
+      const resolution = world.create(
+        "EffectivityResolution",
+        input.effectivity_resolution_alias,
+        "ambiguous",
+        {
+          status: "ambiguous",
+          target_serial: input.target_serial,
           selected,
-          ambiguities,
-          why: "equal-priority serial_cut_in matches for a target type — ambiguity; resolution blocked",
+          ...flat,
+          matched_rule_ids: matchedRuleIds,
+          explanation: {
+            target_serial: input.target_serial,
+            matched_rule_ids: matchedRuleIds,
+            selected,
+            ambiguities,
+            why: "equal-priority serial_cut_in matches for a target type — ambiguity; resolution blocked",
+          },
         },
-      });
-      w.emit("EFFECTIVITY_AMBIGUOUS", "ResolveEffectivity", {
-        effectivity_resolution_id: res.id,
+      );
+      world.emit("EFFECTIVITY_AMBIGUOUS", "ResolveEffectivity", {
+        effectivity_resolution_id: resolution.id,
         ambiguities,
       });
       return;
     }
-    const res = w.create("EffectivityResolution", i.effectivity_resolution_alias, "resolved", {
-      status: "resolved",
-      target_serial: i.target_serial,
-      selected,
-      ...flat,
-      matched_rule_ids: matchedRuleIds,
-      explanation: {
-        target_serial: i.target_serial,
-        matched_rule_ids: matchedRuleIds,
+    const resolution = world.create(
+      "EffectivityResolution",
+      input.effectivity_resolution_alias,
+      "resolved",
+      {
+        status: "resolved",
+        target_serial: input.target_serial,
         selected,
-        ambiguities: [],
-        why: "highest-priority serial_cut_in match per target type",
+        ...flat,
+        matched_rule_ids: matchedRuleIds,
+        explanation: {
+          target_serial: input.target_serial,
+          matched_rule_ids: matchedRuleIds,
+          selected,
+          ambiguities: [],
+          why: "highest-priority serial_cut_in match per target type",
+        },
       },
+    );
+    world.emit("EFFECTIVITY_RESOLVED", "ResolveEffectivity", {
+      effectivity_resolution_id: resolution.id,
     });
-    w.emit("EFFECTIVITY_RESOLVED", "ResolveEffectivity", { effectivity_resolution_id: res.id });
   },
-  RunBuildCheck(w, i) {
+  RunBuildCheck(world, input) {
     // Build Readiness §7.3: verify released ProcedureVersion + ManufacturingStructureVersion,
     // resolved effectivity, target inventory available, required BOM inventory candidates exist.
     const blockers: string[] = [];
     const usable = ["available", "reserved", "kitted", "in_wip"];
-    const res = tryGet(w, i.effectivity_resolution_alias);
+    const resolution = tryGet(world, input.effectivity_resolution_alias);
     // Version-selection checks DEPEND on a resolved selection: you cannot verify the "released" state of
     // a ProcedureVersion/MSV that effectivity never selected. So they are gated on resolution, and an
     // unresolved effectivity is named distinctly — ambiguity ("equal-priority match creates ambiguity",
     // Harness §19) vs. not-resolved. The inventory checks below do NOT depend on the resolution and are
     // always evaluated, so an inventory problem is still reported even when versions are undetermined.
-    if (!res || res.state !== "resolved") {
+    if (!resolution || resolution.state !== "resolved") {
       blockers.push(
-        res?.state === "ambiguous" ? "effectivity_ambiguous" : "effectivity_not_resolved",
+        resolution?.state === "ambiguous" ? "effectivity_ambiguous" : "effectivity_not_resolved",
       );
     } else {
-      const sel = res.fields.selected ?? {};
-      const pv = tryGet(w, sel.ProcedureVersion);
-      if (!pv || pv.state !== "released") blockers.push("procedure_version_not_released");
-      const msv = tryGet(w, sel.ManufacturingStructureVersion);
-      if (!msv || msv.state !== "released") blockers.push("manufacturing_structure_not_released");
+      const selected = resolution.fields.selected ?? {};
+      const procedureVersion = tryGet(world, selected.ProcedureVersion);
+      if (!procedureVersion || procedureVersion.state !== "released")
+        blockers.push("procedure_version_not_released");
+      const structureVersion = tryGet(world, selected.ManufacturingStructureVersion);
+      if (!structureVersion || structureVersion.state !== "released")
+        blockers.push("manufacturing_structure_not_released");
     }
-    const target = tryGet(w, i.target_inventory_alias);
+    const target = tryGet(world, input.target_inventory_alias);
     if (!target || !["available", "reserved", "kitted"].includes(target.state))
       blockers.push("target_inventory_not_available");
     // Name the child-inventory blocker per Product Spec §212 ("build checks name blockers"): the
@@ -241,28 +273,30 @@ export const HANDLERS: Record<string, H> = {
     // BOM line is judged on its own part (no cross-line attribution). A "wrong child" is the same
     // part_number in a different revision — the classic wrong-revision pick.
     const identity = (alias: string) =>
-      w.partRevisions.get(alias) ?? { part_number: alias, revision: "" };
-    const requiredLines = w.byType("BOMLine").filter((b) => b.fields.install_required);
+      world.partRevisions.get(alias) ?? { part_number: alias, revision: "" };
+    const requiredLines = world.byType("BOMLine").filter((b) => b.fields.install_required);
     const targetId = target?.id;
-    const candidates = w.byType("InventoryItem").filter((inv) => inv.id !== targetId);
+    const candidates = world
+      .byType("InventoryItem")
+      .filter((inventoryItem) => inventoryItem.id !== targetId);
     for (const b of requiredLines) {
       const reqAlias = b.fields.part_revision;
       const req = identity(reqAlias);
-      const exact = candidates.filter((inv) => {
-        const id = identity(inv.fields.part_revision);
+      const exact = candidates.filter((inventoryItem) => {
+        const id = identity(inventoryItem.fields.part_revision);
         return id.part_number === req.part_number && id.revision === req.revision;
       });
-      if (exact.some((inv) => usable.includes(inv.state))) continue; // a usable exact candidate exists
-      if (exact.some((inv) => inv.state === "quarantined")) {
+      if (exact.some((inventoryItem) => usable.includes(inventoryItem.state))) continue; // a usable exact candidate exists
+      if (exact.some((inventoryItem) => inventoryItem.state === "quarantined")) {
         blockers.push(`quarantined_inventory:${reqAlias}`);
         continue;
       } // right part, on quality hold
       // No usable/quarantined exact candidate. Wrong child = a usable unit of the SAME part_number in a
       // different revision (scoped to this required part — not any stray item in the world).
-      const wrong = candidates.find((inv) => {
-        const id = identity(inv.fields.part_revision);
+      const wrong = candidates.find((inventoryItem) => {
+        const id = identity(inventoryItem.fields.part_revision);
         return (
-          usable.includes(inv.state) &&
+          usable.includes(inventoryItem.state) &&
           id.part_number === req.part_number &&
           id.revision !== req.revision
         );
@@ -271,24 +305,28 @@ export const HANDLERS: Record<string, H> = {
       else blockers.push(`missing_bom_inventory:${reqAlias}`);
     }
     const status = blockers.length === 0 ? "passed" : "blocked";
-    const bc = w.create("BuildCheckResult", i.build_check_alias, status, {
+    const buildCheck = world.create("BuildCheckResult", input.build_check_alias, status, {
       status,
       blockers,
-      target_inventory: i.target_inventory_alias,
-      effectivity_resolution: i.effectivity_resolution_alias,
+      target_inventory: input.target_inventory_alias,
+      effectivity_resolution: input.effectivity_resolution_alias,
     });
-    w.emit("BUILD_CHECK_STARTED", "RunBuildCheck", { build_check_id: bc.id });
+    world.emit("BUILD_CHECK_STARTED", "RunBuildCheck", { build_check_id: buildCheck.id });
     if (status === "passed") {
-      w.emit("BUILD_CHECK_PASSED", "RunBuildCheck", { build_check_id: bc.id });
+      world.emit("BUILD_CHECK_PASSED", "RunBuildCheck", { build_check_id: buildCheck.id });
     } else {
-      w.emit("BUILD_CHECK_FAILED", "RunBuildCheck", { build_check_id: bc.id, blockers });
-      for (const bl of blockers) w.emit("BUILD_BLOCKER_CREATED", "RunBuildCheck", { blocker: bl });
+      world.emit("BUILD_CHECK_FAILED", "RunBuildCheck", {
+        build_check_id: buildCheck.id,
+        blockers,
+      });
+      for (const bl of blockers)
+        world.emit("BUILD_BLOCKER_CREATED", "RunBuildCheck", { blocker: bl });
     }
   },
-  CreateRun(w, i) {
-    const run = w.createInitial("Run", i.run_alias, {
-      target_inventory: i.target_inventory_alias,
-      procedure_version: i.procedure_version_alias,
+  CreateRun(world, input) {
+    const run = world.createInitial("Run", input.run_alias, {
+      target_inventory: input.target_inventory_alias,
+      procedure_version: input.procedure_version_alias,
     });
     // Snapshot the EFFECTIVITY CONTEXT per Contract Spec §17 ("CreateRun snapshots effectivity
     // context. Later effectivity changes do not rewrite RunContextSnapshot."): the snapshot's
@@ -296,131 +334,141 @@ export const HANDLERS: Record<string, H> = {
     // time — NOT the caller's literal — so a later rule change or re-resolution cannot retroactively
     // alter this run's context. That derived value is the invariant the immutability test guards
     // (a snapshot that merely echoed the input literal would be immutable by omission, untested).
-    const res = tryGet(w, i.effectivity_resolution_alias);
-    const snapPv = res?.fields.selected_procedure_version ?? i.procedure_version_alias;
+    const resolution = tryGet(world, input.effectivity_resolution_alias);
+    const snapPv = resolution?.fields.selected_procedure_version ?? input.procedure_version_alias;
     const snapMsv =
-      res?.fields.selected_manufacturing_structure_version ?? i.manufacturing_structure_alias;
-    w.createInitial("RunContextSnapshot", i.run_context_snapshot_alias, {
+      resolution?.fields.selected_manufacturing_structure_version ??
+      input.manufacturing_structure_alias;
+    world.createInitial("RunContextSnapshot", input.run_context_snapshot_alias, {
       procedure_version: snapPv,
       manufacturing_structure: snapMsv,
-      effectivity_resolution: i.effectivity_resolution_alias,
-      resolution_serial: res?.fields.target_serial,
+      effectivity_resolution: input.effectivity_resolution_alias,
+      resolution_serial: resolution?.fields.target_serial,
       run: run.id,
     });
-    for (const sa of i.run_step_aliases ?? []) w.createInitial("RunStep", sa, { run: run.id });
-    w.emit("RUN_CREATED", "CreateRun", { run_id: run.id });
+    for (const sa of input.run_step_aliases ?? [])
+      world.createInitial("RunStep", sa, { run: run.id });
+    world.emit("RUN_CREATED", "CreateRun", { run_id: run.id });
   },
-  ApplyBuildCheckResultToRun(w, i) {
-    const bc = w.get(i.build_check_alias);
-    const run = w.get(i.run_alias);
-    if (bc.state === "passed") {
+  ApplyBuildCheckResultToRun(world, input) {
+    const buildCheck = world.get(input.build_check_alias);
+    const run = world.get(input.run_alias);
+    if (buildCheck.state === "passed") {
       moveStateTo(run, "ApplyBuildCheckResultToRun", "ready");
-      w.emit("RUN_READY", "ApplyBuildCheckResultToRun", { run_id: run.id });
+      world.emit("RUN_READY", "ApplyBuildCheckResultToRun", { run_id: run.id });
     } else {
       moveStateTo(run, "ApplyBuildCheckResultToRun", "blocked");
-      w.emit("RUN_BLOCKED", "ApplyBuildCheckResultToRun", { run_id: run.id });
+      world.emit("RUN_BLOCKED", "ApplyBuildCheckResultToRun", { run_id: run.id });
     }
   },
-  StartRun: (w, i) => step(w, w.get(i.run_alias), "StartRun"),
-  StartRunWithInventory(w, i) {
-    for (const a of i.inventory_aliases ?? []) {
-      const inv = w.get(a);
-      moveState(inv, "StartRunWithInventory");
-      w.emit("INVENTORY_IN_WIP", "StartRunWithInventory", {
-        inventory_id: inv.id,
-        serial_number: inv.fields.serial_number,
+  StartRun: (world, input) => step(world, world.get(input.run_alias), "StartRun"),
+  StartRunWithInventory(world, input) {
+    for (const a of input.inventory_aliases ?? []) {
+      const inventoryItem = world.get(a);
+      moveState(inventoryItem, "StartRunWithInventory");
+      world.emit("INVENTORY_IN_WIP", "StartRunWithInventory", {
+        inventory_id: inventoryItem.id,
+        serial_number: inventoryItem.fields.serial_number,
       }); // B-Q-4: one per item
     }
   },
-  StartRunStep: (w, i) => step(w, w.get(i.run_step_alias), "StartRunStep"),
-  CaptureMeasurement(w, i, actor) {
-    const field = w.get(i.data_collection_field_alias);
+  StartRunStep: (world, input) => step(world, world.get(input.run_step_alias), "StartRunStep"),
+  CaptureMeasurement(world, input, actor) {
+    const field = world.get(input.data_collection_field_alias);
     // Calibration gate (persona gap 7; ISO 17025): a reading from an out-of-calibration instrument is refused
     // (no facts). Only checked when an instrument is named and it is marked overdue; existing measurements that
     // name no instrument are unaffected.
-    const instrument = tryGet(w, i.instrument_alias);
+    const instrument = tryGet(world, input.instrument_alias);
     // Fail CLOSED: accept a reading only from a CONFIRMED in-calibration instrument. Any other cal_status —
     // overdue, expired, unknown, missing, mis-cased — is refused (sprint-019 review: matching only the exact
     // string "overdue" let every other out-of-cal representation through). Guilty until proven calibrated.
     if (instrument && instrument.fields.cal_status !== "in_cal")
       throw new Error(
-        `calibration_not_current: instrument '${i.instrument_alias}' is not confirmed in-calibration (cal_status='${instrument.fields.cal_status ?? "(none)"}'); measurement refused`,
+        `calibration_not_current: instrument '${input.instrument_alias}' is not confirmed in-calibration (cal_status='${instrument.fields.cal_status ?? "(none)"}'); measurement refused`,
       );
     const lo = field.fields.lower_bound,
       hi = field.fields.upper_bound;
-    const result = i.value < lo || i.value > hi ? "fail" : "pass";
-    const run = w.get(i.run_alias);
+    const result = input.value < lo || input.value > hi ? "fail" : "pass";
+    const run = world.get(input.run_alias);
     // captured_by (persona gap 9): who took the reading is recorded on the measurement.
-    const meas = w.create("Measurement", i.measurement_alias, result, {
-      value: i.value,
-      unit: i.unit,
+    const meas = world.create("Measurement", input.measurement_alias, result, {
+      value: input.value,
+      unit: input.unit,
       result,
       run: run.id,
-      run_step: i.run_step_alias,
-      data_field: i.data_collection_field_alias,
-      instrument: i.instrument_alias,
+      run_step: input.run_step_alias,
+      data_field: input.data_collection_field_alias,
+      instrument: input.instrument_alias,
       captured_by: actor,
     });
-    w.emit("MEASUREMENT_CAPTURED", "CaptureMeasurement", {
+    world.emit("MEASUREMENT_CAPTURED", "CaptureMeasurement", {
       measurement_id: meas.id,
-      value: i.value,
+      value: input.value,
     });
-    w.emit("MEASUREMENT_EVALUATED", "CaptureMeasurement", { measurement_id: meas.id, result });
-    w.emit(result === "fail" ? "MEASUREMENT_FAILED" : "MEASUREMENT_PASSED", "CaptureMeasurement", {
-      measurement_id: meas.id,
-    });
+    world.emit("MEASUREMENT_EVALUATED", "CaptureMeasurement", { measurement_id: meas.id, result });
+    world.emit(
+      result === "fail" ? "MEASUREMENT_FAILED" : "MEASUREMENT_PASSED",
+      "CaptureMeasurement",
+      {
+        measurement_id: meas.id,
+      },
+    );
   },
-  OpenNonconformance(w, i) {
-    const run = w.get(i.run_alias);
-    const src = w.get(i.source_measurement_alias);
-    const nc = w.createInitial("Nonconformance", i.nonconformance_alias, {
-      source_measurement: src.id,
+  OpenNonconformance(world, input) {
+    const run = world.get(input.run_alias);
+    const sourceMeasurement = world.get(input.source_measurement_alias);
+    const nonconformance = world.createInitial("Nonconformance", input.nonconformance_alias, {
+      source_measurement: sourceMeasurement.id,
       run: run.id,
     });
-    w.emit("NONCONFORMANCE_OPENED", "OpenNonconformance", { nonconformance_id: nc.id });
+    world.emit("NONCONFORMANCE_OPENED", "OpenNonconformance", {
+      nonconformance_id: nonconformance.id,
+    });
   },
-  DefineAffectedPopulation(w, i) {
+  DefineAffectedPopulation(world, input) {
     // Link the population to its nonconformance so run close can check remediation across the WHOLE batch,
     // not just the run's own part (persona gap 4).
-    w.create("AffectedPopulation", i.affected_population_alias, "created", {
-      scope_type: i.scope_type,
-      serials: i.serials,
-      nonconformance: i.nonconformance_alias,
+    world.create("AffectedPopulation", input.affected_population_alias, "created", {
+      scope_type: input.scope_type,
+      serials: input.serials,
+      nonconformance: input.nonconformance_alias,
     });
-    step(w, w.get(i.nonconformance_alias), "DefineAffectedPopulation");
+    step(world, world.get(input.nonconformance_alias), "DefineAffectedPopulation");
   },
-  StartQualityContainment(w, i) {
-    w.createInitial("QualityContainmentAction", i.containment_action_alias); // state: required
-    moveState(w.get(i.nonconformance_alias), "StartQualityContainment"); // open->containment_required OR disposition_pending self-loop (B-Q-2)
-    w.emit("QUALITY_CONTAINMENT_REQUIRED", "StartQualityContainment", {
-      containment_action_alias: i.containment_action_alias,
+  StartQualityContainment(world, input) {
+    world.createInitial("QualityContainmentAction", input.containment_action_alias); // state: required
+    moveState(world.get(input.nonconformance_alias), "StartQualityContainment"); // open->containment_required OR disposition_pending self-loop (B-Q-2)
+    world.emit("QUALITY_CONTAINMENT_REQUIRED", "StartQualityContainment", {
+      containment_action_alias: input.containment_action_alias,
     }); // one event
   },
-  ActivateQualityContainment(w, i) {
-    moveState(w.get(i.containment_action_alias), "ActivateQualityContainment"); // required->active
-    moveState(w.get(i.nonconformance_alias), "ActivateQualityContainment"); // containment_required->disposition_pending OR self-loop
-    w.emit("QUALITY_CONTAINMENT_STARTED", "ActivateQualityContainment", {
-      containment_action_alias: i.containment_action_alias,
+  ActivateQualityContainment(world, input) {
+    moveState(world.get(input.containment_action_alias), "ActivateQualityContainment"); // required->active
+    moveState(world.get(input.nonconformance_alias), "ActivateQualityContainment"); // containment_required->disposition_pending OR self-loop
+    world.emit("QUALITY_CONTAINMENT_STARTED", "ActivateQualityContainment", {
+      containment_action_alias: input.containment_action_alias,
     });
   },
-  CreateRedlineDraft(w, i, actor) {
+  CreateRedlineDraft(world, input, actor) {
     // Record who authored the redline, so the approval can refuse a same-person sign-off (segregation of duties).
-    const rl = w.createInitial("Redline", i.redline_alias, {
-      run: i.run_alias,
-      procedure_version: i.procedure_version_alias,
+    const redline = world.createInitial("Redline", input.redline_alias, {
+      run: input.run_alias,
+      procedure_version: input.procedure_version_alias,
       authored_by: actor,
     });
-    w.emit("REDLINE_DRAFT_CREATED", "CreateRedlineDraft", { redline_id: rl.id });
+    world.emit("REDLINE_DRAFT_CREATED", "CreateRedlineDraft", { redline_id: redline.id });
   },
-  SubmitRedline: (w, i) => step(w, w.get(i.redline_alias), "SubmitRedline"),
-  ReviewRedline: (w, i) => step(w, w.get(i.redline_alias), "ReviewRedline"),
-  RequestApproval(w, i) {
-    const ar = w.createInitial("ApprovalRequest", i.approval_request_alias, {
-      redline: i.redline_alias,
+  SubmitRedline: (world, input) => step(world, world.get(input.redline_alias), "SubmitRedline"),
+  ReviewRedline: (world, input) => step(world, world.get(input.redline_alias), "ReviewRedline"),
+  RequestApproval(world, input) {
+    const approvalRequest = world.createInitial("ApprovalRequest", input.approval_request_alias, {
+      redline: input.redline_alias,
     });
-    w.emit("APPROVAL_REQUESTED", "RequestApproval", { approval_request_id: ar.id });
+    world.emit("APPROVAL_REQUESTED", "RequestApproval", {
+      approval_request_id: approvalRequest.id,
+    });
   },
-  RecordApprovalDecision(w, i, actor) {
+  RecordApprovalDecision(world, input, actor) {
     // Honor the recorded decision (was hard-coded "approved" — a reject silently force-approved, letting a
     // rejected redline be applied; sprint-011 review). The decision is REQUIRED and MUST be exactly one of
     // the two registered outcomes: an absent decision must NOT default to approve (re-introduces the
@@ -428,7 +476,7 @@ export const HANDLERS: Record<string, H> = {
     // validation_error rather than be silently coerced into an irreversible rejection (sprint-011 review
     // [3]/[4]). Both branches are registered transitions (ApprovalRequest requested->approved|rejected;
     // Redline under_review->approved|rejected) + events. B-Q-5: the redline events cross the module.
-    const decision = i.decision;
+    const decision = input.decision;
     if (decision !== "approved" && decision !== "rejected")
       throw new Error(
         `validation_error: RecordApprovalDecision.decision must be 'approved' or 'rejected', got '${decision}'`,
@@ -443,39 +491,39 @@ export const HANDLERS: Record<string, H> = {
       throw new Error(
         `segregation_of_duties_violation: an approval must carry an approver identity`,
       );
-    const author = w.get(i.redline_alias).fields.authored_by;
+    const author = world.get(input.redline_alias).fields.authored_by;
     if (author && actor === author)
       throw new Error(
         `segregation_of_duties_violation: the approver (${actor}) must differ from the redline author (${author})`,
       );
     const approved = decision === "approved";
-    moveStateTo(w.get(i.approval_request_alias), "RecordApprovalDecision", decision);
+    moveStateTo(world.get(input.approval_request_alias), "RecordApprovalDecision", decision);
     // Record the sign-off as a proper electronic signature: who (decided_by), when (signed_at), and what they
     // are attesting (signature_meaning) — the three parts of a signature manifestation. Persona gap 2.
-    w.create("ApprovalDecision", i.approval_decision_alias, decision, {
+    world.create("ApprovalDecision", input.approval_decision_alias, decision, {
       decision,
-      approval_request: i.approval_request_alias,
+      approval_request: input.approval_request_alias,
       decided_by: actor,
-      signed_at: w.clock,
+      signed_at: world.clock,
       signature_meaning: approved
         ? "approval: authorizes this redline for application"
         : "rejection: refuses this redline",
     });
-    moveStateTo(w.get(i.redline_alias), "RecordApprovalDecision", decision);
-    w.emit(approved ? "APPROVAL_APPROVED" : "APPROVAL_REJECTED", "RecordApprovalDecision", {
-      approval_request_alias: i.approval_request_alias,
+    moveStateTo(world.get(input.redline_alias), "RecordApprovalDecision", decision);
+    world.emit(approved ? "APPROVAL_APPROVED" : "APPROVAL_REJECTED", "RecordApprovalDecision", {
+      approval_request_alias: input.approval_request_alias,
     });
-    w.emit(approved ? "REDLINE_APPROVED" : "REDLINE_REJECTED", "RecordApprovalDecision", {
-      redline_alias: i.redline_alias,
+    world.emit(approved ? "REDLINE_APPROVED" : "REDLINE_REJECTED", "RecordApprovalDecision", {
+      redline_alias: input.redline_alias,
     });
   },
-  ApplyRedline: (w, i) => step(w, w.get(i.redline_alias), "ApplyRedline"),
-  RecordDisposition(w, i, actor, role) {
+  ApplyRedline: (world, input) => step(world, world.get(input.redline_alias), "ApplyRedline"),
+  RecordDisposition(world, input, actor, role) {
     // Typed disposition kind + differentiated authority (AS9100 8.7; persona gap 3). The kind must be one of
     // the registered dispositions; use-as-is and repair need quality/engineering authority (an operator or
     // planner cannot authorize accepting or repairing off-nominal product). Authority is only enforced when
     // the caller's role is known (a direct call without a role is not blocked — parity with the SoD checks).
-    const kind = i.disposition;
+    const kind = input.disposition;
     if (!DISPOSITION_KINDS.has(kind))
       throw new Error(
         `validation_error: disposition must be one of ${[...DISPOSITION_KINDS].join("/")}, got '${kind}'`,
@@ -490,29 +538,29 @@ export const HANDLERS: Record<string, H> = {
       throw new Error(
         `disposition_authority_violation: '${kind}' requires quality or engineering authority, not '${role || "(none)"}'`,
       );
-    w.create("Disposition", "", "created", {
-      nonconformance: i.nonconformance_alias,
+    world.create("Disposition", "", "created", {
+      nonconformance: input.nonconformance_alias,
       disposition: kind,
       dispositioned_by: actor,
     });
-    step(w, w.get(i.nonconformance_alias), "RecordDisposition"); // disposition_pending->dispositioned emits DISPOSITION_RECORDED
+    step(world, world.get(input.nonconformance_alias), "RecordDisposition"); // disposition_pending->dispositioned emits DISPOSITION_RECORDED
   },
-  StartRework(w, i, actor) {
+  StartRework(world, input, actor) {
     // Record who performed the rework, so the verification can refuse a same-person sign-off (the person who
     // did the work cannot verify their own work — AS9102 self-verification prohibition).
-    w.create("ReworkRun", i.rework_run_alias, "in_progress", {
-      nonconformance: i.nonconformance_alias,
+    world.create("ReworkRun", input.rework_run_alias, "in_progress", {
+      nonconformance: input.nonconformance_alias,
       performed_by: actor,
     });
-    step(w, w.get(i.nonconformance_alias), "StartRework"); // dispositioned->in_rework emits REWORK_STARTED
+    step(world, world.get(input.nonconformance_alias), "StartRework"); // dispositioned->in_rework emits REWORK_STARTED
   },
-  CompleteRework(w, i) {
-    w.get(i.rework_run_alias).state = "complete";
-    const t = moveState(w.get(i.nonconformance_alias), "CompleteRework"); // in_rework->verification_pending
-    w.emit("REWORK_COMPLETED", "CompleteRework", { rework_run_alias: i.rework_run_alias });
-    w.emit(t.emits, "CompleteRework", { nonconformance_alias: i.nonconformance_alias }); // VERIFICATION_PENDING (exactly one, B-Q per §0.1.1)
+  CompleteRework(world, input) {
+    world.get(input.rework_run_alias).state = "complete";
+    const t = moveState(world.get(input.nonconformance_alias), "CompleteRework"); // in_rework->verification_pending
+    world.emit("REWORK_COMPLETED", "CompleteRework", { rework_run_alias: input.rework_run_alias });
+    world.emit(t.emits, "CompleteRework", { nonconformance_alias: input.nonconformance_alias }); // VERIFICATION_PENDING (exactly one, B-Q per §0.1.1)
   },
-  VerifyRework(w, i, actor) {
+  VerifyRework(world, input, actor) {
     // Segregation of duties: the verifier cannot be the person who performed the rework (AS9102). Checked
     // before any mutation. Only enforced when the caller is identified and a performer was recorded.
     // Fail CLOSED: a verification must carry an identified verifier (sprint-019 review), who cannot be the
@@ -521,70 +569,71 @@ export const HANDLERS: Record<string, H> = {
       throw new Error(
         `segregation_of_duties_violation: a verification must carry a verifier identity`,
       );
-    const performer = w
+    const performer = world
       .byType("ReworkRun")
-      .find((r) => r.fields.nonconformance === i.nonconformance_alias)?.fields.performed_by;
+      .find((r) => r.fields.nonconformance === input.nonconformance_alias)?.fields.performed_by;
     if (performer && actor === performer)
       throw new Error(
         `segregation_of_duties_violation: the verifier (${actor}) must differ from the rework performer (${performer})`,
       );
     // Sign-off as an electronic signature: who + when + what is attested (persona gap 2).
-    w.create("Verification", i.verification_alias, "verified", {
-      nonconformance: i.nonconformance_alias,
+    world.create("Verification", input.verification_alias, "verified", {
+      nonconformance: input.nonconformance_alias,
       result: "verified",
       verified_by: actor,
-      signed_at: w.clock,
+      signed_at: world.clock,
       signature_meaning: "verification: rework meets the procedure",
     });
-    step(w, w.get(i.nonconformance_alias), "VerifyRework"); // verification_pending->verified emits VERIFICATION_COMPLETED
+    step(world, world.get(input.nonconformance_alias), "VerifyRework"); // verification_pending->verified emits VERIFICATION_COMPLETED
   },
-  CloseNonconformance: (w, i) => step(w, w.get(i.nonconformance_alias), "CloseNonconformance"),
-  CompleteRunStep(w, i, actor) {
-    const rs = w.get(i.run_step_alias);
-    rs.fields.completed_by = actor; // who bought off the step (persona gap 9 — durable operator identity on the record)
-    step(w, rs, "CompleteRunStep");
+  CloseNonconformance: (world, input) =>
+    step(world, world.get(input.nonconformance_alias), "CloseNonconformance"),
+  CompleteRunStep(world, input, actor) {
+    const runStep = world.get(input.run_step_alias);
+    runStep.fields.completed_by = actor; // who bought off the step (persona gap 9 — durable operator identity on the record)
+    step(world, runStep, "CompleteRunStep");
   },
-  InstallInventory(w, i) {
-    const child = w.get(i.child_inventory_alias);
+  InstallInventory(world, input) {
+    const child = world.get(input.child_inventory_alias);
     moveState(child, "InstallInventory"); // in_wip->installed
-    w.create("InstallationEvent", i.installation_event_alias, "created", {
-      parent: i.parent_inventory_alias,
-      child: i.child_inventory_alias,
-      bom_line: i.bom_line_alias,
-      installed_at: i.installed_at,
+    world.create("InstallationEvent", input.installation_event_alias, "created", {
+      parent: input.parent_inventory_alias,
+      child: input.child_inventory_alias,
+      bom_line: input.bom_line_alias,
+      installed_at: input.installed_at,
     });
-    w.emit("INVENTORY_INSTALLED", "InstallInventory", {
-      parent_inventory_alias: i.parent_inventory_alias,
-      child_inventory_alias: i.child_inventory_alias,
+    world.emit("INVENTORY_INSTALLED", "InstallInventory", {
+      parent_inventory_alias: input.parent_inventory_alias,
+      child_inventory_alias: input.child_inventory_alias,
     });
   },
-  CaptureCertificate(w, i) {
+  CaptureCertificate(world, input) {
     // Typed supplier certificate (CofC / mill cert) tied to a received lot or serial (persona gap 8; AS9100
     // 8.4.2). Today these would be untyped attachments; this makes them first-class governed records with a
     // type, the lot/serial they cover, the supplier CAGE code, and an expiry.
-    w.create("Certificate", i.certificate_alias ?? "", "captured", {
-      cert_type: i.cert_type,
-      part_revision: i.part_revision,
-      serial_or_lot: i.serial_or_lot,
-      cage_code: i.cage_code,
-      expires_at: i.expires_at,
+    world.create("Certificate", input.certificate_alias ?? "", "captured", {
+      cert_type: input.cert_type,
+      part_revision: input.part_revision,
+      serial_or_lot: input.serial_or_lot,
+      cage_code: input.cage_code,
+      expires_at: input.expires_at,
     });
   },
-  VerifyCertificate(w, i) {
+  VerifyCertificate(world, input) {
     // Verify a lot/serial has a valid typed certificate: one of the required type whose expiry (if any) is on or
     // after the reference date. Returns { valid, reason } for a receiving gate to act on (persona gap 8).
-    const certs = w
+    const certs = world
       .byType("Certificate")
       .filter(
         (c) =>
-          c.fields.serial_or_lot === i.serial_or_lot &&
-          (!i.cert_type || c.fields.cert_type === i.cert_type),
+          c.fields.serial_or_lot === input.serial_or_lot &&
+          (!input.cert_type || c.fields.cert_type === input.cert_type),
       );
     if (certs.length === 0) return { valid: false, reason: "no_certificate" };
     // Compare dates CHRONOLOGICALLY, not lexically (sprint-019 review: "2026-9-1" >= "2026-10-01" is lexically
     // true but chronologically expired). A cert with a missing or unparseable expiry cannot be verified -> not
     // valid (fail closed); an unparseable as_of likewise cannot verify anything.
-    const asOfT = Date.parse(i.as_of ?? w.clock);
+    const asOfT = Date.parse(input.as_of ?? world.clock);
     const ok = certs.find((c) => {
       const expT = Date.parse(c.fields.expires_at ?? "");
       return Number.isFinite(expT) && Number.isFinite(asOfT) && expT >= asOfT;
@@ -595,30 +644,31 @@ export const HANDLERS: Record<string, H> = {
       reason: certs.every((c) => c.fields.expires_at == null) ? "no_expiry" : "certificate_expired",
     };
   },
-  ReceiveMachineEvidence(w, i) {
-    const mer = w.createInitial("MachineEvidenceRecord", i.alias, {
-      machine: i.machine_alias,
-      adapter: i.adapter_alias,
-      payload_type: i.payload_type,
-      occurred_at: i.occurred_at,
-      received_at: i.received_at,
-      payload: i.payload,
+  ReceiveMachineEvidence(world, input) {
+    const evidenceRecord = world.createInitial("MachineEvidenceRecord", input.alias, {
+      machine: input.machine_alias,
+      adapter: input.adapter_alias,
+      payload_type: input.payload_type,
+      occurred_at: input.occurred_at,
+      received_at: input.received_at,
+      payload: input.payload,
     });
-    w.emit("MACHINE_EVIDENCE_RECEIVED", "ReceiveMachineEvidence", {
-      machine_evidence_record_id: mer.id,
+    world.emit("MACHINE_EVIDENCE_RECEIVED", "ReceiveMachineEvidence", {
+      machine_evidence_record_id: evidenceRecord.id,
     });
   },
-  NormalizeMachineEvidence(w, i) {
-    const mer = w.get(i.evidence_alias);
-    const type = mer.fields.payload_type;
+  NormalizeMachineEvidence(world, input) {
+    const evidenceRecord = world.get(input.evidence_alias);
+    const type = evidenceRecord.fields.payload_type;
     // Prototype-safe lookup: a payload_type of "toString"/"constructor"/"__proto__" (attacker-controlled)
     // must resolve to "unknown type", NOT an inherited Object.prototype member (which would crash instead of
     // escalating — the very thing a GrammarGap exists to prevent).
     const spec = Object.hasOwn(NORMALIZE_GRAMMAR, type) ? NORMALIZE_GRAMMAR[type] : undefined;
     const keys = spec ? Object.keys(spec) : [];
-    const absent = keys.filter((k) => mer.fields.payload?.[k] === undefined);
+    const absent = keys.filter((k) => evidenceRecord.fields.payload?.[k] === undefined);
     const invalid = keys.filter(
-      (k) => !absent.includes(k) && !keyPresentAndValid(mer.fields.payload?.[k], spec![k]),
+      (k) =>
+        !absent.includes(k) && !keyPresentAndValid(evidenceRecord.fields.payload?.[k], spec![k]),
     );
     const reason = !spec
       ? "unsupported_payload_type"
@@ -632,14 +682,14 @@ export const HANDLERS: Record<string, H> = {
       // normalized result (B-Q-16/B-Q-26). Record stays raw; no MACHINE_EVIDENCE_NORMALIZED, no Measurement.
       // Idempotent per-record: if this evidence already escalated, do not create a duplicate gap under the
       // same alias (a re-normalize with a fresh key must not orphan the first gap; sprint-012 review [3]).
-      if (!w.byType("GrammarGap").some((g) => g.fields.source_evidence === mer.id)) {
+      if (!world.byType("GrammarGap").some((g) => g.fields.source_evidence === evidenceRecord.id)) {
         createGrammarGap(
-          w,
-          `grammar_gap_${i.evidence_alias}`,
+          world,
+          `grammar_gap_${input.evidence_alias}`,
           {
             reason,
             gap_type: "unnormalizable_machine_payload",
-            source_evidence: mer.id,
+            source_evidence: evidenceRecord.id,
             payload_type: type,
             missing_fields: absent,
             invalid_fields: invalid,
@@ -649,89 +699,94 @@ export const HANDLERS: Record<string, H> = {
       }
       return;
     }
-    moveState(mer, "NormalizeMachineEvidence"); // raw->normalized
-    mer.fields.normalized = {
-      serial_number: mer.fields.payload.serial_number,
-      measured_torque_nm: mer.fields.payload.measured_torque_nm,
+    moveState(evidenceRecord, "NormalizeMachineEvidence"); // raw->normalized
+    evidenceRecord.fields.normalized = {
+      serial_number: evidenceRecord.fields.payload.serial_number,
+      measured_torque_nm: evidenceRecord.fields.payload.measured_torque_nm,
     };
-    w.emit("MACHINE_EVIDENCE_NORMALIZED", "NormalizeMachineEvidence", {
-      machine_evidence_record_id: mer.id,
+    world.emit("MACHINE_EVIDENCE_NORMALIZED", "NormalizeMachineEvidence", {
+      machine_evidence_record_id: evidenceRecord.id,
     }); // no Measurement created
   },
-  CreateGrammarGap(w, i) {
+  CreateGrammarGap(world, input) {
     // Explicit grammar-gap creation (registered vocab; was not_implemented). A worker records a gap when the
     // factory does something the grammar cannot represent (Harness §21). Lifecycle deferred (records.yaml).
     createGrammarGap(
-      w,
-      i.grammar_gap_alias ?? "",
-      { reason: i.reason, gap_type: i.gap_type, source: i.source, detail: i.detail },
+      world,
+      input.grammar_gap_alias ?? "",
+      {
+        reason: input.reason,
+        gap_type: input.gap_type,
+        source: input.source,
+        detail: input.detail,
+      },
       "CreateGrammarGap",
     );
   },
-  LinkMachineEvidence(w, i) {
-    const mer = w.get(i.evidence_alias);
-    mer.fields.linked_run = i.run_alias;
-    mer.fields.linked_serial = i.serial_number; // no state change, no measurement overwrite
-    w.emit("MACHINE_EVIDENCE_LINKED", "LinkMachineEvidence", {
-      machine_evidence_record_id: mer.id,
+  LinkMachineEvidence(world, input) {
+    const evidenceRecord = world.get(input.evidence_alias);
+    evidenceRecord.fields.linked_run = input.run_alias;
+    evidenceRecord.fields.linked_serial = input.serial_number; // no state change, no measurement overwrite
+    world.emit("MACHINE_EVIDENCE_LINKED", "LinkMachineEvidence", {
+      machine_evidence_record_id: evidenceRecord.id,
     });
   },
-  RouteMachineEvidenceForReview: (w, i) =>
-    step(w, w.get(i.evidence_alias), "RouteMachineEvidenceForReview"),
+  RouteMachineEvidenceForReview: (world, input) =>
+    step(world, world.get(input.evidence_alias), "RouteMachineEvidenceForReview"),
   // Terminal evidence dispositions (Contract Spec §10.2 state machine; Build Readiness §7.6). Surfaced
   // by VF-003A/B/C — registered but unexercised until the machine-evidence variants. No Measurement is
   // created/overwritten by any disposition; the state transition + event is the whole effect.
-  AcceptMachineEvidence(w, i) {
-    const mer = w.get(i.evidence_alias);
-    moveState(mer, "AcceptMachineEvidence"); // normalized/review_required -> accepted
-    w.emit("MACHINE_EVIDENCE_ACCEPTED", "AcceptMachineEvidence", {
-      machine_evidence_record_id: mer.id,
+  AcceptMachineEvidence(world, input) {
+    const evidenceRecord = world.get(input.evidence_alias);
+    moveState(evidenceRecord, "AcceptMachineEvidence"); // normalized/review_required -> accepted
+    world.emit("MACHINE_EVIDENCE_ACCEPTED", "AcceptMachineEvidence", {
+      machine_evidence_record_id: evidenceRecord.id,
     });
   },
-  RejectMachineEvidence(w, i) {
-    const mer = w.get(i.evidence_alias);
-    moveState(mer, "RejectMachineEvidence"); // normalized/review_required -> rejected
-    w.emit("MACHINE_EVIDENCE_REJECTED", "RejectMachineEvidence", {
-      machine_evidence_record_id: mer.id,
+  RejectMachineEvidence(world, input) {
+    const evidenceRecord = world.get(input.evidence_alias);
+    moveState(evidenceRecord, "RejectMachineEvidence"); // normalized/review_required -> rejected
+    world.emit("MACHINE_EVIDENCE_REJECTED", "RejectMachineEvidence", {
+      machine_evidence_record_id: evidenceRecord.id,
     });
   },
-  QuarantineMachineEvidence(w, i) {
-    const mer = w.get(i.evidence_alias);
-    moveState(mer, "QuarantineMachineEvidence"); // raw/normalized/review_required -> quarantined
-    w.emit("MACHINE_EVIDENCE_QUARANTINED", "QuarantineMachineEvidence", {
-      machine_evidence_record_id: mer.id,
+  QuarantineMachineEvidence(world, input) {
+    const evidenceRecord = world.get(input.evidence_alias);
+    moveState(evidenceRecord, "QuarantineMachineEvidence"); // raw/normalized/review_required -> quarantined
+    world.emit("MACHINE_EVIDENCE_QUARANTINED", "QuarantineMachineEvidence", {
+      machine_evidence_record_id: evidenceRecord.id,
     });
   },
-  InvalidateAcceptedEvidence(w, i) {
+  InvalidateAcceptedEvidence(world, input) {
     // Contract Spec §18 reconciliation: accepted evidence is later found wrong and INVALIDATED (accepted ->
     // invalidated; moveState refuses any other from-state, so non-accepted evidence cannot be invalidated). The
     // cascade marks every GENERATED report for the affected run regeneration_required (reason
     // reconciliation_resolution_affecting_run) so a stale report cannot be read as fresh (see GetReport).
-    const mer = w.get(i.evidence_alias);
+    const evidenceRecord = world.get(input.evidence_alias);
     // The affected run is the evidence's OWN recorded linkage (ground truth). A caller-supplied run_alias must
     // AGREE with it, and the run must resolve — else fail CLOSED (sprint-019 review): a mismatch would mark the
     // wrong run, and an unresolvable run would silently reconcile nothing while the op reported success.
-    const linked = mer.fields.linked_run;
-    if (i.run_alias && linked && i.run_alias !== linked)
+    const linked = evidenceRecord.fields.linked_run;
+    if (input.run_alias && linked && input.run_alias !== linked)
       throw new Error(
-        `precondition_failed: run_alias '${i.run_alias}' does not match the evidence's linked run '${linked}'`,
+        `precondition_failed: run_alias '${input.run_alias}' does not match the evidence's linked run '${linked}'`,
       );
-    const run = tryGet(w, linked ?? i.run_alias);
+    const run = tryGet(world, linked ?? input.run_alias);
     if (!run)
       throw new Error(
         `precondition_failed: cannot resolve the run affected by this evidence; reconciliation would mark nothing`,
       );
     const runId = run.id;
-    moveState(mer, "InvalidateAcceptedEvidence"); // accepted -> invalidated (refuses any other from-state)
-    w.emit("MACHINE_EVIDENCE_INVALIDATED", "InvalidateAcceptedEvidence", {
-      machine_evidence_record_id: mer.id,
-      reason: i.reason,
+    moveState(evidenceRecord, "InvalidateAcceptedEvidence"); // accepted -> invalidated (refuses any other from-state)
+    world.emit("MACHINE_EVIDENCE_INVALIDATED", "InvalidateAcceptedEvidence", {
+      machine_evidence_record_id: evidenceRecord.id,
+      reason: input.reason,
     });
     // §18 cascade, obligation "mark dependent report artifacts as affected" + "require report regeneration".
-    for (const rep of w.byType("GeneratedReport")) {
-      if (rep.fields.run === runId && rep.state === "generated") {
-        rep.fields.regeneration_required = true;
-        rep.fields.regeneration_reason = "reconciliation_resolution_affecting_run";
+    for (const report of world.byType("GeneratedReport")) {
+      if (report.fields.run === runId && report.state === "generated") {
+        report.fields.regeneration_required = true;
+        report.fields.regeneration_reason = "reconciliation_resolution_affecting_run";
       }
     }
     // §18 cascade, obligation "create run close observation if run still open" (B-Q-29). "Still open" = the run
@@ -741,16 +796,18 @@ export const HANDLERS: Record<string, H> = {
     const runOpen = !["closed", "cancelled"].includes(run.state);
     if (
       runOpen &&
-      !w.byType("RunCloseObservation").some((o) => o.fields.source_evidence === mer.id)
+      !world
+        .byType("RunCloseObservation")
+        .some((o) => o.fields.source_evidence === evidenceRecord.id)
     ) {
-      w.create("RunCloseObservation", "", "created", {
+      world.create("RunCloseObservation", "", "created", {
         run: runId,
-        source_evidence: mer.id,
+        source_evidence: evidenceRecord.id,
         reason: "reconciliation_resolution_affecting_run",
       });
-      w.emit("RUN_CLOSE_OBSERVATION_CREATED", "InvalidateAcceptedEvidence", {
+      world.emit("RUN_CLOSE_OBSERVATION_CREATED", "InvalidateAcceptedEvidence", {
         run_id: runId,
-        machine_evidence_record_id: mer.id,
+        machine_evidence_record_id: evidenceRecord.id,
         reason: "reconciliation_resolution_affecting_run",
       });
     }
@@ -760,43 +817,43 @@ export const HANDLERS: Record<string, H> = {
     // was ACCEPTED, so an artifact's acceptability depended on it -> open a quality Issue for review. Issue (a
     // review), not Nonconformance (an asserted non-conformity), is the proportionate response to "may". Prefer a
     // false review over a missed one. Idempotent: one issue per invalidated evidence.
-    if (!w.byType("Issue").some((is) => is.fields.source_evidence === mer.id)) {
-      const iss = w.createInitial("Issue", `issue_${i.evidence_alias}`, {
-        source_evidence: mer.id,
+    if (!world.byType("Issue").some((is) => is.fields.source_evidence === evidenceRecord.id)) {
+      const issue = world.createInitial("Issue", `issue_${input.evidence_alias}`, {
+        source_evidence: evidenceRecord.id,
         run: runId,
         origin: "evidence_invalidation",
         reason: "reconciliation_resolution_affecting_run",
       });
-      w.emit("ISSUE_OPENED", "InvalidateAcceptedEvidence", {
-        issue_id: iss.id,
-        source_evidence: mer.id,
+      world.emit("ISSUE_OPENED", "InvalidateAcceptedEvidence", {
+        issue_id: issue.id,
+        source_evidence: evidenceRecord.id,
         run_id: runId,
       });
     }
   },
-  GetReport(w, i) {
+  GetReport(world, input) {
     // Read a governed report + its FRESHNESS (B-Q-28 / Contract Spec §19). A report is regeneration_required if
     // a trigger fired after it was generated: an evidence invalidation affecting its run (set as a field by the
     // cascade above), OR — for a controlled_export only — an access-policy change effective after generated_at.
     // A dynamic_view_filter filters at read time and never goes stale. Fail-closed: a stale controlled_export
     // read SURFACES regeneration_required (it does not silently return as fresh). GetReport is a read: no event.
-    const rep = tryGet(w, i.report_alias);
-    if (!rep || rep.record_type !== "GeneratedReport") return { found: false };
-    const mode = rep.fields.filtering_mode ?? "controlled_export";
-    let stale = rep.fields.regeneration_required === true; // the stored flag applies to BOTH modes (an invalidation cascade)
-    let reason = stale ? rep.fields.regeneration_reason : undefined;
+    const report = tryGet(world, input.report_alias);
+    if (!report || report.record_type !== "GeneratedReport") return { found: false };
+    const mode = report.fields.filtering_mode ?? "controlled_export";
+    let stale = report.fields.regeneration_required === true; // the stored flag applies to BOTH modes (an invalidation cascade)
+    let reason = stale ? report.fields.regeneration_reason : undefined;
     // Read-time policy-change staleness applies ONLY to a controlled_export (a dynamic_view_filter re-filters
     // at read time). Fail CLOSED (sprint-019 review): unverifiable freshness is treated as STALE — a controlled
     // report with an unparseable generated_at, or a policy change on its scope whose effective_at is unparseable
     // OR after generation, marks it regeneration_required rather than reading fresh.
     if (!stale && mode === "controlled_export") {
-      const genT = Date.parse(rep.fields.generated_at ?? "");
+      const genT = Date.parse(report.fields.generated_at ?? "");
       if (!Number.isFinite(genT)) {
         stale = true;
         reason = "unverifiable_generated_at";
       } else if (
-        (w.accessPolicyChanges ?? []).some((c) => {
-          if (c.policy_alias !== rep.fields.access_scope) return false;
+        (world.accessPolicyChanges ?? []).some((c) => {
+          if (c.policy_alias !== report.fields.access_scope) return false;
           const effT = Date.parse(c.effective_at ?? "");
           return !Number.isFinite(effT) || effT > genT; // unparseable change date -> assume it staled (fail closed)
         })
@@ -807,36 +864,38 @@ export const HANDLERS: Record<string, H> = {
     }
     return {
       found: true,
-      report_id: rep.id,
-      state: rep.state,
+      report_id: report.id,
+      state: report.state,
       filtering_mode: mode,
-      access_scope: rep.fields.access_scope,
+      access_scope: report.fields.access_scope,
       regeneration_required: stale,
       regeneration_reason: stale ? reason : undefined,
     };
   },
-  CompleteRunSteps(w, i) {
-    const run = w.get(i.run_alias);
-    const open = w
+  CompleteRunSteps(world, input) {
+    const run = world.get(input.run_alias);
+    const open = world
       .byType("RunStep")
       .filter((s) => s.fields.run === run.id && !["complete", "skipped"].includes(s.state));
     if (open.length)
       throw new Error(`precondition_failed: ${open.length} run steps not complete/skipped`);
     moveState(run, "CompleteRunSteps");
-    w.emit("RUN_COMPLETED", "CompleteRunSteps", { run_id: run.id });
+    world.emit("RUN_COMPLETED", "CompleteRunSteps", { run_id: run.id });
   },
-  AttemptRunClose: (w, i) => step(w, w.get(i.run_alias), "AttemptRunClose"),
-  RunCloseCheck(w, i) {
-    const run = w.get(i.run_alias);
+  AttemptRunClose: (world, input) => step(world, world.get(input.run_alias), "AttemptRunClose"),
+  RunCloseCheck(world, input) {
+    const run = world.get(input.run_alias);
     // Evaluate the run-close rules that the first slice exercises (run-close-rules.yaml). Each blocker
     // string is the REGISTERED rule id, so emitting it is faithful (not an executor-invented encoding).
-    const failed = w
+    const failed = world
       .byType("Measurement")
       .filter((m) => m.fields.run === run.id && m.fields.result === "fail");
     const blockers: string[] = [];
     for (const fm of failed) {
-      const nc = w.byType("Nonconformance").find((n) => n.fields.source_measurement === fm.id);
-      if (!nc || nc.state !== "closed") {
+      const nonconformance = world
+        .byType("Nonconformance")
+        .find((n) => n.fields.source_measurement === fm.id);
+      if (!nonconformance || nonconformance.state !== "closed") {
         blockers.push("failed_measurement_has_quality_path");
         break;
       }
@@ -844,25 +903,25 @@ export const HANDLERS: Record<string, H> = {
     // report_definition_available (run-close-rules.yaml): a RunCloseReport definition must be available for
     // generation. Distinct from the quality-path rule; distinct from the generated-INSTANCE precondition in
     // ApplyRunCloseResultToRun (definition-missing must block at the CHECK, by name).
-    if (!(w.reportDefinitionAvailable ?? true)) blockers.push("report_definition_available");
+    if (!(world.reportDefinitionAvailable ?? true)) blockers.push("report_definition_available");
     // Gap 4: every serial named in this run's affected population must be remediated on its OWN — a closed
     // Nonconformance for a run that targeted THAT serial — not just listed in one batch NC (AS9100 8.7). The
     // run's own serial is remediated by its own closed NC; batch-mates need their own.
     const runNcAliases = new Set(
-      w
+      world
         .byType("Nonconformance")
         .filter((n) => n.fields.run === run.id)
         .map((n) => n.alias),
     );
     const popSerials = new Set<string>();
-    for (const pop of w.byType("AffectedPopulation"))
+    for (const pop of world.byType("AffectedPopulation"))
       if (runNcAliases.has(pop.fields.nonconformance))
         for (const s of pop.fields.serials ?? []) popSerials.add(s);
-    const runPart = tryGet(w, run.fields.target_inventory)?.fields.part_revision;
+    const runPart = tryGet(world, run.fields.target_inventory)?.fields.part_revision;
     const remediated = (serial: string) =>
-      w.byType("Nonconformance").some((n) => {
+      world.byType("Nonconformance").some((n) => {
         if (n.state !== "closed") return false;
-        const item = tryGet(w, w.records.get(n.fields.run)?.fields.target_inventory);
+        const item = tryGet(world, world.records.get(n.fields.run)?.fields.target_inventory);
         if (item?.fields.serial_number !== serial) return false;
         // If part identity is known on both sides it must match — a same-serial unit of a DIFFERENT part is not a
         // remediation of this batch (sprint-019 review: cross-part serial reuse falsely cleared the population).
@@ -878,109 +937,121 @@ export const HANDLERS: Record<string, H> = {
     if (unremediated.length)
       blockers.push(`affected_population_not_remediated:${unremediated.join(",")}`);
     const blocked = blockers.length > 0;
-    const rcc = w.create("RunCloseCheck", i.run_close_check_alias, blocked ? "blocked" : "passed", {
-      status: blocked ? "blocked" : "passed",
-      run: run.id,
-      blockers,
+    const runCloseCheck = world.create(
+      "RunCloseCheck",
+      input.run_close_check_alias,
+      blocked ? "blocked" : "passed",
+      {
+        status: blocked ? "blocked" : "passed",
+        run: run.id,
+        blockers,
+      },
+    );
+    world.emit("RUN_CLOSE_CHECK_STARTED", "RunCloseCheck", {
+      run_close_check_id: runCloseCheck.id,
     });
-    w.emit("RUN_CLOSE_CHECK_STARTED", "RunCloseCheck", { run_close_check_id: rcc.id });
     if (blocked) {
       // One structured observation per blocker, each carrying its own registered blocker_rule.
       for (const b of blockers) {
-        w.create("RunCloseObservation", "", "created", {
-          run_close_check: rcc.id,
+        world.create("RunCloseObservation", "", "created", {
+          run_close_check: runCloseCheck.id,
           blocker_rule: b,
         });
-        w.emit("RUN_CLOSE_OBSERVATION_CREATED", "RunCloseCheck", {
-          run_close_check_id: rcc.id,
+        world.emit("RUN_CLOSE_OBSERVATION_CREATED", "RunCloseCheck", {
+          run_close_check_id: runCloseCheck.id,
           blocker_rule: b,
         });
       }
-      w.emit("RUN_CLOSE_CHECK_BLOCKED", "RunCloseCheck", { run_close_check_id: rcc.id, blockers });
+      world.emit("RUN_CLOSE_CHECK_BLOCKED", "RunCloseCheck", {
+        run_close_check_id: runCloseCheck.id,
+        blockers,
+      });
     } else {
-      w.emit("RUN_CLOSE_CHECK_PASSED", "RunCloseCheck", { run_close_check_id: rcc.id });
+      world.emit("RUN_CLOSE_CHECK_PASSED", "RunCloseCheck", {
+        run_close_check_id: runCloseCheck.id,
+      });
     }
   },
-  ApplyRunCloseResultToRun(w, i) {
-    const run = w.get(i.run_alias);
+  ApplyRunCloseResultToRun(world, input) {
+    const run = world.get(input.run_alias);
     if (run.state !== "close_check")
       throw new Error(
         `state_transition_forbidden: Run '${run.state}' via ApplyRunCloseResultToRun`,
       );
-    const rcc = w.get(i.run_close_check_alias);
-    if (rcc.state === "blocked") {
+    const runCloseCheck = world.get(input.run_close_check_alias);
+    if (runCloseCheck.state === "blocked") {
       moveStateTo(run, "ApplyRunCloseResultToRun", "close_blocked");
-      w.emit("RUN_CLOSE_STATE_BLOCKED", "ApplyRunCloseResultToRun", { run_id: run.id });
+      world.emit("RUN_CLOSE_STATE_BLOCKED", "ApplyRunCloseResultToRun", { run_id: run.id });
     } else {
-      const report = w
+      const report = world
         .byType("GeneratedReport")
         .find((r) => r.fields.run === run.id && r.state === "generated");
       if (!report)
         throw new Error("precondition_failed: RunCloseReport not generated before close");
       moveStateTo(run, "ApplyRunCloseResultToRun", "closed"); // registry guards: only from close_check
-      w.emit("RUN_CLOSED", "ApplyRunCloseResultToRun", { run_id: run.id });
+      world.emit("RUN_CLOSED", "ApplyRunCloseResultToRun", { run_id: run.id });
     }
   },
-  RequestRunCloseReport(w, i) {
-    w.emit("RUN_CLOSE_REPORT_REQUESTED", "RequestRunCloseReport", {
-      run_alias: i.run_alias,
-      run_close_check_alias: i.run_close_check_alias,
+  RequestRunCloseReport(world, input) {
+    world.emit("RUN_CLOSE_REPORT_REQUESTED", "RequestRunCloseReport", {
+      run_alias: input.run_alias,
+      run_close_check_alias: input.run_close_check_alias,
     });
   },
-  GenerateRunCloseReport(w, i) {
-    const run = w.get(i.run_alias);
+  GenerateRunCloseReport(world, input) {
+    const run = world.get(input.run_alias);
     // A controlled_export is "generated for a SPECIFIC access scope" (Contract Spec §19), captured in the
     // report's access_policy_snapshot at generation time along with generated_at (T0). Deriving the snapshot
     // from the bound scope (default = customer_summary_access, VF-003's prior literal) — not a hardcode — is
     // what gives the frozen-snapshot / regeneration contrast teeth: a later report for a changed scope reads a
     // DIFFERENT value, and the prior report stays frozen at T0's scope. Scope token encoding: B-Q-28.
-    const scope = i.access_scope ?? "customer_summary_access";
+    const scope = input.access_scope ?? "customer_summary_access";
     // filtering_mode (B-Q-28 / Contract Spec §19 two-mode contrast): a `controlled_export` is bound to the
     // scope at generation and goes regeneration_required on a later access-policy change; a `dynamic_view_filter`
     // filters at read time and never goes stale. Default controlled_export; an out-of-vocabulary value is
     // REFUSED (sprint-019 review: an unvalidated typo silently dodged the controlled_export staleness gate).
-    const mode = i.filtering_mode ?? "controlled_export";
+    const mode = input.filtering_mode ?? "controlled_export";
     if (mode !== "controlled_export" && mode !== "dynamic_view_filter")
       throw new Error(
         `validation_error: filtering_mode must be controlled_export or dynamic_view_filter, got '${mode}'`,
       );
-    const rep = w.create("GeneratedReport", i.report_alias, "generated", {
+    const report = world.create("GeneratedReport", input.report_alias, "generated", {
       status: "generated",
       run: run.id,
       report_type: "RunCloseReport",
-      report_definition_version: i.report_definition_version,
-      generated_at: i.generated_at,
+      report_definition_version: input.report_definition_version,
+      generated_at: input.generated_at,
       access_scope: scope,
       filtering_mode: mode,
       regeneration_required: false,
-      sections: assembleRunCloseReport(w, run, scope),
+      sections: assembleRunCloseReport(world, run, scope),
     });
-    w.emit("REPORT_REQUESTED", "GenerateRunCloseReport", { report_id: rep.id });
-    w.emit("REPORT_GENERATION_STARTED", "GenerateRunCloseReport", { report_id: rep.id });
-    w.emit("REPORT_GENERATED", "GenerateRunCloseReport", { report_id: rep.id });
+    world.emit("REPORT_REQUESTED", "GenerateRunCloseReport", { report_id: report.id });
+    world.emit("REPORT_GENERATION_STARTED", "GenerateRunCloseReport", { report_id: report.id });
+    world.emit("REPORT_GENERATED", "GenerateRunCloseReport", { report_id: report.id });
   },
-  SupersedeReport(w, i) {
+  SupersedeReport(world, input) {
     // Regeneration of a governed report is supersede-old + generate-new (there is NO REPORT_REGENERATED event —
     // intentionally absent). SupersedeReport moves the prior report generated -> superseded (terminal; the old
     // artifact is FROZEN, never overwritten — Contract Spec §15/§18) and emits REPORT_SUPERSEDED carrying the
     // superseded/superseding ids + the regeneration trigger (a registered reports.yaml trigger). B-Q-28.
-    const rep = w.get(i.report_alias);
-    moveState(rep, "SupersedeReport"); // generated -> superseded
-    w.emit("REPORT_SUPERSEDED", "SupersedeReport", {
-      superseded_report_id: rep.id,
-      superseding_report_alias: i.superseding_report_alias,
-      trigger: i.trigger,
+    const report = world.get(input.report_alias);
+    moveState(report, "SupersedeReport"); // generated -> superseded
+    world.emit("REPORT_SUPERSEDED", "SupersedeReport", {
+      superseded_report_id: report.id,
+      superseding_report_alias: input.superseding_report_alias,
+      trigger: input.trigger,
     });
   },
-  EvaluateAccess(w, i) {
+  EvaluateAccess(world, input) {
     // Deemed-export access decision by PERSON NATIONALITY (persona gap 5; ITAR 22 CFR 120.50: releasing
     // controlled technical data to a foreign person is an export to their country). A resource marked
     // export-controlled to a set of nationalities is DENIED to a subject whose nationality is not in the set.
     // Fills the registered-but-unimplemented EvaluateAccess op; the nationality axis + the resource's
     // export_control are additions beyond the spec. Every decision is audited.
-    const resource = tryGet(w, i.resource_alias);
-    const nationality = i.subject_nationality;
-    const ec = resource?.fields?.export_control;
+    const resource = tryGet(world, input.resource_alias);
+    const nationality = input.subject_nationality;
+    const exportControl = resource?.fields?.export_control;
     // Fail CLOSED (sprint-019 review): only ALLOW when we can affirmatively confirm access. An unresolvable
     // resource, or a present-but-malformed export_control (not a non-empty nationality array), is DENIED — for
     // an export control the safe default is deny, since a fail-open leaks controlled technical data.
@@ -988,57 +1059,60 @@ export const HANDLERS: Record<string, H> = {
     if (!resource) {
       decision = "denied";
       reason = "resource_not_found";
-    } else if (ec === undefined || ec === null) {
+    } else if (exportControl === undefined || exportControl === null) {
       decision = "allowed";
     } // no control declared -> uncontrolled
-    else if (!Array.isArray(ec.allowed_nationalities) || ec.allowed_nationalities.length === 0) {
+    else if (
+      !Array.isArray(exportControl.allowed_nationalities) ||
+      exportControl.allowed_nationalities.length === 0
+    ) {
       decision = "denied";
       reason = "export_control_malformed";
-    } else if (!ec.allowed_nationalities.includes(nationality)) {
+    } else if (!exportControl.allowed_nationalities.includes(nationality)) {
       decision = "denied";
       reason = "deemed_export_denied";
     } else {
       decision = "allowed";
     }
     if (decision === "denied") {
-      w.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
-        resource_alias: i.resource_alias,
+      world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+        resource_alias: input.resource_alias,
         subject_nationality: nationality,
         reason,
       });
-      w.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
-        resource_alias: i.resource_alias,
+      world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+        resource_alias: input.resource_alias,
         decision: "denied",
       });
       return { decision, reason };
     }
-    w.emit("ACCESS_DECISION_ALLOWED", "EvaluateAccess", {
-      resource_alias: i.resource_alias,
+    world.emit("ACCESS_DECISION_ALLOWED", "EvaluateAccess", {
+      resource_alias: input.resource_alias,
       subject_nationality: nationality,
     });
-    w.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
-      resource_alias: i.resource_alias,
+    world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+      resource_alias: input.resource_alias,
       decision: "allowed",
     });
     return { decision: "allowed" };
   },
-  BoundedDrillDown(w, i) {
+  BoundedDrillDown(world, input) {
     // Access-filter from the resolved policy (not a hardcoded list). Harness §17 / Build Readiness §11.
-    const policy = (w.accessPolicies ?? []).find((p) => p.alias === i.access_profile);
-    if (!policy) throw new Error(`access_filtered: no access policy '${i.access_profile}'`);
+    const policy = (world.accessPolicies ?? []).find((p) => p.alias === input.access_profile);
+    if (!policy) throw new Error(`access_filtered: no access policy '${input.access_profile}'`);
     // Audit the drill-down request as a fact (Contract Spec §19: scoped, capped, access-filtered, AND
     // AUDITED; Harness §25). Registered op->event binding (events.yaml BOUNDED_DRILL_DOWN_REQUESTED) that
     // had no producer path until VF-014 — the audit half of the obligation.
-    w.emit("BOUNDED_DRILL_DOWN_REQUESTED", "BoundedDrillDown", {
-      scope: i.scope,
-      access_profile: i.access_profile,
-      run_alias: i.run_alias,
-      report_alias: i.report_alias,
+    world.emit("BOUNDED_DRILL_DOWN_REQUESTED", "BoundedDrillDown", {
+      scope: input.scope,
+      access_profile: input.access_profile,
+      run_alias: input.run_alias,
+      report_alias: input.report_alias,
     });
     return {
       access_filtered: true,
-      scope: i.scope,
-      access_profile: i.access_profile,
+      scope: input.scope,
+      access_profile: input.access_profile,
       visible: policy.visible ?? [],
       hidden: policy.hidden ?? [],
     };
