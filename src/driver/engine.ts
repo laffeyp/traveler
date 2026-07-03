@@ -7,7 +7,7 @@
  *
  *   registry.ts    registry-derived lookup tables + the normalization grammar
  *      |
- *   world.ts       World (records + event log), Rec/Evt, state-machine transitions, createGrammarGap
+ *   world.ts       World (records + event log), FactoryRecord/FactoryEvent, state-machine transitions, createGrammarGap
  *      |
  *   projections.ts serialHistory (access-aware), asBuiltProjection, assembleRunCloseReport
  *      |

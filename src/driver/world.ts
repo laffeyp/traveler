@@ -7,7 +7,7 @@
 import { machineByRecord, eventProducers } from "./registry.ts";
 
 /** A product record: a typed, aliased, state-bearing row with a free-form `fields` bag. */
-export interface Rec {
+export interface FactoryRecord {
   id: string;
   alias: string;
   record_type: string;
@@ -16,7 +16,7 @@ export interface Rec {
 }
 
 /** One entry in the append-only event log (a FactoryEvent). */
-export interface Evt {
+export interface FactoryEvent {
   seq: number;
   type: string;
   producer_operation: string;
@@ -32,9 +32,9 @@ export interface Evt {
  * report-definition availability, the persisted write-boundary idempotency key set).
  */
 export class World {
-  records = new Map<string, Rec>();
+  records = new Map<string, FactoryRecord>();
   aliasToId = new Map<string, string>();
-  events: Evt[] = [];
+  events: FactoryEvent[] = [];
   seq = 0;
   clock = "";
   currentStep = "";
@@ -64,25 +64,30 @@ export class World {
    * the backend persists + reconstructs this set (a fresh instance still rejects the duplicate).
    */
   txIdempotencyKeys = new Set<string>();
-  private idc = 0;
+  private idCounter = 0;
 
   /** Create a record in an explicit `state` and index it by alias. */
-  create(type: string, alias: string, state: string, fields: any = {}): Rec {
-    const id = `${type}-${++this.idc}`;
-    const rec: Rec = { id, alias, record_type: type, state, fields };
-    this.records.set(id, rec);
+  create(type: string, alias: string, state: string, fields: any = {}): FactoryRecord {
+    const id = `${type}-${++this.idCounter}`;
+    const record: FactoryRecord = { id, alias, record_type: type, state, fields };
+    this.records.set(id, record);
     if (alias) this.aliasToId.set(alias, id);
-    return rec;
+    return record;
   }
 
   /** Create a record in its state machine's declared initial state (or a `status` fallback). */
-  createInitial(type: string, alias: string, fields: any = {}): Rec {
-    const m = machineByRecord.get(type);
-    return this.create(type, alias, m ? m.initial_state : (fields.status ?? "created"), fields);
+  createInitial(type: string, alias: string, fields: any = {}): FactoryRecord {
+    const machine = machineByRecord.get(type);
+    return this.create(
+      type,
+      alias,
+      machine ? machine.initial_state : (fields.status ?? "created"),
+      fields,
+    );
   }
 
   /** Resolve a record by alias or id; throws `not_found` if neither resolves. */
-  get(aliasOrId: string): Rec {
+  get(aliasOrId: string): FactoryRecord {
     const id = this.aliasToId.get(aliasOrId) ?? aliasOrId;
     const r = this.records.get(id);
     if (!r) throw new Error(`not_found: ${aliasOrId}`);
@@ -90,7 +95,7 @@ export class World {
   }
 
   /** All records of a given type. */
-  byType(type: string): Rec[] {
+  byType(type: string): FactoryRecord[] {
     return [...this.records.values()].filter((r) => r.record_type === type);
   }
 
@@ -105,7 +110,7 @@ export class World {
       const n = parseInt(String(r.id).split("-").pop() ?? "", 10);
       if (Number.isFinite(n) && n > max) max = n;
     }
-    this.idc = max;
+    this.idCounter = max;
   }
 
   /**
@@ -134,63 +139,74 @@ export class World {
 }
 
 /**
- * Validate + apply the registered transition for `op` from `rec`'s current state (NO emit — handlers emit
+ * Validate + apply the registered transition for `op` from `record`'s current state (NO emit — handlers emit
  * explicitly to control cardinality). Throws `state_transition_forbidden` if the transition is not allowed.
  */
-export function moveState(rec: Rec, op: string): any {
-  const m = machineByRecord.get(rec.record_type);
-  if (!m) throw new Error(`no_state_machine: ${rec.record_type}`);
-  const t = (m.transitions ?? []).find(
-    (t: any) => (Array.isArray(t.via) ? t.via : [t.via]).includes(op) && t.from === rec.state,
+export function moveState(record: FactoryRecord, op: string): any {
+  const machine = machineByRecord.get(record.record_type);
+  if (!machine) throw new Error(`no_state_machine: ${record.record_type}`);
+  const transition = (machine.transitions ?? []).find(
+    (transition: any) =>
+      (Array.isArray(transition.via) ? transition.via : [transition.via]).includes(op) &&
+      transition.from === record.state,
   );
-  if (!t)
-    throw new Error(`state_transition_forbidden: ${rec.record_type} '${rec.state}' via ${op}`);
-  rec.state = t.to;
-  return t;
+  if (!transition)
+    throw new Error(
+      `state_transition_forbidden: ${record.record_type} '${record.state}' via ${op}`,
+    );
+  record.state = transition.to;
+  return transition;
 }
 
 /**
  * Like `moveState` but selects the transition by target state, for ops with more than one transition from the
  * same state via the same op (e.g. ApplyRunCloseResultToRun close_check -> closed | close_blocked).
  */
-export function moveStateTo(rec: Rec, op: string, to: string): any {
-  const m = machineByRecord.get(rec.record_type);
-  if (!m) throw new Error(`no_state_machine: ${rec.record_type}`);
-  const t = (m.transitions ?? []).find(
-    (t: any) =>
-      (Array.isArray(t.via) ? t.via : [t.via]).includes(op) && t.from === rec.state && t.to === to,
+export function moveStateTo(record: FactoryRecord, op: string, to: string): any {
+  const machine = machineByRecord.get(record.record_type);
+  if (!machine) throw new Error(`no_state_machine: ${record.record_type}`);
+  const transition = (machine.transitions ?? []).find(
+    (transition: any) =>
+      (Array.isArray(transition.via) ? transition.via : [transition.via]).includes(op) &&
+      transition.from === record.state &&
+      transition.to === to,
   );
-  if (!t)
+  if (!transition)
     throw new Error(
-      `state_transition_forbidden: ${rec.record_type} '${rec.state}' via ${op} -> ${to}`,
+      `state_transition_forbidden: ${record.record_type} '${record.state}' via ${op} -> ${to}`,
     );
-  rec.state = t.to;
-  return t;
+  record.state = transition.to;
+  return transition;
 }
 
 /** Resolve an alias to a record, or null if the alias is absent/unresolvable (never throws). */
-export function tryGet(w: World, alias: string | undefined): Rec | null {
+export function tryGet(world: World, alias: string | undefined): FactoryRecord | null {
   if (!alias) return null;
   try {
-    return w.get(alias);
+    return world.get(alias);
   } catch {
     return null;
   }
 }
 
 /** Pure single-record transition op: move + emit the transition's declared event once. */
-export function step(w: World, rec: Rec, op: string, payload: any = {}) {
-  const t = moveState(rec, op);
-  w.emit(t.emits, op, { ...payload, record_id: rec.id });
+export function step(world: World, record: FactoryRecord, op: string, payload: any = {}) {
+  const transition = moveState(record, op);
+  world.emit(transition.emits, op, { ...payload, record_id: record.id });
 }
 
 /**
  * Create a GrammarGap (records.yaml: create+escalate only) and emit GRAMMAR_GAP_CREATED. Shared by the
  * explicit CreateGrammarGap op and the NormalizeMachineEvidence auto-escalation (both registered producers).
  */
-export function createGrammarGap(w: World, alias: string, fields: any, producer: string): Rec {
-  const gap = w.create("GrammarGap", alias, "created", fields);
-  w.emit("GRAMMAR_GAP_CREATED", producer, {
+export function createGrammarGap(
+  world: World,
+  alias: string,
+  fields: any,
+  producer: string,
+): FactoryRecord {
+  const gap = world.create("GrammarGap", alias, "created", fields);
+  world.emit("GRAMMAR_GAP_CREATED", producer, {
     grammar_gap_id: gap.id,
     reason: fields.reason,
     gap_type: fields.gap_type,
