@@ -128,6 +128,15 @@
 
 *Agent maintains. Last 10 sprint summaries; older entries roll into `## Built`.*
 
+### Readability arc (2026-07-02, closed) — lint/format/type toolchain + descriptive-identifier refactor
+- **Scope:** make the dense TS human-readable + stand up the linting that was entirely absent (no ESLint/Prettier, TypeScript never installed or run). Four behavior-preserving sprints (1, 2, 3a-d); commit per boundary.
+- **Sprint 1 (b7b519f):** ESLint v10 flat + typescript-eslint v8 + Prettier + `tsc --noEmit`; scripts typecheck/lint/format/format:check. Prettier over src/+tests/ only (governed YAML/JSON/docs + sdd-kit-2/ untouched). Format-only = PROVABLY behavior-preserving (adversarial review: prettier(HEAD)==worktree byte-for-byte; residual is associativity-neutral paren removal). Fixed a `.prettierignore` bug (bare `schemas` shadowed src/schemas/*.ts).
+- **Sprint 2 (f8f95a1):** drove src `tsc` 3->0 (handlers role fail-closed type-narrow; ajv named import + FormatsPlugin cast) = the rename safety net. 82 test strict-null errors remain (tracked).
+- **Sprint 3a-d:** descriptive renames, word-boundary + single-meaning-audited, verified by src tsc staying 0 (orphaned ref / redeclare = "Cannot find name") + full gates each boundary. handlers.ts 634 sites (3a, 71390bb); driver/ package incl. Rec->FactoryRecord/Evt->FactoryEvent cross-file (3b, 1a7ee5c); harness/ multi-char (3c, ca8ffa8); leaf tooling (3d, 3a442e0).
+- **Dual contract (every boundary):** signal (n/a — tooling/refactor); artifact (src tsc 0; validate:contracts+schemas+compile exit 0; bench first_slice 14/14 both drivers; backend end-to-end PASS; vitest 121/121; format:check clean; generate:schemas byte-identical).
+- **Rubber Duck Pass:** quick adversarial review (briefed to read the SDD kit; taken as advice) proved format-only preserving + surfaced the `.prettierignore` shadow (fixed) + advised types-before-rename ordering (adopted) + a codegen staleness gate (for the deferred Sprint 4).
+- **Deferred (NOT done, honest):** (a) vocab-string union types generated from contracts/*.yaml + staleness gate (planned Sprint 4); (b) ambiguous single-letter locals (a/t/e/r/m/p/s — multi-meaning per scope + English-word collisions in prose) need a code-aware LSP/IDE rename, which regex cannot do safely and the available LSP tool does not support; (c) 82 test strict-null tsc errors; (d) flipping no-explicit-any / prevent-abbreviations / naming-convention from warn to error.
+
 ### Documentation index (2026-07-01, closed) — README front door + grouped DOCS catalog
 - **Scope:** make the repo navigable and every document grouped + tracked, after both roadmap phases shipped.
 - **Built:** README.md (identity + no-invention rule + status + quickstart + repo map) + DOCS.md (six-group document catalog, one-line purpose each). No file moves — the code/spec layout is mandated + code-referenced and the SDD-kit files stay at root by convention.
