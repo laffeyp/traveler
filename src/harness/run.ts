@@ -31,7 +31,7 @@ export interface ScenarioResult {
 }
 
 export interface Execution {
-  scn: any;
+  scenario: any;
   compiled: any;
   stepResults: Map<string, any>;
   checkpoints: Map<string, Map<string, string>>;
@@ -40,35 +40,36 @@ export interface Execution {
 
 /** Drive the scenario steps through a driver; capture per-step results + per-step record-state snapshots. */
 export function executeScenario(id: string, driver: Driver): Execution {
-  const scn = readYaml(`scenarios/${id}/scenario.yaml`);
+  const scenario = readYaml(`scenarios/${id}/scenario.yaml`);
   const compiled = compileScenario(id);
   const stepResults = new Map<string, any>();
   const checkpoints = new Map<string, Map<string, string>>();
-  if (compiled.status !== "passed") return { scn, compiled, stepResults, checkpoints, executed: 0 };
+  if (compiled.status !== "passed")
+    return { scenario, compiled, stepResults, checkpoints, executed: 0 };
 
   const callerOf = new Map<string, string>(
-    (scn.actors ?? []).map((a: any) => [a.actor_id, a.product_caller_type]),
+    (scenario.actors ?? []).map((a: any) => [a.actor_id, a.product_caller_type]),
   );
-  driver.world.accessPolicies = scn.world?.access_policies ?? [];
+  driver.world.accessPolicies = scenario.world?.access_policies ?? [];
   // Load part identity (part_number + revision) so the build check can distinguish a wrong revision
   // of the same part from a missing part (VF-004 vs VF-006). Both drivers share this World.
   driver.world.partRevisions = new Map(
-    (scn.world?.part_revisions ?? []).map((p: any) => [
+    (scenario.world?.part_revisions ?? []).map((p: any) => [
       p.alias,
       { part_number: p.part_number, revision: p.revision },
     ]),
   );
   // Governed-report definition availability (run-close rule report_definition_available). Defaults
   // AVAILABLE; a scenario opts out with world.report_definition_available:false (VF-010). B-Q-21.
-  driver.world.reportDefinitionAvailable = scn.world?.report_definition_available ?? true;
-  driver.world.accessPolicyChanges = scn.world?.access_policy_changes ?? []; // effective-dated policy changes (B-Q-27)
+  driver.world.reportDefinitionAvailable = scenario.world?.report_definition_available ?? true;
+  driver.world.accessPolicyChanges = scenario.world?.access_policy_changes ?? []; // effective-dated policy changes (B-Q-27)
   // Set the initial clock from the scenario's declared start, so a sign-off before the first set_time step
   // still carries a real timestamp (sprint-019 review: signed_at was the empty string when the clock was unset).
-  if (scn.clock?.start_at) driver.setClock(scn.clock.start_at);
+  if (scenario.clock?.start_at) driver.setClock(scenario.clock.start_at);
   let executed = 0;
-  for (const s of scn.steps ?? []) {
+  for (const s of scenario.steps ?? []) {
     if (s.set_time) driver.setClock(s.set_time);
-    const res = driver.executeOperation(
+    const result = driver.executeOperation(
       s.operation,
       s.input ?? {},
       callerOf.get(s.actor) ?? "unknown",
@@ -76,13 +77,13 @@ export function executeScenario(id: string, driver: Driver): Execution {
       s.idempotency_key,
       s.actor,
     );
-    stepResults.set(s.step_id, res);
+    stepResults.set(s.step_id, result);
     const snap = new Map<string, string>();
     for (const rec of driver.world.records.values()) if (rec.alias) snap.set(rec.alias, rec.state);
     checkpoints.set(s.step_id, snap);
     executed++;
   }
-  return { scn, compiled, stepResults, checkpoints, executed };
+  return { scenario, compiled, stepResults, checkpoints, executed };
 }
 
 /**
@@ -97,7 +98,7 @@ export function evaluateAssertions(
   checkpoints: Map<string, Map<string, string>>,
 ) {
   const events = driver.readEventTrace();
-  const ctx: AssertContext = { driver, events, stepResults, checkpoints };
+  const context: AssertContext = { driver, events, stepResults, checkpoints };
   const failures: { assertion_id: string; message: string }[] = [];
   let passed = 0;
   for (const a of compiled.compiled_assertions) {
@@ -114,7 +115,7 @@ export function evaluateAssertions(
         ? EVALUATORS[a.assertion_type]
         : undefined;
       if (!evaluate) msg = `unknown assertion_type ${a.assertion_type}`;
-      else ({ ok, msg } = evaluate(a, ctx));
+      else ({ ok, msg } = evaluate(a, context));
     } catch (err: any) {
       ok = false;
       msg = `assertion threw: ${err.message}`;
@@ -145,9 +146,9 @@ export function evaluateDurable(
       (a: any) => !NON_DURABLE.has(a.assertion_type),
     ),
   };
-  const ev = evaluateAssertions(durable, driver, new Map(), reconstructedCheckpoints);
+  const evaluation = evaluateAssertions(durable, driver, new Map(), reconstructedCheckpoints);
   return {
-    ...ev,
+    ...evaluation,
     excluded: compiled.compiled_assertions.length - durable.compiled_assertions.length,
   };
 }
@@ -163,23 +164,23 @@ export function evaluateDurable(
 // the handler and creates duplicates, failing here (negative discrimination test in assertion-primitives.test.ts).
 export function runIdempotencyReplay(
   driver: Driver,
-  scn: any,
+  scenario: any,
 ): { assertion_id: string; message: string }[] {
   const failures: { assertion_id: string; message: string }[] = [];
-  const stepById = new Map<string, any>((scn.steps ?? []).map((s: any) => [s.step_id, s]));
-  for (const chk of scn.idempotency_replay_checks ?? []) {
-    const step = stepById.get(chk.step_id);
+  const stepById = new Map<string, any>((scenario.steps ?? []).map((s: any) => [s.step_id, s]));
+  for (const check of scenario.idempotency_replay_checks ?? []) {
+    const step = stepById.get(check.step_id);
     if (!step) {
       failures.push({
-        assertion_id: chk.check_id,
-        message: `replay: step ${chk.step_id} not found`,
+        assertion_id: check.check_id,
+        message: `replay: step ${check.step_id} not found`,
       });
       continue;
     }
-    const key = chk.idempotency_key ?? step.idempotency_key;
+    const key = check.idempotency_key ?? step.idempotency_key;
     const beforeRecs = driver.world.records.size;
     const beforeEvents = driver.world.events.length;
-    const res = driver.executeOperation(
+    const result = driver.executeOperation(
       step.operation,
       step.input ?? {},
       "replay",
@@ -187,16 +188,18 @@ export function runIdempotencyReplay(
       key,
       step.actor,
     );
-    const dRecs = driver.world.records.size - beforeRecs;
-    const dEvents = driver.world.events.length - beforeEvents;
+    const deltaRecords = driver.world.records.size - beforeRecs;
+    const deltaEvents = driver.world.events.length - beforeEvents;
     const problems: string[] = [];
-    if (dRecs !== 0 || dEvents !== 0)
-      problems.push(`created ${dRecs} records + ${dEvents} events (must be 0 — duplicate facts)`);
-    if (!(res.succeeded === true || res.failureClass === "idempotency_conflict"))
-      problems.push(`returned succeeded=${res.succeeded} failureClass=${res.failureClass}`);
+    if (deltaRecords !== 0 || deltaEvents !== 0)
+      problems.push(
+        `created ${deltaRecords} records + ${deltaEvents} events (must be 0 — duplicate facts)`,
+      );
+    if (!(result.succeeded === true || result.failureClass === "idempotency_conflict"))
+      problems.push(`returned succeeded=${result.succeeded} failureClass=${result.failureClass}`);
     if (problems.length)
       failures.push({
-        assertion_id: chk.check_id,
+        assertion_id: check.check_id,
         message: `replay of ${step.operation} (key ${key}): ${problems.join("; ")}`,
       });
   }
@@ -209,47 +212,52 @@ export function runScenarioOnDriver(
   driver: Driver,
   driverName = "in_memory",
   traceSubdir = id,
-): { result: ScenarioResult; driver: Driver; ex: Execution } {
-  const ex = executeScenario(id, driver);
+): { result: ScenarioResult; driver: Driver; execution: Execution } {
+  const execution = executeScenario(id, driver);
   const base = {
     scenario_id: id,
-    scenario_version: String(ex.scn.scenario_version ?? "?"),
-    registry_version: ex.compiled.registry_version,
+    scenario_version: String(execution.scenario.scenario_version ?? "?"),
+    registry_version: execution.compiled.registry_version,
     product_build: "build_001",
     driver: driverName,
   };
-  if (ex.compiled.status !== "passed") {
+  if (execution.compiled.status !== "passed") {
     return {
       result: {
         ...base,
         status: "failed",
-        compilation_status: ex.compiled.status,
+        compilation_status: execution.compiled.status,
         steps_executed: 0,
         assertions: { total: 0, passed: 0, failed: 0 },
         failed_assertions: [
           {
             assertion_id: "compilation",
-            message: `scenario did not compile (${ex.compiled.errors.length} errors / ${ex.compiled.contract_gaps.length} gaps)`,
+            message: `scenario did not compile (${execution.compiled.errors.length} errors / ${execution.compiled.contract_gaps.length} gaps)`,
           },
         ],
       },
       driver,
-      ex,
+      execution,
     };
   }
-  const ev = evaluateAssertions(ex.compiled, driver, ex.stepResults, ex.checkpoints);
+  const evaluation = evaluateAssertions(
+    execution.compiled,
+    driver,
+    execution.stepResults,
+    execution.checkpoints,
+  );
   // idempotency replay runs LAST (after assertions read the final state); it must add no facts
-  const replayFailures = runIdempotencyReplay(driver, ex.scn);
-  const replayCount = (ex.scn.idempotency_replay_checks ?? []).length;
-  const allFailures = [...ev.failures, ...replayFailures];
-  const total = ev.total + replayCount;
+  const replayFailures = runIdempotencyReplay(driver, execution.scenario);
+  const replayCount = (execution.scenario.idempotency_replay_checks ?? []).length;
+  const allFailures = [...evaluation.failures, ...replayFailures];
+  const total = evaluation.total + replayCount;
   const passed = total - allFailures.length;
   const status = allFailures.length === 0 ? "passed" : "failed";
   const result: ScenarioResult = {
     ...base,
     status,
-    compilation_status: ex.compiled.status,
-    steps_executed: ex.executed,
+    compilation_status: execution.compiled.status,
+    steps_executed: execution.executed,
     assertions: { total, passed, failed: allFailures.length },
     failed_assertions: allFailures,
   };
@@ -258,7 +266,7 @@ export function runScenarioOnDriver(
   writeFileSync(
     join(outDir, "operation_trace.json"),
     JSON.stringify(
-      [...ex.stepResults.entries()].map(([step_id, r]) => ({ step_id, ...r })),
+      [...execution.stepResults.entries()].map(([step_id, r]) => ({ step_id, ...r })),
       null,
       2,
     ) + "\n",
@@ -268,7 +276,7 @@ export function runScenarioOnDriver(
     JSON.stringify(driver.readEventTrace(), null, 2) + "\n",
   );
   writeFileSync(join(outDir, "scenario_result.json"), JSON.stringify(result, null, 2) + "\n");
-  return { result, driver, ex };
+  return { result, driver, execution };
 }
 
 export function runScenarioWithDriver(id: string): {

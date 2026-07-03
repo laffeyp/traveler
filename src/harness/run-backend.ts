@@ -23,9 +23,9 @@ console.log(`  persisted: records=${c.records} events=${c.events} outbox=${c.out
 // persisted-state assertions with no cached step results; checkpoints are replayed from the event log.
 const fresh = new BackendProductDriver(DB);
 const reconstructed = fresh.rebuildCheckpointsFromEvents();
-const dur = evaluateDurable(run.ex.compiled, fresh, reconstructed);
+const durable = evaluateDurable(run.execution.compiled, fresh, reconstructed);
 console.log(
-  `  fresh-instance DURABLE re-eval (persisted-state assertions; checkpoints replayed from event log): ${dur.passed}/${dur.total} passed  (${dur.excluded} operation-outcome assertions excluded — behavior, not persisted state)`,
+  `  fresh-instance DURABLE re-eval (persisted-state assertions; checkpoints replayed from event log): ${durable.passed}/${durable.total} passed  (${durable.excluded} operation-outcome assertions excluded — behavior, not persisted state)`,
 );
 console.log(`  fresh run_001.state (from disk): ${fresh.readRecord("run_001")?.state}`);
 console.log(
@@ -33,13 +33,13 @@ console.log(
 );
 for (const f of run.result.failed_assertions.slice(0, 20))
   console.log(`    RUN FAIL ${f.assertion_id}: ${f.message}`);
-for (const f of dur.failures.slice(0, 20))
+for (const f of durable.failures.slice(0, 20))
   console.log(`    DURABLE FAIL ${f.assertion_id}: ${f.message}`);
 
 const ok =
   run.result.status === "passed" &&
-  dur.failures.length === 0 &&
-  dur.total > 80 && // the persisted-state assertion set is substantial, not a trivial subset
+  durable.failures.length === 0 &&
+  durable.total > 80 && // the persisted-state assertion set is substantial, not a trivial subset
   fresh.readRecord("run_001")?.state === "closed" &&
   reconstructed.get("047")?.get("run_001") === "close_blocked" && // historical state genuinely rebuilt from disk
   c.outbox === c.events &&
@@ -123,7 +123,7 @@ console.log(
 );
 const fresh6 = new BackendProductDriver(DB6);
 const reconstructed6 = fresh6.rebuildCheckpointsFromEvents();
-const dur6 = evaluateDurable(run6.ex.compiled, fresh6, reconstructed6);
+const dur6 = evaluateDurable(run6.execution.compiled, fresh6, reconstructed6);
 const blockerPersisted = fresh6
   .readEventTrace()
   .some(
@@ -161,7 +161,7 @@ console.log(
 );
 const fresh8 = new BackendProductDriver(DB8);
 const reconstructed8 = fresh8.rebuildCheckpointsFromEvents();
-const dur8 = evaluateDurable(run8.ex.compiled, fresh8, reconstructed8);
+const dur8 = evaluateDurable(run8.execution.compiled, fresh8, reconstructed8);
 const snapPv = fresh8.readRecord("run_context_snapshot_001")?.fields?.procedure_version;
 const res2Pv = fresh8.readRecord("effectivity_resolution_002")?.fields?.selected_procedure_version;
 console.log(
@@ -223,7 +223,7 @@ console.log(
 );
 const fresh13 = new BackendProductDriver(DB13);
 const reconstructed13 = fresh13.rebuildCheckpointsFromEvents();
-const dur13 = evaluateDurable(run13.ex.compiled, fresh13, reconstructed13);
+const dur13 = evaluateDurable(run13.execution.compiled, fresh13, reconstructed13);
 const redlineAt020 = reconstructed13.get("020")?.get("redline_001");
 console.log(
   `  VF-013 fresh-instance DURABLE re-eval: ${dur13.passed}/${dur13.total} passed  (${dur13.excluded} outcome assertions excluded)`,

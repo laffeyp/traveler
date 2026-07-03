@@ -5,8 +5,8 @@
  * runner (`run.ts`) loops over compiled assertions, looks up the evaluator by type, and collects pass/fail — so
  * this module holds the WHAT (each check's logic) and run.ts holds the orchestration.
  *
- * Each evaluator is pure over its inputs: `(a, ctx) => { ok, msg }` where `a` is the compiled assertion and
- * `ctx` carries the driver + the captured events/step-results/checkpoints. `msg` is the failure explanation
+ * Each evaluator is pure over its inputs: `(a, context) => { ok, msg }` where `a` is the compiled assertion and
+ * `context` carries the driver + the captured events/step-results/checkpoints. `msg` is the failure explanation
  * (empty when ok).
  */
 
@@ -36,8 +36,8 @@ export interface AssertContext {
   checkpoints: Map<string, Map<string, string>>;
 }
 
-/** An assertion evaluator: check `a` against `ctx`, returning whether it holds and why not. */
-export type Evaluator = (a: any, ctx: AssertContext) => { ok: boolean; msg: string };
+/** An assertion evaluator: check `a` against `context`, returning whether it holds and why not. */
+export type Evaluator = (a: any, context: AssertContext) => { ok: boolean; msg: string };
 
 /** Field-equality with a couple of virtual keys: `explanation_exists` (presence) and status/state (the record's state). */
 function recEq(rec: any, key: string, val: any): boolean {
@@ -243,30 +243,30 @@ export const EVALUATORS: Record<string, Evaluator> = {
     const t = a.target ?? {},
       e = a.expected ?? {};
     if (t.projection === "AsBuiltProjection") {
-      const proj = driver.readProjection("AsBuiltProjection", t.key_alias);
-      const ok = proj.children.some((c: any) => c.child_alias === e.child_alias);
+      const projection = driver.readProjection("AsBuiltProjection", t.key_alias);
+      const ok = projection.children.some((c: any) => c.child_alias === e.child_alias);
       return {
         ok,
         msg: ok
           ? ""
-          : `AsBuilt(${t.key_alias}) children=${JSON.stringify(proj.children.map((c: any) => c.child_alias))} missing ${e.child_alias}`,
+          : `AsBuilt(${t.key_alias}) children=${JSON.stringify(projection.children.map((c: any) => c.child_alias))} missing ${e.child_alias}`,
       };
     }
     if (t.projection === "SerialHistory") {
-      const proj = driver.readProjection("SerialHistory", t.key_serial);
+      const projection = driver.readProjection("SerialHistory", t.key_serial);
       const exp = e.event_types ?? [];
       if (exp.length === 0)
         return {
           ok: false,
           msg: `SerialHistory assertion ${a.assertion_id} has empty expected.event_types`,
         };
-      const missing = exp.filter((x: string) => !proj.event_types.includes(x));
+      const missing = exp.filter((x: string) => !projection.event_types.includes(x));
       const ok = missing.length === 0;
       return {
         ok,
         msg: ok
           ? ""
-          : `SerialHistory(${t.key_serial}) missing event types ${JSON.stringify(missing)} (have ${proj.event_types.length})`,
+          : `SerialHistory(${t.key_serial}) missing event types ${JSON.stringify(missing)} (have ${projection.event_types.length})`,
       };
     }
     return { ok: false, msg: `projection_contains unsupported for ${t.projection}` };
@@ -275,8 +275,10 @@ export const EVALUATORS: Record<string, Evaluator> = {
     const t = a.target ?? {},
       e = a.expected ?? {};
     if (t.projection === "SerialHistory") {
-      const proj = driver.readProjection("SerialHistory", t.key_serial);
-      const present = (e.event_types ?? []).filter((x: string) => proj.event_types.includes(x));
+      const projection = driver.readProjection("SerialHistory", t.key_serial);
+      const present = (e.event_types ?? []).filter((x: string) =>
+        projection.event_types.includes(x),
+      );
       const ok = present.length === 0;
       return {
         ok,
@@ -293,16 +295,16 @@ export const EVALUATORS: Record<string, Evaluator> = {
   access_summary: accessFullOrSummary,
   access_denied(a, { driver }) {
     const t = a.target ?? {};
-    const proj = driver.readProjection("SerialHistory", t.key_serial, t.access_profile);
+    const projection = driver.readProjection("SerialHistory", t.key_serial, t.access_profile);
     const ok =
-      proj.view === "denied" &&
-      (proj.entries ?? []).length === 0 &&
-      (proj.visible_detail ?? []).length === 0;
+      projection.view === "denied" &&
+      (projection.entries ?? []).length === 0 &&
+      (projection.visible_detail ?? []).length === 0;
     return {
       ok,
       msg: ok
         ? ""
-        : `access_denied ${a.assertion_id}: view=${proj.view} entries=${(proj.entries ?? []).length}`,
+        : `access_denied ${a.assertion_id}: view=${projection.view} entries=${(projection.entries ?? []).length}`,
     };
   },
   bounded_drill_down_filtered(a, { stepResults }) {
@@ -416,9 +418,9 @@ export const EVALUATORS: Record<string, Evaluator> = {
 function accessFullOrSummary(a: any, { driver }: AssertContext): { ok: boolean; msg: string } {
   const t = a.target ?? {},
     e = a.expected ?? {};
-  const proj = driver.readProjection("SerialHistory", t.key_serial, t.access_profile);
-  const vd = proj.visible_detail ?? [];
-  const et = proj.event_types ?? [];
+  const projection = driver.readProjection("SerialHistory", t.key_serial, t.access_profile);
+  const vd = projection.visible_detail ?? [];
+  const et = projection.event_types ?? [];
   const problems: string[] = [];
   for (const m of e.visible_detail_contains ?? [])
     if (!vd.includes(m))
@@ -444,6 +446,7 @@ function accessFullOrSummary(a: any, { driver }: AssertContext): { ok: boolean; 
     (e.event_types_contain ?? []).length === 0
   )
     problems.push(`${a.assertion_id} asserts nothing (empty expected)`);
-  if (e.view && proj.view !== e.view) problems.push(`view=${proj.view}, expected ${e.view}`);
+  if (e.view && projection.view !== e.view)
+    problems.push(`view=${projection.view}, expected ${e.view}`);
   return { ok: problems.length === 0, msg: problems.length === 0 ? "" : problems.join("; ") };
 }
