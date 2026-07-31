@@ -25,6 +25,13 @@ The running methodology state (this project runs under the SDD kit in `sdd-kit-2
 | [KIT_DIARY.md](KIT_DIARY.md) | The reflective per-sprint/per-phase diary of how the SDD kit serves the build — what worked, what got in the way — accreting the numbered distrust-the-green practices. |
 | [WORKING_AGREEMENT.md](WORKING_AGREEMENT.md) | Per-project overrides on top of `sdd-kit-2/AGENTS.md`: identity/stack, document authority order, the no-invention hard rule, repo layout, canonical registry homes, build commands, cadence. |
 | [ADDENDUMS.md](ADDENDUMS.md) | Dated, project-stamped technique captures staged between this project's `KIT_DIARY.md` and the kit's `TECHNIQUES.md` catalog (an outlier — it feeds the shared kit, not project state). |
+| [SDD_GENERAL_PROCESS.md](SDD_GENERAL_PROCESS.md) | Theory note: SDD set against the settled fields that already do what it does (process mining, spec mining, grammatical inference, model extraction, model-driven reverse engineering, Rules as Code, computer-interpretable guidelines) — what is a rename, what is genuinely new, the reach test, and where the method stops. Not project state; the doctrine behind it. |
+
+## 2b. Demo pack — the domain written out as plain data
+
+| Path | What it is |
+|---|---|
+| [demo-packs/valve-body-assembly-v0.1/](demo-packs/valve-body-assembly-v0.1/) | The valve body VF-003 already builds, written out as plain files (part, BOM, procedure, tool + calibration, serials, torque requirement, machine evidence, quality path, customer view, expected report) with a `README.md` and `manifest.yaml`. Data only — changes no code, runs nothing at build time. `check.mjs` proves every name it uses is registered in `contracts/` (the no-invention rule on the data side). Writing it surfaced three vocabulary gaps, recorded as B-Q-31/32/33. |
 
 ## 3. Sprint history — numbered 1:1 pairs (input contract → output report)
 

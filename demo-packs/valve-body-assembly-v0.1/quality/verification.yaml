@@ -1,0 +1,9 @@
+# Someone checks the rework. It must be a different person than did the rework.
+alias: verification_001
+nonconformance: nonconformance_001
+rework: rework_run_001
+verified_by: quality_2        # not quality_1 — no one verifies their own work
+result: verified
+
+maps_to: Verification
+operations: [VerifyRework]

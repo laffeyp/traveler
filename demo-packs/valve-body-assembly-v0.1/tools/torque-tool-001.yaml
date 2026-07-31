@@ -1,0 +1,7 @@
+# The torque tool that reads the valve body.
+alias: torque_tool_001
+type: torque_tool
+adapter: machine_adapter_1
+tool_id: TT-001
+
+maps_to: [Machine, MachineAdapter]

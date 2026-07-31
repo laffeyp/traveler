@@ -1,0 +1,16 @@
+{
+  "_note": "What the run-close report holds when the valve body is done. All twelve sections the report registry requires. Shows the shape, not a fixture the runtime checks byte-for-byte.",
+  "report_type": "RunCloseReport",
+  "report_header": { "run": "run_001", "part_number": "VB-100", "revision": "A", "serial_number": "VB-001", "result": "closed" },
+  "run_context": { "procedure": "procedure_version_v1", "structure": "manufacturing_structure_v1", "node": "node_la_001", "station": "station_assembly_01" },
+  "executed_steps": [ { "step": "procedure_step_torque", "status": "complete" }, { "step": "procedure_step_install_gasket", "status": "complete" } ],
+  "measurement_summary": [ { "value_nm": 8.2, "result": "fail" }, { "value_nm": 11.1, "result": "pass" } ],
+  "quality_path": { "nonconformance": "nonconformance_001", "disposition": "rework", "rework": "rework_run_001", "verification": "verification_001", "status": "closed" },
+  "redline_history": [ { "redline": "redline_001", "status": "applied" } ],
+  "installed_inventory": [ { "parent": "valve_body_001", "child": "gasket_001" } ],
+  "machine_evidence_summary": [ { "evidence": "torque_evidence_001", "state": "review_required", "note": "late; did not overwrite the operator reading; not accepted" } ],
+  "run_close_observations": [ { "result": "blocked", "reason": "failed_measurement_has_quality_path" } ],
+  "final_close_result": { "result": "passed", "run_status": "closed" },
+  "source_traceability": { "note": "each section traces to its source records" },
+  "access_policy_snapshot": { "bound_scope": "customer_summary_access", "hidden": ["controlled_machine_evidence_payload", "internal_quality_notes", "raw_machine_payload"] }
+}

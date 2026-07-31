@@ -1,0 +1,20 @@
+# How the valve body is built. Two steps: check the torque, then install the gasket.
+alias: procedure_version_v1
+steps:
+  - step: procedure_step_torque
+    order: 1
+    name: Capture torque
+    collect:
+      - field: data_field_torque
+        name: Valve body torque
+        unit: Nm
+        lower: 10.0
+        upper: 12.0
+        nominal: 11.0
+  - step: procedure_step_install_gasket
+    order: 2
+    name: Install gasket
+    install_required: true
+
+maps_to: [ProcedureVersion, ProcedureStep, DataCollectionField]
+operations: [CreateProcedureVersion, SubmitProcedureVersionForReview, ReleaseProcedureVersion]

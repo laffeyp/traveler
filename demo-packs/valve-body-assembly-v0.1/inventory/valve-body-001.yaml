@@ -1,0 +1,7 @@
+# The one valve body being built. Serial VB-001.
+alias: valve_body_001
+part: valve_body_rev_a
+serial_number: VB-001
+
+# States it moves through: expected, received, available, reserved, in_wip, installed.
+maps_to: InventoryItem

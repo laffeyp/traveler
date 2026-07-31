@@ -1,0 +1,8 @@
+# The rework that fixes the failed torque.
+alias: rework_run_001
+nonconformance: nonconformance_001
+performed_by: quality_1
+result: completed
+
+maps_to: ReworkRun
+operations: [StartRework, CompleteRework]

@@ -1,0 +1,17 @@
+{
+  "_note": "The torque tool's reading. It arrives late — after the operator's own reading and after the step. Late evidence must not overwrite the operator's reading, and it waits for review; the system never accepts it on its own.",
+  "alias": "torque_evidence_001",
+  "machine": "torque_tool_001",
+  "adapter": "machine_adapter_1",
+  "payload_type": "torque_trace",
+  "occurred_at": "2026-06-29T08:34:30Z",
+  "received_at": "2026-06-29T08:40:00Z",
+  "payload": {
+    "serial_number": "VB-001",
+    "tool_id": "TT-001",
+    "measured_torque_nm": 11.1,
+    "trace_quality": "acceptable"
+  },
+  "maps_to": "MachineEvidenceRecord",
+  "operations": ["ReceiveMachineEvidence", "NormalizeMachineEvidence", "LinkMachineEvidence", "RouteMachineEvidenceForReview"]
+}

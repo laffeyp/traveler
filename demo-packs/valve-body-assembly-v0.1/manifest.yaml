@@ -1,0 +1,29 @@
+# Every registered name this pack leans on. check.mjs proves each one is real
+# (defined in contracts/*.yaml). If a name here is not registered, that is invention,
+# and the check fails.
+records:
+  [ProcedureVersion, ProcedureStep, DataCollectionField, ManufacturingStructureVersion, BOMLine,
+   InventoryItem, EffectivityRule, Run, RunStep, Measurement, Nonconformance, AffectedPopulation,
+   QualityContainmentAction, Disposition, ReworkRun, Verification, Redline, Machine, MachineAdapter,
+   MachineEvidenceRecord, GeneratedReport, Instrument]
+
+operations:
+  [CreateProcedureVersion, SubmitProcedureVersionForReview, ReleaseProcedureVersion,
+   CreateManufacturingStructureVersion, AddBOMLine, ReleaseManufacturingStructureVersion,
+   CreateInventoryItem, ReceiveInventory, ReleaseInventory, ReserveInventory, StartRunWithInventory,
+   InstallInventory, CaptureMeasurement, OpenNonconformance, DefineAffectedPopulation,
+   StartQualityContainment, ActivateQualityContainment, RecordDisposition, StartRework, CompleteRework,
+   VerifyRework, CloseNonconformance, ReceiveMachineEvidence, NormalizeMachineEvidence,
+   LinkMachineEvidence, RouteMachineEvidenceForReview, GenerateRunCloseReport, BoundedDrillDown,
+   EvaluateAccess]
+
+events:
+  [MEASUREMENT_FAILED, MEASUREMENT_PASSED, NONCONFORMANCE_OPENED, REWORK_COMPLETED,
+   VERIFICATION_COMPLETED, NONCONFORMANCE_CLOSED, INVENTORY_INSTALLED,
+   MACHINE_EVIDENCE_REVIEW_REQUIRED, REPORT_GENERATED, RUN_CLOSED]
+
+projections: [AsBuiltProjection, SerialHistory, QualityQueue]
+
+reports: [RunCloseReport]
+
+caller_types: [manufacturing_engineer, planner, operator, quality_engineer, adapter, system_worker, support_user]

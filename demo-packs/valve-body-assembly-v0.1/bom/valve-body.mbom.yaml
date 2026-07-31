@@ -1,0 +1,10 @@
+# What the valve body is built from. One line: the gasket.
+alias: manufacturing_structure_v1
+parent: valve_body_rev_a
+lines:
+  - line: bom_line_gasket
+    child: gasket_rev_b
+    install_required: true
+
+maps_to: [ManufacturingStructureVersion, BOMLine]
+operations: [CreateManufacturingStructureVersion, AddBOMLine, ReleaseManufacturingStructureVersion]

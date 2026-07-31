@@ -1,0 +1,11 @@
+# The torque the valve body must pass: 10 to 12 Nm, aim for 11.
+alias: torque_requirement_001
+characteristic: Valve body torque
+unit: Nm
+lower: 10.0
+upper: 12.0
+nominal: 11.0
+field: data_field_torque
+
+# The system checks this through CaptureMeasurement. The result is pass, fail, or warning.
+maps_to_operation: CaptureMeasurement

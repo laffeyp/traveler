@@ -1,0 +1,13 @@
+# The valve body failed the torque check (8.2, below 10). This opens a nonconformance.
+alias: nonconformance_001
+from_measurement: measurement_torque_failed
+run: run_001
+affected:
+  alias: affected_population_001
+  serials: [VB-001]
+containment:
+  alias: containment_action_001
+disposition: rework        # one of: scrap, rework, repair, use_as_is, return_to_supplier
+
+maps_to: [Nonconformance, AffectedPopulation, QualityContainmentAction, Disposition]
+operations: [OpenNonconformance, DefineAffectedPopulation, StartQualityContainment, ActivateQualityContainment, RecordDisposition, CloseNonconformance]

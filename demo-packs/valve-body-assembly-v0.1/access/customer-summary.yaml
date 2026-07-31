@@ -1,0 +1,12 @@
+# What a customer is allowed to see. The summary, not the controlled detail.
+alias: customer_summary_access
+can_see:
+  - RunCloseReport.summary
+  - SerialHistory.summary
+  - BoundedDrillDown.summary
+hidden:
+  - controlled_machine_evidence_payload
+  - internal_quality_notes
+  - raw_machine_payload
+
+maps_to_operations: [EvaluateAccess, BoundedDrillDown]

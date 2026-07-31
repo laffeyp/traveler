@@ -1,0 +1,9 @@
+# The gasket. Child of the valve body, installed during the run.
+alias: gasket_rev_b
+part_number: GK-200
+revision: B
+name: Gasket
+uom: each
+install_required: true
+
+maps_to: [BOMLine, InventoryItem]

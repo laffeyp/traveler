@@ -1,0 +1,8 @@
+# The tool's calibration. The system refuses a reading from a tool that is not in cal.
+alias: torque_tool_001_instrument
+instrument_of: torque_tool_001
+cal_status: in_cal        # in_cal | overdue | expired | unknown
+calibrated_at: "2026-01-15T00:00:00Z"
+cal_due: "2026-12-31T00:00:00Z"
+
+maps_to: Instrument

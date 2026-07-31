@@ -612,14 +612,83 @@ plain is fine; skipping the adversarial review is not — it is what makes fast 
 
 ---
 
-## Hypothesis tracking
+## Entry 26 — Writing the domain out in its own words finds what the vocabulary is missing (2026-07-07/08, recorded 2026-07-30)
 
-| Hypothesis | Status | Evidence |
-|---|---|---|
-| For a contract-first build, the locked vocabulary is the registry set and the Rubber Duck Pass is the product's run-close narration. | tentative | Correspondence holds on paper; no runtime trace yet (sprint 001 produced registries, not runtime events). |
-| No-invention + strict registry validation make failures loud, not silent. | partially confirmed | Validator + bidirectional consistency check held across 113 ops / 121 events; not yet exercised against a genuinely missing reference. |
-| Structural validation and faithfulness verification are distinct and both needed. | confirmed (1 data point) | Validator passed but could not catch faithfulness gaps; the 6-critic pass independently confirmed faithfulness (5/6 clean, 1 non-defect). |
+**What happened.** Two artifacts were authored after the readability arc and then sat unrecorded and
+uncommitted for three weeks: `SDD_GENERAL_PROCESS.md` (a theory note placing SDD against the settled fields
+that already do what it does, and naming where the method stops) and `demo-packs/valve-body-assembly-v0.1/`
+— the valve body VF-003 already builds, written out as plain files: the part, its BOM, the procedure, the
+tool and its calibration, the two serials, the torque band, the late tool reading, the quality path, the
+customer view, the finished report. Pure data. It changes no code and runs nothing at build time, and a
+`check.mjs` proves all 72 names it leans on are registered in `contracts/`. Recording it now is what
+produced the entry below.
+
+**Lesson 1: a scenario is written in the vocabulary; a demo pack is written in the DOMAIN — and only the
+second can find what the vocabulary lacks.** Twenty-three green scenarios across two drivers found none of
+the three gaps this pack found in an afternoon, and that is structural, not luck. A scenario can only say
+things the registries can express — it is authored *from* the vocabulary, so its silence about a missing
+concept is guaranteed, not evidence. The pack was authored the other way round: start from the physical
+thing (a valve body someone builds, scans, torques, ships) and write down what it actually has, then ask
+the registries to name each piece. The residue is the gap list — and it was immediate and real: **a part
+has no record of its own** (only a `(part_number, revision)` pair riding on three other records, so a
+drawing, a material spec, and revision authority have nowhere to live); **the inspection requirement has no
+record of its own** (the torque band lives on a procedure step and in world data, never as one versioned
+thing a measurement points at, so nothing records that two runs were judged against different bands); and
+**there is no operation for scanning a serial** (serials only ever arrive as inputs to other operations, so
+a floor scanner has no step to call and the record cannot tell an asserted serial from a scanned one). All
+three are recorded as B-Q-31/32/33 and deliberately NOT built — each would be new product vocabulary the
+doc stack does not define. The general practice: **periodically express the domain in its own terms and
+check it against the vocabulary; what will not map is the gap list, and coverage testing structurally
+cannot produce it.** This is the same asymmetry as practice #20 (a forward-only poka-yoke misses the
+reverse direction), one level up: the bench checks vocabulary → behavior, and nothing was checking
+domain → vocabulary.
+
+**Lesson 2: the no-invention rule finally has a check surface on the DATA side — and it is ungated, which
+is the next thing to distrust.** Every prior enforcement of "invent nothing" pointed at code: the static
+registry validator, the runtime emit poka-yoke, the reverse handler-registration check. `check.mjs` is the
+first one pointed at data — a manifest of every name the pack uses, verified against the registries, failing
+loudly on an unregistered name. That is the right shape. But it sits **outside the gate set**: no npm script,
+not in the backend gate, not in vitest. So nothing turns red if the pack drifts from the registries or a
+registry rename orphans it — the project's own practice #12 ("a behavior worth hardening is worth something
+that can regress it") and the imported substrate-ui A5 ("a required contract that can be skipped isn't
+required") both say that a check nobody runs is a check that will rot. Naming it here rather than quietly
+wiring it, because whether the demo pack should be able to fail the build is a scope call, not a cleanup.
+
+**Lesson 3: work done outside the sprint frame has no close, so nothing forces the ledger entry — and
+phantom-close is the result.** Practice #13 said the close is a green to distrust: check every citation
+resolves, every durability claim has a from-disk proof. This is the failure mode one step earlier. Both
+artifacts were real, careful work; the theory note is more honest about SDD's borrowed core than most of
+what the project has written about itself, and the pack found three genuine gaps. But neither passed
+through a sprint, so neither hit the close ritual that would have written them to BLACKBOARD, and the
+pack's three gaps lived only in its own README — not in `CONTRACT_GAPS.md`, where this project's whole
+premise says an identified gap belongs. For three weeks the repo's honest-looking ledgers ("Open
+ContractGaps: none") were quietly wrong, and the git tree did not contain the newest work at all. The
+discipline's coverage has a hole exactly where work does not arrive in sprint shape: an artifact authored
+between sprints needs the same two questions asked of it — what did this find, and where is that recorded.
+
+**Kit observation (one new practice).** (23) **Periodically write the domain out in its own terms — a demo
+pack of plain data files describing one real thing end to end — and mechanically check every name it uses
+against the locked vocabulary. Scenarios are authored FROM the vocabulary and therefore cannot surface what
+the vocabulary lacks; the domain-first pass can, and what will not map is the gap list (record each as a
+typed gap; do not build it on the spot). Gate the check like any other, or it rots. And treat any artifact
+authored outside a sprint as still owing a close: what did it find, and where is that written down —
+otherwise the ledgers are confidently wrong about work that already happened.** For TECHNIQUES.md.
 
 ---
 
-*KIT_DIARY.md for the Distributed Factory Execution Record System. Twenty-four entries plus phase syntheses, from the registry-extraction founding act through the closed line, the two roadmap phases (Phase B §18 auto-cascades, Phase A outbox delivery leg), and the documentation-index step. The through-line it records: applying sdd-kit-2 to a contract-first manufacturing-execution build, where across fourteen straight increments the distrust-the-green review never once came back empty by inspection — the discipline, not the green, was the load-bearing thing.*
+## Hypothesis tracking
+
+*Updated 2026-07-30 against the full entry record (0–26); the first three had been left at their sprint-001/002 verdicts long after the evidence moved.*
+
+| Hypothesis | Status | Evidence |
+|---|---|---|
+| For a contract-first build, the locked vocabulary is the registry set and the Rubber Duck Pass is the product's run-close narration. | confirmed | Held from sprint 004's first runtime trace (VF-003 emits RUN_CREATED … RUN_CLOSED and the assertion engine narrates/checks it) through 23 scenarios on two drivers. The registries have governed every increment since, including the beyond-spec additions, and the run-close narration is what the reviews are grounded in. |
+| No-invention + strict registry validation make failures loud, not silent. | confirmed, with one named limit | Loud as designed on every unexercised path (`not_implemented` surfaced missing disposition handlers, QuarantineInventory, EFFECTIVITY_AMBIGUOUS, SupersedeReport, GetReport — the VF-003A dynamic, six occurrences). **The limit, found the hard way:** validation was FORWARD-only, so two ops + two record types ran handler-only for several sprints (Entry 20) — silent, not loud, until the reverse check was added. Loudness is a property of the direction the poka-yoke faces, not of validation as such. |
+| Structural validation and faithfulness verification are distinct and both needed. | confirmed (many data points) | Sprint 001's 6-critic pass first showed it; since then every increment repeated it — mechanical gates passed on code that was fake, overstated, vacuous, tautological, fragile, decoupled, fail-open, fossil, false-secure, or phantom-closed, and only the adversarial pass caught each. |
+| Distrust-the-green is load-bearing, not decorative — the adversarial review finds a real defect on essentially every increment. | confirmed (14 straight increments, never empty by inspection) | Feature, fix, hardening, refactor, audit, persona additions, deferred items, close-out, and both roadmap phases. The one empty result (sprint 015) was empty only because a mutation battery proved the greens could fail. Sharpest single find: Phase A's exactly-once mechanism masquerading as at-least-once — a case where the code was correct and the CLAIM was false. |
+| A fast-written batch of guards defaults to fail-open; inverting to fail-closed is a law, not a case-by-case catch. | confirmed (3 independent recurrences) | Sprint 010's access hole; 17 of the persona-addition findings; 8 of the deferred-items findings. Same shape each time — a conditional check falls open on the absent/unknown/malformed input the author did not picture. |
+| Coverage testing cannot surface a missing domain concept; a domain-first pass can. | supported (1 data point, Entry 26) | 23 green scenarios found none of B-Q-31/32/33; the demo pack found all three immediately. Structural rather than lucky — scenarios are authored from the vocabulary. Needs a second pass (a different sub-domain written out plainly) before calling it confirmed. |
+
+---
+
+*KIT_DIARY.md for the Distributed Factory Execution Record System. Entries 0–26 plus phase syntheses, from the registry-extraction founding act through the closed line, the two roadmap phases (Phase B §18 auto-cascades, Phase A outbox delivery leg), the documentation-index step, the readability arc, and the valve-body demo pack. The through-line it records: applying sdd-kit-2 to a contract-first manufacturing-execution build, where across fourteen straight increments the distrust-the-green review never once came back empty by inspection — the discipline, not the green, was the load-bearing thing. Entry 26 adds the direction the bench structurally could not look: scenarios are authored from the vocabulary, so only a domain-first pass can show what the vocabulary lacks.*

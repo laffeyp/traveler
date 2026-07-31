@@ -1,0 +1,12 @@
+# The valve body. Identity only — no geometry, no physics.
+# Same part VF-003 already builds.
+alias: valve_body_rev_a
+part_number: VB-100
+revision: A
+name: Valve body
+uom: each
+
+# Where the system already carries this: as a (part_number, revision) pair on
+# ManufacturingStructureVersion, InventoryItem, and EffectivityRule. There is no
+# standalone Part record. See the gaps note in the pack README.
+maps_to: [ManufacturingStructureVersion, InventoryItem, EffectivityRule]

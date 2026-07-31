@@ -1,0 +1,6 @@
+# The one gasket, installed into the valve body. Serial GK-001.
+alias: gasket_001
+part: gasket_rev_b
+serial_number: GK-001
+
+maps_to: InventoryItem
