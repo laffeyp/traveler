@@ -310,8 +310,17 @@ export const HANDLERS: Record<string, H> = {
         blockers.push("manufacturing_structure_not_released");
     }
     const target = tryGet(world, input.target_inventory_alias);
-    if (!target || !["available", "reserved", "kitted"].includes(target.state))
-      blockers.push("target_inventory_not_available");
+    if (!target || !["available", "reserved", "kitted"].includes(target.state)) {
+      // Name the cause, exactly as the child-inventory blocker below does. A quarantined target used to report
+      // the generic `target_inventory_not_available`, blurring "on quality hold" with "absent or not yet
+      // received" — the collapse the neighbouring code exists to prevent (B-Q-14), twenty lines away. It was
+      // latent until receiving started quarantining target items as its ordinary behaviour (B-Q-40).
+      blockers.push(
+        target?.state === "quarantined"
+          ? `quarantined_inventory:${input.target_inventory_alias}`
+          : "target_inventory_not_available",
+      );
+    }
     // Name the child-inventory blocker per Product Spec §212 ("build checks name blockers"): the
     // three first-slice cases (missing / quarantined / wrong-part) are DISTINCT facts and must not
     // collapse to one label (Research Dossier: preserve distinct states). B-Q-14. Every predicate is
@@ -813,6 +822,11 @@ export const HANDLERS: Record<string, H> = {
       serial_or_lot: input.serial_or_lot,
       cage_code: input.cage_code,
       expires_at: input.expires_at,
+      // A supplier document may itself be export-controlled technical data (ITAR 22 CFR 120.33 covers
+      // drawings, diagrams, tables and engineering specifications — which is what a dimensional or first
+      // article report contains). Carried on the record so the existing EvaluateAccess nationality gate reads
+      // it; a document with no export_control is uncontrolled, as that operation already defines (B-Q-41).
+      export_control: input.export_control,
     });
   },
   VerifyCertificate(world, input) {

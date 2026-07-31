@@ -1,0 +1,44 @@
+scenario_id: VF-027
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Receiving evidence boundary — export-controlled supplier documents (B-Q-41).
+note: >
+  Brings the access path over supplier documents into the schema-generation set. Export control is declared
+  per document on the Certificate record and read by the EvaluateAccess nationality gate built for persona
+  gap 5; there is no second access mechanism.
+
+operations:
+  - CreateInventoryItem
+  - CreateShipment
+  - AddShipmentLine
+  - ReceiveShipment
+  - ReceiveInventory
+  - CaptureCertificate
+  - RunReceivingCheck
+  - ApplyReceivingCheckResultToInventory
+  - EvaluateAccess
+
+events:
+  - INVENTORY_CREATED
+  - SHIPMENT_CREATED
+  - SHIPMENT_LINE_CREATED
+  - SHIPMENT_RECEIVED
+  - INVENTORY_RECEIVED
+  - RECEIVING_CHECK_STARTED
+  - RECEIVING_CHECK_PASSED
+  - INVENTORY_AVAILABLE
+  - ACCESS_DECISION_ALLOWED
+  - ACCESS_DECISION_DENIED
+  - ACCESS_DECISION_AUDITED
+
+record_states:
+  Shipment: [created, received]
+  InventoryItem: [expected, received, available]
+
+assertion_types:
+  - record_state
+  - event_emitted
+  - event_payload_contains
+  - idempotent_replay
+
+caller_types: [planner, quality_engineer, access_admin]

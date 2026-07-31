@@ -1,0 +1,80 @@
+scenario_id: VF-027
+scenario_version: "1"
+title: An export-controlled supplier document is denied to a foreign person
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  A supplier document can itself be export-controlled technical data. ITAR 22 CFR 120.33 covers drawings,
+  diagrams, tables and engineering specifications, which is what a dimensional report contains — it records
+  measured characteristics against drawing dimensions. A certificate of conformance, which attests conformity
+  rather than describing how the article was made, generally does not.
+  So the consignment here carries both: an uncontrolled certificate of conformance, and a dimensional report
+  marked export-controlled to a set of nationalities. The receiving check passes on the paperwork and the
+  goods are released — controlled does not mean unusable. But reading the dimensional report is denied to a
+  person outside the allowed set and allowed to one inside it, through the same nationality gate built for
+  persona gap 5. No second access mechanism, and the denial is audited.
+
+seed:
+  deterministic_seed: 3027
+
+clock:
+  start_at: "2026-07-06T09:00:00Z"
+  timezone: "UTC"
+  mode: controlled
+
+world:
+  factory_node: node_la_001
+  station: station_receiving_01
+  program: program_valve_001
+  part_revisions:
+    - { alias: valve_body_rev_a, part_number: VB-100, revision: A }
+  inventory_truth:
+    - { alias: valve_body_004, part_revision: valve_body_rev_a, serial_number: VB-004 }
+  access_policies:
+    - alias: customer_summary_access
+      visible: [RunCloseReport.summary, SerialHistory.summary, BoundedDrillDown.summary]
+      hidden: [controlled_machine_evidence_payload, internal_quality_notes, raw_machine_payload]
+
+actors:
+  - { actor_id: planner_1, actor_type: planner, product_caller_type: planner }
+  - { actor_id: quality_1, actor_type: quality_engineer, product_caller_type: quality_engineer }
+  - { actor_id: access_admin_1, actor_type: access_admin, product_caller_type: access_admin }
+
+steps:
+  - { step_id: "001", set_time: "2026-07-06T09:00:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf027-001, input: { inventory_alias: valve_body_004, part_revision: valve_body_rev_a, serial_number: "VB-004" }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "002", actor: planner_1, operation: CreateShipment, idempotency_key: vf027-002, input: { shipment_alias: shipment_001, supplier: supplier_acme, purchase_order_ref: "PO-5512" }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_CREATED] } }
+  - { step_id: "003", actor: planner_1, operation: AddShipmentLine, idempotency_key: vf027-003, input: { shipment_alias: shipment_001, shipment_line_alias: shipment_line_valve_body, inventory_item_alias: valve_body_004, part_revision: valve_body_rev_a, serial_or_lot: "VB-004", required_documents: [certificate_of_conformance] }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_LINE_CREATED] } }
+  - { step_id: "004", set_time: "2026-07-06T09:05:00Z", actor: planner_1, operation: ReceiveShipment, idempotency_key: vf027-004, input: { shipment_alias: shipment_001 }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_RECEIVED] } }
+  - { step_id: "005", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf027-005, input: { inventory_alias: valve_body_004 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "006", actor: planner_1, operation: CaptureCertificate, idempotency_key: vf027-006, input: { certificate_alias: coc_valve_body, cert_type: certificate_of_conformance, part_revision: valve_body_rev_a, serial_or_lot: "VB-004", cage_code: "1ABC2", expires_at: "2027-06-01T00:00:00Z" }, expect: { operation_succeeded: true } }
+  # The dimensional report records measured characteristics against drawing dimensions: export-controlled.
+  - { step_id: "007", actor: planner_1, operation: CaptureCertificate, idempotency_key: vf027-007, input: { certificate_alias: dimensional_report_vb004, cert_type: dimensional_report, part_revision: valve_body_rev_a, serial_or_lot: "VB-004", cage_code: "1ABC2", export_control: { allowed_nationalities: [US, CA] } }, expect: { operation_succeeded: true } }
+  - { step_id: "008", set_time: "2026-07-06T09:20:00Z", actor: quality_1, operation: RunReceivingCheck, idempotency_key: vf027-008, input: { shipment_line_alias: shipment_line_valve_body, receiving_check_alias: receiving_check_001 }, expect: { operation_succeeded: true, events_emitted: [RECEIVING_CHECK_STARTED, RECEIVING_CHECK_PASSED] } }
+  - { step_id: "009", actor: quality_1, operation: ApplyReceivingCheckResultToInventory, idempotency_key: vf027-009, input: { receiving_check_alias: receiving_check_001, inventory_item_alias: valve_body_004 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+  # A permitted reader sees it; a foreign person does not. Same operation, same document, different person.
+  - { step_id: "010", set_time: "2026-07-06T09:30:00Z", actor: access_admin_1, operation: EvaluateAccess, idempotency_key: vf027-010, input: { resource_alias: dimensional_report_vb004, subject_nationality: US }, expect: { operation_succeeded: true, events_emitted: [ACCESS_DECISION_ALLOWED, ACCESS_DECISION_AUDITED] } }
+  - { step_id: "011", set_time: "2026-07-06T09:31:00Z", actor: access_admin_1, operation: EvaluateAccess, idempotency_key: vf027-011, input: { resource_alias: dimensional_report_vb004, subject_nationality: FR }, expect: { operation_succeeded: true, events_emitted: [ACCESS_DECISION_DENIED, ACCESS_DECISION_AUDITED] } }
+  # The uncontrolled certificate is readable by the same foreign person: control is per document, not blanket.
+  - { step_id: "012", set_time: "2026-07-06T09:32:00Z", actor: access_admin_1, operation: EvaluateAccess, idempotency_key: vf027-012, input: { resource_alias: coc_valve_body, subject_nationality: FR }, expect: { operation_succeeded: true, events_emitted: [ACCESS_DECISION_ALLOWED] } }
+
+assertions:
+  - { assertion_id: vf027_goods_released, assertion_type: record_state, severity: blocking, target: { record_type: InventoryItem, alias: valve_body_004 }, expected: { state: available } }
+  - { assertion_id: vf027_controlled_denied_to_foreign_person, assertion_type: event_payload_contains, severity: blocking, target: { event_type: ACCESS_DECISION_DENIED, producer_operation: EvaluateAccess }, expected: { resource_alias: dimensional_report_vb004, subject_nationality: FR, reason: deemed_export_denied } }
+  - { assertion_id: vf027_controlled_allowed_to_permitted_person, assertion_type: event_payload_contains, severity: blocking, target: { event_type: ACCESS_DECISION_ALLOWED, producer_operation: EvaluateAccess }, expected: { resource_alias: dimensional_report_vb004, subject_nationality: US } }
+  - { assertion_id: vf027_uncontrolled_document_is_not_swept_up, assertion_type: event_payload_contains, severity: blocking, target: { event_type: ACCESS_DECISION_ALLOWED, producer_operation: EvaluateAccess }, expected: { resource_alias: coc_valve_body, subject_nationality: FR } }
+  - { assertion_id: vf027_every_decision_audited, assertion_type: event_emitted, severity: blocking, target: { event_type: ACCESS_DECISION_AUDITED, producer_operation: EvaluateAccess }, expected: { count: 3 } }
+
+# Harness section 14. The replay targets the receiving check, not EvaluateAccess: access decisions are
+# registered `not_idempotent` deliberately, because a decision must re-evaluate against CURRENT policy and be
+# audited each time it is asked (TAD: event access metadata is an audit snapshot, live decisions re-evaluate).
+# A second audit record on a second question is the correct behaviour, not a duplicate fact.
+idempotency_replay_checks:
+  - check_id: vf027_replay_receiving_check
+    step_id: "008"
+    operation: RunReceivingCheck
+    idempotency_key: vf027-008

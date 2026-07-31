@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/ACCESS_DECISION_DENIED.payload.schema.json",
+  "title": "ACCESS_DECISION_DENIED payload (baseline; owning_module=access)",
+  "type": "object"
+}

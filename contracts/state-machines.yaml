@@ -270,8 +270,10 @@ state_machines:
       - { from: restricted,      to: deleted_reference, via: DeleteAttachmentReference, emits: ATTACHMENT_REFERENCE_DELETED }
     forbidden: ["deleted_reference -> *"]
 
-  # --- Receiving Evidence Module. ReceivingCheck mirrors BuildCheckResult: one evaluation, a terminal
-  #     passed-or-blocked outcome, and the reasons carried as registered rule ids in blockers[]. ---
+  # --- Receiving Evidence Module. Only Shipment has a lifecycle. ReceivingCheck is status-light like its two
+  #     siblings BuildCheckResult and RunCloseCheck: one evaluation, a status, and the reasons carried as
+  #     registered rule ids in blockers[]. It was briefly given a state machine whose initial state was also
+  #     terminal, which is incoherent and diverged from the shape the project already repeats. ---
   - record_type: Shipment
     owning_module: receiving
     state_field: status
@@ -283,13 +285,3 @@ state_machines:
       - { from: null,     to: created,  via: CreateShipment,  emits: SHIPMENT_CREATED }
       - { from: created,  to: received, via: ReceiveShipment, emits: SHIPMENT_RECEIVED }
 
-  - record_type: ReceivingCheck
-    owning_module: receiving
-    state_field: status
-    initial_state: passed
-    terminal_states: [passed, blocked]
-    creation_transition: explicit
-    states: [passed, blocked]
-    transitions:
-      - { from: null, to: passed,  via: RunReceivingCheck, emits: RECEIVING_CHECK_PASSED }
-      - { from: null, to: blocked, via: RunReceivingCheck, emits: RECEIVING_CHECK_BLOCKED }

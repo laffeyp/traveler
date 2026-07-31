@@ -245,3 +245,34 @@ describe("build-check-blocker family (in-memory)", () => {
     expect(blockersFrom(dQ)).not.toContain("missing_bom_inventory:gk_b");
   });
 });
+
+/**
+ * A quarantined TARGET must name its quarantine, exactly as a quarantined child does (B-Q-40). The generic
+ * `target_inventory_not_available` blurred "on quality hold" with "absent or not yet received" — the collapse
+ * the child-inventory branch twenty lines away exists to prevent. Latent until the receiving boundary made
+ * quarantining a target item ordinary.
+ */
+describe("build check names WHY the target is unusable", () => {
+  const seedTarget = (state: string) => {
+    const driver = new InMemoryProductDriver();
+    driver.world.createInitial("InventoryItem", "tgt", { part_revision: "vb_rev_a" });
+    driver.world.get("tgt").state = state;
+    driver.executeOperation(
+      "RunBuildCheck",
+      { build_check_alias: "bc", target_inventory_alias: "tgt" },
+      "planner",
+      "s1",
+    );
+    return driver.readRecord("bc").fields.blockers as string[];
+  };
+
+  it("a quarantined target is reported as quarantined, not as merely unavailable", () => {
+    const blockers = seedTarget("quarantined");
+    expect(blockers).toContain("quarantined_inventory:tgt");
+    expect(blockers).not.toContain("target_inventory_not_available");
+  });
+
+  it("a target that never arrived is still reported as unavailable", () => {
+    expect(seedTarget("expected")).toContain("target_inventory_not_available");
+  });
+});

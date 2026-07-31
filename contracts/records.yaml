@@ -58,4 +58,4 @@ records:
   #     quarantine state, and its SupplierCorrectiveAction is our Issue. Thirteen proposed records become three. ---
   - { name: Shipment,                    owning_module: receiving,              state_machine: Shipment, note: "inbound consignment from one supplier; the PO stays in ERP and is referenced, not owned" }
   - { name: ShipmentLine,                owning_module: receiving,              state_machine: false, note: "one line per part revision + lot/serial on a shipment; the link that marks inventory as supplier-received" }
-  - { name: ReceivingCheck,              owning_module: receiving,              state_machine: ReceivingCheck, note: "same shape as BuildCheckResult / RunCloseCheck: status passed|blocked plus blockers[] naming registered receiving-rule ids" }
+  - { name: ReceivingCheck,              owning_module: receiving,              state_machine: false, note: "status-light, exactly like BuildCheckResult and RunCloseCheck: status passed|blocked plus blockers[] naming registered receiving-rule ids" }

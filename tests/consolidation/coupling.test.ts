@@ -34,6 +34,46 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
       expect(runScenarioWithDriver(s).result.status).toBe("passed");
   });
 
+  it("the receiving gate must RELEASE as well as block — forcing a blocker makes VF-026 red", () => {
+    // The pair to the suppression mutation below. A gate that only ever refuses is not a gate: if the check
+    // raised a blocker regardless of the paperwork, VF-025 would still pass and only VF-026 would catch it.
+    withMutation(
+      "RunReceivingCheck",
+      (orig) =>
+        (w: any, i: any, ...rest: any[]) => {
+          const result = orig(w, i, ...rest);
+          const check = w.get(i.receiving_check_alias);
+          check.fields.blockers = ["certificate_of_conformance_present"];
+          check.state = "blocked";
+          return result;
+        },
+      () => {
+        expect(runScenarioWithDriver("VF-026").result.status).toBe("failed");
+      },
+    );
+    expect(runScenarioWithDriver("VF-026").result.status).toBe("passed"); // restored
+  });
+
+  it("export control must be per document — sweeping it onto every certificate makes VF-027 red", () => {
+    // VF-027 asserts an UNCONTROLLED certificate of conformance stays readable by the same foreign person who
+    // is denied the dimensional report. Treating every supplier document as controlled would deny both, which
+    // is the blanket behaviour B-Q-41 rejected.
+    withMutation(
+      "EvaluateAccess",
+      (orig) =>
+        (w: any, i: any, ...rest: any[]) => {
+          const resource = w.records.get(w.aliasToId.get(i.resource_alias));
+          if (resource && !resource.fields.export_control)
+            resource.fields.export_control = { allowed_nationalities: ["US"] };
+          return orig(w, i, ...rest);
+        },
+      () => {
+        expect(runScenarioWithDriver("VF-027").result.status).toBe("failed");
+      },
+    );
+    expect(runScenarioWithDriver("VF-027").result.status).toBe("passed"); // restored
+  });
+
   it("receiving evidence gate must fire — suppressing the missing-document blocker makes VF-025 red", () => {
     // The receiving check is what stops goods arriving without paperwork. Drop the blocker it raises for an
     // absent document and VF-025 must go red: the check would pass, the goods would be released, and the
