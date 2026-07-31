@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/reports/CertificateOfConformance.schema.json",
+  "title": "CertificateOfConformance payload (generated from reports.yaml required_sections)",
+  "type": "object",
+  "required": [
+    "report_type",
+    "report_definition_version",
+    "generated_at",
+    "sections"
+  ],
+  "properties": {
+    "report_type": {
+      "const": "CertificateOfConformance"
+    },
+    "report_definition_version": {
+      "type": "integer"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "sections": {
+      "type": "object",
+      "required": [
+        "certificate_header",
+        "supplier",
+        "customer",
+        "purchase_order",
+        "items",
+        "conformity_statement",
+        "traceability",
+        "authorized_signature"
+      ],
+      "properties": {
+        "certificate_header": {},
+        "supplier": {},
+        "customer": {},
+        "purchase_order": {},
+        "items": {},
+        "conformity_statement": {},
+        "traceability": {},
+        "authorized_signature": {}
+      }
+    }
+  }
+}

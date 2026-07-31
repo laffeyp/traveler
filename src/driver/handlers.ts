@@ -774,7 +774,32 @@ export const HANDLERS: Record<string, H> = {
     const shipment = world.get(input.shipment_alias);
     // The line is what marks inventory as supplier-received, so it must actually resolve to an item. A line
     // pointing at nothing marks nothing, and the goods it claims to cover would never enter the boundary.
-    world.get(input.inventory_item_alias);
+    // The claimed identity must match the goods. Receiving matches paperwork against the LINE, so a line that
+    // claims revision A over revision-B material defeats the mismatch invariant one layer upstream of where
+    // the check looks (review F12). The goods are the truth; a disagreeing claim is refused, not stored.
+    const received = world.get(input.inventory_item_alias);
+    if (
+      input.part_revision != null &&
+      received.fields.part_revision != null &&
+      input.part_revision !== received.fields.part_revision
+    )
+      throw new Error(
+        `part_revision_mismatch: line claims '${input.part_revision}' but the goods are '${received.fields.part_revision}'`,
+      );
+    if (
+      input.serial_or_lot != null &&
+      received.fields.serial_number != null &&
+      input.serial_or_lot !== received.fields.serial_number
+    )
+      throw new Error(
+        `serial_mismatch: line claims '${input.serial_or_lot}' but the goods are '${received.fields.serial_number}'`,
+      );
+    // F14: an explicitly empty list is a caller asserting no evidence is needed. B-Q-38's own reasoning
+    // convicts it — requiring nothing would make the boundary decorative — so it is refused, not defaulted.
+    if (Array.isArray(input.required_documents) && input.required_documents.length === 0)
+      throw new Error(
+        "validation_error: required_documents cannot be empty; omit it to take the default",
+      );
     const line = world.createInitial("ShipmentLine", input.shipment_line_alias, {
       shipment: shipment.id,
       inventory_item: input.inventory_item_alias,
@@ -820,10 +845,11 @@ export const HANDLERS: Record<string, H> = {
       // alone would let a certificate for one part satisfy a requirement on another — the inbound twin of the
       // outbound cross-part collision (B-Q-49b). A document that matches the serial but names a different
       // part revision raises its own registered rule rather than silently counting or silently missing.
+      // A document must NAME the part revision it is offered against. The earlier `== null ||` branch read
+      // absent identity as agreement, so one certificate naming no part released a valve body and a gasket
+      // sharing a lot (review F3) — the cross-part collision closed outbound, left open inbound.
       const matches = scopeMatches.filter(
-        (certificate) =>
-          certificate.fields.part_revision == null ||
-          certificate.fields.part_revision === line.fields.part_revision,
+        (certificate) => certificate.fields.part_revision === line.fields.part_revision,
       );
       if (matches.length === 0 && scopeMatches.length > 0) {
         blockers.push("document_matches_part_revision");
@@ -865,6 +891,22 @@ export const HANDLERS: Record<string, H> = {
     // goods in `received` where a later ReleaseInventory could still free them.
     const check = world.get(input.receiving_check_alias);
     const item = world.get(input.inventory_item_alias);
+    // Bind the decision to the goods it decides about. Without this the handler read two aliases and branched
+    // on a state, so ANY passed check released ANY item: uncertified goods reached production-eligible state
+    // on another line's paperwork while their own check still read blocked (review F10). Resolve both sides
+    // through the record id so the alias and id forms cannot diverge.
+    if (check.record_type !== "ReceivingCheck")
+      throw new Error(
+        `validation_error: '${input.receiving_check_alias}' is a ${check.record_type}, not a ReceivingCheck`,
+      );
+    const decidedLine = world.records.get(check.fields.shipment_line);
+    if (!decidedLine)
+      throw new Error("receiving_check_unresolvable: the check names no shipment line");
+    const lineItem = tryGet(world, decidedLine.fields.inventory_item);
+    if (!lineItem || lineItem.id !== item.id)
+      throw new Error(
+        `receiving_check_item_mismatch: the check decided '${decidedLine.fields.inventory_item}', not '${input.inventory_item_alias}'`,
+      );
     if (check.state === "passed") {
       moveStateTo(item, "ApplyReceivingCheckResultToInventory", "available");
       world.emit("INVENTORY_AVAILABLE", "ApplyReceivingCheckResultToInventory", {
@@ -962,9 +1004,12 @@ export const HANDLERS: Record<string, H> = {
     // currently PASSED. Goods held for other reasons (a quality hold with no shipment line) are outside the
     // receiving boundary and release on the quality path as before. Recorded as B-Q-50.
     const item = world.get(input.inventory_alias);
+    // Compare RESOLVED IDS, not the caller's string. `world.get` accepts an alias or a record id, so a string
+    // comparison against the stored alias was defeated by addressing the item by id — and the product hands
+    // the caller that id in `recordsWritten` (review F11).
     const line = world
       .byType("ShipmentLine")
-      .find((candidate) => candidate.fields.inventory_item === input.inventory_alias);
+      .find((candidate) => tryGet(world, candidate.fields.inventory_item)?.id === item.id);
     if (line) {
       const passed = world
         .byType("ReceivingCheck")
@@ -995,7 +1040,14 @@ export const HANDLERS: Record<string, H> = {
           // world, so matching the string alone let a certificate for one part release a different part that
           // happened to share a serial — the same cross-part collision the affected-population check closed
           // in sprint 019 (B-Q-49).
+          // Both sides must actually carry identity. `undefined === undefined` is true, so for goods with no
+          // part revision the guard degenerated to serial-only matching — the pre-fix behaviour B-Q-49(b)
+          // was written to close (review F13).
           (entry: any) =>
+            entry.serial_number != null &&
+            entry.part_revision != null &&
+            item.fields.serial_number != null &&
+            item.fields.part_revision != null &&
             entry.serial_number === item.fields.serial_number &&
             entry.part_revision === item.fields.part_revision,
         ),

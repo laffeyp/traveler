@@ -105,10 +105,25 @@ for (const type of vfEvents) {
 }
 
 // 3. RunCloseReport schema (path from the reports registry) present + compiles
+// EVERY registered report's schema ref must resolve and compile. Hardcoding RunCloseReport meant the gate
+// printed "all schema refs resolve" over a dangling CertificateOfConformance reference — the same cosmetic
+// gate the sprint-008 review found and fixed in the event and operation legs, left in the report leg (F18).
 const report = (reports.reports ?? []).find((r: any) => r.name === "RunCloseReport");
 let reportValidator: any = null;
 if (!report) err("RunCloseReport not in reports.yaml");
 else reportValidator = compile(report.payload_schema_ref);
+let reportSchemas = 0;
+for (const definition of (reports.reports ?? []) as any[]) {
+  if (!definition.payload_schema_ref) {
+    err(`[reports] ${definition.name}: no payload_schema_ref`);
+    continue;
+  }
+  if (compile(definition.payload_schema_ref)) reportSchemas++;
+  else
+    err(`[reports] ${definition.name}: schema ${definition.payload_schema_ref} missing or invalid`);
+}
+if (reportSchemas !== (reports.reports ?? []).length)
+  err(`[reports] ${reportSchemas}/${(reports.reports ?? []).length} report schemas resolved`);
 
 // 4. fixtures validate as declared
 const fixtures =

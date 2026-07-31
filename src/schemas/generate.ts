@@ -281,10 +281,39 @@ for (const type of vfEvents) {
   evCount++;
 }
 write("schemas/reports/RunCloseReport.schema.json", runCloseReportSchema());
+// Every OTHER registered report gets a schema generated from its own declared required_sections. Before this
+// only RunCloseReport was emitted while reports.yaml declared a path for CertificateOfConformance, so the
+// registry pointed at a file that did not exist (review F18).
+let generatedReports = 1;
+for (const definition of (reports.reports ?? []) as any[]) {
+  if (definition.name === "RunCloseReport") continue;
+  write(definition.payload_schema_ref, {
+    $schema: DRAFT,
+    $id: definition.payload_schema_ref,
+    title: `${definition.name} payload (generated from reports.yaml required_sections)`,
+    type: "object",
+    required: ["report_type", "report_definition_version", "generated_at", "sections"],
+    properties: {
+      report_type: { const: definition.name },
+      report_definition_version: { type: "integer" },
+      generated_at: { type: "string" },
+      sections: {
+        type: "object",
+        required: definition.required_sections ?? [],
+        properties: Object.fromEntries(
+          (definition.required_sections ?? []).map((section: string) => [section, {}]),
+        ),
+      },
+    },
+  });
+  generatedReports++;
+}
 
 console.log(`schema generation (contracts-0.4.1)`);
 console.log(
   `  operations: ${opCount} (input+output)  tight_inputs: ${Object.keys(TIGHT_INPUTS).length}`,
 );
 console.log(`  events: ${evCount} payload schemas`);
-console.log(`  reports: 1 (RunCloseReport)`);
+console.log(
+  `  reports: ${generatedReports} (${(reports.reports ?? []).map((r: any) => r.name).join(", ")})`,
+);

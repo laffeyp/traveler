@@ -28,6 +28,15 @@ The running methodology state (this project runs under the SDD kit in `sdd-kit-2
 | [ADDENDUMS.md](ADDENDUMS.md) | Dated, project-stamped technique captures staged between this project's `KIT_DIARY.md` and the kit's `TECHNIQUES.md` catalog (an outlier — it feeds the shared kit, not project state). |
 | [SDD_GENERAL_PROCESS.md](SDD_GENERAL_PROCESS.md) | Theory note: SDD set against the settled fields that already do what it does (process mining, spec mining, grammatical inference, model extraction, model-driven reverse engineering, Rules as Code, computer-interpretable guidelines) — what is a rename, what is genuinely new, the reach test, and where the method stops. Not project state; the doctrine behind it. |
 
+## 2a. Boundary specifications — governing documents beyond the first slice
+
+The nine-document stack in group 5 governs the first executable slice and stops there. A boundary specification governs one boundary beyond it, and ranks with the doc stack in `WORKING_AGREEMENT.md §Authority order`.
+
+| Document | What it is |
+|---|---|
+| [receiving-evidence-boundary-spec-v0.1.md](receiving-evidence-boundary-spec-v0.1.md) | The receiving evidence boundary: how material becomes eligible to enter production. Its §9 invariants, §13 scenario ids, §22 fail-closed mutation battery and §26 product decisions govern that boundary. |
+| [receiving-evidence-registry-pack-v0.1/](receiving-evidence-registry-pack-v0.1/) | The follow-on registry-ready definitions for the same boundary. Subordinate to the spec above. |
+
 ## 2b. Demo pack — the domain written out as plain data
 
 | Path | What it is |

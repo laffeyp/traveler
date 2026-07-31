@@ -31,6 +31,13 @@ Build-time semantics follow this precedence; the first listed wins on conflict:
 5. `manufacturing-software-doc-stack-build-ready/08-repository-bootstrap-plan-outline-v0.1.md` — the work order / build path.
 6. Earlier docs: `01-research-dossier`, `02-product-specification-v0.6` (product-behavior authority), `03-technical-architecture-document-v0.3` (module-ownership authority until amended).
 
+**Boundary specifications (govern their own boundary, beneath the Contract Spec):**
+
+7. `receiving-evidence-boundary-spec-v0.1.md` — the governing document for the receiving evidence boundary (inbound shipment, supplier paperwork, receiving inspection, quarantine, release-to-production). Dated 2026-07-31. Its §9 invariants, §13 scenario ids, §22 mutation battery and §26 product decisions govern that boundary the way the Contract Spec governs the first slice.
+8. `receiving-evidence-registry-pack-v0.1/` — the follow-on that turns the boundary spec into registry-ready definitions. Subordinate to the boundary spec; where they differ, the boundary spec governs.
+
+*Why these are listed:* the receiving boundary was built from the registry pack alone, because the boundary spec sat outside the repository and nothing pointed at it. A governing document that cannot be followed from inside the project is the document-level form of the phantom-authority failure (practice #7). Any future boundary specification goes here before its first handler is written.
+
 If a lower-authority document contradicts the Contract Spec, the Contract Spec governs and the divergence is recorded in the TAD amendment ledger (Contract Spec §22) or as a project decision in BLACKBOARD.
 
 ---
