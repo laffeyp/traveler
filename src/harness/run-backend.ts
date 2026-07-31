@@ -84,6 +84,7 @@ const EQUIV_SCENARIOS = [
   "VF-014",
   "VF-015",
   "VF-016",
+  "VF-025",
 ];
 let equivOk = true;
 const equivFailures: string[] = [];
@@ -272,6 +273,76 @@ const ok15 =
   fresh15.readRecord("good_evidence_001")?.state === "normalized";
 console.log(`  backend grammar-gap durability proof (VF-015): ${ok15 ? "PASS" : "FAIL"}`);
 
+// RECEIVING EVIDENCE across a cold reload: goods quarantined for missing paperwork must STILL be quarantined
+// on a fresh-from-disk instance, and the ReceivingCheck must still name why. Every other durable path in this
+// project has a reload proof; receiving had none, and the parity tell (sprint 010) says an asymmetry like that
+// is where a fail-open hides — a reload that lost the shipment line's required_documents or the check's
+// blockers would leave the goods releasable with nothing recording the reason.
+const DBRCV = join(tmpdir(), "receiving-backend-cli.db");
+for (const f of [DBRCV, DBRCV + "-journal"]) if (existsSync(f)) rmSync(f);
+const brec = new BackendProductDriver(DBRCV);
+brec.executeOperation(
+  "CreateInventoryItem",
+  { inventory_alias: "rcv_item", part_revision: "vb_rev_a", serial_number: "VB-700" },
+  "planner",
+  "r1",
+  "RCV-1",
+);
+brec.executeOperation(
+  "CreateShipment",
+  { shipment_alias: "rcv_ship", supplier: "acme", purchase_order_ref: "PO-9" },
+  "planner",
+  "r2",
+  "RCV-2",
+);
+brec.executeOperation(
+  "AddShipmentLine",
+  {
+    shipment_alias: "rcv_ship",
+    shipment_line_alias: "rcv_line",
+    inventory_item_alias: "rcv_item",
+    part_revision: "vb_rev_a",
+    serial_or_lot: "VB-700",
+    required_documents: ["certificate_of_conformance"],
+  },
+  "planner",
+  "r3",
+  "RCV-3",
+);
+brec.executeOperation("ReceiveShipment", { shipment_alias: "rcv_ship" }, "planner", "r4", "RCV-4");
+brec.executeOperation(
+  "ReceiveInventory",
+  { inventory_alias: "rcv_item" },
+  "planner",
+  "r5",
+  "RCV-5",
+);
+brec.executeOperation(
+  "RunReceivingCheck",
+  { shipment_line_alias: "rcv_line", receiving_check_alias: "rcv_check" },
+  "quality_engineer",
+  "r6",
+  "RCV-6",
+);
+brec.executeOperation(
+  "ApplyReceivingCheckResultToInventory",
+  { receiving_check_alias: "rcv_check", inventory_item_alias: "rcv_item" },
+  "quality_engineer",
+  "r7",
+  "RCV-7",
+);
+const freshRcv = new BackendProductDriver(DBRCV); // cold start: everything below is read from disk
+const rcvCheck = freshRcv.readRecord("rcv_check");
+const okRcv =
+  freshRcv.readRecord("rcv_item")?.state === "quarantined" &&
+  rcvCheck?.state === "blocked" &&
+  (rcvCheck?.fields?.blockers ?? []).includes("certificate_of_conformance_present") &&
+  freshRcv.readRecord("rcv_ship")?.state === "received";
+console.log(
+  `  receiving evidence: fresh-from-disk item=${freshRcv.readRecord("rcv_item")?.state} check=${rcvCheck?.state} blockers=${JSON.stringify(rcvCheck?.fields?.blockers ?? [])}`,
+);
+console.log(`  backend receiving-evidence durability proof (VF-025): ${okRcv ? "PASS" : "FAIL"}`);
+
 // WRITE-BOUNDARY IDEMPOTENCY across a cold reload (B-Q-13): a `transactional_unique_constraint` op's dedup
 // must survive a fresh-from-disk instance (unlike the in-instance memo). Commit a CreateInventoryItem under a
 // key, then a BRAND-NEW backend instance re-attempting the SAME key must conflict (zero facts) — the unique
@@ -448,5 +519,7 @@ console.log(
 );
 console.log(`  backend outbox-delivery durability proof (Phase A): ${okD ? "PASS" : "FAIL"}`);
 process.exit(
-  ok && ok6 && ok8 && ok9 && ok13 && ok15 && okW && ok12 && equivOk && okIdc && okR && okD ? 0 : 1,
+  ok && ok6 && ok8 && ok9 && ok13 && ok15 && okW && ok12 && equivOk && okIdc && okR && okD && okRcv
+    ? 0
+    : 1,
 );

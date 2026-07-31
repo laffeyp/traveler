@@ -34,6 +34,79 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
       expect(runScenarioWithDriver(s).result.status).toBe("passed");
   });
 
+  it("receiving evidence gate must fire — suppressing the missing-document blocker makes VF-025 red", () => {
+    // The receiving check is what stops goods arriving without paperwork. Drop the blocker it raises for an
+    // absent document and VF-025 must go red: the check would pass, the goods would be released, and the
+    // scenario's quarantine and never-available assertions would fail. Converts the throwaway probe from
+    // 2026-07-31 into a permanent regression (practice #6) so a later refactor cannot silently decouple it.
+    withMutation(
+      "RunReceivingCheck",
+      (orig) =>
+        (w: any, i: any, ...rest: any[]) => {
+          const result = orig(w, i, ...rest);
+          const check = w.get(i.receiving_check_alias);
+          check.fields.blockers = []; // the check no longer says anything is missing
+          check.state = "passed";
+          return result;
+        },
+      () => {
+        expect(runScenarioWithDriver("VF-025").result.status).toBe("failed");
+      },
+    );
+    expect(runScenarioWithDriver("VF-025").result.status).toBe("passed"); // restored
+  });
+
+  it("required step work must be enforced — neutering the precondition lets an unmeasured step complete", () => {
+    // A step whose required measurement was never captured used to complete, and the run then closed with an
+    // empty measurement summary. No scenario can carry this (the gate refuses before a scenario could reach
+    // close), so the coupling is proven directly: with the precondition neutered the step completes, with it
+    // in place it does not.
+    const seed = () => {
+      const driver = new InMemoryProductDriver();
+      driver.world.createInitial("ProcedureVersion", "pv", {
+        steps: [
+          {
+            alias: "ps",
+            ordinal: 1,
+            name: "Step",
+            data_collection_fields: [
+              { alias: "f", name: "T", unit: "Nm", lower_bound: 1, upper_bound: 2 },
+            ],
+          },
+        ],
+      });
+      const run = driver.world.createInitial("Run", "run", { procedure_version: "pv" });
+      driver.world.createInitial("RunContextSnapshot", "snap", {
+        run: run.id,
+        procedure_version: "pv",
+      });
+      driver.world.createInitial("RunStep", "rs", { run: run.id, procedure_step: "ps" });
+      driver.executeOperation("StartRunStep", { run_step_alias: "rs" }, "operator", "s1");
+      return driver;
+    };
+    // In place: refused, and the step stays in progress.
+    const guarded = seed();
+    expect(
+      guarded.executeOperation("CompleteRunStep", { run_step_alias: "rs" }, "operator", "s2")
+        .succeeded,
+    ).toBe(false);
+    expect(guarded.readRecord("rs").state).toBe("in_progress");
+    // Neutered: it completes on no evidence — which is the defect the gate exists to stop.
+    withMutation(
+      "CompleteRunStep",
+      () => (w: any, i: any) => {
+        const runStep = w.get(i.run_step_alias);
+        runStep.state = "complete";
+        w.emit("RUN_STEP_COMPLETED", "CompleteRunStep", { run_step_id: runStep.id });
+      },
+      () => {
+        const mutated = seed();
+        mutated.executeOperation("CompleteRunStep", { run_step_alias: "rs" }, "operator", "s2");
+        expect(mutated.readRecord("rs").state).toBe("complete");
+      },
+    );
+  });
+
   it("§18 auto-cascade must fire on invalidation — suppressing its two events makes VF-003F red (B-Q-29)", () => {
     // Surgically drop ONLY the cascade events (run-close observation + issue); the base invalidation + report
     // marking still happen. VF-003F asserts both events count==1, so defeating the cascade turns it red — proving
