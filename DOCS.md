@@ -10,6 +10,7 @@ The "where is the project" front door. `ROADMAP.md` is the entry point and cross
 
 | Document | What it is |
 |---|---|
+| [STATE.md](STATE.md) | What the documents specified, what was built against it, what is deliberately unimplemented, and what no document covers. Read this first. |
 | [ROADMAP.md](ROADMAP.md) | Measured gate status, everything shipped, the (now-closed) roadmap phases, the deferred backlog, and the deliberate non-goals. The front door. |
 | [DEVIATION_SUMMARY.md](DEVIATION_SUMMARY.md) | How far the build moved from the initial design, how, and where it stands: the locked baseline, a quantified delta table, the method, final status. |
 | [ADDITIONS.md](ADDITIONS.md) | The beyond-spec vocabulary ledger — every capability built on top of the original doc stack, each with its governing standard, the new vocabulary it introduced, and the test that proves it. |
