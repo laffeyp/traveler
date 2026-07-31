@@ -733,9 +733,104 @@ forward-only validator never asks whether every specified field actually landed.
 
 ---
 
+## Entry 28 — The citation rule was never pointed outward (2026-07-30)
+
+**What happened.** `ADDITIONS.md` logged each of the nine persona additions against a standard said to require
+it. Those citations had never been read at source. Four did not hold. 21 CFR Part 11 is FDA law and has no
+force in aerospace; it was the authority given for the electronic signature fields. ISO/IEC 17025 accredits
+testing and calibration laboratories, not manufacturers; it was the authority given for the calibration gate.
+MESA-11 is a functional reference model from 1997 that requires nothing of anyone. EIA-649C is real but could
+not be confirmed to cover serial cut-in effectivity. Three held: AS9102, ITAR 22 CFR 120.50(a)(2), AS9100 8.4.2.
+
+**Lesson 1: the rule was enforced where it was cheap and skipped where it mattered.** Practice #7, from sprint
+008: every authority citation must resolve to a real, followable record before the code lands. It has been
+enforced ever since — on B-Q ids, which are internal, which we mint ourselves, and which therefore always
+resolve. The external citations are the ones an auditor follows out of the building, and not one was checked
+for twenty increments. A rule applied only to the half you control never fails, which is why nobody noticed.
+
+**Lesson 2: research-shaped output is harder to catch than no research.** The persona study recorded that it
+was grounded in a dedicated web-research pass over these standards, with source-genre labelling. It named real
+standards, in the right subject area, with clause numbers — and still put an FDA regulation under an aerospace
+feature. An empty citation invites checking; a detailed one closes the question. The tells were in plain sight:
+Part 11 is famous FDA law, and 17025 has "laboratories" in its title.
+
+**Lesson 3: remove the decoration rather than repair it.** For two of the nine there is no right answer — the
+calibration gate maps cleanly to AS9100 7.1.5, but the e-signature feature has no aerospace authority I could
+find, and the honest entry is that it is good practice with no standard behind it. Rather than keep a column
+right in three rows, arguable in one and empty in five, the column went.
+
+**And a second failure the same day, from the other direction.** Twice I reported deliberately unimplemented
+operations as a shortfall — first as "58 of 116 unimplemented", then again as a list naming attachments, run
+control and the Issue lifecycle. Build Readiness §1.3 scopes those out in plain words, and I had quoted it
+correctly earlier in the same session. The pull came from the question: "where are we" reaches for a list of
+what is missing, and the shape then finds content. This project's whole premise is that the registry is larger
+than the build; I inverted it into a deficit twice in an afternoon while holding the sentence that forbids it.
+
+**Kit observation (two new practices).** (25) **Point the citation rule outward. Practice #7 is half-enforced
+if it only checks internal ids: those always resolve because we mint them. Every external authority — a
+standard, a clause, a regulation — must be read at its source before it lands in a ledger, because a citation
+that resolves to the wrong domain survives every internal check and is worse than none.** (26) **A status
+question pulls for a deficit list and the shape will find content. Before reporting anything as missing, find
+the sentence that says it should exist; where a scope rule makes registered-but-unbuilt the correct state,
+absence is the design.** For TECHNIQUES.md.
+
+---
+
+## Entry 29 — Taking an outside pack as input without taking it verbatim (2026-07-31)
+
+**What happened.** An outside registry pack arrived proposing a Receiving module: thirteen records, twenty-one
+operations, four state machines, a bespoke event taxonomy. My first move was to transcribe its names into our
+YAML shape and run the validator. The Architect stopped it: reformatting someone else's vocabulary is not
+integration. Reverted, then mapped it concept by concept against what we already speak. Most of it already had
+a name here. Thirteen records became three; twenty-one operations became five.
+
+**Lesson 1: a second vocabulary for a thing you already name is the expensive kind of duplication.** The pack's
+`SupplierDocument`, with attach / classify / verify / reject / expire, is our `Certificate` — which already
+carries the type, the lot or serial, the supplier code and the expiry, and whose `VerifyCertificate` already
+returns typed reasons. Its comment even says "for a receiving gate to act on". Its
+`SupplierDocumentVerification` is our `Verification`. Its `SupplierCorrectiveAction` is our `Issue`. Had I
+merged the fragments, the system would have held two records for a supplier certificate, two verification
+records, and two ways to say a supplier is at fault — and every later reader would have had to learn which was
+real. The test for adopting an outside concept is not "is it well designed" but "do we already have a word".
+
+**Lesson 2: match the incoming shape to the shape you already repeat.** The pack's `ReceivingInspection` used a
+status/result split we use nowhere. We have exactly one shape for a check: a record with a status and a list of
+registered blocker ids, emitting STARTED then PASSED or BLOCKED — `BuildCheckResult` and `RunCloseCheck` both do
+it. So the receiving check took that shape, its reasons became registered rule ids in a `receiving-rules.yaml`
+mirroring `run-close-rules.yaml`, and its release split became `ApplyReceivingCheckResultToInventory`, matching
+`ApplyBuildCheckResultToRun`. An imported concept that arrives in a novel shape costs a reader twice: once to
+learn it, and once every time they wonder why it differs.
+
+**Lesson 3: pressure-test the mapping before writing the code — reuse can be wrong in ways transcription is
+not.** Claiming `Certificate` covers supplier documents was cheap to say and had two faults in it.
+`VerifyCertificate` treats a missing expiry as invalid, which is correct for a calibration certificate and
+wrong for a material test report or a first article report, neither of which expires — reuse as-is would have
+refused valid paperwork. And it matches strictly on `serial_or_lot`, while a first article report covers a part
+revision, so it could never have been found. Here the incoming pack was BETTER than us: its `scope` enum
+expressed something our flat field could not, and it was adopted. Taking a pack as input means being open to
+the places it is right, which is only visible if you test your own mapping rather than defend it.
+
+**Lesson 4: the mutation battery found the fault the pressure test missed, in my own design.** Suppressing the
+absent-document branch left VF-025 green. For a certificate of conformance, `expires: true` meant the expiry
+branch caught an absent document as a side effect, so absent and expired had collapsed into one blocker — the
+exact state-blurring VF-004/005/006 exist to forbid, reintroduced by me while porting a pack that had kept the
+two distinct. Splitting them into separate registered ids made the same mutation fail VF-025 on both drivers
+and turn three unit tests red. A green scenario over a design that conflates two facts will keep being green;
+only injecting the defect shows which fact it was actually testing.
+
+**Kit observation (one new practice).** (27) **Take an outside spec as INPUT, never as vocabulary. Map every
+proposed concept onto what the project already names before adopting any of it, and reject a second word for a
+thing you already have a word for; match the incoming shape to the shape you already repeat, so the import does
+not teach readers a second idiom. Then pressure-test the mapping before writing code — the failures of REUSE
+are different from the failures of transcription, and they are invisible until you ask what the reused thing
+was actually built for. Stay open to the places the incoming spec is better than you: adopt those explicitly.**
+For TECHNIQUES.md.
+
+---
+
 ## Hypothesis tracking
 
-*Updated 2026-07-30 against the full entry record (0–27); the first three had been left at their sprint-001/002 verdicts long after the evidence moved.*
+*Updated 2026-07-31 against the full entry record (0–29); the first three had been left at their sprint-001/002 verdicts long after the evidence moved.*
 
 | Hypothesis | Status | Evidence |
 |---|---|---|
@@ -745,9 +840,10 @@ forward-only validator never asks whether every specified field actually landed.
 | Distrust-the-green is load-bearing, not decorative — the adversarial review finds a real defect on essentially every increment. | confirmed (14 straight increments, never empty by inspection) | Feature, fix, hardening, refactor, audit, persona additions, deferred items, close-out, and both roadmap phases. The one empty result (sprint 015) was empty only because a mutation battery proved the greens could fail. Sharpest single find: Phase A's exactly-once mechanism masquerading as at-least-once — a case where the code was correct and the CLAIM was false. |
 | A fast-written batch of guards defaults to fail-open; inverting to fail-closed is a law, not a case-by-case catch. | confirmed (3 independent recurrences) | Sprint 010's access hole; 17 of the persona-addition findings; 8 of the deferred-items findings. Same shape each time — a conditional check falls open on the absent/unknown/malformed input the author did not picture. |
 | Coverage testing cannot surface a missing domain concept; a domain-first pass can. | supported (1 data point, Entry 26) | 23 green scenarios found none of B-Q-31/32/33; the demo pack found all three immediately. Structural rather than lucky — scenarios are authored from the vocabulary. Needs a second pass (a different sub-domain written out plainly) before calling it confirmed. |
+| An outside spec should be mapped onto existing vocabulary, not merged. | supported (1 data point, Entry 29) | A 13-record, 21-operation receiving pack reduced to 3 records and 5 operations once each concept was matched against what the project already named; merging it would have shipped two records for a supplier certificate and two for a verification. |
 | Reading the code cannot establish what the system refuses; only execution can. | confirmed (Entry 27) | A registry+source read said `RunCloseCheck` ignores 11 rules. Execution showed 4 of them are enforced elsewhere (state machine, upstream precondition, rework chain) and 2 are genuine holes that close a run on an uninspected part. The read was directionally right and specifically wrong; the probe's positive control is what separated them. |
 | A registered rule can be unimplementable because an earlier handler under-implemented a specified write. | supported (1 data point, Entry 27) | Neither required-work rule could be written until `CreateRun` recorded the RunStep→ProcedureStep link that Build Readiness already specified, and `InstallInventory` stopped discarding the `run_step_alias` it receives. No gate this project owns checks that a specified field actually landed. |
 
 ---
 
-*KIT_DIARY.md for the Distributed Factory Execution Record System. Entries 0–26 plus phase syntheses, from the registry-extraction founding act through the closed line, the two roadmap phases (Phase B §18 auto-cascades, Phase A outbox delivery leg), the documentation-index step, the readability arc, and the valve-body demo pack. The through-line it records: applying sdd-kit-2 to a contract-first manufacturing-execution build, where across fourteen straight increments the distrust-the-green review never once came back empty by inspection — the discipline, not the green, was the load-bearing thing. Entry 26 adds the direction the bench structurally could not look: scenarios are authored from the vocabulary, so only a domain-first pass can show what the vocabulary lacks.*
+*KIT_DIARY.md for the Distributed Factory Execution Record System. Entries 0–29 plus phase syntheses, from the registry-extraction founding act through the closed line, the two roadmap phases (Phase B §18 auto-cascades, Phase A outbox delivery leg), the documentation-index step, the readability arc, and the valve-body demo pack. The through-line it records: applying sdd-kit-2 to a contract-first manufacturing-execution build, where across fourteen straight increments the distrust-the-green review never once came back empty by inspection — the discipline, not the green, was the load-bearing thing. Entry 26 adds the direction the bench structurally could not look: scenarios are authored from the vocabulary, so only a domain-first pass can show what the vocabulary lacks. Entries 27-29 turn the discipline on the record itself — reading is not probing, an authority citation must resolve outside the building as well as inside it, and an outside spec is input to be mapped, never vocabulary to be merged.*

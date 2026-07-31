@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/RECEIVING_CHECK_BLOCKED.payload.schema.json",
+  "title": "RECEIVING_CHECK_BLOCKED payload (baseline; owning_module=receiving)",
+  "type": "object"
+}

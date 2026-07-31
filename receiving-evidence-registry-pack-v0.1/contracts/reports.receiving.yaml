@@ -1,0 +1,13 @@
+reports:
+- report_type: SupplierEvidencePacket
+  owning_module: receiving
+  sections:
+  - shipment
+  - shipment_lines
+  - inventory_items
+  - required_documents
+  - attached_documents
+  - verification_decisions
+  - mismatches
+  - access_filtering
+  - final_receiving_status

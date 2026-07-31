@@ -1,0 +1,86 @@
+state_machines:
+- record_type: ReceivingInspection
+  state_field: status
+  result_field: result
+  states:
+  - opened
+  - awaiting_documents
+  - under_review
+  - blocked
+  - closed
+  - cancelled
+  result_values:
+  - none
+  - passed
+  - failed
+  - cancelled
+  transitions:
+  - from: null
+    to: opened
+    operation: CreateReceivingInspection
+    event: RECEIVING_INSPECTION_CREATED
+  - from: opened
+    to: awaiting_documents
+    operation: RequireSupplierDocument
+    event: SUPPLIER_DOCUMENT_REQUIRED
+  - from: awaiting_documents
+    to: under_review
+    operation: AttachSupplierDocument
+    event: SUPPLIER_DOCUMENT_ATTACHED
+  - from: under_review
+    to: blocked
+    operation: EvaluateReceivingInspection
+    event: RECEIVING_INSPECTION_BLOCKED
+  - from: under_review
+    to: closed
+    operation: CloseReceivingInspection
+    event: RECEIVING_INSPECTION_CLOSED
+    result: passed
+  - from: under_review
+    to: closed
+    operation: CloseReceivingInspection
+    event: RECEIVING_INSPECTION_CLOSED
+    result: failed
+  - from: blocked
+    to: under_review
+    operation: EvaluateReceivingInspection
+    event: RECEIVING_INSPECTION_STARTED
+- record_type: SupplierDocument
+  state_field: status
+  states:
+  - attached
+  - classified
+  - under_review
+  - verified
+  - rejected
+  - expired
+  - superseded
+  transitions:
+  - from: null
+    to: attached
+    operation: AttachSupplierDocument
+    event: SUPPLIER_DOCUMENT_ATTACHED
+  - from: attached
+    to: classified
+    operation: ClassifySupplierDocument
+    event: SUPPLIER_DOCUMENT_CLASSIFIED
+  - from: classified
+    to: verified
+    operation: VerifySupplierDocument
+    event: SUPPLIER_DOCUMENT_VERIFIED
+  - from: under_review
+    to: verified
+    operation: VerifySupplierDocument
+    event: SUPPLIER_DOCUMENT_VERIFIED
+  - from: classified
+    to: rejected
+    operation: RejectSupplierDocument
+    event: SUPPLIER_DOCUMENT_REJECTED
+  - from: under_review
+    to: rejected
+    operation: RejectSupplierDocument
+    event: SUPPLIER_DOCUMENT_REJECTED
+  - from: classified
+    to: expired
+    operation: MarkSupplierDocumentExpired
+    event: SUPPLIER_DOCUMENT_EXPIRED

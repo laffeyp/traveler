@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/operations/RunReceivingCheck.output.schema.json",
+  "title": "RunReceivingCheck output (OperationResult, Harness §11; required per §11 outranks Build Readiness §4.3)",
+  "type": "object",
+  "required": [
+    "operationName",
+    "succeeded",
+    "correlationId"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "operationName": {
+      "const": "RunReceivingCheck"
+    },
+    "succeeded": {
+      "type": "boolean"
+    },
+    "failureClass": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "output": {
+      "type": "object"
+    },
+    "recordsWritten": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "eventsEmitted": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "correlationId": {
+      "type": "string"
+    },
+    "idempotencyKey": {
+      "type": "string"
+    },
+    "contractVersion": {
+      "const": "contracts-0.4.1"
+    },
+    "operationContractVersion": {
+      "type": "string"
+    },
+    "productBuild": {
+      "type": "string"
+    }
+  }
+}

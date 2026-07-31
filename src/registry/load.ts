@@ -20,6 +20,7 @@ export interface Registries {
   projections: any;
   reports: any;
   runCloseRules: any;
+  receivingRules: any;
   scenarioAssertions: any;
   observabilityProfiles: any;
   compatibilityProfiles: any;
@@ -36,6 +37,7 @@ export function loadRegistries(): Registries {
     projections: readYaml("contracts/projections.yaml"),
     reports: readYaml("contracts/reports.yaml"),
     runCloseRules: readYaml("contracts/run-close-rules.yaml"),
+    receivingRules: readYaml("contracts/receiving-rules.yaml"),
     scenarioAssertions: readYaml("contracts/scenario-assertions.yaml"),
     observabilityProfiles: readYaml("contracts/observability-profiles.yaml"),
     compatibilityProfiles: readYaml("contracts/compatibility-profiles.yaml"),

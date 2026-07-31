@@ -1,0 +1,91 @@
+records:
+- record_type: Shipment
+  owning_module: receiving
+- record_type: ShipmentLine
+  owning_module: receiving
+- record_type: PackingList
+  owning_module: receiving
+- record_type: PurchaseOrderRef
+  owning_module: receiving
+- record_type: ReceivingInspection
+  owning_module: receiving
+  fields:
+    status:
+    - opened
+    - awaiting_documents
+    - under_review
+    - blocked
+    - closed
+    - cancelled
+    result:
+    - none
+    - passed
+    - failed
+    - cancelled
+- record_type: ReceivingInspectionLine
+  owning_module: receiving
+- record_type: ReceivingRequirement
+  owning_module: receiving
+  fields:
+    document_type:
+    - certificate_of_conformance
+    - material_test_report
+    - dimensional_report
+    - first_article_report
+    - process_certificate
+    - packing_list
+    - other
+    status:
+    - required
+    - satisfied
+    - waived
+    - rejected
+    - not_applicable
+- record_type: SupplierDocument
+  owning_module: receiving
+  fields:
+    document_type:
+    - certificate_of_conformance
+    - material_test_report
+    - dimensional_report
+    - first_article_report
+    - process_certificate
+    - packing_list
+    - other
+    status:
+    - attached
+    - classified
+    - under_review
+    - verified
+    - rejected
+    - expired
+    - superseded
+- record_type: SupplierDocumentVerification
+  owning_module: receiving
+  fields:
+    decision:
+    - verified
+    - rejected
+- record_type: ReceivingQuarantine
+  owning_module: receiving
+  fields:
+    status:
+    - active
+    - released
+    - converted_to_nonconformance
+    - closed
+- record_type: SupplierCorrectiveAction
+  owning_module: receiving
+  fields:
+    status:
+    - opened
+    - supplier_response_pending
+    - response_under_review
+    - accepted
+    - rejected
+    - closed
+    - cancelled
+- record_type: Supplier
+  owning_module: receiving
+- record_type: SupplierPartApproval
+  owning_module: receiving

@@ -51,6 +51,8 @@ const BENCHES: Record<string, { scenarios: string[]; required_pass_rate: number 
   hardening: { scenarios: ["IDEM-001"], required_pass_rate: 1.0 },
   // Persona-review gap 1: segregation of duties — a redline cannot be approved by its own author (VF-016).
   authority: { scenarios: ["VF-016"], required_pass_rate: 1.0 },
+  // Receiving evidence boundary: physical arrival is not production eligibility (VF-025).
+  receiving: { scenarios: ["VF-025"], required_pass_rate: 1.0 },
   // Everything materialized so far.
   all: {
     scenarios: [
@@ -77,6 +79,7 @@ const BENCHES: Record<string, { scenarios: string[]; required_pass_rate: number 
       "VF-014",
       "VF-015",
       "VF-016",
+      "VF-025",
     ],
     required_pass_rate: 1.0,
   },

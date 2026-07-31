@@ -255,6 +255,25 @@ for (const rep of registries.reports?.reports ?? []) {
 }
 
 // ---- 8. run-close rules -----------------------------------------------------
+// Receiving rules carry the same shape as run-close rules, plus two fields the receiving boundary needs:
+// `expires` (a material test report or first article report never expires, so a blanket expiry check would
+// fail closed on valid paperwork) and `scope` (a first article report covers a part revision, not the lot
+// that arrived). Both were learned from pressure-testing the reuse of Certificate/VerifyCertificate.
+for (const rule of registries.receivingRules?.rules ?? []) {
+  if (!rule.id) err(`[receiving-rules] rule missing id`);
+  if (typeof rule.blocking !== "boolean")
+    err(`[receiving-rules] ${rule.id}: blocking must be boolean`);
+  if (!rule.description) err(`[receiving-rules] ${rule.id}: missing description`);
+  if (typeof rule.expires !== "boolean")
+    err(
+      `[receiving-rules] ${rule.id}: expires must be boolean (does this document type carry an expiry at all)`,
+    );
+  if (!["lot_or_serial", "part_revision", "supplier", "shipment"].includes(rule.scope))
+    err(
+      `[receiving-rules] ${rule.id}: scope must be lot_or_serial | part_revision | supplier | shipment`,
+    );
+}
+
 for (const rule of registries.runCloseRules?.rules ?? []) {
   if (!rule.id) err(`[run-close-rules] rule missing id`);
   if (typeof rule.blocking !== "boolean")
@@ -323,6 +342,7 @@ const counts = {
   projections: projectionNames.size,
   reports: reportNames.size,
   runCloseRules: (registries.runCloseRules?.rules ?? []).length,
+  receivingRules: (registries.receivingRules?.rules ?? []).length,
   assertionTypes: assertionTypes.size,
 };
 console.log("contract registry validation (contracts-0.4.1)");

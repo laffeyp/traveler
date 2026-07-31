@@ -146,6 +146,18 @@ export const EVALUATORS: Record<string, Evaluator> = {
       Object.entries(expected).every(([key, value]) => {
         const got = ev.payload?.[key];
         if (got === value) return true;
+        // CONTAINS, for a list-valued payload field. `got === value` is reference equality, so an array
+        // expectation could never match and a payload like RECEIVING_CHECK_BLOCKED.blockers was unassertable
+        // (the sibling of the record_field_equals array problem, sprint 010). Every expected element must be
+        // present in the actual list; extra actual elements are allowed, which is what "contains" means.
+        if (Array.isArray(value) && Array.isArray(got))
+          return value.every((wanted) =>
+            got.some((actual: any) => {
+              if (actual === wanted) return true;
+              const alias = typeof wanted === "string" ? driver.readRecord(wanted) : null;
+              return !!alias && actual === alias.id;
+            }),
+          );
         const resolved = typeof value === "string" ? driver.readRecord(value) : null;
         return !!resolved && got === resolved.id;
       }),

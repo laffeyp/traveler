@@ -1,0 +1,32 @@
+modules:
+- module_key: receiving
+  module_name: Receiving Evidence Module
+  purpose: Own inbound shipment truth, supplier evidence, receiving inspection, receiving
+    requirements, supplier document verification, receiving quarantine records, and
+    supplier corrective action records.
+  owns_records:
+  - Shipment
+  - ShipmentLine
+  - PackingList
+  - PurchaseOrderRef
+  - ReceivingInspection
+  - ReceivingInspectionLine
+  - ReceivingRequirement
+  - SupplierDocument
+  - SupplierDocumentVerification
+  - ReceivingQuarantine
+  - SupplierCorrectiveAction
+  - Supplier
+  - SupplierPartApproval
+  does_not_own:
+  - InventoryItem
+  - InventoryStateChange
+  - Attachment
+  - Issue
+  - Nonconformance
+  - Disposition
+  - MRBDecision
+  - Verification
+  - AccessPolicy
+  - AccessDecision
+  - GeneratedReport

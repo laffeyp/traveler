@@ -2,7 +2,7 @@
 // Source: contracts/{events,operations,records}.yaml (the locked vocabulary).
 // Regenerate with `npm run generate:types`; CI fails on drift via `npm run verify:types`.
 
-/** Every registered FactoryEvent tag (122). */
+/** Every registered FactoryEvent tag (128). */
 export type EventType =
   | "ACCESS_DECISION_ALLOWED"
   | "ACCESS_DECISION_AUDITED"
@@ -82,6 +82,9 @@ export type EventType =
   | "PROCEDURE_VERSION_SUPERSEDED"
   | "QUALITY_CONTAINMENT_REQUIRED"
   | "QUALITY_CONTAINMENT_STARTED"
+  | "RECEIVING_CHECK_BLOCKED"
+  | "RECEIVING_CHECK_PASSED"
+  | "RECEIVING_CHECK_STARTED"
   | "REDLINE_APPLIED"
   | "REDLINE_APPROVED"
   | "REDLINE_CLOSED"
@@ -124,17 +127,22 @@ export type EventType =
   | "RUN_STEP_REWORK_STARTED"
   | "RUN_STEP_SKIPPED"
   | "RUN_STEP_STARTED"
+  | "SHIPMENT_CREATED"
+  | "SHIPMENT_LINE_CREATED"
+  | "SHIPMENT_RECEIVED"
   | "VERIFICATION_COMPLETED"
   | "VERIFICATION_PENDING";
 
-/** Every registered operation name (116). */
+/** Every registered operation name (121). */
 export type OperationName =
   | "AcceptAttachmentAsEvidence"
   | "AcceptMachineEvidence"
   | "ActivateQualityContainment"
   | "AddBOMLine"
+  | "AddShipmentLine"
   | "AdvanceStepReadiness"
   | "ApplyBuildCheckResultToRun"
+  | "ApplyReceivingCheckResultToInventory"
   | "ApplyRedline"
   | "ApplyRunCloseResultToRun"
   | "AttemptRunClose"
@@ -164,6 +172,7 @@ export type OperationName =
   | "CreateProcedureVersion"
   | "CreateRedlineDraft"
   | "CreateRun"
+  | "CreateShipment"
   | "DefineAffectedPopulation"
   | "DeleteAttachmentReference"
   | "EscalateGrammarGap"
@@ -193,6 +202,7 @@ export type OperationName =
   | "QuarantineRemovedInventory"
   | "ReceiveInventory"
   | "ReceiveMachineEvidence"
+  | "ReceiveShipment"
   | "RecordApprovalDecision"
   | "RecordDisposition"
   | "RegisterMachine"
@@ -225,6 +235,7 @@ export type OperationName =
   | "RouteMachineEvidenceForReview"
   | "RunBuildCheck"
   | "RunCloseCheck"
+  | "RunReceivingCheck"
   | "ScrapInventory"
   | "ShipInventory"
   | "SkipRunStep"
@@ -246,7 +257,7 @@ export type OperationName =
   | "VerifyCertificate"
   | "VerifyRework";
 
-/** Every registered record type (39). */
+/** Every registered record type (42). */
 export type RecordType =
   | "AccessDecision"
   | "AffectedPopulation"
@@ -276,6 +287,7 @@ export type RecordType =
   | "ProcedureStep"
   | "ProcedureVersion"
   | "QualityContainmentAction"
+  | "ReceivingCheck"
   | "Redline"
   | "RedlineDiff"
   | "RemovalEvent"
@@ -286,4 +298,6 @@ export type RecordType =
   | "RunCloseObservation"
   | "RunContextSnapshot"
   | "RunStep"
+  | "Shipment"
+  | "ShipmentLine"
   | "Verification";

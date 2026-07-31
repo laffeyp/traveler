@@ -49,3 +49,13 @@ records:
   #     handlers — a handler was governing a record the registry did not name (surfaced at close-out, sprint 019). ---
   - { name: Instrument,                  owning_module: measurement,            state_machine: false, note: "beyond-spec (persona gap 7; ISO 17025): status-light cal_status (in_cal|overdue|...); read by CaptureMeasurement's calibration gate" }
   - { name: Certificate,                 owning_module: inventory,              state_machine: false, note: "beyond-spec (persona gap 8; AS9100 8.4.2): typed supplier cert (cert_type/serial_or_lot/cage_code/expires_at) on a received lot; status-light captured" }
+
+  # --- Receiving Evidence Module. The inbound boundary: a part arrives with a document package, and physical
+  #     arrival is not production eligibility. Worked in from receiving-evidence-registry-pack v0.1, but expressed
+  #     in this project's own vocabulary: the pack's SupplierDocument is our Certificate, its
+  #     SupplierDocumentVerification is our Verification, its ReceivingInspection is a check shaped like
+  #     RunCloseCheck/BuildCheckResult, its ReceivingQuarantine is a blocker string plus the existing inventory
+  #     quarantine state, and its SupplierCorrectiveAction is our Issue. Thirteen proposed records become three. ---
+  - { name: Shipment,                    owning_module: receiving,              state_machine: Shipment, note: "inbound consignment from one supplier; the PO stays in ERP and is referenced, not owned" }
+  - { name: ShipmentLine,                owning_module: receiving,              state_machine: false, note: "one line per part revision + lot/serial on a shipment; the link that marks inventory as supplier-received" }
+  - { name: ReceivingCheck,              owning_module: receiving,              state_machine: ReceivingCheck, note: "same shape as BuildCheckResult / RunCloseCheck: status passed|blocked plus blockers[] naming registered receiving-rule ids" }

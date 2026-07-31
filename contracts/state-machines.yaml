@@ -105,8 +105,8 @@ state_machines:
     transitions:
       - { from: null,        to: expected,    via: CreateInventoryItem,         emits: INVENTORY_CREATED }
       - { from: expected,    to: received,    via: ReceiveInventory,            emits: INVENTORY_RECEIVED }
-      - { from: received,    to: available,   via: ReleaseInventory,            emits: INVENTORY_AVAILABLE }
-      - { from: received,    to: quarantined, via: QuarantineInventory,         emits: INVENTORY_QUARANTINED }
+      - { from: received,    to: available,   via: [ReleaseInventory, ApplyReceivingCheckResultToInventory], emits: INVENTORY_AVAILABLE }
+      - { from: received,    to: quarantined, via: [QuarantineInventory, ApplyReceivingCheckResultToInventory], emits: INVENTORY_QUARANTINED }
       - { from: quarantined, to: available,   via: ReleaseFromQuarantine,       emits: INVENTORY_AVAILABLE }
       - { from: available,   to: reserved,    via: ReserveInventory,            emits: INVENTORY_RESERVED }
       - { from: reserved,    to: kitted,      via: KitInventory,                emits: INVENTORY_KITTED }
@@ -269,3 +269,27 @@ state_machines:
       - { from: accepted,        to: restricted,       via: RestrictAttachment,        emits: ATTACHMENT_RESTRICTED }
       - { from: restricted,      to: deleted_reference, via: DeleteAttachmentReference, emits: ATTACHMENT_REFERENCE_DELETED }
     forbidden: ["deleted_reference -> *"]
+
+  # --- Receiving Evidence Module. ReceivingCheck mirrors BuildCheckResult: one evaluation, a terminal
+  #     passed-or-blocked outcome, and the reasons carried as registered rule ids in blockers[]. ---
+  - record_type: Shipment
+    owning_module: receiving
+    state_field: status
+    initial_state: created
+    terminal_states: [received]
+    creation_transition: explicit
+    states: [created, received]
+    transitions:
+      - { from: null,     to: created,  via: CreateShipment,  emits: SHIPMENT_CREATED }
+      - { from: created,  to: received, via: ReceiveShipment, emits: SHIPMENT_RECEIVED }
+
+  - record_type: ReceivingCheck
+    owning_module: receiving
+    state_field: status
+    initial_state: passed
+    terminal_states: [passed, blocked]
+    creation_transition: explicit
+    states: [passed, blocked]
+    transitions:
+      - { from: null, to: passed,  via: RunReceivingCheck, emits: RECEIVING_CHECK_PASSED }
+      - { from: null, to: blocked, via: RunReceivingCheck, emits: RECEIVING_CHECK_BLOCKED }

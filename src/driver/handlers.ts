@@ -10,6 +10,7 @@
 import type { World, FactoryRecord } from "./world.ts";
 import { moveState, moveStateTo, tryGet, step, createGrammarGap } from "./world.ts";
 import { NORMALIZE_GRAMMAR, keyPresentAndValid } from "./registry.ts";
+import { RECEIVING_RULES } from "./registry.ts";
 import { assembleRunCloseReport } from "./projections.ts";
 
 /**
@@ -694,6 +695,113 @@ export const HANDLERS: Record<string, H> = {
       parent_inventory_alias: input.parent_inventory_alias,
       child_inventory_alias: input.child_inventory_alias,
     });
+  },
+  // --- Receiving Evidence Module ------------------------------------------------------------------------
+  // The inbound boundary. Physical arrival is not production eligibility: goods that arrive on a shipment are
+  // received, then checked against the receiving rules, and only a passed check releases them. Worked in from
+  // receiving-evidence-registry-pack v0.1 but expressed in this project's own vocabulary - the check is shaped
+  // like RunCloseCheck (status + blockers[] naming registered rule ids), the documents are our Certificate
+  // records, and receiving never writes an InventoryItem itself: RunReceivingCheck decides and
+  // ApplyReceivingCheckResultToInventory performs the transition, the same split as RunBuildCheck /
+  // ApplyBuildCheckResultToRun (B-Q-34).
+  CreateShipment(world, input) {
+    const shipment = world.createInitial("Shipment", input.shipment_alias, {
+      supplier: input.supplier,
+      purchase_order_ref: input.purchase_order_ref, // the PO itself lives in ERP; this is a reference
+    });
+    world.emit("SHIPMENT_CREATED", "CreateShipment", { shipment_id: shipment.id });
+  },
+  AddShipmentLine(world, input) {
+    // The line is what marks an inventory item as SUPPLIER-RECEIVED. Items with no shipment line never arrived
+    // across the boundary, so the receiving gate does not apply to them - that is a positive fact about the
+    // item, not the absence of a check (practice #19: do not gate on what you cannot see).
+    const shipment = world.get(input.shipment_alias);
+    const line = world.createInitial("ShipmentLine", input.shipment_line_alias, {
+      shipment: shipment.id,
+      inventory_item: input.inventory_item_alias,
+      part_revision: input.part_revision,
+      serial_or_lot: input.serial_or_lot,
+      // Which documents this consignment must carry. Absent means the certificate of conformance alone, the
+      // one document every consignment carries; anything more specific is scenario data, not an executor
+      // guess (B-Q-35).
+      required_documents: input.required_documents ?? ["certificate_of_conformance"],
+    });
+    world.emit("SHIPMENT_LINE_CREATED", "AddShipmentLine", { shipment_line_id: line.id });
+  },
+  ReceiveShipment(world, input) {
+    const shipment = world.get(input.shipment_alias);
+    moveStateTo(shipment, "ReceiveShipment", "received");
+    world.emit("SHIPMENT_RECEIVED", "ReceiveShipment", { shipment_id: shipment.id });
+  },
+  RunReceivingCheck(world, input) {
+    const line = world.get(input.shipment_line_alias);
+    world.emit("RECEIVING_CHECK_STARTED", "RunReceivingCheck", { shipment_line_id: line.id });
+    const required: string[] = line.fields.required_documents ?? [];
+    const blockers: string[] = [];
+    for (const documentType of required) {
+      // Each required document type resolves to a REGISTERED receiving rule; an unregistered type is refused
+      // rather than silently skipped, or an unknown document would read as satisfied.
+      const rule = RECEIVING_RULES.find((candidate) => candidate.cert_type === documentType);
+      if (!rule)
+        throw new Error(
+          `validation_error: '${documentType}' is not a registered receiving rule document type`,
+        );
+      // Scope: a first article report covers a PART REVISION, not the lot that arrived, so matching it against
+      // serial_or_lot would never find it (found by pressure-testing the reuse of VerifyCertificate).
+      const matches = world.byType("Certificate").filter((certificate) => {
+        if (certificate.fields.cert_type !== rule.cert_type) return false;
+        return rule.scope === "part_revision"
+          ? certificate.fields.part_revision === line.fields.part_revision
+          : certificate.fields.serial_or_lot === line.fields.serial_or_lot;
+      });
+      if (matches.length === 0) {
+        blockers.push(rule.id);
+        continue;
+      }
+      // Expiry is a property of the document TYPE. A material test report and a first article report never
+      // expire, so a blanket expiry check would fail closed on valid paperwork.
+      if (rule.expires) {
+        const asOf = Date.parse(input.as_of ?? world.clock);
+        const valid = matches.some((certificate) => {
+          const expiry = Date.parse(certificate.fields.expires_at ?? "");
+          return Number.isFinite(expiry) && Number.isFinite(asOf) && expiry >= asOf;
+        });
+        // A presented-but-stale document is NOT the same fact as an absent one, so it carries its own
+        // registered id. Collapsing them let a mutation that suppressed the absent-document branch stay green
+        // because the expiry branch caught it anyway (mutation battery, 2026-07-31).
+        if (!valid) blockers.push(rule.expired_id ?? rule.id);
+      }
+    }
+    const blocked = blockers.length > 0;
+    const check = world.create(
+      "ReceivingCheck",
+      input.receiving_check_alias,
+      blocked ? "blocked" : "passed",
+      { shipment_line: line.id, status: blocked ? "blocked" : "passed", blockers },
+    );
+    world.emit(
+      blocked ? "RECEIVING_CHECK_BLOCKED" : "RECEIVING_CHECK_PASSED",
+      "RunReceivingCheck",
+      { receiving_check_id: check.id, blockers },
+    );
+  },
+  ApplyReceivingCheckResultToInventory(world, input) {
+    // Receiving decided; Inventory transitions. Fail closed on an unresolvable check rather than leaving the
+    // goods in `received` where a later ReleaseInventory could still free them.
+    const check = world.get(input.receiving_check_alias);
+    const item = world.get(input.inventory_item_alias);
+    if (check.state === "passed") {
+      moveStateTo(item, "ApplyReceivingCheckResultToInventory", "available");
+      world.emit("INVENTORY_AVAILABLE", "ApplyReceivingCheckResultToInventory", {
+        inventory_item_id: item.id,
+      });
+    } else {
+      moveStateTo(item, "ApplyReceivingCheckResultToInventory", "quarantined");
+      world.emit("INVENTORY_QUARANTINED", "ApplyReceivingCheckResultToInventory", {
+        inventory_item_id: item.id,
+        blockers: check.fields.blockers,
+      });
+    }
   },
   CaptureCertificate(world, input) {
     // Typed supplier certificate (CofC / mill cert) tied to a received lot or serial (persona gap 8; AS9100

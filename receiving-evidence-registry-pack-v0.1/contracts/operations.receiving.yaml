@@ -1,0 +1,135 @@
+operations:
+- operation_name: CreateShipment
+  owning_module: receiving
+  writes:
+  - Shipment
+  emits:
+  - SHIPMENT_CREATED
+- operation_name: AddShipmentLine
+  owning_module: receiving
+  writes:
+  - ShipmentLine
+  emits:
+  - SHIPMENT_LINE_CREATED
+- operation_name: ReceiveShipment
+  owning_module: receiving
+  writes:
+  - Shipment
+  emits:
+  - SHIPMENT_RECEIVED
+- operation_name: ReceiveShipmentLine
+  owning_module: receiving
+  writes:
+  - ShipmentLine
+  emits:
+  - SHIPMENT_LINE_RECEIVED
+- operation_name: CreateReceivingInspection
+  owning_module: receiving
+  writes:
+  - ReceivingInspection
+  - ReceivingInspectionLine
+  emits:
+  - RECEIVING_INSPECTION_CREATED
+- operation_name: RequireSupplierDocument
+  owning_module: receiving
+  writes:
+  - ReceivingRequirement
+  emits:
+  - SUPPLIER_DOCUMENT_REQUIRED
+- operation_name: AttachSupplierDocument
+  owning_module: receiving
+  writes:
+  - SupplierDocument
+  emits:
+  - SUPPLIER_DOCUMENT_ATTACHED
+- operation_name: ClassifySupplierDocument
+  owning_module: receiving
+  writes:
+  - SupplierDocument
+  emits:
+  - SUPPLIER_DOCUMENT_CLASSIFIED
+- operation_name: VerifySupplierDocument
+  owning_module: receiving
+  writes:
+  - SupplierDocument
+  - SupplierDocumentVerification
+  - ReceivingRequirement
+  emits:
+  - SUPPLIER_DOCUMENT_VERIFIED
+- operation_name: RejectSupplierDocument
+  owning_module: receiving
+  writes:
+  - SupplierDocument
+  - SupplierDocumentVerification
+  emits:
+  - SUPPLIER_DOCUMENT_REJECTED
+- operation_name: MarkSupplierDocumentExpired
+  owning_module: receiving
+  writes:
+  - SupplierDocument
+  emits:
+  - SUPPLIER_DOCUMENT_EXPIRED
+- operation_name: EvaluateReceivingInspection
+  owning_module: receiving
+  writes:
+  - ReceivingInspection
+  emits_one_of:
+  - RECEIVING_INSPECTION_BLOCKED
+  - RECEIVING_INSPECTION_PASSED
+  - RECEIVING_INSPECTION_FAILED
+- operation_name: CloseReceivingInspection
+  owning_module: receiving
+  writes:
+  - ReceivingInspection
+  emits:
+  - RECEIVING_INSPECTION_CLOSED
+- operation_name: CreateReceivingQuarantine
+  owning_module: receiving
+  writes:
+  - ReceivingQuarantine
+  emits:
+  - RECEIVING_QUARANTINE_CREATED
+- operation_name: RequestInventoryReleaseFromReceiving
+  owning_module: receiving
+  writes:
+  - ReceivingInspection
+  emits_one_of:
+  - RECEIVING_RELEASE_APPROVED
+  - RECEIVING_RELEASE_REJECTED
+  does_not_write:
+  - InventoryItem
+- operation_name: OpenSupplierCorrectiveAction
+  owning_module: receiving
+  writes:
+  - SupplierCorrectiveAction
+  emits:
+  - SUPPLIER_CORRECTIVE_ACTION_OPENED
+- operation_name: RecordSupplierCorrectiveActionResponse
+  owning_module: receiving
+  writes:
+  - SupplierCorrectiveAction
+  emits:
+  - SUPPLIER_CORRECTIVE_ACTION_RESPONSE_RECORDED
+- operation_name: CloseSupplierCorrectiveAction
+  owning_module: receiving
+  writes:
+  - SupplierCorrectiveAction
+  emits:
+  - SUPPLIER_CORRECTIVE_ACTION_CLOSED
+- operation_name: GetSupplierEvidencePacket
+  owning_module: receiving
+  writes: []
+  emits: []
+inventory_module_operations_required:
+- operation_name: ReleaseInventoryFromReceiving
+  owning_module: inventory
+  writes:
+  - InventoryItem
+  emits:
+  - INVENTORY_AVAILABLE
+- operation_name: QuarantineInventory
+  owning_module: inventory
+  writes:
+  - InventoryItem
+  emits:
+  - INVENTORY_QUARANTINED

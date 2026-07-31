@@ -58,3 +58,18 @@ export function keyPresentAndValid(value: any, type: string): boolean {
   if (type === "string") return typeof value === "string" && value.length > 0;
   return true;
 }
+
+/**
+ * Registered receiving rules (contracts/receiving-rules.yaml). Each names one document type that must be
+ * present and valid before supplier-received goods may be released. `expires` says whether the type carries an
+ * expiry at all, and `scope` says what the document covers - a first article report is scoped to a part
+ * revision rather than to the lot that arrived.
+ */
+export const RECEIVING_RULES: {
+  id: string;
+  cert_type?: string;
+  scope: string;
+  expires: boolean;
+  expired_id?: string;
+  blocking: boolean;
+}[] = readYaml("contracts/receiving-rules.yaml").rules ?? [];

@@ -1,0 +1,29 @@
+assertions:
+- assertion_id: vf025_supplier_document_required
+  assertion_type: event_emitted
+  target:
+    event_type: SUPPLIER_DOCUMENT_REQUIRED
+- assertion_id: vf025_receiving_inspection_blocked
+  assertion_type: event_emitted
+  target:
+    event_type: RECEIVING_INSPECTION_BLOCKED
+  expected:
+    failure_class: missing_certificate_of_conformance
+- assertion_id: vf025_inventory_quarantined
+  assertion_type: record_state
+  target:
+    record_type: InventoryItem
+    alias: valve_body_001
+  expected:
+    status: quarantined
+- assertion_id: vf025_no_inventory_available
+  assertion_type: event_not_emitted
+  target:
+    event_type: INVENTORY_AVAILABLE
+- assertion_id: vf025_build_check_failed
+  assertion_type: event_emitted
+  target:
+    event_type: BUILD_CHECK_FAILED
+  expected:
+    blocker:
+    - missing_certificate_of_conformance

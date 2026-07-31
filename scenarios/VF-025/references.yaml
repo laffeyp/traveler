@@ -1,0 +1,39 @@
+scenario_id: VF-025
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: >
+  Receiving evidence boundary, worked in from receiving-evidence-registry-pack v0.1 (2026-07-31).
+note: >
+  Brings the receiving boundary into the schema-generation set: the shipment and receiving-check events had no
+  generated payload schema until this scenario was materialized.
+
+operations:
+  - CreateInventoryItem
+  - CreateShipment
+  - AddShipmentLine
+  - ReceiveShipment
+  - ReceiveInventory
+  - RunReceivingCheck
+  - ApplyReceivingCheckResultToInventory
+
+events:
+  - INVENTORY_CREATED
+  - SHIPMENT_CREATED
+  - SHIPMENT_LINE_CREATED
+  - SHIPMENT_RECEIVED
+  - INVENTORY_RECEIVED
+  - RECEIVING_CHECK_STARTED
+  - RECEIVING_CHECK_BLOCKED
+  - INVENTORY_QUARANTINED
+
+record_states:
+  Shipment: [created, received]
+  ReceivingCheck: [blocked]
+  InventoryItem: [expected, received, quarantined]
+
+assertion_types:
+  - record_state
+  - event_payload_contains
+  - event_not_emitted
+
+caller_types: [planner, quality_engineer]

@@ -1,0 +1,58 @@
+scenario_id: VF-025
+scenario_version: '0.1'
+title: Missing certificate of conformance quarantines inventory
+ci_eligible: true
+bench_membership:
+- receiving_evidence
+purpose: Prove physical arrival is not production eligibility.
+steps:
+- step_id: '001'
+  operation: CreateShipment
+  expect_events:
+  - SHIPMENT_CREATED
+- step_id: '002'
+  operation: AddShipmentLine
+  expect_events:
+  - SHIPMENT_LINE_CREATED
+- step_id: '003'
+  operation: ReceiveShipment
+  expect_events:
+  - SHIPMENT_RECEIVED
+- step_id: '004'
+  operation: ReceiveShipmentLine
+  expect_events:
+  - SHIPMENT_LINE_RECEIVED
+  - INVENTORY_RECEIVED
+- step_id: '005'
+  operation: CreateReceivingInspection
+  expect_events:
+  - RECEIVING_INSPECTION_CREATED
+- step_id: '006'
+  operation: RequireSupplierDocument
+  input:
+    document_type: certificate_of_conformance
+  expect_events:
+  - SUPPLIER_DOCUMENT_REQUIRED
+- step_id: '007'
+  operation: EvaluateReceivingInspection
+  expect_events:
+  - RECEIVING_INSPECTION_BLOCKED
+- step_id: 008
+  operation: CreateReceivingQuarantine
+  expect_events:
+  - RECEIVING_QUARANTINE_CREATED
+- step_id: 009
+  operation: QuarantineInventory
+  expect_events:
+  - INVENTORY_QUARANTINED
+- step_id: '010'
+  operation: RunBuildCheck
+  expect_events:
+  - BUILD_CHECK_FAILED
+  - BUILD_BLOCKER_CREATED
+forbidden_events:
+- SUPPLIER_DOCUMENT_VERIFIED
+- RECEIVING_INSPECTION_PASSED
+- RECEIVING_RELEASE_APPROVED
+- INVENTORY_AVAILABLE
+- BUILD_CHECK_PASSED

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/SHIPMENT_RECEIVED.payload.schema.json",
+  "title": "SHIPMENT_RECEIVED payload (baseline; owning_module=receiving)",
+  "type": "object"
+}

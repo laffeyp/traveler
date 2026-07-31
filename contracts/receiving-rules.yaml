@@ -1,0 +1,47 @@
+registry: receiving-rules
+registry_version: contracts-0.4.1
+source: >
+  Worked in from receiving-evidence-registry-pack v0.1 (2026-07-31), expressed in this project's own idiom.
+  The pack modelled receiving failures as a bespoke event taxonomy; here they are registered rule ids carried
+  in ReceivingCheck.blockers[], exactly as run-close-rules.yaml ids are carried in RunCloseCheck.blockers[].
+note: >
+  A rule names one document type that must be present and valid for the goods on a shipment line before that
+  inventory may be released to production. `expires` records whether the document type carries an expiry at
+  all: a calibration or material certificate does, a material test report, dimensional report and first
+  article report do not. Without this the expiry check fails closed on documents that never expire.
+  `scope` records what the document covers, because a first article report is scoped to a part revision
+  rather than to the lot or serial that arrived.
+
+rules:
+  - id: certificate_of_conformance_present
+    blocking: true
+    cert_type: certificate_of_conformance
+    scope: lot_or_serial
+    expires: true
+    expired_id: certificate_of_conformance_expired
+    description: The consignment carries a certificate of conformance covering the delivered lot or serial.
+  - id: certificate_of_conformance_expired
+    blocking: true
+    scope: lot_or_serial
+    expires: false
+    description: >
+      A certificate of conformance was presented but its expiry is past, missing or unparseable. Distinct from
+      certificate_of_conformance_present: absent paperwork and stale paperwork are different facts about the
+      consignment and a mutation that suppressed one must not be masked by the other.
+  - id: material_test_report_present
+    blocking: true
+    cert_type: material_test_report
+    scope: lot_or_serial
+    expires: false
+    description: Raw material carries a mill test report for the delivered heat or lot.
+  - id: first_article_report_present
+    blocking: true
+    cert_type: first_article_report
+    scope: part_revision
+    expires: false
+    description: A new part revision carries a first article report. Scoped to the part revision, not the lot.
+  - id: document_matches_part_revision
+    blocking: true
+    scope: part_revision
+    expires: false
+    description: A presented document names the part revision it is offered against.

@@ -1,0 +1,32 @@
+mutation_battery: receiving_fail_closed_battery
+mutations:
+  actor_access:
+  - remove receiving inspector actor
+  - remove receiving inspector role
+  - remove supplier document verifier role
+  - use actor without export access
+  - use actor with empty role list
+  - use malformed access policy
+  supplier_document:
+  - remove CoC
+  - remove MTR
+  - remove FAI report when required
+  - remove process certificate when required
+  - expire certificate
+  - wrong part number
+  - wrong revision
+  - wrong lot
+  - wrong serial
+  - wrong supplier
+  - malformed document type
+  - untraceable document
+  inventory_release:
+  - attempt ReleaseInventoryFromReceiving before inspection passed
+  - attempt ReleaseInventoryFromReceiving with active quarantine
+  - attempt RunBuildCheck with receiving-blocked inventory
+  - attempt InstallInventory with receiving-blocked inventory
+  report_access:
+  - read full supplier evidence without access
+  - read controlled evidence through summary actor
+  - request receiving report after policy change
+  - attempt bounded drill-down into controlled supplier document

@@ -1,0 +1,21 @@
+failure_classes:
+- missing_supplier_document
+- supplier_document_unverified
+- supplier_document_rejected
+- supplier_document_expired
+- supplier_document_mismatch
+- packing_list_mismatch
+- purchase_order_mismatch
+- part_revision_mismatch
+- lot_mismatch
+- serial_mismatch
+- missing_material_test_report
+- missing_certificate_of_conformance
+- missing_first_article_report
+- missing_process_certificate
+- receiving_inspection_failed
+- receiving_quarantine_active
+- supplier_corrective_action_open
+- controlled_supplier_document_denied
+- receiving_release_missing
+- receiving_inspection_not_passed

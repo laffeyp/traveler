@@ -37,6 +37,7 @@ modules:
   - { id: access,                 name: Access / Visibility Module,       first_slice: true }
   - { id: grammar_gap,            name: Grammar Gap Module,               first_slice: true }
   - { id: attachment,             name: Attachment Module,                first_slice: true }
+  - { id: receiving,              name: Receiving Evidence Module,        first_slice: true }
   - { id: reconciliation,         name: Reconciliation Module,            first_slice: false }
   - { id: adapter_runtime,        name: Adapter Runtime Module,           first_slice: false }
   - { id: virtual_factory_harness, name: Virtual Factory Harness Module,  first_slice: false }

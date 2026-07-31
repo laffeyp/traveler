@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/RECEIVING_CHECK_STARTED.payload.schema.json",
+  "title": "RECEIVING_CHECK_STARTED payload (baseline; owning_module=receiving)",
+  "type": "object"
+}

@@ -1,0 +1,27 @@
+projections:
+- projection_name: ReceivingReadiness
+  owning_module: receiving
+  purpose: Tell whether a received item is eligible to become available.
+  outputs:
+  - ready
+  - blocked
+  - quarantined
+  - missing_documents
+  - document_rejected
+  - access_limited
+- projection_name: InventoryEligibility
+  owning_module: inventory
+  purpose: Tell BuildCheck whether inventory can be used.
+  outputs:
+  - eligible
+  - not_available
+  - receiving_blocked
+  - quarantined
+  - missing_evidence
+  - access_unverified
+- projection_name: SupplierDocumentIndex
+  owning_module: receiving
+- projection_name: SupplierQualityQueue
+  owning_module: receiving
+- projection_name: ShipmentSummary
+  owning_module: receiving
