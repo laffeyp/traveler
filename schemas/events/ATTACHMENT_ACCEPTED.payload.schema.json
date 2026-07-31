@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/ATTACHMENT_ACCEPTED.payload.schema.json",
+  "title": "ATTACHMENT_ACCEPTED payload (baseline; owning_module=attachment)",
+  "type": "object"
+}

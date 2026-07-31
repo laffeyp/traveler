@@ -1,0 +1,40 @@
+scenario_id: VF-029
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Attachment Module (TAD §5.18, §7, §11; Contract Spec §21.1). B-Q-48.
+note: >
+  Brings the attachment lifecycle into the schema-generation set. Object storage holds the bytes; the record
+  holds a reference, which is why the terminal operation removes the reference rather than the record.
+
+operations:
+  - CreateInventoryItem
+  - CaptureCertificate
+  - CreateAttachment
+  - LinkAttachment
+  - RouteAttachmentForReview
+  - AcceptAttachmentAsEvidence
+  - RejectAttachmentAsEvidence
+  - RestrictAttachment
+  - GetAttachment
+
+events:
+  - INVENTORY_CREATED
+  - ATTACHMENT_CREATED
+  - ATTACHMENT_LINKED
+  - ATTACHMENT_REVIEW_REQUIRED
+  - ATTACHMENT_ACCEPTED
+  - ATTACHMENT_REJECTED
+  - ATTACHMENT_RESTRICTED
+
+record_states:
+  InventoryItem: [expected]
+  Attachment: [uploaded, linked, review_required, accepted, rejected, restricted]
+
+assertion_types:
+  - record_state
+  - record_field_equals
+  - event_not_emitted
+  - operation_output_contains
+  - idempotent_replay
+
+caller_types: [planner, quality_engineer]

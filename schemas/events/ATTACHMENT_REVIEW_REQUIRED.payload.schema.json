@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/ATTACHMENT_REVIEW_REQUIRED.payload.schema.json",
+  "title": "ATTACHMENT_REVIEW_REQUIRED payload (baseline; owning_module=attachment)",
+  "type": "object"
+}

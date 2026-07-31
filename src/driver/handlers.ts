@@ -899,6 +899,99 @@ export const HANDLERS: Record<string, H> = {
       certificate_of_conformance: covering.alias,
     });
   },
+  // --- Attachments ------------------------------------------------------------------------------------------
+  // The file behind a record. Until now a Certificate asserted that a certificate EXISTS; nothing held the
+  // document. TAD §11 is explicit that object storage holds the bytes and the database holds metadata and a
+  // reference, which is why the terminal operation is DeleteAttachmentReference and not a delete: the
+  // reference goes, the record and its audit trail stay (no-deletions discipline, B-Q-48).
+  //
+  // An attachment follows the same doctrine as machine evidence: it is EVIDENCE, not truth. Uploading it
+  // proves nothing; it must be linked to the record it supports and then accepted before it counts as
+  // evidence, and it can be routed for review or rejected instead. The state machine already encodes that.
+  CreateAttachment(world, input) {
+    if (!input.storage_ref)
+      throw new Error(
+        "validation_error: an attachment needs a storage reference to the stored object",
+      );
+    const attachment = world.createInitial("Attachment", input.attachment_alias, {
+      storage_ref: input.storage_ref, // where the bytes live; the product core never holds them
+      filename: input.filename,
+      media_type: input.media_type,
+      content_hash: input.content_hash, // lets a later read prove the object was not swapped
+      uploaded_by: input.uploaded_by,
+      uploaded_at: world.clock,
+    });
+    world.emit("ATTACHMENT_CREATED", "CreateAttachment", { attachment_id: attachment.id });
+  },
+  LinkAttachment(world, input) {
+    // An attachment supports a specific record — a measurement, a certificate, a quality record. Unlinked, it
+    // is a loose file that supports nothing, so the link is what makes it usable as evidence.
+    const attachment = world.get(input.attachment_alias);
+    const subject = world.get(input.subject_alias);
+    attachment.fields.subject = subject.id;
+    attachment.fields.subject_alias = input.subject_alias;
+    attachment.fields.evidence_role = input.evidence_role; // how it is used as evidence (TAD §7)
+    step(world, attachment, "LinkAttachment");
+  },
+  RouteAttachmentForReview: (world, input) =>
+    step(world, world.get(input.attachment_alias), "RouteAttachmentForReview"),
+  AcceptAttachmentAsEvidence(world, input, actor) {
+    // Accepting evidence is a sign-off: who accepted it and what they are attesting, the same three-part
+    // manifestation used for approvals and verifications. An unidentified acceptor is refused.
+    if (!actor)
+      throw new Error(
+        "validation_error: accepting an attachment as evidence requires an identified actor",
+      );
+    const attachment = world.get(input.attachment_alias);
+    attachment.fields.accepted_by = actor;
+    attachment.fields.signed_at = world.clock;
+    attachment.fields.signature_meaning =
+      "evidence acceptance: attests this document supports the record it is linked to";
+    step(world, attachment, "AcceptAttachmentAsEvidence");
+  },
+  RejectAttachmentAsEvidence(world, input, actor) {
+    const attachment = world.get(input.attachment_alias);
+    attachment.fields.rejected_by = actor;
+    attachment.fields.rejection_reason = input.reason;
+    step(world, attachment, "RejectAttachmentAsEvidence");
+  },
+  RestrictAttachment(world, input) {
+    const attachment = world.get(input.attachment_alias);
+    attachment.fields.restriction_reason = input.reason;
+    step(world, attachment, "RestrictAttachment");
+  },
+  DeleteAttachmentReference(world, input) {
+    // The REFERENCE is removed so the product no longer points at the stored object. The record itself stays,
+    // in its terminal state, carrying who removed it and why — the history of the document is part of the
+    // record even once the document is gone.
+    const attachment = world.get(input.attachment_alias);
+    attachment.fields.storage_ref = null;
+    attachment.fields.reference_deleted_reason = input.reason;
+    step(world, attachment, "DeleteAttachmentReference");
+  },
+  GetAttachment(world, input) {
+    // Fails CLOSED on a restricted or removed reference: a restricted attachment returns its metadata and an
+    // explicit refusal rather than a storage reference, and one whose reference was deleted has nothing to
+    // hand back. Returning the reference and trusting the caller not to fetch it would be a fail-open.
+    const attachment = world.get(input.attachment_alias);
+    const withheld =
+      attachment.state === "restricted" || attachment.state === "deleted_reference"
+        ? attachment.state === "restricted"
+          ? "attachment_restricted"
+          : "attachment_reference_deleted"
+        : null;
+    return {
+      attachment_alias: input.attachment_alias,
+      state: attachment.state,
+      filename: attachment.fields.filename,
+      media_type: attachment.fields.media_type,
+      evidence_role: attachment.fields.evidence_role,
+      subject: attachment.fields.subject_alias,
+      storage_ref: withheld ? null : attachment.fields.storage_ref,
+      content_hash: withheld ? null : attachment.fields.content_hash,
+      withheld_reason: withheld,
+    };
+  },
   CaptureCertificate(world, input) {
     // Typed supplier certificate (CofC / mill cert) tied to a received lot or serial (persona gap 8; AS9100
     // 8.4.2). Today these would be untyped attachments; this makes them first-class governed records with a

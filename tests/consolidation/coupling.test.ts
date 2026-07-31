@@ -34,6 +34,24 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
       expect(runScenarioWithDriver(s).result.status).toBe("passed");
   });
 
+  it("a restricted attachment must withhold its reference — handing it back makes VF-029 red", () => {
+    // The read is the control. If GetAttachment returned the storage reference for a restricted document and
+    // trusted the caller not to fetch it, that would be a fail-open on controlled technical data.
+    withMutation(
+      "GetAttachment",
+      (orig) =>
+        (w: any, i: any, ...rest: any[]) => {
+          const out = orig(w, i, ...rest);
+          const attachment = w.get(i.attachment_alias);
+          return { ...out, storage_ref: attachment.fields.storage_ref, withheld_reason: null };
+        },
+      () => {
+        expect(runScenarioWithDriver("VF-029").result.status).toBe("failed");
+      },
+    );
+    expect(runScenarioWithDriver("VF-029").result.status).toBe("passed"); // restored
+  });
+
   it("goods must not ship uncertified — dropping the certificate check makes VF-028 red", () => {
     // The outbound mirror of the receiving mutation. VF-028's first shipment attempt must be REFUSED; if the
     // gate waves it through, the operation succeeds where the scenario expects a failure class.

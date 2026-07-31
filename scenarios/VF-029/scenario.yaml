@@ -1,0 +1,77 @@
+scenario_id: VF-029
+scenario_version: "1"
+title: A supplier certificate carries its document, which is evidence until accepted
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  Until now a Certificate record asserted that a certificate exists and nothing held the document. This puts
+  the file behind the record. The scanned certificate arrives as an attachment, is linked to the certificate
+  it supports, is routed for review and accepted as evidence with a real sign-off. A second attachment — a
+  photo taken at receiving — is rejected instead, so the accept path is not the only reachable one. A third
+  is restricted, and reading it returns metadata and an explicit refusal rather than a storage reference.
+  An attachment follows the machine-evidence doctrine: uploading it proves nothing, and it is evidence rather
+  than truth until somebody accepts it.
+
+seed:
+  deterministic_seed: 3029
+
+clock:
+  start_at: "2026-07-07T10:00:00Z"
+  timezone: "UTC"
+  mode: controlled
+
+world:
+  factory_node: node_la_001
+  station: station_receiving_01
+  program: program_valve_001
+  part_revisions:
+    - { alias: valve_body_rev_a, part_number: VB-100, revision: A }
+  inventory_truth:
+    - { alias: valve_body_006, part_revision: valve_body_rev_a, serial_number: VB-006 }
+  access_policies:
+    - alias: customer_summary_access
+      visible: [RunCloseReport.summary, SerialHistory.summary, BoundedDrillDown.summary]
+      hidden: [controlled_machine_evidence_payload, internal_quality_notes, raw_machine_payload]
+
+actors:
+  - { actor_id: planner_1, actor_type: planner, product_caller_type: planner }
+  - { actor_id: quality_1, actor_type: quality_engineer, product_caller_type: quality_engineer }
+
+steps:
+  - { step_id: "000", set_time: "2026-07-07T10:00:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf029-000, input: { inventory_alias: valve_body_006, part_revision: valve_body_rev_a, serial_number: "VB-006" }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "001", set_time: "2026-07-07T10:00:00Z", actor: planner_1, operation: CaptureCertificate, idempotency_key: vf029-001, input: { certificate_alias: coc_vb006, cert_type: certificate_of_conformance, part_revision: valve_body_rev_a, serial_or_lot: "VB-006", cage_code: "1ABC2", expires_at: "2027-06-01T00:00:00Z" }, expect: { operation_succeeded: true } }
+  # The scanned certificate itself. The bytes live in object storage; the record holds the reference.
+  - { step_id: "002", actor: planner_1, operation: CreateAttachment, idempotency_key: vf029-002, input: { attachment_alias: coc_scan, storage_ref: "s3://evidence/coc-vb006.pdf", filename: "coc-vb006.pdf", media_type: "application/pdf", content_hash: "sha256:9f2c", uploaded_by: planner_1 }, expect: { operation_succeeded: true, events_emitted: [ATTACHMENT_CREATED] } }
+  - { step_id: "003", actor: planner_1, operation: LinkAttachment, idempotency_key: vf029-003, input: { attachment_alias: coc_scan, subject_alias: coc_vb006, evidence_role: supporting_document }, expect: { operation_succeeded: true, events_emitted: [ATTACHMENT_LINKED] } }
+  - { step_id: "004", set_time: "2026-07-07T10:10:00Z", actor: quality_1, operation: RouteAttachmentForReview, idempotency_key: vf029-004, input: { attachment_alias: coc_scan }, expect: { operation_succeeded: true, events_emitted: [ATTACHMENT_REVIEW_REQUIRED] } }
+  - { step_id: "005", set_time: "2026-07-07T10:20:00Z", actor: quality_1, operation: AcceptAttachmentAsEvidence, idempotency_key: vf029-005, input: { attachment_alias: coc_scan }, expect: { operation_succeeded: true, events_emitted: [ATTACHMENT_ACCEPTED] } }
+  # A photo that does not show what it claims to. The reject path must be reachable, or accept means nothing.
+  - { step_id: "006", actor: planner_1, operation: CreateAttachment, idempotency_key: vf029-006, input: { attachment_alias: dock_photo, storage_ref: "s3://evidence/dock-vb006.jpg", filename: "dock-vb006.jpg", media_type: "image/jpeg", content_hash: "sha256:1a44", uploaded_by: planner_1 }, expect: { operation_succeeded: true, events_emitted: [ATTACHMENT_CREATED] } }
+  - { step_id: "007", actor: planner_1, operation: LinkAttachment, idempotency_key: vf029-007, input: { attachment_alias: dock_photo, subject_alias: valve_body_006, evidence_role: receiving_photo }, expect: { operation_succeeded: true, events_emitted: [ATTACHMENT_LINKED] } }
+  - { step_id: "008", set_time: "2026-07-07T10:30:00Z", actor: quality_1, operation: RejectAttachmentAsEvidence, idempotency_key: vf029-008, input: { attachment_alias: dock_photo, reason: illegible_serial }, expect: { operation_succeeded: true, events_emitted: [ATTACHMENT_REJECTED] } }
+  # A restricted document: readable as metadata, but the reference is withheld.
+  - { step_id: "009", actor: planner_1, operation: CreateAttachment, idempotency_key: vf029-009, input: { attachment_alias: controlled_drawing, storage_ref: "s3://evidence/drawing-vb100.pdf", filename: "drawing-vb100.pdf", media_type: "application/pdf", content_hash: "sha256:77de", uploaded_by: planner_1 }, expect: { operation_succeeded: true, events_emitted: [ATTACHMENT_CREATED] } }
+  - { step_id: "010", actor: planner_1, operation: LinkAttachment, idempotency_key: vf029-010, input: { attachment_alias: controlled_drawing, subject_alias: coc_vb006, evidence_role: supporting_document }, expect: { operation_succeeded: true, events_emitted: [ATTACHMENT_LINKED] } }
+  - { step_id: "011", set_time: "2026-07-07T10:40:00Z", actor: quality_1, operation: AcceptAttachmentAsEvidence, idempotency_key: vf029-011, input: { attachment_alias: controlled_drawing }, expect: { operation_succeeded: true, events_emitted: [ATTACHMENT_ACCEPTED] } }
+  - { step_id: "012", actor: quality_1, operation: RestrictAttachment, idempotency_key: vf029-012, input: { attachment_alias: controlled_drawing, reason: export_controlled_technical_data }, expect: { operation_succeeded: true, events_emitted: [ATTACHMENT_RESTRICTED] } }
+  - { step_id: "013", set_time: "2026-07-07T10:50:00Z", actor: quality_1, operation: GetAttachment, idempotency_key: vf029-013, input: { attachment_alias: controlled_drawing }, expect: { operation_succeeded: true } }
+
+assertions:
+  - { assertion_id: vf029_certificate_document_accepted, assertion_type: record_state, severity: blocking, target: { record_type: Attachment, alias: coc_scan }, expected: { state: accepted } }
+  - { assertion_id: vf029_acceptance_is_signed, assertion_type: record_field_equals, severity: blocking, target: { record_type: Attachment, alias: coc_scan }, expected: { accepted_by: quality_1 } }
+  - { assertion_id: vf029_document_knows_what_it_supports, assertion_type: record_field_equals, severity: blocking, target: { record_type: Attachment, alias: coc_scan }, expected: { subject_alias: coc_vb006, evidence_role: supporting_document } }
+  - { assertion_id: vf029_rejected_photo_is_not_evidence, assertion_type: record_state, severity: blocking, target: { record_type: Attachment, alias: dock_photo }, expected: { state: rejected } }
+  - { assertion_id: vf029_rejection_records_why, assertion_type: record_field_equals, severity: blocking, target: { record_type: Attachment, alias: dock_photo }, expected: { rejection_reason: illegible_serial } }
+  - { assertion_id: vf029_restricted_read_withholds_the_reference, assertion_type: operation_output_contains, severity: blocking, target: { step_id: "013", operation: GetAttachment }, expected: { withheld_reason: attachment_restricted, storage_ref: null } }
+  - { assertion_id: vf029_no_attachment_reached_evidence_unlinked, assertion_type: event_not_emitted, severity: blocking, target: { event_type: ATTACHMENT_REFERENCE_DELETED }, expected: { reason: nothing_was_deleted_in_this_scenario } }
+
+idempotency_replay_checks:
+  - check_id: vf029_replay_create_attachment
+    step_id: "002"
+    operation: CreateAttachment
+    idempotency_key: vf029-002
