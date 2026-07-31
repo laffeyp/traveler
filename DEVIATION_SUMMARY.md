@@ -16,7 +16,7 @@ Everything from the first executable slice (VF-001..010 + the machine-evidence v
 
 Two authorized moves took the build **beyond** the doc stack, both at the user's direction as the sole Architect authority (no version numbers, no ratification ceremony — plain additions logged at the boundary):
 
-- **(A) Nine persona-review additions** — real aerospace-stakeholder needs, each grounded in a standard.
+- **(A) Nine persona-review additions** — real aerospace-stakeholder needs. *(Each was originally logged against a governing standard. Those citations were verified on 2026-07-30 and several did not hold — 21 CFR Part 11 is FDA law, ISO/IEC 17025 accredits laboratories rather than factories, MESA-11 is a reference model that requires nothing. The clause numbers were removed; see the note at the top of `ADDITIONS.md`.)*
 - **(B) The deferred-items build** — the Contract Spec §18 reconciliation cascade + §19 report freshness, previously deferred as B-Q-22/27/28.
 
 **Quantified delta vs the locked v0.4.1 baseline:**
@@ -34,7 +34,7 @@ Two authorized moves took the build **beyond** the doc stack, both at the user's
 
 **What each addition is (full detail in `ADDITIONS.md`):**
 
-- Persona gaps 1-9 — segregation of duties (AS9102 / AS9100 8.7); electronic signature (21 CFR Part 11); typed disposition kinds + authority (AS9100 8.7); affected-batch closure (AS9100 8.7); export access by nationality / deemed export (ITAR 120.50); serial-range effectivity (EIA-649C); calibration gate (ISO 17025); typed supplier certificates (AS9100 8.4.2); operator identity on the record (MESA-11).
+- Persona gaps 1-9 — segregation of duties; electronic signature; typed disposition kinds + authority; affected-batch closure; export access by nationality (deemed export); serial-range effectivity; calibration gate; typed supplier certificates; operator identity on the record.
 - Deferred items — `InvalidateAcceptedEvidence` (accepted evidence -> invalidated, cascading to mark the run's reports regeneration_required); `GetReport` freshness read (a stale controlled_export is not served as fresh); the §19 two-mode contrast (a policy change staleness a controlled_export but never a dynamic_view_filter); `operation_output_contains` (assert an operation's returned output).
 
 **The magnitude in one line:** this is an **extension of the locked vocabulary, not a rewrite** — about +3% growth in the operation vocabulary. The executor, the registry structure, the harness assertion engine, the two-driver design (in-memory + node:sqlite), and the gate set are unchanged in kind. Nothing in the original design was undone; the additions sit on top of it and are governed by the same registries and the same checks.
