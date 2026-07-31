@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/INVENTORY_SHIPPED.payload.schema.json",
+  "title": "INVENTORY_SHIPPED payload (baseline; owning_module=inventory)",
+  "type": "object"
+}

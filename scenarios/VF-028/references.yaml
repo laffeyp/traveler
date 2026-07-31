@@ -1,0 +1,40 @@
+scenario_id: VF-028
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: Outbound certificate of conformance (B-Q-46, B-Q-47); AS9163/EN 9163 minimum content.
+note: >
+  Brings the outbound attestation into the schema-generation set. The certificate is a governed report, so it
+  reuses the report machinery rather than introducing a second one.
+
+operations:
+  - CreateInventoryItem
+  - ReceiveInventory
+  - ReleaseInventory
+  - GenerateCertificateOfConformance
+  - ShipInventory
+
+events:
+  - INVENTORY_CREATED
+  - INVENTORY_RECEIVED
+  - INVENTORY_AVAILABLE
+  - REPORT_REQUESTED
+  - REPORT_GENERATION_STARTED
+  - REPORT_GENERATED
+  - INVENTORY_SHIPPED
+
+record_states:
+  InventoryItem: [expected, received, available, shipped]
+  GeneratedReport: [generated]
+
+assertion_types:
+  - record_state
+  - operation_failed
+  - report_generated
+  - report_field_equals
+  - event_emitted
+  - idempotent_replay
+
+reports:
+  - CertificateOfConformance
+
+caller_types: [planner, quality_engineer]

@@ -133,7 +133,7 @@ export type EventType =
   | "VERIFICATION_COMPLETED"
   | "VERIFICATION_PENDING";
 
-/** Every registered operation name (121). */
+/** Every registered operation name (122). */
 export type OperationName =
   | "AcceptAttachmentAsEvidence"
   | "AcceptMachineEvidence"
@@ -181,6 +181,7 @@ export type OperationName =
   | "ExpireApprovalRequest"
   | "FailReportGeneration"
   | "FailRunStep"
+  | "GenerateCertificateOfConformance"
   | "GenerateRunCloseNarration"
   | "GenerateRunCloseReport"
   | "GetAsBuiltView"

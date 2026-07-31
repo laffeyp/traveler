@@ -34,6 +34,23 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
       expect(runScenarioWithDriver(s).result.status).toBe("passed");
   });
 
+  it("goods must not ship uncertified — dropping the certificate check makes VF-028 red", () => {
+    // The outbound mirror of the receiving mutation. VF-028's first shipment attempt must be REFUSED; if the
+    // gate waves it through, the operation succeeds where the scenario expects a failure class.
+    withMutation(
+      "ShipInventory",
+      () => (w: any, i: any) => {
+        const item = w.get(i.inventory_alias);
+        item.state = "shipped";
+        w.emit("INVENTORY_SHIPPED", "ShipInventory", { inventory_item_id: item.id });
+      },
+      () => {
+        expect(runScenarioWithDriver("VF-028").result.status).toBe("failed");
+      },
+    );
+    expect(runScenarioWithDriver("VF-028").result.status).toBe("passed"); // restored
+  });
+
   it("outstanding review_required evidence must be represented on the close — suppressing it makes VF-003 red", () => {
     // machine_evidence_reviewed_if_required (B-Q-42). VF-003 closes WITH evidence still in review, which its
     // own acceptance requires, so the rule is satisfied by representing the gap rather than blocking on it.

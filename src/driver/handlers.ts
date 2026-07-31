@@ -812,6 +812,93 @@ export const HANDLERS: Record<string, H> = {
       });
     }
   },
+  // --- Outbound: the certificate that leaves with the goods ------------------------------------------------
+  // The mirror of the receiving boundary. Inbound, goods without paperwork are not production eligible.
+  // Outbound, goods without a certificate are not shippable. The certificate is a governed report, not a new
+  // subsystem: AS9163/EN 9163 fixes its minimum content and says a revision needs a new distinguishable
+  // number, a revision reason and a new release date - which is this project's existing report supersession
+  // (B-Q-46). The signature is the same three-part manifestation used for approvals: who, when, and what it
+  // attests, and it refuses an unidentified signer (B-Q-47).
+  GenerateCertificateOfConformance(world, input, actor) {
+    if (!actor)
+      throw new Error(
+        "validation_error: a certificate of conformance requires an identified authorized signer",
+      );
+    const items: any[] = [];
+    for (const alias of input.serial_aliases ?? []) {
+      const item = world.get(alias);
+      items.push({
+        inventory_item: alias,
+        serial_number: item.fields.serial_number,
+        part_revision: item.fields.part_revision,
+        state: item.state,
+      });
+    }
+    if (items.length === 0)
+      throw new Error("validation_error: a certificate must cover at least one serial");
+    world.emit("REPORT_REQUESTED", "GenerateCertificateOfConformance", {
+      report_alias: input.report_alias,
+    });
+    world.emit("REPORT_GENERATION_STARTED", "GenerateCertificateOfConformance", {
+      report_alias: input.report_alias,
+    });
+    const report = world.create("GeneratedReport", input.report_alias, "generated", {
+      report_type: "CertificateOfConformance",
+      report_definition_version: 1,
+      certificate_number: input.certificate_number,
+      generated_at: world.clock,
+      filtering_mode: "controlled_export",
+      // AS9163 minimum content. The conformity statement is the attestation itself; the signature carries who
+      // made it and what they meant by it.
+      sections: {
+        certificate_header: {
+          certificate_number: input.certificate_number,
+          issued_at: world.clock,
+        },
+        supplier: { name: input.supplier ?? null, cage_code: input.cage_code ?? null },
+        customer: { name: input.customer ?? null },
+        purchase_order: { reference: input.purchase_order_ref ?? null },
+        items,
+        conformity_statement: input.conformity_statement,
+        traceability: { source_records: items.map((entry) => entry.inventory_item) },
+        authorized_signature: {
+          signed_by: actor,
+          signed_at: world.clock,
+          signature_meaning:
+            "conformity: attests the items listed conform to the purchase order and applicable requirements",
+        },
+      },
+    });
+    world.emit("REPORT_GENERATED", "GenerateCertificateOfConformance", {
+      report_id: report.id,
+      report_type: "CertificateOfConformance",
+    });
+    return { report_alias: input.report_alias, certificate_number: input.certificate_number };
+  },
+  ShipInventory(world, input) {
+    // No certificate, no shipment - the outbound mirror of the receiving law. Fails CLOSED: a serial with no
+    // certificate of conformance covering it cannot leave, and neither can one whose certificate does not
+    // actually list it (B-Q-47).
+    const item = world.get(input.inventory_alias);
+    const covering = world
+      .byType("GeneratedReport")
+      .filter((report) => report.fields.report_type === "CertificateOfConformance")
+      .filter((report) => report.state === "generated")
+      .find((report) =>
+        (report.fields.sections?.items ?? []).some(
+          (entry: any) => entry.serial_number === item.fields.serial_number,
+        ),
+      );
+    if (!covering)
+      throw new Error(
+        `no_certificate_of_conformance: serial '${item.fields.serial_number}' has no generated certificate covering it; goods cannot ship`,
+      );
+    moveState(item, "ShipInventory");
+    world.emit("INVENTORY_SHIPPED", "ShipInventory", {
+      inventory_item_id: item.id,
+      certificate_of_conformance: covering.alias,
+    });
+  },
   CaptureCertificate(world, input) {
     // Typed supplier certificate (CofC / mill cert) tied to a received lot or serial (persona gap 8; AS9100
     // 8.4.2). Today these would be untyped attachments; this makes them first-class governed records with a

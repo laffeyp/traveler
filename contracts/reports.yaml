@@ -1,7 +1,13 @@
 registry: reports
 registry_version: contracts-0.4.1
 source: Contract Spec v0.4.1 section 15 + Build Readiness Plan v0.2 section 10
-note: RunCloseReport is the first governed report. Prior official reports are not silently overwritten.
+note: >
+  RunCloseReport is the first governed report. Prior official reports are not silently overwritten.
+  CertificateOfConformance is the outbound attestation that leaves with the goods. It is a governed report
+  rather than a new subsystem because the machinery already fits: a definition version, a bound access scope,
+  and supersession under a named trigger. AS9163/EN 9163 requires a revised certificate to carry a NEW
+  distinguishable number, a revision reason and a new release date - which is REPORT_SUPERSEDED with a
+  trigger, built for VF-012. Its required sections are the AS9163 minimum content (B-Q-46).
 
 reports:
   - name: RunCloseReport
@@ -22,3 +28,16 @@ reports:
     regeneration_required_after:
       [report_definition_change, reconciliation_resolution_affecting_run,
        access_policy_change_for_controlled_export, source_record_correction]
+
+  - name: CertificateOfConformance
+    owning_module: report
+    report_definition_version: 1
+    payload_schema_ref: schemas/reports/CertificateOfConformance.schema.json
+    generated_by: GenerateCertificateOfConformance
+    source_projections: [SerialHistory, AsBuiltProjection, ReportSourceIndex]
+    source_records: [InventoryItem, Run, RunCloseCheck, GeneratedReport, Certificate, Verification]
+    required_sections:
+      [certificate_header, supplier, customer, purchase_order, items, conformity_statement,
+       traceability, authorized_signature]
+    regeneration_required_after:
+      [report_definition_change, source_record_correction]

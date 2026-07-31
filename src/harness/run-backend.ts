@@ -87,6 +87,7 @@ const EQUIV_SCENARIOS = [
   "VF-025",
   "VF-026",
   "VF-027",
+  "VF-028",
 ];
 let equivOk = true;
 const equivFailures: string[] = [];
