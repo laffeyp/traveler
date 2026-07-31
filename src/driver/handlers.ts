@@ -725,6 +725,9 @@ export const HANDLERS: Record<string, H> = {
     // across the boundary, so the receiving gate does not apply to them - that is a positive fact about the
     // item, not the absence of a check (practice #19: do not gate on what you cannot see).
     const shipment = world.get(input.shipment_alias);
+    // The line is what marks inventory as supplier-received, so it must actually resolve to an item. A line
+    // pointing at nothing marks nothing, and the goods it claims to cover would never enter the boundary.
+    world.get(input.inventory_item_alias);
     const line = world.createInitial("ShipmentLine", input.shipment_line_alias, {
       shipment: shipment.id,
       inventory_item: input.inventory_item_alias,
@@ -827,6 +830,14 @@ export const HANDLERS: Record<string, H> = {
     const items: any[] = [];
     for (const alias of input.serial_aliases ?? []) {
       const item = world.get(alias);
+      // Fail CLOSED with an allow-list, not a deny-list. A certificate attests that the goods conform, so it
+      // may only be issued for goods in a state that can conform: available to ship, or already installed in
+      // an assembly. Quarantined, scrapped, removed or not-yet-received material is refused — certifying
+      // conformity for material on quality hold is the plainest false certainty this system exists to refuse.
+      if (!["available", "reserved", "kitted", "installed"].includes(item.state))
+        throw new Error(
+          `uncertifiable_inventory_state: '${alias}' is ${item.state}; a certificate of conformance cannot attest to it`,
+        );
       items.push({
         inventory_item: alias,
         serial_number: item.fields.serial_number,
@@ -886,7 +897,13 @@ export const HANDLERS: Record<string, H> = {
       .filter((report) => report.state === "generated")
       .find((report) =>
         (report.fields.sections?.items ?? []).some(
-          (entry: any) => entry.serial_number === item.fields.serial_number,
+          // Match the serial AND the part identity. A serial number is unique within a part, not across the
+          // world, so matching the string alone let a certificate for one part release a different part that
+          // happened to share a serial — the same cross-part collision the affected-population check closed
+          // in sprint 019 (B-Q-49).
+          (entry: any) =>
+            entry.serial_number === item.fields.serial_number &&
+            entry.part_revision === item.fields.part_revision,
         ),
       );
     if (!covering)
