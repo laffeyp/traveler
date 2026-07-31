@@ -52,7 +52,7 @@ const BENCHES: Record<string, { scenarios: string[]; required_pass_rate: number 
   // Persona-review gap 1: segregation of duties — a redline cannot be approved by its own author (VF-016).
   authority: { scenarios: ["VF-016"], required_pass_rate: 1.0 },
   // Receiving evidence boundary: physical arrival is not production eligibility (VF-025).
-  receiving: { scenarios: ["VF-025", "VF-026", "VF-027"], required_pass_rate: 1.0 },
+  receiving: { scenarios: ["VF-025", "VF-026", "VF-027", "VF-030"], required_pass_rate: 1.0 },
   // Outbound: goods do not leave without a certificate of conformance (VF-028).
   shipping: { scenarios: ["VF-028"], required_pass_rate: 1.0 },
   // Attachments: the file behind a record, evidence until accepted (VF-029).
@@ -88,6 +88,7 @@ const BENCHES: Record<string, { scenarios: string[]; required_pass_rate: number 
       "VF-027",
       "VF-028",
       "VF-029",
+      "VF-030",
     ],
     required_pass_rate: 1.0,
   },

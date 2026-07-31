@@ -198,6 +198,13 @@ export function assembleRunCloseReport(
     })),
     final_close_result: { run_status_at_generation: run.state, closed: run.state === "closed" },
     source_traceability: {
+      // reports.yaml lists Attachment among RunCloseReport's source records, and until attachments existed
+      // nothing carried them. An accepted attachment is evidence the close depended on, so its id belongs in
+      // the traceability set; unaccepted ones are not evidence and are not claimed as sources (B-Q-51).
+      attachment_ids: world
+        .byType("Attachment")
+        .filter((attachment) => attachment.state === "accepted")
+        .map((attachment) => attachment.id),
       source_record_ids: [
         run.id,
         ...steps.map((step) => step.id),

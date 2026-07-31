@@ -12,6 +12,7 @@ operations:
   - ReleaseInventory
   - GenerateCertificateOfConformance
   - ShipInventory
+  - SupersedeReport
 
 events:
   - INVENTORY_CREATED
@@ -21,10 +22,11 @@ events:
   - REPORT_GENERATION_STARTED
   - REPORT_GENERATED
   - INVENTORY_SHIPPED
+  - REPORT_SUPERSEDED
 
 record_states:
   InventoryItem: [expected, received, available, shipped]
-  GeneratedReport: [generated]
+  GeneratedReport: [generated, superseded]
 
 assertion_types:
   - record_state

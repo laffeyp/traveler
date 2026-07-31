@@ -51,14 +51,22 @@ steps:
   - { step_id: "005", set_time: "2026-07-07T08:20:00Z", actor: quality_1, operation: GenerateCertificateOfConformance, idempotency_key: vf028-005, input: { report_alias: coc_shipment_001, certificate_number: "COC-2026-0042", supplier: "Our Factory", cage_code: "9XYZ8", customer: "Customer Aerospace", purchase_order_ref: "PO-7781", serial_aliases: [valve_body_005], conformity_statement: "The items listed conform to the purchase order, drawing revision and applicable specifications." }, expect: { operation_succeeded: true, events_emitted: [REPORT_REQUESTED, REPORT_GENERATION_STARTED, REPORT_GENERATED] } }
   # Same operation, same goods, now covered.
   - { step_id: "006", set_time: "2026-07-07T08:30:00Z", actor: planner_1, operation: ShipInventory, idempotency_key: vf028-006, input: { inventory_alias: valve_body_005 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_SHIPPED] } }
+  # AS9163: a revised certificate carries a NEW distinguishable number, a revision reason and a new release
+  # date, and the prior one is superseded rather than overwritten. That is this project's existing report
+  # supersession — the claim is only worth making if something exercises it.
+  - { step_id: "007", set_time: "2026-07-07T09:00:00Z", actor: quality_1, operation: GenerateCertificateOfConformance, idempotency_key: vf028-007, input: { report_alias: coc_shipment_001_rev_b, certificate_number: "COC-2026-0042-B", supplier: "Our Factory", cage_code: "9XYZ8", customer: "Customer Aerospace", purchase_order_ref: "PO-7781", serial_aliases: [valve_body_005], conformity_statement: "The items listed conform to the purchase order, drawing revision and applicable specifications." }, expect: { operation_succeeded: true, events_emitted: [REPORT_GENERATED] } }
+  - { step_id: "008", set_time: "2026-07-07T09:01:00Z", actor: quality_1, operation: SupersedeReport, idempotency_key: vf028-008, input: { report_alias: coc_shipment_001, superseding_report_alias: coc_shipment_001_rev_b, trigger: source_record_correction }, expect: { operation_succeeded: true, events_emitted: [REPORT_SUPERSEDED] } }
 
 assertions:
   - { assertion_id: vf028_refused_without_a_certificate, assertion_type: operation_failed, severity: blocking, target: { step_id: "004", operation: ShipInventory }, expected: { failure_class: no_certificate_of_conformance } }
-  - { assertion_id: vf028_certificate_generated, assertion_type: report_generated, severity: blocking, target: { report_type: CertificateOfConformance, alias: coc_shipment_001 } }
+  - { assertion_id: vf028_revision_is_the_live_certificate, assertion_type: report_generated, severity: blocking, target: { report_type: CertificateOfConformance, alias: coc_shipment_001_rev_b } }
   - { assertion_id: vf028_certificate_carries_its_number, assertion_type: report_field_equals, severity: blocking, target: { report_type: CertificateOfConformance, alias: coc_shipment_001, path: "sections.certificate_header.certificate_number" }, expected: { value: "COC-2026-0042" } }
   - { assertion_id: vf028_certificate_names_its_signer, assertion_type: report_field_equals, severity: blocking, target: { report_type: CertificateOfConformance, alias: coc_shipment_001, path: "sections.authorized_signature.signed_by" }, expected: { value: quality_1 } }
   - { assertion_id: vf028_certificate_names_the_customer, assertion_type: report_field_equals, severity: blocking, target: { report_type: CertificateOfConformance, alias: coc_shipment_001, path: "sections.customer.name" }, expected: { value: "Customer Aerospace" } }
   - { assertion_id: vf028_goods_shipped_after_certification, assertion_type: record_state, severity: blocking, target: { record_type: InventoryItem, alias: valve_body_005 }, expected: { state: shipped } }
+  - { assertion_id: vf028_prior_certificate_superseded_not_overwritten, assertion_type: record_state, severity: blocking, target: { record_type: GeneratedReport, alias: coc_shipment_001 }, expected: { state: superseded } }
+  - { assertion_id: vf028_revision_carries_a_new_number, assertion_type: report_field_equals, severity: blocking, target: { report_type: CertificateOfConformance, alias: coc_shipment_001_rev_b, path: "sections.certificate_header.certificate_number" }, expected: { value: "COC-2026-0042-B" } }
+  - { assertion_id: vf028_superseded_once, assertion_type: event_emitted, severity: blocking, target: { event_type: REPORT_SUPERSEDED, producer_operation: SupersedeReport }, expected: { count: 1 } }
   - { assertion_id: vf028_shipped_exactly_once, assertion_type: event_emitted, severity: blocking, target: { event_type: INVENTORY_SHIPPED, producer_operation: ShipInventory }, expected: { count: 1 } }
 
 idempotency_replay_checks:

@@ -486,6 +486,53 @@ export const HANDLERS: Record<string, H> = {
       },
     );
   },
+  // --- Issue lifecycle -------------------------------------------------------------------------------------
+  // An Issue is broad; a Nonconformance is specific — a failure against a defined requirement (Research
+  // Dossier §15). Not every Issue becomes a Nonconformance. Until now Issues could be CREATED (the §18
+  // evidence cascade opens one, and a receiving failure maps to one) and never worked: they were dead-end
+  // records. The registered lifecycle is open -> triaged -> resolved -> closed, with cancel from open or
+  // triaged. Each step records who did it, because who triaged and who resolved is the substance of a
+  // quality trail (B-Q-52).
+  OpenIssue(world, input, actor) {
+    const issue = world.createInitial("Issue", input.issue_alias, {
+      source_type: input.source_type, // what raised it: receiving_inspection, machine_evidence, operator_report
+      source: input.source_alias,
+      summary: input.summary,
+      opened_by: actor,
+      opened_at: world.clock,
+    });
+    world.emit("ISSUE_OPENED", "OpenIssue", { issue_id: issue.id });
+  },
+  TriageIssue(world, input, actor) {
+    // Triage is the decision about what KIND of thing this is. Recording the assessment is the point; an
+    // untriaged issue that jumps straight to resolved has no record of what was judged.
+    const issue = world.get(input.issue_alias);
+    issue.fields.triaged_by = actor;
+    issue.fields.triage_assessment = input.assessment;
+    issue.fields.becomes_nonconformance = !!input.becomes_nonconformance;
+    step(world, issue, "TriageIssue");
+  },
+  ResolveIssue(world, input, actor) {
+    if (!input.resolution)
+      throw new Error("validation_error: resolving an issue requires a stated resolution");
+    const issue = world.get(input.issue_alias);
+    issue.fields.resolved_by = actor;
+    issue.fields.resolution = input.resolution;
+    step(world, issue, "ResolveIssue");
+  },
+  CloseIssue(world, input, actor) {
+    const issue = world.get(input.issue_alias);
+    issue.fields.closed_by = actor;
+    issue.fields.closed_at = world.clock;
+    step(world, issue, "CloseIssue");
+  },
+  CancelIssue(world, input, actor) {
+    if (!input.reason) throw new Error("validation_error: cancelling an issue requires a reason");
+    const issue = world.get(input.issue_alias);
+    issue.fields.cancelled_by = actor;
+    issue.fields.cancellation_reason = input.reason;
+    step(world, issue, "CancelIssue");
+  },
   OpenNonconformance(world, input) {
     const run = world.get(input.run_alias);
     const sourceMeasurement = world.get(input.source_measurement_alias);
@@ -760,12 +807,28 @@ export const HANDLERS: Record<string, H> = {
         );
       // Scope: a first article report covers a PART REVISION, not the lot that arrived, so matching it against
       // serial_or_lot would never find it (found by pressure-testing the reuse of VerifyCertificate).
-      const matches = world.byType("Certificate").filter((certificate) => {
-        if (certificate.fields.cert_type !== rule.cert_type) return false;
-        return rule.scope === "part_revision"
+      const ofType = world
+        .byType("Certificate")
+        .filter((certificate) => certificate.fields.cert_type === rule.cert_type);
+      const scopeMatches = ofType.filter((certificate) =>
+        rule.scope === "part_revision"
           ? certificate.fields.part_revision === line.fields.part_revision
-          : certificate.fields.serial_or_lot === line.fields.serial_or_lot;
-      });
+          : certificate.fields.serial_or_lot === line.fields.serial_or_lot,
+      );
+      // document_matches_part_revision: a lot-or-serial scoped document must ALSO name the part revision it
+      // is offered against. A serial is unique within a part, not across the world, so matching the serial
+      // alone would let a certificate for one part satisfy a requirement on another — the inbound twin of the
+      // outbound cross-part collision (B-Q-49b). A document that matches the serial but names a different
+      // part revision raises its own registered rule rather than silently counting or silently missing.
+      const matches = scopeMatches.filter(
+        (certificate) =>
+          certificate.fields.part_revision == null ||
+          certificate.fields.part_revision === line.fields.part_revision,
+      );
+      if (matches.length === 0 && scopeMatches.length > 0) {
+        blockers.push("document_matches_part_revision");
+        continue;
+      }
       if (matches.length === 0) {
         blockers.push(rule.id);
         continue;
@@ -834,7 +897,11 @@ export const HANDLERS: Record<string, H> = {
       // may only be issued for goods in a state that can conform: available to ship, or already installed in
       // an assembly. Quarantined, scrapped, removed or not-yet-received material is refused — certifying
       // conformity for material on quality hold is the plainest false certainty this system exists to refuse.
-      if (!["available", "reserved", "kitted", "installed"].includes(item.state))
+      // `shipped` is included deliberately: AS9163 revisions exist precisely because an error is found after
+      // the goods have gone, and a revised certificate must still be issuable for them. What stays refused is
+      // material that never conformed — quarantined, scrapped, removed — or that was never accepted into
+      // stock. Adding `shipped` widens the allow-list without reopening the hole it was built to close.
+      if (!["available", "reserved", "kitted", "installed", "shipped"].includes(item.state))
         throw new Error(
           `uncertifiable_inventory_state: '${alias}' is ${item.state}; a certificate of conformance cannot attest to it`,
         );
@@ -885,6 +952,33 @@ export const HANDLERS: Record<string, H> = {
       report_type: "CertificateOfConformance",
     });
     return { report_alias: input.report_alias, certificate_number: input.certificate_number };
+  },
+  ReleaseFromQuarantine(world, input, actor) {
+    // Goods on quality hold must be able to leave it, or the boundary is a trap: VF-025 quarantines a valve
+    // body for a missing certificate, and until now nothing could let it out once the supplier sent one.
+    //
+    // Release is not an override. If the item arrived on a shipment line — a positive fact, not the absence
+    // of one — it may only leave quarantine through its own gate: a receiving check for that line that is
+    // currently PASSED. Goods held for other reasons (a quality hold with no shipment line) are outside the
+    // receiving boundary and release on the quality path as before. Recorded as B-Q-50.
+    const item = world.get(input.inventory_alias);
+    const line = world
+      .byType("ShipmentLine")
+      .find((candidate) => candidate.fields.inventory_item === input.inventory_alias);
+    if (line) {
+      const passed = world
+        .byType("ReceivingCheck")
+        .some((check) => check.fields.shipment_line === line.id && check.state === "passed");
+      if (!passed)
+        throw new Error(
+          `receiving_check_not_passed: '${input.inventory_alias}' arrived on a shipment and cannot leave quarantine until its receiving check passes`,
+        );
+    }
+    item.fields.released_from_quarantine_by = actor;
+    item.fields.released_from_quarantine_at = world.clock;
+    item.fields.release_reason = input.reason;
+    moveState(item, "ReleaseFromQuarantine");
+    world.emit("INVENTORY_AVAILABLE", "ReleaseFromQuarantine", { inventory_item_id: item.id });
   },
   ShipInventory(world, input) {
     // No certificate, no shipment - the outbound mirror of the receiving law. Fails CLOSED: a serial with no

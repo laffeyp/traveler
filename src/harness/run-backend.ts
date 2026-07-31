@@ -89,6 +89,7 @@ const EQUIV_SCENARIOS = [
   "VF-027",
   "VF-028",
   "VF-029",
+  "VF-030",
 ];
 let equivOk = true;
 const equivFailures: string[] = [];
@@ -276,6 +277,102 @@ const ok15 =
   fresh15.readRecord("bad_evidence_001")?.state === "raw" && // no false certainty survived reload
   fresh15.readRecord("good_evidence_001")?.state === "normalized";
 console.log(`  backend grammar-gap durability proof (VF-015): ${ok15 ? "PASS" : "FAIL"}`);
+
+// OUTBOUND CERTIFICATE + ATTACHMENT across a cold reload. Receiving had a proof and these two did not — the
+// parity tell again. What a reload could quietly lose: the certificate that authorises a shipment, or the
+// restriction on a controlled document, either of which would leave the gate open on a fresh instance.
+const DBOUT = join(tmpdir(), "outbound-backend-cli.db");
+for (const f of [DBOUT, DBOUT + "-journal"]) if (existsSync(f)) rmSync(f);
+const bout = new BackendProductDriver(DBOUT);
+bout.executeOperation(
+  "CreateInventoryItem",
+  { inventory_alias: "out_item", part_revision: "vb_rev_a", serial_number: "VB-900" },
+  "planner",
+  "o1",
+  "OUT-1",
+);
+bout.executeOperation(
+  "ReceiveInventory",
+  { inventory_alias: "out_item" },
+  "planner",
+  "o2",
+  "OUT-2",
+);
+bout.executeOperation(
+  "ReleaseInventory",
+  { inventory_alias: "out_item" },
+  "planner",
+  "o3",
+  "OUT-3",
+);
+bout.executeOperation(
+  "GenerateCertificateOfConformance",
+  {
+    report_alias: "out_coc",
+    certificate_number: "COC-RELOAD-1",
+    serial_aliases: ["out_item"],
+    conformity_statement: "conforms",
+  },
+  "report",
+  "o4",
+  "OUT-4",
+  "quality_1",
+);
+bout.executeOperation(
+  "CreateAttachment",
+  { attachment_alias: "out_doc", storage_ref: "s3://x/doc.pdf", filename: "doc.pdf" },
+  "planner",
+  "o5",
+  "OUT-5",
+);
+bout.executeOperation(
+  "LinkAttachment",
+  { attachment_alias: "out_doc", subject_alias: "out_coc", evidence_role: "supporting_document" },
+  "planner",
+  "o6",
+  "OUT-6",
+);
+bout.executeOperation(
+  "AcceptAttachmentAsEvidence",
+  { attachment_alias: "out_doc" },
+  "quality_engineer",
+  "o7",
+  "OUT-7",
+  "quality_1",
+);
+bout.executeOperation(
+  "RestrictAttachment",
+  { attachment_alias: "out_doc", reason: "export_controlled" },
+  "quality_engineer",
+  "o8",
+  "OUT-8",
+);
+const freshOut = new BackendProductDriver(DBOUT); // cold start
+const shippedAfterReload = freshOut.executeOperation(
+  "ShipInventory",
+  { inventory_alias: "out_item" },
+  "planner",
+  "o9",
+  "OUT-9",
+);
+const readAfterReload: any = freshOut.executeOperation(
+  "GetAttachment",
+  { attachment_alias: "out_doc" },
+  "quality_engineer",
+  "o10",
+  "OUT-10",
+);
+const okOut =
+  shippedAfterReload.succeeded === true && // the certificate survived and still authorises the shipment
+  freshOut.readRecord("out_item")?.state === "shipped" &&
+  readAfterReload.output?.withheld_reason === "attachment_restricted" && // the restriction survived
+  readAfterReload.output?.storage_ref === null;
+console.log(
+  `  outbound: fresh-from-disk ship=${shippedAfterReload.succeeded} item=${freshOut.readRecord("out_item")?.state} restricted-read withheld=${readAfterReload.output?.withheld_reason}`,
+);
+console.log(
+  `  backend outbound-certificate + attachment durability proof: ${okOut ? "PASS" : "FAIL"}`,
+);
 
 // RECEIVING EVIDENCE across a cold reload: goods quarantined for missing paperwork must STILL be quarantined
 // on a fresh-from-disk instance, and the ReceivingCheck must still name why. Every other durable path in this
@@ -523,7 +620,20 @@ console.log(
 );
 console.log(`  backend outbox-delivery durability proof (Phase A): ${okD ? "PASS" : "FAIL"}`);
 process.exit(
-  ok && ok6 && ok8 && ok9 && ok13 && ok15 && okW && ok12 && equivOk && okIdc && okR && okD && okRcv
+  ok &&
+    ok6 &&
+    ok8 &&
+    ok9 &&
+    ok13 &&
+    ok15 &&
+    okW &&
+    ok12 &&
+    equivOk &&
+    okIdc &&
+    okR &&
+    okD &&
+    okRcv &&
+    okOut
     ? 0
     : 1,
 );
