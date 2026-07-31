@@ -676,9 +676,66 @@ otherwise the ledgers are confidently wrong about work that already happened.** 
 
 ---
 
+## Entry 27 — Reading called itself a probe, and the defect only appeared when it stopped (2026-07-30)
+
+**What happened.** Mapping the unbuilt surface showed `RunCloseCheck` evaluates 2 of the 13 registered
+close rules. I announced I would "probe rather than assert from reading" — and then produced more reading:
+grep, YAML dumps, handler source. The Architect stopped it: *define probe*. That correction is the entry.
+What followed was an actual probe — drive the real driver over VF-001's real steps with one step dropped —
+and it found a genuine defect that no amount of the preceding reading had established.
+
+**Lesson 1: "I read the code and it looks unenforced" and "I ran it and it wasn't enforced" are different
+claims, and only the second is a finding.** Everything I had before the probe was a hypothesis, and it was
+partly WRONG in a way reading could not reveal: I had `required_steps_complete` down as an unevaluated hole,
+and the probe's positive control showed it is enforced — `CompleteRunSteps` throws and the run never reaches
+`close_check`. Four of the nine arms came back "held", each by a mechanism (state machine, precondition,
+rework chain) that a rule-by-rule read of `RunCloseCheck` would have mislabelled as absent, because the
+enforcement lives somewhere the rule's name doesn't point. A registry read tells you what a gate SAYS it
+checks; only execution tells you what the system REFUSES. Entry 14 said audit by mutation, not inspection;
+this is the same law applied one level earlier, to discovery rather than to audit.
+
+**Lesson 2: a probe needs a positive control, or a null result means nothing.** The experiment's headline was
+"the run still closed" — a NEGATIVE result, the weakest kind, and indistinguishable from a broken harness that
+could never have blocked anything. What makes it evidence is the third arm: drop a step COMPLETION instead,
+and the same harness refuses hard (`precondition_failed`, run stuck `in_progress`, no `RUN_CLOSED`). That arm
+costs one extra run and converts "nothing stopped it" into "this rig can stop things, and it did not stop
+this." Two of my readouts were also silently wrong until a control contradicted them (the control reported
+zero InstallationEvents while its own as-built listed the child — impossible, so the introspection was broken,
+not the system). **Every arm of a probe needs a value you already know; the arm that disagrees with what you
+know is the arm that finds your instrument is broken.** A probe whose readouts are unverified is inspection
+with extra steps.
+
+**Lesson 3: the defect was the shape this project keeps producing — a registered rule with nothing behind
+it — and the fix was mostly restoring provenance someone had already specified.** The two rules could not
+even be WRITTEN when I started, because `RunStep` did not record which `ProcedureStep` it instantiated and
+`InstallInventory` discarded the `run_step_alias` it was handed. Build Readiness had specified the first
+outright ("RunStep records FROM ProcedureVersion steps"); the handler created the records and dropped the
+link. So a check that the contract mandated was unwritable because an earlier handler had quietly
+under-implemented a clause nobody was grading. That is a new sibling of practice #20's asymmetry: the
+forward-only validator asks "is every registered name resolvable", never "does every specified WRITE actually
+land". A handler that produces the right record with the wrong fields passes every gate this project owns.
+
+**Lesson 4: the honest half of a fix is the half you decline to build.** Build Readiness states the
+precondition as "satisfied **or explicitly waived by approved redline**". There is no waiver anywhere in the
+registries, and the dossier is explicit that a waiver and a redline are different objects — so implementing
+the waiver would have meant inventing a concept AND collapsing two the docs separate. The gate ships
+unconditional with the waiver clause recorded as a gap (B-Q-36). Same discipline on coverage: the skipped-step
+close path is unit-proven only, because `SkipRunStep` is registered-but-unimplemented, and saying so is worth
+more than a scenario that fakes the state.
+
+**Kit observation (one new practice).** (24) **Announcing a probe does not make it one — a probe RUNS the
+system and can return "you are wrong"; grep, source-reading and registry dumps produce hypotheses and must be
+labelled as such, however confident. Give every probe a POSITIVE CONTROL (an arm you know should refuse) and a
+known-value arm per readout: a negative result is worthless without proof the rig could have produced a
+positive one, and a readout no control ever contradicted is probably measuring the wrong field. And when the
+check you need cannot be written at all, suspect an earlier handler under-implemented a specified WRITE — a
+forward-only validator never asks whether every specified field actually landed.** For TECHNIQUES.md.
+
+---
+
 ## Hypothesis tracking
 
-*Updated 2026-07-30 against the full entry record (0–26); the first three had been left at their sprint-001/002 verdicts long after the evidence moved.*
+*Updated 2026-07-30 against the full entry record (0–27); the first three had been left at their sprint-001/002 verdicts long after the evidence moved.*
 
 | Hypothesis | Status | Evidence |
 |---|---|---|
@@ -688,6 +745,8 @@ otherwise the ledgers are confidently wrong about work that already happened.** 
 | Distrust-the-green is load-bearing, not decorative — the adversarial review finds a real defect on essentially every increment. | confirmed (14 straight increments, never empty by inspection) | Feature, fix, hardening, refactor, audit, persona additions, deferred items, close-out, and both roadmap phases. The one empty result (sprint 015) was empty only because a mutation battery proved the greens could fail. Sharpest single find: Phase A's exactly-once mechanism masquerading as at-least-once — a case where the code was correct and the CLAIM was false. |
 | A fast-written batch of guards defaults to fail-open; inverting to fail-closed is a law, not a case-by-case catch. | confirmed (3 independent recurrences) | Sprint 010's access hole; 17 of the persona-addition findings; 8 of the deferred-items findings. Same shape each time — a conditional check falls open on the absent/unknown/malformed input the author did not picture. |
 | Coverage testing cannot surface a missing domain concept; a domain-first pass can. | supported (1 data point, Entry 26) | 23 green scenarios found none of B-Q-31/32/33; the demo pack found all three immediately. Structural rather than lucky — scenarios are authored from the vocabulary. Needs a second pass (a different sub-domain written out plainly) before calling it confirmed. |
+| Reading the code cannot establish what the system refuses; only execution can. | confirmed (Entry 27) | A registry+source read said `RunCloseCheck` ignores 11 rules. Execution showed 4 of them are enforced elsewhere (state machine, upstream precondition, rework chain) and 2 are genuine holes that close a run on an uninspected part. The read was directionally right and specifically wrong; the probe's positive control is what separated them. |
+| A registered rule can be unimplementable because an earlier handler under-implemented a specified write. | supported (1 data point, Entry 27) | Neither required-work rule could be written until `CreateRun` recorded the RunStep→ProcedureStep link that Build Readiness already specified, and `InstallInventory` stopped discarding the `run_step_alias` it receives. No gate this project owns checks that a specified field actually landed. |
 
 ---
 

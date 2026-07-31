@@ -7,7 +7,7 @@
  * build check, run execution, measurement, quality/nonconformance, redline/approval, rework, machine
  * evidence, run close/report, drill-down.
  */
-import type { World } from "./world.ts";
+import type { World, FactoryRecord } from "./world.ts";
 import { moveState, moveStateTo, tryGet, step, createGrammarGap } from "./world.ts";
 import { NORMALIZE_GRAMMAR, keyPresentAndValid } from "./registry.ts";
 import { assembleRunCloseReport } from "./projections.ts";
@@ -53,6 +53,48 @@ function ruleAppliesToSerial(rule: any, serial: string): boolean {
     return serialNumber >= lowerBound && serialNumber <= upperBound;
   }
   return field.serial_condition === serial;
+}
+
+/**
+ * What the ProcedureStep behind a RunStep requires, and whether the run's records show it happened.
+ * Returns the REGISTERED close-rule ids that are unsatisfied (empty = nothing missing).
+ *
+ * Both requirements are contract-stated, not invented: a step requires a measurement when its
+ * ProcedureStep declares data-collection fields, and requires an installation when the step declares
+ * `install_required` (Build Readiness §7 CreateProcedureVersion / CompleteRunStep). The two rule ids
+ * returned are the registered ones from Contract Spec §16.
+ *
+ * Fail CLOSED on an unresolvable procedure step: if the system cannot say what a step required, it
+ * cannot assert the required work was done, so the caller refuses. (Practice #19 — a guard written as
+ * "refuse only if I can see the bad thing" falls open on exactly the input nobody pictured.)
+ */
+function stepRequirementGaps(world: World, runStep: FactoryRecord, runStepAlias: string): string[] {
+  const snapshot = world
+    .byType("RunContextSnapshot")
+    .find((candidate) => candidate.fields.run === runStep.fields.run);
+  const run = world.records.get(runStep.fields.run);
+  const procedureVersion = tryGet(
+    world,
+    snapshot?.fields.procedure_version ?? run?.fields.procedure_version,
+  );
+  const specification = ((procedureVersion?.fields.steps as any[]) ?? []).find(
+    (candidate) => candidate.alias === runStep.fields.procedure_step,
+  );
+  if (!specification) return ["step_requirements_unresolvable"];
+
+  const gaps: string[] = [];
+  const requiresMeasurement = (specification.data_collection_fields ?? []).length > 0;
+  const measured = world
+    .byType("Measurement")
+    .some((measurement) => measurement.fields.run_step === runStepAlias);
+  if (requiresMeasurement && !measured) gaps.push("required_measurements_present");
+
+  const requiresInstallation = !!specification.install_required;
+  const installed = world
+    .byType("InstallationEvent")
+    .some((event) => event.fields.run_step === runStepAlias);
+  if (requiresInstallation && !installed) gaps.push("required_installations_present");
+  return gaps;
 }
 
 const DISPOSITION_KINDS = new Set(["scrap", "rework", "repair", "use_as_is", "return_to_supplier"]);
@@ -352,8 +394,22 @@ export const HANDLERS: Record<string, H> = {
       resolution_serial: resolution?.fields.target_serial,
       run: run.id,
     });
-    for (const sa of input.run_step_aliases ?? [])
-      world.createInitial("RunStep", sa, { run: run.id });
+    // Build Readiness CreateRun.writes: "RunStep records FROM ProcedureVersion steps". The records were
+    // created from the bare alias list, dropping WHICH ProcedureStep each one instantiates — so nothing
+    // downstream could ask "does this step require a measurement / an installation", which is exactly what
+    // the CompleteRunStep precondition (Build Readiness §7 CompleteRunStep) and the required_* close rules
+    // (Contract Spec §16) need. The caller supplies an ORDERED run_step_aliases list and the snapshot
+    // procedure version carries its ordered steps, so the Nth run step instantiates the Nth procedure step
+    // by ordinal. Positional pairing is the encoding the input shape forces — recorded as B-Q-34.
+    const procedureSteps = [...((tryGet(world, snapPv)?.fields.steps as any[]) ?? [])].sort(
+      (first, second) => (first.ordinal ?? 0) - (second.ordinal ?? 0),
+    );
+    (input.run_step_aliases ?? []).forEach((runStepAlias: string, index: number) =>
+      world.createInitial("RunStep", runStepAlias, {
+        run: run.id,
+        procedure_step: procedureSteps[index]?.alias,
+      }),
+    );
     world.emit("RUN_CREATED", "CreateRun", { run_id: run.id });
   },
   ApplyBuildCheckResultToRun(world, input) {
@@ -599,6 +655,25 @@ export const HANDLERS: Record<string, H> = {
     step(world, world.get(input.nonconformance_alias), "CloseNonconformance"),
   CompleteRunStep(world, input, actor) {
     const runStep = world.get(input.run_step_alias);
+    // Build Readiness §7 CompleteRunStep precondition: "required measurements/installations for step are
+    // satisfied or explicitly waived by approved redline". The precondition was never implemented — a step
+    // whose torque was never captured completed anyway, and the run then closed with an empty
+    // measurement_summary (probe, 2026-07-30). Refusing here is the earliest honest point: the operator is
+    // still on the floor and can act.
+    //
+    // The waiver half is NOT implemented, deliberately: no waiver is representable anywhere in the
+    // registries (no Waiver record, no redline waiver field), and the research dossier is explicit that a
+    // waiver and a redline are different objects. Inventing one would be exactly the behavior the executor
+    // rule forbids, so the gate is unconditional and the waiver clause is recorded as B-Q-36.
+    // The failure class is the REGISTERED rule id that went unsatisfied, not a generic precondition_failed:
+    // the driver derives the class from the text before the first colon, so a generic class would blur
+    // "never measured" and "never installed" into one outcome — the exact blurring VF-004/005/006 exist to
+    // forbid (wrong != quarantined != missing).
+    const gaps = stepRequirementGaps(world, runStep, input.run_step_alias);
+    if (gaps.length)
+      throw new Error(
+        `${gaps[0]}: run step '${input.run_step_alias}' cannot complete — unsatisfied: ${gaps.join(", ")}`,
+      );
     runStep.fields.completed_by = actor; // who bought off the step (persona gap 9 — durable operator identity on the record)
     step(world, runStep, "CompleteRunStep");
   },
@@ -609,6 +684,10 @@ export const HANDLERS: Record<string, H> = {
       parent: input.parent_inventory_alias,
       child: input.child_inventory_alias,
       bom_line: input.bom_line_alias,
+      // Which run step this installation satisfies. The operation already receives it (every scenario
+      // passes run_step_alias) and it was being discarded, so nothing could check the CompleteRunStep
+      // install precondition or the required_installations_present close rule against a specific step.
+      run_step: input.run_step_alias,
       installed_at: input.installed_at,
     });
     world.emit("INVENTORY_INSTALLED", "InstallInventory", {
@@ -923,6 +1002,22 @@ export const HANDLERS: Record<string, H> = {
         blockers.push("failed_measurement_has_quality_path");
         break;
       }
+    }
+    // required_measurements_present / required_installations_present (Contract Spec §16). Registered close
+    // rules that nothing evaluated: a run closed with its torque never captured and its required child never
+    // installed, and the close report carried an empty measurement_summary / installed_inventory (probe,
+    // 2026-07-30). The CompleteRunStep precondition now refuses that at the floor, but the close gate is not
+    // redundant — CompleteRunSteps accepts steps that are complete OR SKIPPED, so a skipped step reaches the
+    // close with its required work undone and only this check stands in the way.
+    //
+    // A skipped step is held to its requirements here (fail-safe, B-Q-35): §16 does not say whether skipping
+    // waives them, and a close report that certifies a build whose required characteristic was never
+    // inspected — with nothing recording why — is the false certainty this system exists to refuse.
+    for (const runStep of world.byType("RunStep")) {
+      if (runStep.fields.run !== run.id) continue;
+      if (!["complete", "skipped"].includes(runStep.state)) continue;
+      for (const gap of stepRequirementGaps(world, runStep, runStep.alias))
+        if (!blockers.includes(gap)) blockers.push(gap);
     }
     // report_definition_available (run-close-rules.yaml): a RunCloseReport definition must be available for
     // generation. Distinct from the quality-path rule; distinct from the generated-INSTANCE precondition in

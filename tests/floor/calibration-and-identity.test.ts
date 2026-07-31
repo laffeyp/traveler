@@ -59,7 +59,20 @@ describe("calibration gate + operator identity (persona gaps 7 & 9)", () => {
 
   it("CompleteRunStep records who bought off the step", () => {
     const d = new InMemoryProductDriver();
-    d.world.createInitial("RunStep", "rs1", { run: "run" });
+    // A RunStep traces to the ProcedureStep it instantiates (Build Readiness CreateRun: "RunStep records
+    // from ProcedureVersion steps"), and CompleteRunStep now refuses a step whose requirements cannot be
+    // resolved. Seed the procedure version + snapshot so this step resolves; it declares no data-collection
+    // fields and no install, so it has nothing outstanding and the subject under test here (who bought off
+    // the step) is isolated exactly as before.
+    d.world.createInitial("ProcedureVersion", "pv1", {
+      steps: [{ alias: "ps1", ordinal: 1, name: "Step" }],
+    });
+    const run = d.world.createInitial("Run", "run1", { procedure_version: "pv1" });
+    d.world.createInitial("RunContextSnapshot", "snap1", {
+      run: run.id,
+      procedure_version: "pv1",
+    });
+    d.world.createInitial("RunStep", "rs1", { run: run.id, procedure_step: "ps1" });
     d.executeOperation("StartRunStep", { run_step_alias: "rs1" }, "operator", "s");
     const rc = d.executeOperation(
       "CompleteRunStep",
