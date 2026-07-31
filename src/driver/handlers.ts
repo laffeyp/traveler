@@ -1194,6 +1194,32 @@ export const HANDLERS: Record<string, H> = {
     world.emit("RUN_CLOSE_CHECK_STARTED", "RunCloseCheck", {
       run_close_check_id: runCloseCheck.id,
     });
+    // machine_evidence_reviewed_if_required (Contract Spec §16): review_required evidence must be REPRESENTED
+    // in the close observations and not used as a measurement. Representation, not blocking — VF-003's own
+    // acceptance criteria settle the reading: it requires MachineEvidenceRecord.state == review_required AND
+    // Run.status == closed in the same run, so the rule cannot mean "block until reviewed". The second half
+    // (not used as a measurement) is already proven by VF-003's event_not_emitted assertion. Surfacing the
+    // outstanding evidence is the run-close narration's job: an evidence gap the reader should see, recorded
+    // on the close rather than left silent (B-Q-42).
+    for (const evidenceRecord of world.byType("MachineEvidenceRecord")) {
+      if (evidenceRecord.state !== "review_required") continue;
+      // linked_run holds the scenario ALIAS, not the record id (LinkMachineEvidence stores input.run_alias),
+      // so comparing it against run.id silently matched nothing. Resolve first. Evidence that resolves to a
+      // DIFFERENT run is not this run's business; evidence that resolves to nothing is still outstanding and
+      // is surfaced, because for a representation rule the safe direction is to show it, not hide it.
+      const linkedRun = tryGet(world, evidenceRecord.fields.linked_run);
+      if (linkedRun && linkedRun.id !== run.id) continue;
+      world.create("RunCloseObservation", "", "created", {
+        run_close_check: runCloseCheck.id,
+        observation_rule: "machine_evidence_reviewed_if_required",
+        source_evidence: evidenceRecord.id,
+      });
+      world.emit("RUN_CLOSE_OBSERVATION_CREATED", "RunCloseCheck", {
+        run_close_check_id: runCloseCheck.id,
+        observation_rule: "machine_evidence_reviewed_if_required",
+        machine_evidence_record_id: evidenceRecord.id,
+      });
+    }
     if (blocked) {
       // One structured observation per blocker, each carrying its own registered blocker_rule.
       for (const bomLine of blockers) {

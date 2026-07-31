@@ -166,6 +166,10 @@ assertions:
   - { assertion_id: vf003_containment_exists, assertion_type: record_exists, severity: blocking, target: { record_type: QualityContainmentAction, alias: containment_action_001 } }
   - { assertion_id: vf003_redline_applied, assertion_type: record_state, severity: blocking, target: { record_type: Redline, alias: redline_001 }, expected: { status: applied } }
   - { assertion_id: vf003_approval_approved, assertion_type: record_state, severity: blocking, target: { record_type: ApprovalRequest, alias: approval_request_001 }, expected: { status: approved } }
+  # machine_evidence_reviewed_if_required (Contract Spec §16): the run closes with this evidence still in
+  # review, which VF-003's own acceptance requires — so the rule is satisfied by REPRESENTING the outstanding
+  # evidence on the close, not by blocking. Without this the close was silent about an evidence gap.
+  - { assertion_id: vf003_outstanding_evidence_is_represented_on_the_close, assertion_type: event_payload_contains, severity: blocking, target: { event_type: RUN_CLOSE_OBSERVATION_CREATED, producer_operation: RunCloseCheck }, expected: { observation_rule: machine_evidence_reviewed_if_required } }
   - { assertion_id: vf003_machine_evidence_review_required, assertion_type: record_state, severity: blocking, target: { record_type: MachineEvidenceRecord, alias: torque_evidence_001 }, expected: { state: review_required } }
   - { assertion_id: vf003_evidence_did_not_overwrite_measurement, assertion_type: event_emitted, severity: blocking, target: { event_type: MEASUREMENT_PASSED }, expected: { count: 1 } }
   - { assertion_id: vf003_evidence_not_accepted, assertion_type: event_not_emitted, severity: blocking, target: { event_type: MACHINE_EVIDENCE_ACCEPTED } }

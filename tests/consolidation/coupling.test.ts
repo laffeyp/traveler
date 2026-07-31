@@ -34,6 +34,34 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
       expect(runScenarioWithDriver(s).result.status).toBe("passed");
   });
 
+  it("outstanding review_required evidence must be represented on the close — suppressing it makes VF-003 red", () => {
+    // machine_evidence_reviewed_if_required (B-Q-42). VF-003 closes WITH evidence still in review, which its
+    // own acceptance requires, so the rule is satisfied by representing the gap rather than blocking on it.
+    // Before this the close was silent about it and nothing noticed.
+    withMutation(
+      "RunCloseCheck",
+      (orig) =>
+        (w: any, i: any, ...rest: any[]) => {
+          const proxy = new Proxy(w, {
+            get(t: any, p: string) {
+              if (p === "emit")
+                return (type: string, producer: string, payload: any = {}) => {
+                  if (payload?.observation_rule === "machine_evidence_reviewed_if_required") return;
+                  return t.emit(type, producer, payload);
+                };
+              const v = t[p];
+              return typeof v === "function" ? v.bind(t) : v;
+            },
+          });
+          return orig(proxy, i, ...rest);
+        },
+      () => {
+        expect(runScenarioWithDriver("VF-003").result.status).toBe("failed");
+      },
+    );
+    expect(runScenarioWithDriver("VF-003").result.status).toBe("passed"); // restored
+  });
+
   it("the receiving gate must RELEASE as well as block — forcing a blocker makes VF-026 red", () => {
     // The pair to the suppression mutation below. A gate that only ever refuses is not a gate: if the check
     // raised a blocker regardless of the paperwork, VF-025 would still pass and only VF-026 would catch it.
