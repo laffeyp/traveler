@@ -56,3 +56,15 @@ assertions:
   - { assertion_id: vf025_inventory_quarantined, assertion_type: record_state, severity: blocking, target: { record_type: InventoryItem, alias: valve_body_002 }, expected: { state: quarantined } }
   - { assertion_id: vf025_never_available, assertion_type: event_not_emitted, severity: blocking, target: { event_type: INVENTORY_AVAILABLE }, expected: { reason: goods_without_paperwork_are_never_released } }
   - { assertion_id: vf025_check_did_not_pass, assertion_type: event_not_emitted, severity: blocking, target: { event_type: RECEIVING_CHECK_PASSED }, expected: { reason: the_required_certificate_was_absent } }
+  # The product's central promise, applied to the new boundary: given one serial, show what happened to it
+  # without manual reconstruction. The arrival story must read end to end - which consignment it came on, that
+  # it was received, that the check blocked, and that it was quarantined.
+  - { assertion_id: vf025_serial_history_tells_the_arrival_story, assertion_type: access_full, severity: blocking, target: { projection: SerialHistory, key_serial: "VB-002" }, expected: { view: full, event_types_contain: [SHIPMENT_CREATED, SHIPMENT_RECEIVED, INVENTORY_RECEIVED, RECEIVING_CHECK_BLOCKED, INVENTORY_QUARANTINED] } }
+
+# Harness section 14: every scenario carries at least one idempotency replay. Re-running the receiving check
+# under its own key must not mint a second ReceivingCheck or a second blocked event.
+idempotency_replay_checks:
+  - check_id: vf025_replay_receiving_check
+    step_id: "006"
+    operation: RunReceivingCheck
+    idempotency_key: vf025-006

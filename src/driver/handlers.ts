@@ -703,7 +703,7 @@ export const HANDLERS: Record<string, H> = {
   // like RunCloseCheck (status + blockers[] naming registered rule ids), the documents are our Certificate
   // records, and receiving never writes an InventoryItem itself: RunReceivingCheck decides and
   // ApplyReceivingCheckResultToInventory performs the transition, the same split as RunBuildCheck /
-  // ApplyBuildCheckResultToRun (B-Q-34).
+  // ApplyBuildCheckResultToRun (B-Q-37).
   CreateShipment(world, input) {
     const shipment = world.createInitial("Shipment", input.shipment_alias, {
       supplier: input.supplier,
@@ -723,7 +723,7 @@ export const HANDLERS: Record<string, H> = {
       serial_or_lot: input.serial_or_lot,
       // Which documents this consignment must carry. Absent means the certificate of conformance alone, the
       // one document every consignment carries; anything more specific is scenario data, not an executor
-      // guess (B-Q-35).
+      // guess (B-Q-38).
       required_documents: input.required_documents ?? ["certificate_of_conformance"],
     });
     world.emit("SHIPMENT_LINE_CREATED", "AddShipmentLine", { shipment_line_id: line.id });

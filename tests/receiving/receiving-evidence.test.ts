@@ -227,3 +227,16 @@ describe("event_payload_contains discriminates on list payloads", () => {
     ).toBe(1);
   });
 });
+
+/** Harness section 14: the receiving check replays under its own key without minting duplicate facts. */
+describe("receiving check is idempotent under replay", () => {
+  it("re-running VF-025 step 006 creates no second check and no second blocked event", async () => {
+    const { runScenarioWithDriver, runIdempotencyReplay } =
+      await import("../../src/harness/run.ts");
+    const { readYaml } = await import("../../src/registry/load.ts");
+    const { driver } = runScenarioWithDriver("VF-025");
+    const scenario = readYaml("scenarios/VF-025/scenario.yaml");
+    expect(scenario.idempotency_replay_checks?.length).toBeGreaterThan(0);
+    expect(runIdempotencyReplay(driver as any, scenario)).toEqual([]);
+  });
+});

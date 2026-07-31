@@ -35,5 +35,10 @@ assertion_types:
   - record_state
   - event_payload_contains
   - event_not_emitted
+  - access_full
+  - idempotent_replay  # run by the harness replay pass, not as a post-assertion
+
+projections:
+  - SerialHistory
 
 caller_types: [planner, quality_engineer]

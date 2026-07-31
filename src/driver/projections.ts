@@ -94,6 +94,14 @@ export function serialHistory(world: World, serial: string, access?: string): an
   }
   for (const evidenceRecord of world.byType("MachineEvidenceRecord"))
     if (evidenceRecord.fields.linked_serial === serial) owned.add(evidenceRecord.id);
+  // The closure walks records that POINT AT the item, so it reaches a ShipmentLine but never the Shipment the
+  // line belongs to — and the serial's story would not say which consignment it arrived on or from whom. Pull
+  // the header in explicitly, the same way machine evidence is pulled in by its linked serial.
+  for (const line of world.byType("ShipmentLine")) {
+    if (!owned.has(line.id)) continue;
+    const shipmentRef = resolve(line.fields.shipment);
+    if (shipmentRef) owned.add(shipmentRef);
+  }
   const inHistory = world.events.filter((event) => {
     if (event.payload?.serial_number === serial) return true;
     return Object.values(event.payload ?? {}).some((fieldValue) => {
