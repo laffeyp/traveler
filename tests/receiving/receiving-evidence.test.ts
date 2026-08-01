@@ -156,13 +156,15 @@ describe("receiving evidence boundary", () => {
     expect(driver.readRecord("check_1").state).toBe("passed");
   });
 
-  it("refuses an unregistered document type rather than treating it as satisfied", () => {
+  it("refuses an unregistered document type at the line, before it can reach a check", () => {
+    // The refusal moved upstream: a shipment line can no longer carry a requirement the boundary has no
+    // registered rule for, so a prototype-chain name never reaches a lookup. The line is not created, and
+    // the check that would have consumed it therefore has nothing to read.
     const driver = new InMemoryProductDriver();
     seedConsignment(driver, ["notarised_vibes"]);
+    expect(driver.readRecord("line_1")).toBe(null);
     const refused = runCheck(driver);
     expect(refused.succeeded).toBe(false);
-    expect(refused.failureClass).toBe("validation_error");
-    // A refused operation persists no facts.
     expect(driver.readRecord("check_1")).toBe(null);
   });
 

@@ -1,4 +1,4 @@
-scenario_id: VF-028
+scenario_id: VF-032
 scenario_version: "1"
 title: Goods cannot ship without a certificate of conformance, and can once it is issued
 ci_eligible: true

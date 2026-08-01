@@ -1,4 +1,4 @@
-scenario_id: VF-030
+scenario_id: VF-034
 scenario_version: "1"
 title: Quarantined goods leave quarantine only when the missing paperwork arrives
 ci_eligible: true

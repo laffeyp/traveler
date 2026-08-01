@@ -46,10 +46,10 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
           return { ...out, storage_ref: attachment.fields.storage_ref, withheld_reason: null };
         },
       () => {
-        expect(runScenarioWithDriver("VF-029").result.status).toBe("failed");
+        expect(runScenarioWithDriver("VF-033").result.status).toBe("failed");
       },
     );
-    expect(runScenarioWithDriver("VF-029").result.status).toBe("passed"); // restored
+    expect(runScenarioWithDriver("VF-033").result.status).toBe("passed"); // restored
   });
 
   it("goods must not ship uncertified — dropping the certificate check makes VF-028 red", () => {
@@ -63,10 +63,10 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
         w.emit("INVENTORY_SHIPPED", "ShipInventory", { inventory_item_id: item.id });
       },
       () => {
-        expect(runScenarioWithDriver("VF-028").result.status).toBe("failed");
+        expect(runScenarioWithDriver("VF-032").result.status).toBe("failed");
       },
     );
-    expect(runScenarioWithDriver("VF-028").result.status).toBe("passed"); // restored
+    expect(runScenarioWithDriver("VF-032").result.status).toBe("passed"); // restored
   });
 
   it("outstanding review_required evidence must be represented on the close — suppressing it makes VF-003 red", () => {
@@ -111,10 +111,10 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
           return result;
         },
       () => {
-        expect(runScenarioWithDriver("VF-026").result.status).toBe("failed");
+        expect(runScenarioWithDriver("VF-024").result.status).toBe("failed");
       },
     );
-    expect(runScenarioWithDriver("VF-026").result.status).toBe("passed"); // restored
+    expect(runScenarioWithDriver("VF-024").result.status).toBe("passed"); // restored
   });
 
   it("export control must be per document — sweeping it onto every certificate makes VF-027 red", () => {
@@ -131,10 +131,10 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
           return orig(w, i, ...rest);
         },
       () => {
-        expect(runScenarioWithDriver("VF-027").result.status).toBe("failed");
+        expect(runScenarioWithDriver("VF-031").result.status).toBe("failed");
       },
     );
-    expect(runScenarioWithDriver("VF-027").result.status).toBe("passed"); // restored
+    expect(runScenarioWithDriver("VF-031").result.status).toBe("passed"); // restored
   });
 
   it("receiving evidence gate must fire — suppressing the missing-document blocker makes VF-025 red", () => {

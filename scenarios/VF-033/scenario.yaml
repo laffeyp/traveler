@@ -1,4 +1,4 @@
-scenario_id: VF-029
+scenario_id: VF-033
 scenario_version: "1"
 title: A supplier certificate carries its document, which is evidence until accepted
 ci_eligible: true

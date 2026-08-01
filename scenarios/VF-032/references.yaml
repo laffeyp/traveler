@@ -1,4 +1,4 @@
-scenario_id: VF-028
+scenario_id: VF-032
 scenario_version: "1"
 registry_version: contracts-0.4.1
 source: Outbound certificate of conformance (B-Q-46, B-Q-47); AS9163/EN 9163 minimum content.

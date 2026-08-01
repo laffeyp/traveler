@@ -800,6 +800,15 @@ export const HANDLERS: Record<string, H> = {
       throw new Error(
         "validation_error: required_documents cannot be empty; omit it to take the default",
       );
+    // Every declared document type must name a REGISTERED receiving rule. Refusing here rather than at the
+    // check means a line can never carry a requirement the boundary has no rule for, and a prototype-chain
+    // name (`__proto__`, `constructor`) is refused as unregistered rather than reaching a lookup.
+    for (const documentType of input.required_documents ?? []) {
+      if (!RECEIVING_RULES.some((rule) => rule.cert_type === documentType))
+        throw new Error(
+          `validation_error: '${documentType}' is not a registered receiving rule document type`,
+        );
+    }
     const line = world.createInitial("ShipmentLine", input.shipment_line_alias, {
       shipment: shipment.id,
       inventory_item: input.inventory_item_alias,

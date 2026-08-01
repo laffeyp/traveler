@@ -51,12 +51,13 @@ const BENCHES: Record<string, { scenarios: string[]; required_pass_rate: number 
   hardening: { scenarios: ["IDEM-001"], required_pass_rate: 1.0 },
   // Persona-review gap 1: segregation of duties — a redline cannot be approved by its own author (VF-016).
   authority: { scenarios: ["VF-016"], required_pass_rate: 1.0 },
-  // Receiving evidence boundary: physical arrival is not production eligibility (VF-025).
-  receiving: { scenarios: ["VF-025", "VF-026", "VF-027", "VF-030"], required_pass_rate: 1.0 },
-  // Outbound: goods do not leave without a certificate of conformance (VF-028).
-  shipping: { scenarios: ["VF-028"], required_pass_rate: 1.0 },
-  // Attachments: the file behind a record, evidence until accepted (VF-029).
-  attachments: { scenarios: ["VF-029"], required_pass_rate: 1.0 },
+  // Receiving evidence boundary (boundary spec §21 receiving_evidence_bench). VF-024/025 hold the ids the
+  // specification assigns them; VF-031+ are boundary work the specification did not name (B-Q-58).
+  receiving: { scenarios: ["VF-024", "VF-025", "VF-031", "VF-034"], required_pass_rate: 1.0 },
+  // Outbound: goods do not leave without a certificate of conformance (VF-032).
+  shipping: { scenarios: ["VF-032"], required_pass_rate: 1.0 },
+  // Attachments: the file behind a record, evidence until accepted (VF-033).
+  attachments: { scenarios: ["VF-033"], required_pass_rate: 1.0 },
   // Everything materialized so far.
   all: {
     scenarios: [
@@ -83,12 +84,12 @@ const BENCHES: Record<string, { scenarios: string[]; required_pass_rate: number 
       "VF-014",
       "VF-015",
       "VF-016",
+      "VF-024",
       "VF-025",
-      "VF-026",
-      "VF-027",
-      "VF-028",
-      "VF-029",
-      "VF-030",
+      "VF-031",
+      "VF-032",
+      "VF-033",
+      "VF-034",
     ],
     required_pass_rate: 1.0,
   },

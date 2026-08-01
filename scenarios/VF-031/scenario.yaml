@@ -1,4 +1,4 @@
-scenario_id: VF-027
+scenario_id: VF-031
 scenario_version: "1"
 title: An export-controlled supplier document is denied to a foreign person
 ci_eligible: true
