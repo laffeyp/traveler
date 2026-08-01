@@ -1,0 +1,13 @@
+# NOT a record. This system has no Supplier record: a supplier is a reference carried on the Shipment and on
+# a corrective action, in the same way the purchase order is a reference into ERP. The file is kept because
+# §24 names it, and because the demo needs somewhere to say who Acme are — but nothing here is loaded, and
+# `check.mjs` would refuse it if it claimed to be a record type.
+#
+# What a real Supplier record would carry, and where it would matter: approved part list, quality rating,
+# source-inspection status, and the CAGE code that verification already matches against. Recorded as a gap.
+not_a_record: true
+supplier_reference: supplier_acme
+name: Acme Precision Castings
+cage_code: "1ABC2"
+approved_for:
+  - { part_number: VB-100, revision: A }

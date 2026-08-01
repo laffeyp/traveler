@@ -1,0 +1,22 @@
+# Who sees what of the supplier evidence. Two axes are live in this build and they are different things.
+#
+# EXPORT CONTROL is per document, carried on the Certificate itself, and gates VERIFICATION: an actor who
+# cannot read controlled technical data cannot verify it, because verification means comparing the document
+# against the goods and they have compared nothing (§9.6, VF-029).
+#
+# VIEW SCOPE is per reader and gates DEPTH in the run close report: a customer-scoped read keeps the fact that
+# evidence was verified and drops the certificate number and the name of the engineer who signed it (§23.3).
+export_control:
+  dimensional_report_valve_body:
+    allowed_nationalities: [US, CA]
+  # every other document in this pack is uncontrolled, and is readable by the same people
+view_scopes:
+  - alias: internal_full_access
+    receiving_evidence_depth: full        # supplier, purchase order, certificate id, verifier, timestamp
+  - alias: customer_summary_access
+    receiving_evidence_depth: summary     # origin, supplier, check result, verified true/false
+    visible: [RunCloseReport.summary, SerialHistory.summary, BoundedDrillDown.summary]
+    hidden: [controlled_machine_evidence_payload, internal_quality_notes, raw_machine_payload]
+# NOT built: an access-filtered READ path for the documents themselves (§11.6 SupplierEvidencePacket). Reading
+# a supplier document after verification is ungated — recorded as B-Q-71, and it is why four arms of the
+# fail-closed mutation battery are still declared not-enforceable.

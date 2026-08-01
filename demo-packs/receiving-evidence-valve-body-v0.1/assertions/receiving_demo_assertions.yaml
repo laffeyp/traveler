@@ -1,0 +1,12 @@
+# What a scenario over this pack would assert, in registered assertion types. Data only — nothing here runs;
+# the executable versions are VF-024 (this consignment releasing) and VF-025 (the same one refused).
+assertions:
+  - { assertion_id: demo_check_passed, assertion_type: record_state, target: { record_type: ReceivingCheck, alias: receiving_check_001 }, expected: { state: passed } }
+  - { assertion_id: demo_no_blockers, assertion_type: record_field_equals, target: { record_type: ReceivingCheck, alias: receiving_check_001 }, expected: { blockers: [] } }
+  - { assertion_id: demo_certificate_verified, assertion_type: record_state, target: { record_type: Certificate, alias: coc_valve_body }, expected: { state: verified } }
+  - { assertion_id: demo_certificate_names_its_verifier, assertion_type: record_field_equals, target: { record_type: Certificate, alias: coc_valve_body }, expected: { verified_by: quality_1 } }
+  - { assertion_id: demo_goods_available, assertion_type: record_state, target: { record_type: InventoryItem, alias: valve_body_003 }, expected: { state: available } }
+  - { assertion_id: demo_history_tells_the_arrival, assertion_type: access_full, target: { projection: SerialHistory, key_serial: "VB-003" }, expected: { view: full, event_types_contain: [SHIPMENT_RECEIVED, CERTIFICATE_VERIFIED, RECEIVING_CHECK_PASSED, INVENTORY_AVAILABLE] } }
+  # The controlled document is readable by a US person and denied to a foreign one. Per document, not per
+  # consignment: the uncontrolled certificate stays readable by the same person who is denied this.
+  - { assertion_id: demo_controlled_denied_to_foreign_person, assertion_type: access_denied, target: { record_type: Certificate, alias: dimensional_report_valve_body }, expected: { subject_nationality: FR, reason: deemed_export_denied } }

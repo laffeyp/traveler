@@ -1,0 +1,14 @@
+# The inbound consignment. Boundary spec §24 lists packing_list.yaml and purchase_order_ref.yaml as separate
+# files; here both are fields, because neither is a record this system owns. The purchase order lives in ERP
+# and is referenced (§26.1: PurchaseOrderRef only, do not model PO lines), and the packing list is a document
+# like any other — if it needed governing it would be a Certificate with cert_type: packing_list, which the
+# registered document_types list already allows.
+record_type: Shipment
+alias: shipment_001
+state: received
+fields:
+  supplier: supplier_acme          # a reference, not a Supplier record — see the pack README
+  purchase_order_ref: "PO-4471"
+  packing_list_ref: "PL-4471-01"
+  carrier_reference: "1Z-99-4471"
+  received_at: "2026-07-06T08:10:00Z"

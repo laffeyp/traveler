@@ -1,0 +1,26 @@
+# What this consignment must produce, and where that is written down. The requirement lives on the shipment
+# LINE, not in a policy that infers it — §26.3 is explicit that a first-article requirement is declared, not
+# derived from standards. The registered rules below say what each requirement means; the line says which
+# apply here.
+declared_on: shipment_line_valve_body.required_documents
+requirements:
+  - document_type: certificate_of_conformance
+    rule: certificate_of_conformance_present
+    scope: lot_or_serial
+    expires: true
+    absent_blocker: certificate_of_conformance_present
+    unverified_blocker: certificate_of_conformance_unverified
+    stale_blocker: certificate_of_conformance_expired
+  - document_type: material_test_report
+    rule: material_test_report_present
+    scope: lot_or_serial
+    expires: false
+    absent_blocker: material_test_report_present
+    unverified_blocker: material_test_report_unverified
+# Absent, unverified and stale are three separate registered ids on purpose. When two of them shared one id, a
+# mutation that suppressed one branch stayed green because the other caught it.
+not_required_here:
+  - document_type: dimensional_report
+    reason: a real document type that no receiving rule requires
+  - document_type: first_article_report
+    reason: revision A was first-articled in June; the report exists and this line does not re-require it

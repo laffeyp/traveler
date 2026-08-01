@@ -1,0 +1,9 @@
+# A second item on the same consignment, present so the pack shows a line that is NOT the one under test.
+# Its own paperwork is separate: one certificate does not cover two parts, and a document naming no part
+# revision satisfies neither (the cross-part collision closed on 2026-07-31).
+record_type: InventoryItem
+alias: gasket_001
+state: received
+fields:
+  part_revision: gasket_rev_b
+  serial_number: "GK-001"

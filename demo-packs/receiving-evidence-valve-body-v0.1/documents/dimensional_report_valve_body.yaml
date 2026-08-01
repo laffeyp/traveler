@@ -1,0 +1,14 @@
+# Export-controlled technical data. ITAR 22 CFR 120.33 covers drawings, diagrams, tables and engineering
+# specifications, which is what a dimensional report contains. No receiving RULE requires one, which is the
+# point of keeping document TYPES and gating RULES apart: this is a real document a supplier sends and an
+# inspector reads, and nothing blocks release for its absence.
+record_type: Certificate
+alias: dimensional_report_valve_body
+state: captured
+fields:
+  cert_type: dimensional_report
+  part_revision: valve_body_rev_a
+  serial_or_lot: "VB-003"
+  cage_code: "1ABC2"
+  export_control:
+    allowed_nationalities: [US, CA]

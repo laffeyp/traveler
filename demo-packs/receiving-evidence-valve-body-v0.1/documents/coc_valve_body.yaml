@@ -1,0 +1,18 @@
+# A certificate of conformance, VERIFIED. Capture records that a supplier sent paperwork; the verified state
+# records that a named person compared it against the goods and put their name to it (§9.4). Only this state
+# satisfies a release requirement.
+record_type: Certificate
+alias: coc_valve_body
+state: verified
+fields:
+  cert_type: certificate_of_conformance
+  part_revision: valve_body_rev_a
+  serial_or_lot: "VB-003"
+  cage_code: "1ABC2"
+  expires_at: "2027-06-01T00:00:00Z"
+  verified_by: quality_1
+  verified_by_role: quality_engineer
+  verified_at: "2026-07-06T08:18:00Z"
+  signature_meaning: >
+    supplier evidence verification: attests this document was compared against the received material and
+    covers it

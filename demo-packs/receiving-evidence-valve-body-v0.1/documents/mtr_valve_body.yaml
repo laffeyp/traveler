@@ -1,0 +1,14 @@
+# A mill test report. No expires_at, and that is correct: a material test report records what the material WAS
+# when it was tested, and that does not go out of date. The registered rule carries `expires: false` so a
+# blanket expiry check cannot refuse valid paperwork for lacking a date it should never have.
+record_type: Certificate
+alias: mtr_valve_body
+state: verified
+fields:
+  cert_type: material_test_report
+  part_revision: valve_body_rev_a
+  serial_or_lot: "VB-003"
+  cage_code: "1ABC2"
+  heat_number: "HEAT-77"
+  verified_by: quality_1
+  verified_at: "2026-07-06T08:19:00Z"

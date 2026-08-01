@@ -1,0 +1,13 @@
+# A first article report, scoped to the PART REVISION rather than the lot. It is filed against the first-off
+# lot and covers every later delivery of revision A — which is why the receiving rule matches it on
+# part_revision, and why matching it on the serial that arrived would never find it.
+record_type: Certificate
+alias: fai_valve_body
+state: verified
+fields:
+  cert_type: first_article_report
+  part_revision: valve_body_rev_a
+  serial_or_lot: "LOT-FIRST-OFF"
+  cage_code: "1ABC2"
+  verified_by: quality_1
+  verified_at: "2026-06-02T09:00:00Z"

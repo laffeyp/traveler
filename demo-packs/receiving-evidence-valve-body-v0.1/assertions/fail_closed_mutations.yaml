@@ -1,0 +1,31 @@
+# Each line: break one thing about this pack, and name what must happen. All twenty-two executable arms run in
+# tests/receiving/fail-closed-battery.test.ts against the real driver; this file is the pack's plain-language
+# statement of the same list.
+mutations:
+  document_absent:
+    - { break: remove coc_valve_body, expect: blocked, blocker: certificate_of_conformance_present }
+    - { break: remove mtr_valve_body, expect: blocked, blocker: material_test_report_present }
+  document_present_but_not_evidence:
+    - { break: leave coc_valve_body in `captured`, expect: blocked, blocker: certificate_of_conformance_unverified, why: "capture records that paperwork arrived, not that anyone read it" }
+    - { break: set coc_valve_body to `rejected`, expect: blocked, blocker: certificate_of_conformance_unverified, why: "a rejected document that still counted would make rejection decorative" }
+  document_does_not_match_the_goods:
+    - { break: coc part_revision -> valve_body_rev_b, expect: blocked }
+    - { break: coc serial_or_lot -> VB-004, expect: blocked }
+    - { break: coc cage_code -> 9ZZZ9, expect: verification refused, failure_class: supplier_document_mismatch }
+    - { break: coc expires_at -> 2020-01-01, expect: verification refused, failure_class: supplier_document_expired }
+    - { break: coc naming no part_revision at all, expect: blocked, blocker: document_matches_part_revision, why: "absent identity is not agreement" }
+  wrong_person:
+    - { break: run the check with no caller type, expect: refused, failure_class: authorization_denied }
+    - { break: run the check as a planner, expect: refused, failure_class: authorization_denied, why: "booking a shipment in and clearing it for production are different acts" }
+    - { break: verify with no named actor, expect: refused, why: "a sign-off with no signer is not a sign-off" }
+    - { break: verify the dimensional report as a foreign person, expect: refused, failure_class: controlled_supplier_document_denied }
+  release_path:
+    - { break: release the goods before the check passes, expect: refused }
+    - { break: release the goods while quarantined, expect: refused }
+    - { break: run a build check on receiving-blocked inventory, expect: refused }
+    - { break: install receiving-blocked inventory, expect: refused }
+  supplier_quality:
+    - { break: raise a corrective action against a consignment that passed, expect: refused, failure_class: supplier_corrective_action_untriggered }
+    - { break: raise a corrective action with no supplier named, expect: refused, failure_class: supplier_unknown }
+not_yet_enforceable:
+  - { break: read the dimensional report without access, why: "no access-filtered read path for supplier evidence — B-Q-71" }

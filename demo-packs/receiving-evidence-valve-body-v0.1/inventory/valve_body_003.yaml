@@ -1,0 +1,8 @@
+# The goods. `received` is not `available`: physical arrival is not production eligibility, which is the whole
+# law of this boundary. Only ApplyReceivingCheckResultToInventory moves it on, and only on a passing check.
+record_type: InventoryItem
+alias: valve_body_003
+state: received
+fields:
+  part_revision: valve_body_rev_a
+  serial_number: "VB-003"

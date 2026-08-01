@@ -1,0 +1,17 @@
+# §24 calls this receiving_inspection_001. Here it is a ReceivingCheck: a status-light result carrying
+# `status` plus `blockers[]` naming registered receiving-rule ids, shaped exactly like BuildCheckResult and
+# RunCloseCheck. What the specification models as a seven-state ReceivingInspection is, in this build, the
+# CHECK plus the lifecycle on the documents it reads — see the pack README.
+#
+# Three statuses, and the difference between the last two is load-bearing:
+#   passed  — every required document is present, verified and in date
+#   blocked — the file is incomplete; producing the document resolves it
+#   failed  — somebody looked and said no; a document covering these goods was rejected
+record_type: ReceivingCheck
+alias: receiving_check_001
+state: passed
+fields:
+  shipment_line: shipment_line_valve_body
+  status: passed
+  blockers: []
+  rejected_documents: []

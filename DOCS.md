@@ -10,6 +10,7 @@ The "where is the project" front door. `ROADMAP.md` is the entry point and cross
 
 | Document | What it is |
 |---|---|
+| [RECEIVING_ACCEPTANCE.md](RECEIVING_ACCEPTANCE.md) | The receiving evidence boundary scored against its own §27 acceptance criteria — fourteen of fifteen pass, one passes in part, each row citing the artifact that settles it. Also lists what was deliberately not built and what the boundary now refuses. |
 | [STATE.md](STATE.md) | What the documents specified, what was built against it, what is deliberately unimplemented, and what no document covers. Read this first. |
 | [ROADMAP.md](ROADMAP.md) | Measured gate status, everything shipped, the (now-closed) roadmap phases, the deferred backlog, and the deliberate non-goals. The front door. |
 | [DEVIATION_SUMMARY.md](DEVIATION_SUMMARY.md) | How far the build moved from the initial design, how, and where it stands: the locked baseline, a quantified delta table, the method, final status. |
@@ -37,11 +38,14 @@ The nine-document stack in group 5 governs the first executable slice and stops 
 | [receiving-evidence-boundary-spec-v0.1.md](receiving-evidence-boundary-spec-v0.1.md) | The receiving evidence boundary: how material becomes eligible to enter production. Its §9 invariants, §13 scenario ids, §22 fail-closed mutation battery and §26 product decisions govern that boundary. |
 | [receiving-evidence-registry-pack-v0.1/](receiving-evidence-registry-pack-v0.1/) | The follow-on registry-ready definitions for the same boundary. Subordinate to the spec above. |
 
-## 2b. Demo pack — the domain written out as plain data
+## 2b. Demo packs — the domain written out as plain data
+
+*Data only: no runtime, nothing that executes at build time. `demo-packs/check.mjs` proves every name every pack uses is registered (`npm run validate:demo-packs`, and in the suite).*
 
 | Path | What it is |
 |---|---|
-| [demo-packs/valve-body-assembly-v0.1/](demo-packs/valve-body-assembly-v0.1/) | The valve body VF-003 already builds, written out as plain files (part, BOM, procedure, tool + calibration, serials, torque requirement, machine evidence, quality path, customer view, expected report) with a `README.md` and `manifest.yaml`. Data only — changes no code, runs nothing at build time. `check.mjs` proves every name it uses is registered in `contracts/` (the no-invention rule on the data side). Writing it surfaced three vocabulary gaps, recorded as B-Q-31/32/33. |
+| [demo-packs/receiving-evidence-valve-body-v0.1/](demo-packs/receiving-evidence-valve-body-v0.1/) | The receiving boundary written out as plain files (boundary spec §24): one consignment of one valve body with its shipment, lines, supplier reference, certificates, receiving check, requirements, access policy and the fail-closed mutation list. Its `manifest.yaml` also records what §24 assumes and this build deliberately does not have — Supplier, PackingList, PurchaseOrderRef and ReceivingInspection as records — each with the reason. |
+| [demo-packs/valve-body-assembly-v0.1/](demo-packs/valve-body-assembly-v0.1/) | The valve body VF-003 already builds, written out as plain files (part, BOM, procedure, tool + calibration, serials, torque requirement, machine evidence, quality path, customer view, expected report) with a `README.md` and `manifest.yaml`. Data only — changes no code, runs nothing at build time. `demo-packs/check.mjs` proves every name it uses is registered in `contracts/` (the no-invention rule on the data side), and is gated. Writing it surfaced three vocabulary gaps, recorded as B-Q-31/32/33. |
 
 ## 3. Sprint history — numbered 1:1 pairs (input contract → output report)
 

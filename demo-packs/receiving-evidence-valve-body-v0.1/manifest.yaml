@@ -1,0 +1,93 @@
+# Every name this pack uses, so `demo-packs/check.mjs` can prove none of them are invented. The check reads
+# this file and requires each name to be defined in contracts/*.yaml. A name that is not registered is not a
+# typo to be fixed quietly — it is either vocabulary that must be registered, or a gap to be recorded.
+pack: receiving-evidence-valve-body-v0.1
+version: "0.1"
+source: Receiving Evidence Boundary Specification v0.1 §24
+describes: >
+  One consignment of one valve body, arriving from a supplier with its paperwork, expressed entirely in this
+  project's registered vocabulary. Data only: no runtime, no handlers, nothing that executes at build time.
+
+records:
+  - Shipment
+  - ShipmentLine
+  - InventoryItem
+  - Certificate
+  - ReceivingCheck
+
+operations:
+  - CreateShipment
+  - AddShipmentLine
+  - ReceiveShipment
+  - ReceiveInventory
+  - CaptureCertificate
+  - AcceptCertificateAsEvidence
+  - RejectCertificateAsEvidence
+  - RunReceivingCheck
+  - ApplyReceivingCheckResultToInventory
+  - ReleaseFromQuarantine
+  - OpenReceivingNonconformance
+  - OpenSupplierCorrectiveAction
+  - EvaluateAccess
+
+events:
+  - SHIPMENT_CREATED
+  - SHIPMENT_LINE_CREATED
+  - SHIPMENT_RECEIVED
+  - INVENTORY_RECEIVED
+  - CERTIFICATE_CAPTURED
+  - CERTIFICATE_VERIFIED
+  - CERTIFICATE_REJECTED
+  - RECEIVING_CHECK_STARTED
+  - RECEIVING_CHECK_PASSED
+  - RECEIVING_CHECK_BLOCKED
+  - INVENTORY_AVAILABLE
+  - INVENTORY_QUARANTINED
+  - ACCESS_DECISION_DENIED
+
+projections:
+  - SerialHistory
+
+reports:
+  - RunCloseReport
+
+caller_types:
+  - planner
+  - quality_engineer
+
+# Registered receiving-rule ids the pack names. Checked against contracts/receiving-rules.yaml.
+receiving_rules:
+  - certificate_of_conformance_present
+  - certificate_of_conformance_unverified
+  - certificate_of_conformance_expired
+  - material_test_report_present
+  - material_test_report_unverified
+  - first_article_report_present
+  - document_matches_part_revision
+
+# Registered supplier-document types the pack names (§9.3 classification invariant).
+document_types:
+  - certificate_of_conformance
+  - material_test_report
+  - dimensional_report
+  - first_article_report
+
+# What §24's file list assumes and this build does not have. Not errors — decisions, each with a reason and a
+# ledger entry. The pack names them here so a reader comparing it against the specification is not left
+# wondering whether they were missed.
+absent_by_decision:
+  - name: Supplier
+    §24_file: supplier/supplier_001.yaml
+    why: a supplier is a reference on the Shipment, as the purchase order is a reference into ERP (B-Q-72)
+  - name: PackingList
+    §24_file: shipment/packing_list.yaml
+    why: a field on the Shipment; if it needed governing it would be a Certificate of type packing_list
+  - name: PurchaseOrderRef
+    §24_file: shipment/purchase_order_ref.yaml
+    why: §26.1 says reference only — do not model PO lines, do not build procurement
+  - name: ReceivingInspection
+    §24_file: receiving/receiving_inspection_001.yaml
+    why: >
+      the specification's seven-state inspection is, here, a status-light ReceivingCheck plus the lifecycle on
+      the documents it reads. The states that carry meaning live on the Certificate (captured, verified,
+      rejected) and on the check result (passed, blocked, failed)

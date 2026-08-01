@@ -1,0 +1,24 @@
+# What the boundary should conclude about this consignment, written out so the pack states an expectation
+# rather than only a starting position.
+inventory_item: valve_body_003
+expected:
+  receiving_check_status: passed
+  blockers: []
+  inventory_state_after_apply: available
+  events_in_order:
+    - SHIPMENT_CREATED
+    - SHIPMENT_LINE_CREATED
+    - SHIPMENT_RECEIVED
+    - INVENTORY_RECEIVED
+    - CERTIFICATE_CAPTURED
+    - CERTIFICATE_VERIFIED
+    - RECEIVING_CHECK_STARTED
+    - RECEIVING_CHECK_PASSED
+    - INVENTORY_AVAILABLE
+# The corresponding refusal, kept alongside so the pack shows both answers. Drop the certificate of
+# conformance and this same consignment quarantines instead — VF-025 on the bench.
+contrast_if_certificate_absent:
+  receiving_check_status: blocked
+  blockers: [certificate_of_conformance_present]
+  inventory_state_after_apply: quarantined
+  no_event: INVENTORY_AVAILABLE

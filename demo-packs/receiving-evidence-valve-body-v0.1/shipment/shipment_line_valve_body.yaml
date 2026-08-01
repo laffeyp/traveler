@@ -1,0 +1,14 @@
+# One line per part revision plus lot or serial. This is the record that marks inventory as supplier-received,
+# and `required_documents` is where the receiving requirement is DECLARED rather than inferred (§26.3).
+record_type: ShipmentLine
+alias: shipment_line_valve_body
+state: created
+fields:
+  shipment: shipment_001
+  inventory_item: valve_body_003
+  part_revision: valve_body_rev_a
+  serial_or_lot: "VB-003"
+  quantity: 1
+  required_documents:
+    - certificate_of_conformance
+    - material_test_report
