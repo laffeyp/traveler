@@ -313,7 +313,7 @@ bout.executeOperation(
     serial_aliases: ["out_item"],
     conformity_statement: "conforms",
   },
-  "report",
+  "quality_engineer", // a person signs a certificate of conformance; "report" was never a registered caller type
   "o4",
   "OUT-4",
   "quality_1",
@@ -476,7 +476,7 @@ const okW =
   coldRetry.failureClass === "idempotency_conflict"; // dedup survived the cold reload
 console.log(`  backend write-boundary idempotency proof (B-Q-13): ${okW ? "PASS" : "FAIL"}`);
 
-// Record-id counter survives a cold reload (sprint-019 review): a post-reload create must NOT reuse a persisted
+// Record-id counter survives a cold reload (persona-gap review): a post-reload create must NOT reuse a persisted
 // id and overwrite it. Capture certA, reload a fresh instance, capture certB; certB must get a NEW id and certA
 // must stay intact. Without the reseed, certB would mint certA's id and INSERT-OR-REPLACE would clobber certA.
 const DBI = join(tmpdir(), "idc-reload-cli.db");
@@ -537,7 +537,7 @@ const ok12 =
   sup12.length === 1 &&
   sup12[0].payload?.trigger === "access_policy_change_for_controlled_export"; // the supersede trigger persisted
 console.log(`  backend report-supersession durability proof (VF-012): ${ok12 ? "PASS" : "FAIL"}`);
-// VF-003D reconciliation durability (sprint-019 review): the accepted->invalidated evidence + the cascaded
+// VF-003D reconciliation durability (persona-gap review): the accepted->invalidated evidence + the cascaded
 // report staleness must survive a cold reload, and GetReport on the reloaded instance must still surface stale.
 const DBR = join(tmpdir(), "vf003d-backend-cli.db");
 for (const f of [DBR, DBR + "-journal"]) if (existsSync(f)) rmSync(f);

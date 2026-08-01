@@ -8,7 +8,7 @@
 import { World } from "./world.ts";
 import type { FactoryRecord, FactoryEvent } from "./world.ts";
 import { HANDLERS } from "./handlers.ts";
-import { opIdempotency } from "./registry.ts";
+import { opIdempotency, callerMayInvoke, opAuthorizationRule } from "./registry.ts";
 import { asBuiltProjection, serialHistory } from "./projections.ts";
 
 /** The Harness §11 OperationResult: the outcome envelope every operation returns. */
@@ -80,6 +80,26 @@ export class InMemoryProductDriver {
         operationName: op,
         succeeded: false,
         failureClass: "not_implemented",
+        correlationId: this.world.correlation,
+        idempotencyKey,
+        contractVersion: "contracts-0.4.1",
+        operationContractVersion: `${op}.v1`,
+        productBuild: "build_001",
+      };
+    } else if (!callerMayInvoke(op, actorCallerType)) {
+      // Authorization rule evaluation (Contract Spec §6 authorization_rule + §22 runtime checks; Build
+      // Readiness §4.1 step 4). Placed AFTER the not_implemented guard on purpose: an operation nobody built
+      // must still say so, rather than reporting a denial that hides the fact that there is nothing to deny.
+      // No snapshot is taken because no handler runs, so the §8 "a failed operation persists no facts" rule
+      // holds trivially.
+      result = {
+        operationName: op,
+        succeeded: false,
+        failureClass: "authorization_denied",
+        output: {
+          caller_type: actorCallerType ?? null,
+          authorization_rule: opAuthorizationRule.get(op),
+        },
         correlationId: this.world.correlation,
         idempotencyKey,
         contractVersion: "contracts-0.4.1",

@@ -8,21 +8,40 @@ import { InMemoryProductDriver } from "../../src/driver/engine.ts";
 import { runScenarioWithDriver } from "../../src/harness/run.ts";
 
 // executeOperation(op, input, callerType, stepId, idempotencyKey?, actorId?) — actorId (the person) is 6th.
-function op(d: any, name: string, input: any, actor?: string, step = "s") {
-  return d.executeOperation(name, input, "quality_engineer", step, undefined, actor);
+// `callerType` is the registered role (authorization-rules.yaml); `actor` is WHICH person holds it. Segregation
+// of duties is enforced on the person, authorization on the role, and the two are independent: a second
+// manufacturing engineer clears authorization and still has to be a different human to clear the sign-off.
+// The quality chain below runs as quality_engineer, so that is the default; the redline chain names its own.
+function op(
+  d: any,
+  name: string,
+  input: any,
+  actor?: string,
+  callerType = "quality_engineer",
+  step = "s",
+) {
+  return d.executeOperation(name, input, callerType, step, undefined, actor);
 }
 
-// Drive a redline to under_review so an approval can be attempted.
+// Drive a redline to under_review so an approval can be attempted. The floor raises the redline, engineering
+// reviews it — the roles are not interchangeable, which is why each call names one.
 function redlineUnderReview(d: any, author: string) {
   op(
     d,
     "CreateRedlineDraft",
     { redline_alias: "rl", run_alias: "run_x", procedure_version_alias: "pv_x" },
     author,
+    "operator",
   );
-  op(d, "SubmitRedline", { redline_alias: "rl" }, author);
-  op(d, "ReviewRedline", { redline_alias: "rl" }, "reviewer_x");
-  op(d, "RequestApproval", { approval_request_alias: "ar", redline_alias: "rl" }, "reviewer_x");
+  op(d, "SubmitRedline", { redline_alias: "rl" }, author, "operator");
+  op(d, "ReviewRedline", { redline_alias: "rl" }, "reviewer_x", "manufacturing_engineer");
+  op(
+    d,
+    "RequestApproval",
+    { approval_request_alias: "ar", redline_alias: "rl" },
+    "reviewer_x",
+    "manufacturing_engineer",
+  );
 }
 
 // Drive a nonconformance to verification_pending with the rework performed by `performer` (mirrors VF-003's NC
@@ -91,6 +110,7 @@ describe("segregation of duties (persona gap 1)", () => {
         decision: "approved",
       },
       "alice",
+      "manufacturing_engineer",
     );
     expect(self.succeeded).toBe(false);
     expect(self.failureClass).toBe("segregation_of_duties_violation");
@@ -105,6 +125,7 @@ describe("segregation of duties (persona gap 1)", () => {
         decision: "approved",
       },
       "bob",
+      "manufacturing_engineer",
     );
     expect(other.succeeded).toBe(true);
     expect(d.readRecord("rl").state).toBe("approved");
@@ -141,7 +162,7 @@ describe("segregation of duties (persona gap 1)", () => {
   it("fails CLOSED: an approval carrying no approver identity is refused, not committed unsigned", () => {
     const d = new InMemoryProductDriver();
     redlineUnderReview(d, "alice");
-    // No actor -> the sign-off cannot be attributed to a second person, so it is REFUSED (sprint-019 review:
+    // No actor -> the sign-off cannot be attributed to a second person, so it is REFUSED (persona-gap review:
     // this used to succeed as an unsigned, unattributed approval).
     const noActor = d.executeOperation(
       "RecordApprovalDecision",
@@ -151,7 +172,7 @@ describe("segregation of duties (persona gap 1)", () => {
         redline_alias: "rl",
         decision: "approved",
       },
-      "quality_engineer",
+      "manufacturing_engineer",
       "s1",
     );
     expect(noActor.succeeded).toBe(false);

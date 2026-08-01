@@ -30,7 +30,7 @@ npx vitest run                       # unit + discrimination + mutation-coupling
 | Path | What |
 |---|---|
 | `src/` | The executor + harness — `driver/` (registry loader, world/state store, operation handlers, in-memory + `node:sqlite` drivers), `harness/` (scenario compiler, assertion engine, bench, backend gate), `registry/` + `schemas/` (validators/generators). |
-| `contracts/` | The **locked vocabulary** — 11 YAML registries (operations, events, records, state machines, projections, reports, run-close rules, assertion types, modules, profiles) plus [`CONTRACT_GAPS.md`](contracts/CONTRACT_GAPS.md). |
+| `contracts/` | The **locked vocabulary** — 13 YAML registries (operations, events, records, state machines, projections, reports, run-close rules, receiving rules, authorization rules, assertion types, modules, profiles) plus [`CONTRACT_GAPS.md`](contracts/CONTRACT_GAPS.md). |
 | `scenarios/` | The virtual-factory bench — each scenario is pure data (`scenario.yaml` + `references.yaml`): VF-001..016, the VF-003 variants, VF-003D/F, IDEM-001. |
 | `schemas/` | JSON schemas generated from the registries (operations, events, reports). |
 | `tests/` | Vitest suites — scenario, discrimination, and the permanent mutation-coupling + prototype-safety regression suites. |

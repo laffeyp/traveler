@@ -206,7 +206,7 @@ describe("the receiving boundary fails closed on identity, not just state", () =
         serial_aliases: ["x"],
         conformity_statement: "c",
       },
-      "report",
+      "quality_engineer",
       key(),
       undefined,
       "quality_1",

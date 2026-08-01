@@ -451,7 +451,7 @@ describe("consolidation: accreted safety invariants hold", () => {
       d.executeOperation(
         "CreateManufacturingStructureVersion",
         { manufacturing_structure_alias: "ms", part_revision: "p" },
-        "eng",
+        "manufacturing_engineer",
         "s3",
         "K1",
       ).succeeded,
@@ -473,21 +473,21 @@ describe("consolidation: accreted safety invariants hold", () => {
     d.executeOperation(
       "CreateRedlineDraft",
       { redline_alias: "rl", run_alias: "r", procedure_version_alias: "pv" },
-      "eng",
+      "operator",
       "r1",
     );
-    d.executeOperation("SubmitRedline", { redline_alias: "rl" }, "eng", "r2");
-    d.executeOperation("ReviewRedline", { redline_alias: "rl" }, "eng", "r3");
+    d.executeOperation("SubmitRedline", { redline_alias: "rl" }, "operator", "r2");
+    d.executeOperation("ReviewRedline", { redline_alias: "rl" }, "manufacturing_engineer", "r3");
     d.executeOperation(
       "RequestApproval",
       { approval_request_alias: "ar", redline_alias: "rl" },
-      "eng",
+      "manufacturing_engineer",
       "r4",
     );
     const res = d.executeOperation(
       "RecordApprovalDecision",
       { approval_request_alias: "ar", redline_alias: "rl", approval_decision_alias: "ad" },
-      "approver",
+      "manufacturing_engineer",
       "r5",
     );
     expect(res.succeeded).toBe(false);

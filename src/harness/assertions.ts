@@ -76,7 +76,7 @@ export const EVALUATORS: Record<string, Evaluator> = {
   },
   operation_output_contains(assertion, { stepResults }) {
     // Value-level read of an operation's RETURNED output (e.g. GetReport's freshness), so a scenario can assert
-    // what a read op returned — not only the record it read (sprint-019 review: GetReport's output was unasserted).
+    // what a read op returned — not only the record it read (persona-gap review: GetReport's output was unasserted).
     const target = assertion.target ?? {},
       expected = assertion.expected ?? {};
     if (Object.keys(expected).length === 0)

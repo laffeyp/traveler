@@ -68,7 +68,7 @@ describe("VF-003 assertion discrimination (the green must be able to fail)", () 
     d.executeOperation(
       "RequestApproval",
       { approval_request_alias: "ar", redline_alias: "rl" },
-      "mfg",
+      "manufacturing_engineer",
       "s2",
     );
     const eventsBefore = d.readEventTrace().length;
@@ -82,7 +82,7 @@ describe("VF-003 assertion discrimination (the green must be able to fail)", () 
         redline_alias: "rl",
         decision: "approved",
       },
-      "mfg",
+      "manufacturing_engineer",
       "s3",
       undefined,
       "approver_1",

@@ -97,6 +97,12 @@ describe("disposition kinds + authority (persona gap 3)", () => {
   });
 
   it("fails CLOSED: use-as-is with NO role (or an empty role) is refused, not waved through", () => {
+    // The refusal MOVED EARLIER when operation authorization landed. A caller with no role is now turned away
+    // at the wrapper — an empty string and undefined are both absent from every rule's caller_types — so it
+    // never reaches the handler's elevated-authority guard and the class is authorization_denied rather than
+    // disposition_authority_violation. The behavior under test is unchanged and strictly stronger: a roleless
+    // use-as-is still commits nothing. The handler guard itself stays covered by the two tests above, where a
+    // real operator and a real planner ARE allowed to call RecordDisposition and are refused the elevated kind.
     for (const role of ["", undefined as any]) {
       const d = ncAtDispositionPending();
       const r = d.executeOperation(
@@ -108,8 +114,9 @@ describe("disposition kinds + authority (persona gap 3)", () => {
         "someone",
       );
       expect(r.succeeded).toBe(false);
-      expect(r.failureClass).toBe("disposition_authority_violation");
+      expect(r.failureClass).toBe("authorization_denied");
       expect(d.readRecord("nc").state).toBe("disposition_pending"); // unchanged
+      expect(dispositionField(d)).toBeUndefined(); // and no Disposition record was written
     }
   });
 

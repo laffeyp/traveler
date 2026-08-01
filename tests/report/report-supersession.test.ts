@@ -80,7 +80,7 @@ describe("report supersession + report_field_equals (VF-012)", () => {
         report_alias: "run_close_report_t0",
         trigger: "access_policy_change_for_controlled_export",
       },
-      "worker",
+      "quality_engineer",
       "sX",
       "k-again",
     );

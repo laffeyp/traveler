@@ -72,7 +72,7 @@ export class BackendProductDriver {
       world.partRevisions = new Map(config.partRevisions ?? []);
       world.txIdempotencyKeys = new Set(config.txIdempotencyKeys ?? []); // write-boundary unique constraint survives reload (B-Q-13)
     }
-    world.reseedIdCounter(); // resume ids past the persisted max so a post-reload write cannot overwrite a record (sprint-019 review)
+    world.reseedIdCounter(); // resume ids past the persisted max so a post-reload write cannot overwrite a record (persona-gap review)
   }
 
   // One transaction per operation: current-state records + new events + outbox (TAD §12 transactional outbox).

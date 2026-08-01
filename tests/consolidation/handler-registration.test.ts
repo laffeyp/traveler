@@ -12,7 +12,7 @@ import { describe, it, expect } from "vitest";
 import { HANDLERS } from "../../src/driver/handlers.ts";
 import { readYaml } from "../../src/registry/load.ts";
 
-describe("handler <-> registry coverage (reverse poka-yoke, sprint-019 close-out)", () => {
+describe("handler <-> registry coverage (reverse poka-yoke, persona-gap close-out)", () => {
   it("every HANDLER maps to a registered operation (no handler-only vocabulary)", () => {
     const registered = new Set<string>(
       (readYaml("contracts/operations.yaml").operations ?? []).map((o: any) => o.name),

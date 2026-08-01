@@ -66,7 +66,7 @@ describe("write-boundary idempotency (transactional_unique_constraint)", () => {
     const b = d.executeOperation(
       "CreateGrammarGap",
       { grammar_gap_alias: "g", reason: "r", gap_type: "t" },
-      "worker",
+      "system_worker",
       "s2",
       "SHARED",
     );
@@ -82,7 +82,7 @@ describe("write-boundary idempotency (transactional_unique_constraint)", () => {
     const bad = d.executeOperation(
       "NormalizeMachineEvidence",
       { evidence_alias: "does-not-exist" },
-      "worker",
+      "system_worker",
       "s1",
       "RK",
     );
@@ -104,7 +104,7 @@ describe("write-boundary idempotency (transactional_unique_constraint)", () => {
     const good = d.executeOperation(
       "NormalizeMachineEvidence",
       { evidence_alias: "e" },
-      "worker",
+      "system_worker",
       "s3",
       "RK",
     );

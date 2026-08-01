@@ -72,29 +72,29 @@ describe("build-check-blocker family (in-memory)", () => {
         part_revision: "gk_b",
         install_required: true,
       },
-      "eng",
+      "manufacturing_engineer",
       "3-bl",
     );
     d.executeOperation(
       "CreateInventoryItem",
       { inventory_alias: "vb", part_revision: "vb_a", serial_number: "VB1" },
-      "pl",
+      "planner",
       "3-vb",
     );
-    d.executeOperation("ReceiveInventory", { inventory_alias: "vb" }, "pl", "3-vbr");
-    d.executeOperation("ReleaseInventory", { inventory_alias: "vb" }, "pl", "3-vbrl");
+    d.executeOperation("ReceiveInventory", { inventory_alias: "vb" }, "planner", "3-vbr");
+    d.executeOperation("ReleaseInventory", { inventory_alias: "vb" }, "planner", "3-vbrl");
     d.executeOperation(
       "CreateInventoryItem",
       { inventory_alias: "wd", part_revision: "wd_a", serial_number: "WD1" },
-      "pl",
+      "planner",
       "3-wd",
     ); // unrelated stray
-    d.executeOperation("ReceiveInventory", { inventory_alias: "wd" }, "pl", "3-wdr");
-    d.executeOperation("ReleaseInventory", { inventory_alias: "wd" }, "pl", "3-wdrl");
+    d.executeOperation("ReceiveInventory", { inventory_alias: "wd" }, "planner", "3-wdr");
+    d.executeOperation("ReleaseInventory", { inventory_alias: "wd" }, "planner", "3-wdrl");
     d.executeOperation(
       "RunBuildCheck",
       { build_check_alias: "bc", target_inventory_alias: "vb", effectivity_resolution_alias: "x" },
-      "pl",
+      "planner",
       "3-bc",
     );
     const b = blockersFrom(d);
@@ -118,7 +118,7 @@ describe("build-check-blocker family (in-memory)", () => {
         part_revision: "gk_b",
         install_required: true,
       },
-      "eng",
+      "manufacturing_engineer",
       "4-bl1",
     );
     d.executeOperation(
@@ -129,29 +129,29 @@ describe("build-check-blocker family (in-memory)", () => {
         part_revision: "br_a",
         install_required: true,
       },
-      "eng",
+      "manufacturing_engineer",
       "4-bl2",
     );
     d.executeOperation(
       "CreateInventoryItem",
       { inventory_alias: "vb", part_revision: "vb_a", serial_number: "VB1" },
-      "pl",
+      "planner",
       "4-vb",
     );
-    d.executeOperation("ReceiveInventory", { inventory_alias: "vb" }, "pl", "4-vbr");
-    d.executeOperation("ReleaseInventory", { inventory_alias: "vb" }, "pl", "4-vbrl");
+    d.executeOperation("ReceiveInventory", { inventory_alias: "vb" }, "planner", "4-vbr");
+    d.executeOperation("ReleaseInventory", { inventory_alias: "vb" }, "planner", "4-vbrl");
     d.executeOperation(
       "CreateInventoryItem",
       { inventory_alias: "gkc", part_revision: "gk_c", serial_number: "GKC1" },
-      "pl",
+      "planner",
       "4-gkc",
     ); // wrong-rev gasket
-    d.executeOperation("ReceiveInventory", { inventory_alias: "gkc" }, "pl", "4-gkcr");
-    d.executeOperation("ReleaseInventory", { inventory_alias: "gkc" }, "pl", "4-gkcrl");
+    d.executeOperation("ReceiveInventory", { inventory_alias: "gkc" }, "planner", "4-gkcr");
+    d.executeOperation("ReleaseInventory", { inventory_alias: "gkc" }, "planner", "4-gkcrl");
     d.executeOperation(
       "RunBuildCheck",
       { build_check_alias: "bc", target_inventory_alias: "vb", effectivity_resolution_alias: "x" },
-      "pl",
+      "planner",
       "4-bc",
     );
     const b = blockersFrom(d);
@@ -178,7 +178,7 @@ describe("build-check-blocker family (in-memory)", () => {
         part_revision: "gk_b",
         install_required: true,
       },
-      "eng",
+      "manufacturing_engineer",
       "m-bl",
     );
     dMissing.executeOperation(
@@ -212,7 +212,7 @@ describe("build-check-blocker family (in-memory)", () => {
         part_revision: "gk_b",
         install_required: true,
       },
-      "eng",
+      "manufacturing_engineer",
       "q-bl",
     );
     dQ.executeOperation(
@@ -230,7 +230,12 @@ describe("build-check-blocker family (in-memory)", () => {
       "q-gk",
     );
     dQ.executeOperation("ReceiveInventory", { inventory_alias: "gk" }, "planner", "q-gkr");
-    dQ.executeOperation("QuarantineInventory", { inventory_alias: "gk" }, "quality", "q-quar");
+    dQ.executeOperation(
+      "QuarantineInventory",
+      { inventory_alias: "gk" },
+      "quality_engineer",
+      "q-quar",
+    );
     dQ.executeOperation(
       "RunBuildCheck",
       {

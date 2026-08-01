@@ -73,3 +73,54 @@ export const RECEIVING_RULES: {
   expired_id?: string;
   blocking: boolean;
 }[] = readYaml("contracts/receiving-rules.yaml").rules ?? [];
+
+/**
+ * operation name -> the caller types allowed to invoke it (contracts/authorization-rules.yaml, cited per
+ * operation by `authorization_rule` in contracts/operations.yaml). Build Readiness §4.1 step 4 puts this
+ * check in the operation-handler wrapper rather than in the handlers, so authority is uniform, listable and
+ * gated at merge instead of being one hardcoded role Set in one handler. An operation citing a rule with an
+ * empty caller_types list is callable by nobody: that is how `undecided_authority` fails closed.
+ */
+const authorizationCallerTypes = new Map<string, Set<string>>(
+  (readYaml("contracts/authorization-rules.yaml").rules ?? []).map((rule: any) => [
+    rule.id,
+    new Set<string>(rule.caller_types ?? []),
+  ]),
+);
+
+/**
+ * The caller types of a `guard: true` authorization rule — one evaluated inside a handler against operation
+ * input rather than at the wrapper against the caller type alone (whether a disposition is use-as-is, say).
+ * Throws on an unknown id: a guard that silently resolved to an empty set would refuse everything, and a
+ * guard that resolved to a permissive default would refuse nothing. Both are worse than a startup failure,
+ * and the registry gate makes the throw unreachable in a valid tree.
+ */
+export function guardRuleCallerTypes(ruleId: string): Set<string> {
+  const rule = (readYaml("contracts/authorization-rules.yaml").rules ?? []).find(
+    (candidate: any) => candidate.id === ruleId && candidate.guard === true,
+  );
+  if (!rule) throw new Error(`no registered guard authorization rule '${ruleId}'`);
+  return new Set<string>(rule.caller_types ?? []);
+}
+
+/** operation name -> its cited authorization rule id. */
+export const opAuthorizationRule = new Map<string, string>(
+  (readYaml("contracts/operations.yaml").operations ?? []).map((operation: any) => [
+    operation.name,
+    operation.authorization_rule,
+  ]),
+);
+
+/**
+ * True iff `callerType` may invoke `op`. Fails CLOSED on every unknown: an unregistered operation, an
+ * operation citing no rule, a rule id that does not resolve, and a missing caller type are all refusals, not
+ * pass-throughs. The registry gate makes the first three unreachable through the compiler; this is the
+ * runtime backstop for a direct executeOperation() caller (the same reasoning as the not_implemented guard).
+ */
+export function callerMayInvoke(op: string, callerType: string | undefined): boolean {
+  const ruleId = opAuthorizationRule.get(op);
+  if (!ruleId) return false;
+  const allowed = authorizationCallerTypes.get(ruleId);
+  if (!allowed) return false;
+  return callerType !== undefined && allowed.has(callerType);
+}

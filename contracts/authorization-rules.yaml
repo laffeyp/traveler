@@ -1,0 +1,208 @@
+registry: authorization-rules
+registry_version: contracts-0.4.1
+source: >
+  Contract Spec v0.4.1 section 6 (the canonical operation contract carries `authorization_rule: string` and
+  `caller_types: []`) and section 3 ("No mutating operation without authorization rule, no merge"). The field
+  was specified from the first slice and never populated; this registry populates it. Build Readiness Plan
+  v0.2 section 4.1 step 4 puts the evaluation in the operation-handler wrapper, not in the handlers, which is
+  where `src/driver/driver.ts` now performs it.
+note: >
+  Each rule names the registered caller_types (modules.yaml) allowed to invoke the operations that cite it.
+  Authority is DERIVED, not invented. Where a scenario exercises an operation, the allowed caller types are
+  the ones the scenario proves: 551 scenario steps across 30 scenarios yield 72 operations with an observed
+  caller. Unexercised operations inherit the rule of their lifecycle siblings only where the lifecycle is the
+  same act by the same hands. Where the caller is a genuine unanswered product question, the operation cites
+  `undecided_authority`, whose caller_types list is empty, so it fails closed until somebody decides (B-Q-59).
+
+  A derived allow-list is by construction satisfied by every scenario it was derived from, which makes it
+  tautologically green (the project's own distrust-the-green taxonomy). The rules are therefore load-bearing
+  only through their DENIALS: `tests/access/operation-authorization.test.ts` proves each rule refuses a caller
+  outside its list. The allow-list records what the factory does; the denial is the behavior.
+
+rules:
+  # --- Engineering authoring ---
+  - id: procedure_authoring
+    caller_types: [manufacturing_engineer]
+    description: >
+      Author, submit, release, supersede or retire a procedure version, and merge an approved redline into
+      one. Observed on CreateProcedureVersion, SubmitProcedureVersionForReview, ReleaseProcedureVersion.
+  - id: structure_authoring
+    caller_types: [manufacturing_engineer]
+    description: >
+      Author a manufacturing structure version and its BOM lines through the same draft/review/release
+      lifecycle. Observed on CreateManufacturingStructureVersion, AddBOMLine,
+      ReleaseManufacturingStructureVersion.
+
+  # --- Controlled change ---
+  - id: redline_authoring
+    caller_types: [operator]
+    description: >
+      Raise a deviation from the floor: draft, submit and apply a redline. The person who hits the problem
+      writes it up. Observed on CreateRedlineDraft, SubmitRedline, ApplyRedline.
+  - id: redline_review
+    caller_types: [manufacturing_engineer]
+    description: >
+      Decide a redline: review, mark as merge candidate, close. Distinct from redline_authoring because the
+      author must not be the reviewer. Observed on ReviewRedline.
+  - id: approval_request
+    caller_types: [manufacturing_engineer]
+    description: Raise or withdraw an approval request. Observed on RequestApproval.
+  - id: approval_decision
+    caller_types: [manufacturing_engineer, operator]
+    description: >
+      Record an approval decision. Two caller types observed on RecordApprovalDecision across the bench;
+      segregation of duties is enforced separately, on actor identity, not on caller type.
+
+  # --- Production ---
+  - id: run_planning
+    caller_types: [planner]
+    description: Create, pause, resume or cancel a run. Observed on CreateRun.
+  - id: run_execution
+    caller_types: [operator]
+    description: >
+      Execute the run on the floor: start, step through, measure, install, skip, fail a step, rework a step,
+      attempt close. Observed on StartRun, StartRunStep, CompleteRunStep, CompleteRunSteps, CaptureMeasurement,
+      StartRunWithInventory, InstallInventory, AttemptRunClose.
+  - id: production_read
+    caller_types: [planner, operator, quality_engineer, manufacturing_engineer, system_worker]
+    description: >
+      Read a production view or a generated report. Reading is not generating: GetReport cites this rather
+      than report_generation, because the scenario that showed a system_worker reading a report proves who
+      DOES read, not who MAY. What a reader is then allowed to see is decided by the Access module, which
+      enforces at record read independently of this check (TAD §18).
+
+  # --- Inventory ---
+  - id: inventory_planning
+    caller_types: [planner]
+    description: >
+      Move material through planning states: create, receive, release, reserve, kit, ship, capture and check
+      a supplier certificate. Observed on CreateInventoryItem, ReceiveInventory, ReleaseInventory,
+      ReserveInventory, ShipInventory, CaptureCertificate.
+  - id: inventory_disposition
+    caller_types: [quality_engineer]
+    description: >
+      Hold or condemn material: quarantine, scrap, and apply a receiving decision to inventory. Observed on
+      QuarantineInventory, ApplyReceivingCheckResultToInventory.
+  - id: quarantine_release
+    caller_types: [planner, quality_engineer]
+    description: >
+      Release material from quarantine. TWO caller types are observed on ReleaseFromQuarantine across the
+      bench, and whether a planner should hold that authority at all is an open product question (B-Q-60).
+      Recorded as observed rather than narrowed by assumption.
+  - id: build_check
+    caller_types: [planner]
+    description: Run the pre-build eligibility check. Observed on RunBuildCheck.
+  - id: effectivity
+    caller_types: [planner]
+    description: Author and resolve effectivity rules. Observed on CreateEffectivityRule, ResolveEffectivity.
+
+  # --- Quality ---
+  - id: disposition_recording
+    caller_types: [operator, planner, manufacturing_engineer, quality_engineer]
+    description: >
+      Record a disposition against a nonconformance. Broader than quality_disposition on purpose: the build
+      already lets any role record an organizational disposition (rework, scrap, return to supplier), and
+      gates only use-as-is and repair on elevated authority — see elevated_disposition_authority. This rule
+      answers "may you record a disposition at all"; that one answers "may you make THIS decision". The
+      caller list is what the built behavior and its tests already permit, not a widening.
+  - id: elevated_disposition_authority
+    guard: true
+    caller_types: [manufacturing_engineer, quality_engineer]
+    description: >
+      Accept a nonconforming part as-is, or authorize a repair. A GUARD rule, not an operation-authorization
+      rule: it is evaluated inside RecordDisposition against the disposition kind, so no operation cites it
+      and the orphan check exempts it. It replaces a hardcoded role Set that lived in handlers.ts, which was
+      the only authority check in 122 operations and could be neither listed nor validated.
+  - id: quality_disposition
+    caller_types: [quality_engineer]
+    description: >
+      Own the quality record: nonconformances, dispositions, rework, verification, containment, affected
+      population, and the issue lifecycle. Observed on OpenNonconformance, RecordDisposition,
+      CloseNonconformance, StartRework, CompleteRework, VerifyRework, DefineAffectedPopulation,
+      StartQualityContainment, ActivateQualityContainment.
+
+  # --- Machine evidence ---
+  - id: machine_evidence_ingest
+    caller_types: [adapter]
+    description: Deliver machine evidence from a shop-floor adapter. Observed on ReceiveMachineEvidence.
+  - id: machine_evidence_processing
+    caller_types: [system_worker]
+    description: >
+      Normalize and link delivered evidence. Machine work, not human judgement. Observed on
+      LinkMachineEvidence, NormalizeMachineEvidence.
+  - id: machine_evidence_review
+    caller_types: [quality_engineer]
+    description: >
+      Judge machine evidence: route for review, accept, reject, quarantine, invalidate after acceptance.
+      Observed on all five.
+  - id: machine_registration
+    caller_types: [machine_integration_owner]
+    description: >
+      Register a machine or its adapter. The caller type exists in modules.yaml for exactly this and is
+      otherwise unused.
+
+  # --- Attachments ---
+  - id: attachment_authoring
+    caller_types: [planner]
+    description: Create an attachment and link it to a record. Observed on CreateAttachment, LinkAttachment.
+  - id: attachment_review
+    caller_types: [quality_engineer]
+    description: >
+      Decide an attachment: route for review, accept as evidence, reject, restrict, read, delete the
+      reference. Observed on RouteAttachmentForReview, AcceptAttachmentAsEvidence,
+      RejectAttachmentAsEvidence, RestrictAttachment, GetAttachment.
+
+  # --- Receiving ---
+  - id: receiving_intake
+    caller_types: [planner]
+    description: >
+      Book an inbound consignment and its lines, and record physical arrival. Arrival is clerical; it decides
+      nothing. Observed on CreateShipment, AddShipmentLine, ReceiveShipment.
+  - id: receiving_decision
+    caller_types: [quality_engineer]
+    description: >
+      Decide whether received material may enter production. Observed on RunReceivingCheck. Separate from
+      receiving_intake because booking a shipment in and clearing it for production are different acts by
+      different hands.
+
+  # --- Reports and access ---
+  - id: report_generation
+    caller_types: [system_worker]
+    description: >
+      Request, generate, complete, fail, retry and read a governed report. Observed on GenerateRunCloseReport,
+      GetReport.
+  - id: certificate_issuance
+    caller_types: [quality_engineer]
+    description: >
+      Issue an outbound certificate of conformance. A person signs it. Observed on
+      GenerateCertificateOfConformance.
+  - id: report_supersession
+    caller_types: [quality_engineer, system_worker]
+    description: >
+      Supersede a report. Two caller types observed: the reconciliation worker supersedes on a source change,
+      a quality engineer supersedes on a deliberate reissue.
+  - id: bounded_drill_down
+    caller_types: [support_user]
+    description: Drill into a summary view under the bounded-drill-down audit rules. Observed on BoundedDrillDown.
+  - id: access_administration
+    caller_types: [access_admin]
+    description: Evaluate an access decision. Observed on EvaluateAccess.
+  - id: system_lifecycle
+    caller_types: [system_worker]
+    description: >
+      Machine-driven lifecycle steps that no person invokes: apply a check result to a run, run the close
+      check, request the close report, narrate the close, evaluate a measurement, advance step readiness,
+      expire an approval request, and raise or escalate a GrammarGap. Observed on ApplyBuildCheckResultToRun,
+      ApplyRunCloseResultToRun, RunCloseCheck, RequestRunCloseReport. The GrammarGap pair belongs here on the
+      Harness Spec §4.1 wording — "product creates GrammarGap" — which makes raising one runtime product
+      behavior when a payload cannot be normalized, not an act a person performs.
+
+  # --- Fail-closed default ---
+  - id: undecided_authority
+    caller_types: []
+    description: >
+      No caller type may invoke this operation. Cited by the four operations whose authority is a real
+      unanswered product question rather than a derivable fact: who may block a run or a run step, and who may
+      clear that blocker. No scenario exercises them and no handler implements them, so an empty caller_types
+      list denies every caller — the registered way to say "not decided yet" without guessing (B-Q-59).
+      Answering it is a product decision, not a code change.

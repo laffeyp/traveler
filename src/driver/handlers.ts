@@ -10,7 +10,7 @@
 import type { World, FactoryRecord } from "./world.ts";
 import { moveState, moveStateTo, tryGet, step, createGrammarGap } from "./world.ts";
 import { NORMALIZE_GRAMMAR, keyPresentAndValid } from "./registry.ts";
-import { RECEIVING_RULES } from "./registry.ts";
+import { RECEIVING_RULES, guardRuleCallerTypes } from "./registry.ts";
 import { assembleRunCloseReport } from "./projections.ts";
 
 /**
@@ -32,7 +32,7 @@ function serialNum(serial: any): number | null {
   return matchResult ? parseInt(matchResult[1], 10) : null;
 }
 // The non-numeric PREFIX of a serial ("VB-047" -> "VB-"). A serial range only applies within one part family;
-// matching on the numeric suffix alone (sprint-019 review: prefix-blind) let a foreign family (XY-050) fall
+// matching on the numeric suffix alone (persona-gap review: prefix-blind) let a foreign family (XY-050) fall
 // inside a VB range and resolve to the wrong procedure/structure.
 function serialPrefix(serial: any): string {
   return String(serial ?? "").replace(/\d+$/, "");
@@ -100,7 +100,10 @@ function stepRequirementGaps(world: World, runStep: FactoryRecord, runStepAlias:
 
 const DISPOSITION_KINDS = new Set(["scrap", "rework", "repair", "use_as_is", "return_to_supplier"]);
 const ELEVATED_DISPOSITIONS = new Set(["use_as_is", "repair"]);
-const DISPOSITION_AUTHORITY_ROLES = new Set(["manufacturing_engineer", "quality_engineer"]);
+// Was a hardcoded Set of two role strings — the only authority check anywhere in 122 operations, invisible to
+// the registry and to every gate. It now reads the registered `elevated_disposition_authority` guard rule, so
+// the roles that may accept a nonconforming part as-is are listed in the vocabulary like everything else.
+const DISPOSITION_AUTHORITY_ROLES = guardRuleCallerTypes("elevated_disposition_authority");
 
 export const HANDLERS: Record<string, H> = {
   CreateProcedureVersion(world, input) {
@@ -452,7 +455,7 @@ export const HANDLERS: Record<string, H> = {
     // name no instrument are unaffected.
     const instrument = tryGet(world, input.instrument_alias);
     // Fail CLOSED: accept a reading only from a CONFIRMED in-calibration instrument. Any other cal_status —
-    // overdue, expired, unknown, missing, mis-cased — is refused (sprint-019 review: matching only the exact
+    // overdue, expired, unknown, missing, mis-cased — is refused (persona-gap review: matching only the exact
     // string "overdue" let every other out-of-cal representation through). Guilty until proven calibrated.
     if (instrument && instrument.fields.cal_status !== "in_cal")
       throw new Error(
@@ -604,7 +607,7 @@ export const HANDLERS: Record<string, H> = {
     // mutation so a same-person sign-off fails cleanly (rolled back, no facts) rather than approving the
     // author's own change — the AS9102/AS9100-8.7 second-person control. Only enforced when the caller is
     // identified (actor present) and the author was recorded.
-    // Fail CLOSED: an approval must carry an identified approver (sprint-019 review — an absent actor slipped
+    // Fail CLOSED: an approval must carry an identified approver (persona-gap review — an absent actor slipped
     // through as an unsigned, unattributed approval), and that approver cannot be the redline's author.
     if (!actor)
       throw new Error(
@@ -648,7 +651,7 @@ export const HANDLERS: Record<string, H> = {
         `validation_error: disposition must be one of ${[...DISPOSITION_KINDS].join("/")}, got '${kind}'`,
       );
     // Fail CLOSED: an elevated disposition requires an AUTHORIZED role. An absent / empty / unrecognized role
-    // is refused, not waved through (sprint-019 review: the `role &&` conjunct failed this open). The
+    // is refused, not waved through (persona-gap review: the `role &&` conjunct failed this open). The
     // `role === undefined ||` guard both keeps this fail-closed AND narrows role to string for the Set lookup.
     if (
       ELEVATED_DISPOSITIONS.has(kind) &&
@@ -684,7 +687,7 @@ export const HANDLERS: Record<string, H> = {
   VerifyRework(world, input, actor) {
     // Segregation of duties: the verifier cannot be the person who performed the rework (AS9102). Checked
     // before any mutation. Only enforced when the caller is identified and a performer was recorded.
-    // Fail CLOSED: a verification must carry an identified verifier (sprint-019 review), who cannot be the
+    // Fail CLOSED: a verification must carry an identified verifier (persona-gap review), who cannot be the
     // person who performed the rework.
     if (!actor)
       throw new Error(
@@ -1192,7 +1195,7 @@ export const HANDLERS: Record<string, H> = {
           (!input.cert_type || certificate.fields.cert_type === input.cert_type),
       );
     if (certs.length === 0) return { valid: false, reason: "no_certificate" };
-    // Compare dates CHRONOLOGICALLY, not lexically (sprint-019 review: "2026-9-1" >= "2026-10-01" is lexically
+    // Compare dates CHRONOLOGICALLY, not lexically (persona-gap review: "2026-9-1" >= "2026-10-01" is lexically
     // true but chronologically expired). A cert with a missing or unparseable expiry cannot be verified -> not
     // valid (fail closed); an unparseable as_of likewise cannot verify anything.
     const asOfT = Date.parse(input.as_of ?? world.clock);
@@ -1331,7 +1334,7 @@ export const HANDLERS: Record<string, H> = {
     // reconciliation_resolution_affecting_run) so a stale report cannot be read as fresh (see GetReport).
     const evidenceRecord = world.get(input.evidence_alias);
     // The affected run is the evidence's OWN recorded linkage (ground truth). A caller-supplied run_alias must
-    // AGREE with it, and the run must resolve — else fail CLOSED (sprint-019 review): a mismatch would mark the
+    // AGREE with it, and the run must resolve — else fail CLOSED (persona-gap review): a mismatch would mark the
     // wrong run, and an unresolvable run would silently reconcile nothing while the op reported success.
     const linked = evidenceRecord.fields.linked_run;
     if (input.run_alias && linked && input.run_alias !== linked)
@@ -1414,7 +1417,7 @@ export const HANDLERS: Record<string, H> = {
     let stale = report.fields.regeneration_required === true; // the stored flag applies to BOTH modes (an invalidation cascade)
     let reason = stale ? report.fields.regeneration_reason : undefined;
     // Read-time policy-change staleness applies ONLY to a controlled_export (a dynamic_view_filter re-filters
-    // at read time). Fail CLOSED (sprint-019 review): unverifiable freshness is treated as STALE — a controlled
+    // at read time). Fail CLOSED (persona-gap review): unverifiable freshness is treated as STALE — a controlled
     // report with an unparseable generated_at, or a policy change on its scope whose effective_at is unparseable
     // OR after generation, marks it regeneration_required rather than reading fresh.
     if (!stale && mode === "controlled_export") {
@@ -1520,7 +1523,7 @@ export const HANDLERS: Record<string, H> = {
         );
         if (item?.fields.serial_number !== serial) return false;
         // If part identity is known on both sides it must match — a same-serial unit of a DIFFERENT part is not a
-        // remediation of this batch (sprint-019 review: cross-part serial reuse falsely cleared the population).
+        // remediation of this batch (persona-gap review: cross-part serial reuse falsely cleared the population).
         if (
           runPart != null &&
           item?.fields.part_revision != null &&
@@ -1631,7 +1634,7 @@ export const HANDLERS: Record<string, H> = {
     // filtering_mode (B-Q-28 / Contract Spec §19 two-mode contrast): a `controlled_export` is bound to the
     // scope at generation and goes regeneration_required on a later access-policy change; a `dynamic_view_filter`
     // filters at read time and never goes stale. Default controlled_export; an out-of-vocabulary value is
-    // REFUSED (sprint-019 review: an unvalidated typo silently dodged the controlled_export staleness gate).
+    // REFUSED (persona-gap review: an unvalidated typo silently dodged the controlled_export staleness gate).
     const mode = input.filtering_mode ?? "controlled_export";
     if (mode !== "controlled_export" && mode !== "dynamic_view_filter")
       throw new Error(
@@ -1674,7 +1677,7 @@ export const HANDLERS: Record<string, H> = {
     const resource = tryGet(world, input.resource_alias);
     const nationality = input.subject_nationality;
     const exportControl = resource?.fields?.export_control;
-    // Fail CLOSED (sprint-019 review): only ALLOW when we can affirmatively confirm access. An unresolvable
+    // Fail CLOSED (persona-gap review): only ALLOW when we can affirmatively confirm access. An unresolvable
     // resource, or a present-but-malformed export_control (not a non-empty nationality array), is DENIED — for
     // an export control the safe default is deny, since a fail-open leaks controlled technical data.
     let decision: string, reason: string | undefined;

@@ -64,7 +64,7 @@ export function executeScenario(id: string, driver: Driver): Execution {
   driver.world.reportDefinitionAvailable = scenario.world?.report_definition_available ?? true;
   driver.world.accessPolicyChanges = scenario.world?.access_policy_changes ?? []; // effective-dated policy changes (B-Q-27)
   // Set the initial clock from the scenario's declared start, so a sign-off before the first set_time step
-  // still carries a real timestamp (sprint-019 review: signed_at was the empty string when the clock was unset).
+  // still carries a real timestamp (persona-gap review: signed_at was the empty string when the clock was unset).
   if (scenario.clock?.start_at) driver.setClock(scenario.clock.start_at);
   let executed = 0;
   for (const step of scenario.steps ?? []) {

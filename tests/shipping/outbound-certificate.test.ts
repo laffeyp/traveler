@@ -24,7 +24,7 @@ const certify = (d: InMemoryProductDriver, alias: string, serials: string[], ste
       serial_aliases: serials,
       conformity_statement: "conforms",
     },
-    "report",
+    "quality_engineer",
     step,
     undefined,
     "quality_1",
@@ -55,7 +55,7 @@ describe("a certificate can only attest to goods that can conform", () => {
     const unsigned = d.executeOperation(
       "GenerateCertificateOfConformance",
       { report_alias: "c1", certificate_number: "X", serial_aliases: ["i"] },
-      "report",
+      "quality_engineer",
       "s",
     );
     expect(unsigned.succeeded).toBe(false);

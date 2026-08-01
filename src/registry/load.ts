@@ -1,4 +1,4 @@
-// Registry loader. Reads the 11 contract registries + the VF-003 reference manifest
+// Registry loader. Reads the 13 contract registries + the VF-003 reference manifest
 // from disk and parses them. Pure I/O; no validation (that is validate.ts).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -21,6 +21,7 @@ export interface Registries {
   reports: any;
   runCloseRules: any;
   receivingRules: any;
+  authorizationRules: any;
   scenarioAssertions: any;
   observabilityProfiles: any;
   compatibilityProfiles: any;
@@ -38,6 +39,7 @@ export function loadRegistries(): Registries {
     reports: readYaml("contracts/reports.yaml"),
     runCloseRules: readYaml("contracts/run-close-rules.yaml"),
     receivingRules: readYaml("contracts/receiving-rules.yaml"),
+    authorizationRules: readYaml("contracts/authorization-rules.yaml"),
     scenarioAssertions: readYaml("contracts/scenario-assertions.yaml"),
     observabilityProfiles: readYaml("contracts/observability-profiles.yaml"),
     compatibilityProfiles: readYaml("contracts/compatibility-profiles.yaml"),

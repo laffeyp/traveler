@@ -1,5 +1,5 @@
 // Static contract-registry validator (Contract Spec v0.4.1 sections 3, 24).
-// Enforces internal consistency of the 11 registries and resolves every name
+// Enforces internal consistency of the 13 registries and resolves every name
 // VF-003 references. Reports all errors; exits 1 if any, 0 if clean.
 //
 // This is the gate behind `npm run validate:contracts` and the SDD
@@ -281,6 +281,59 @@ for (const rule of registries.runCloseRules?.rules ?? []) {
   if (!rule.description) err(`[run-close-rules] ${rule.id}: missing description`);
 }
 
+// ---- 8b. authorization rules ------------------------------------------------
+// Contract Spec §3: "No mutating operation without authorization rule, no merge." The field was specified in
+// the §6 canonical operation contract from the first slice and populated on nothing; this gate is what makes
+// the merge rule real. Bidirectional (practice #20): a forward-only check lets an orphan rule rot unnoticed,
+// which is how a handler once escaped the operation registry.
+const authorizationRules = registries.authorizationRules?.rules ?? [];
+const authorizationRuleIds = new Set<string>();
+for (const rule of authorizationRules) {
+  if (!rule.id) {
+    err(`[authorization-rules] rule missing id`);
+    continue;
+  }
+  if (authorizationRuleIds.has(rule.id))
+    err(`[authorization-rules] duplicate rule id '${rule.id}'`);
+  authorizationRuleIds.add(rule.id);
+  if (!rule.description) err(`[authorization-rules] ${rule.id}: missing description`);
+  if (!Array.isArray(rule.caller_types))
+    err(
+      `[authorization-rules] ${rule.id}: caller_types must be a list (empty denies every caller)`,
+    );
+  else
+    for (const callerType of rule.caller_types)
+      if (!callerTypes.has(callerType))
+        err(
+          `[authorization-rules] ${rule.id}: caller_type '${callerType}' not registered in modules.yaml`,
+        );
+}
+const citedAuthorizationRules = new Set<string>();
+for (const op of operations) {
+  if (!op.authorization_rule) {
+    err(`[operations] ${op.name}: missing authorization_rule (Contract Spec §3)`);
+    continue;
+  }
+  citedAuthorizationRules.add(op.authorization_rule);
+  if (!authorizationRuleIds.has(op.authorization_rule))
+    err(`[operations] ${op.name}: authorization_rule '${op.authorization_rule}' not registered`);
+}
+// A `guard: true` rule is evaluated inside a handler against operation input (which disposition kind was
+// chosen), not at the wrapper against the caller type alone, so no operation cites it and the orphan check
+// must exempt it. Every other rule must be cited, or it rots unread — the failure mode practice #20 exists for.
+const guardRuleIds = new Set<string>(
+  authorizationRules.filter((rule: any) => rule.guard === true).map((rule: any) => rule.id),
+);
+for (const ruleId of authorizationRuleIds)
+  if (!citedAuthorizationRules.has(ruleId) && !guardRuleIds.has(ruleId))
+    err(`[authorization-rules] '${ruleId}' is cited by no operation (orphan rule)`);
+// ...and the exemption cuts both ways: a guard rule no handler reads is equally dead. The handler-side
+// readers are named here so adding a guard rule without wiring it fails the gate rather than passing quietly.
+const wiredGuardRules = new Set<string>(["elevated_disposition_authority"]);
+for (const ruleId of guardRuleIds)
+  if (!wiredGuardRules.has(ruleId))
+    err(`[authorization-rules] guard rule '${ruleId}' is read by no handler (dead guard)`);
+
 // ---- 9. VF-003 reference resolution -----------------------------------------
 const vf = registries.vf003 ?? {};
 const resolve = (names: any, set: Set<string>, label: string) => {
@@ -343,10 +396,11 @@ const counts = {
   reports: reportNames.size,
   runCloseRules: (registries.runCloseRules?.rules ?? []).length,
   receivingRules: (registries.receivingRules?.rules ?? []).length,
+  authorizationRules: authorizationRuleIds.size,
   assertionTypes: assertionTypes.size,
 };
 console.log("contract registry validation (contracts-0.4.1)");
-console.log(`  loaded: 11 registries  ${JSON.stringify(counts)}`);
+console.log(`  loaded: 13 registries  ${JSON.stringify(counts)}`);
 if (warnings.length) {
   console.log(`  warnings: ${warnings.length}`);
   for (const warning of warnings) console.log(`    warn: ${warning}`);

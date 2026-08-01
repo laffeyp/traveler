@@ -13,7 +13,7 @@ const norm = (d: any, alias: string) =>
   d.executeOperation(
     "NormalizeMachineEvidence",
     { evidence_alias: alias },
-    "worker",
+    "system_worker",
     `n-${alias}`,
     `k-${alias}`,
   );
@@ -125,14 +125,14 @@ describe("grammar-gap escalation (in-memory)", () => {
     d.executeOperation(
       "NormalizeMachineEvidence",
       { evidence_alias: "e" },
-      "worker",
+      "system_worker",
       "n1",
       "key-1",
     );
     d.executeOperation(
       "NormalizeMachineEvidence",
       { evidence_alias: "e" },
-      "worker",
+      "system_worker",
       "n2",
       "key-2",
     ); // different key
@@ -149,7 +149,7 @@ describe("grammar-gap escalation (in-memory)", () => {
         reason: "unsupported_redline_type",
         gap_type: "unsupported_change",
       },
-      "worker",
+      "system_worker",
       "cg",
       "cgk",
     );

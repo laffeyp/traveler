@@ -22,7 +22,7 @@ describe("affected-population closure (persona gap 4)", () => {
     const r1 = d.executeOperation(
       "RunCloseCheck",
       { run_alias: "run_a", run_close_check_alias: "rcc1" },
-      "quality_engineer",
+      "system_worker",
       "s1",
     );
     expect(r1.succeeded).toBe(true); // the op succeeds; the CHECK result is blocked
@@ -40,7 +40,7 @@ describe("affected-population closure (persona gap 4)", () => {
     const r2 = d.executeOperation(
       "RunCloseCheck",
       { run_alias: "run_a", run_close_check_alias: "rcc2" },
-      "quality_engineer",
+      "system_worker",
       "s2",
     );
     expect(d.readRecord("rcc2").state).toBe("passed"); // whole batch remediated -> no population blocker
@@ -73,7 +73,7 @@ describe("affected-population closure (persona gap 4)", () => {
     d.executeOperation(
       "RunCloseCheck",
       { run_alias: "run_a", run_close_check_alias: "rcc" },
-      "quality_engineer",
+      "system_worker",
       "s1",
     );
     // The P-B unit is NOT a remediation of the P-A batch -> VB-002 still unremediated -> blocked.
@@ -97,7 +97,7 @@ describe("affected-population closure (persona gap 4)", () => {
     d.executeOperation(
       "RunCloseCheck",
       { run_alias: "run_a", run_close_check_alias: "rcc" },
-      "quality_engineer",
+      "system_worker",
       "s1",
     );
     expect(d.readRecord("rcc").state).toBe("passed");

@@ -53,7 +53,7 @@ The executor must not invent product behavior. If a required behavior is not def
 The project root (`/Users/peterlaffey/Manufacturing`) is the repo root. Build artifacts sit alongside the read-only kit and source docs:
 
 ```text
-contracts/        the locked vocabulary (11 registries) — this project's signals/0.1.json
+contracts/        the locked vocabulary (13 registries) — this project's signals/0.1.json
 schemas/          JSON Schemas: operations/, records/, events/, reports/, projections/
 src/              registry/ compiler/ harness/ driver/ state-machine/ operations/
                   events/ projections/ reports/ access/ artifacts/
@@ -106,7 +106,7 @@ None in the first slice. The project uses TypeScript, the Node standard library,
 ## Vocabulary discipline overrides
 
 - **Validator-extras posture:** **strict.** No unregistered operation, event, state, projection, report, or assertion may appear; no payload field outside its schema. This mirrors the Contract Spec §3 CI gates ("no unregistered X, no merge") and the harness's compile-time rejection. Drift would compound fast in a contract-first system; strictness catches mismatches at extraction and at emit.
-- **Vocabulary location:** `contracts/*.yaml` (the 11 registries) — this project's `signals/0.1.json` equivalent. Once a registry is extracted and validated, edits go through recorded decisions / the grammar-gap proposal taxonomy, not silent edits.
+- **Vocabulary location:** `contracts/*.yaml` (the 13 registries) — this project's `signals/0.1.json` equivalent. Once a registry is extracted and validated, edits go through recorded decisions / the grammar-gap proposal taxonomy, not silent edits.
 - **Vocabulary CI gate command:** `npm run validate:contracts` — registry consistency + VF-003 reference resolution. Must exit 0 before any sprint closes.
 
 ---

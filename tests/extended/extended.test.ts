@@ -44,19 +44,19 @@ describe("extended adversarial scenarios (in-memory)", () => {
       d.executeOperation(
         "CreateProcedureVersion",
         { procedure_version_alias: "pv", steps: [{ alias: "st", ordinal: 1, name: "s" }] },
-        "eng",
+        "manufacturing_engineer",
         "b-pv",
       );
       d.executeOperation(
         "SubmitProcedureVersionForReview",
         { procedure_version_alias: "pv" },
-        "eng",
+        "manufacturing_engineer",
         "b-pvs",
       );
       d.executeOperation(
         "ReleaseProcedureVersion",
         { procedure_version_alias: "pv" },
-        "eng",
+        "manufacturing_engineer",
         "b-pvr",
       );
       d.executeOperation(
@@ -76,17 +76,22 @@ describe("extended adversarial scenarios (in-memory)", () => {
       d.executeOperation(
         "CreateRedlineDraft",
         { redline_alias: "rl", run_alias: "run", procedure_version_alias: "pv" },
-        "op",
+        "operator",
         "b-rl",
         undefined,
         "author_1",
       );
-      d.executeOperation("SubmitRedline", { redline_alias: "rl" }, "op", "b-sub");
-      d.executeOperation("ReviewRedline", { redline_alias: "rl" }, "eng", "b-rev");
+      d.executeOperation("SubmitRedline", { redline_alias: "rl" }, "operator", "b-sub");
+      d.executeOperation(
+        "ReviewRedline",
+        { redline_alias: "rl" },
+        "manufacturing_engineer",
+        "b-rev",
+      );
       d.executeOperation(
         "RequestApproval",
         { approval_request_alias: "ar", redline_alias: "rl" },
-        "eng",
+        "manufacturing_engineer",
         "b-req",
       );
     };
@@ -102,7 +107,7 @@ describe("extended adversarial scenarios (in-memory)", () => {
         redline_alias: "rl",
         decision: "rejected",
       },
-      "eng",
+      "manufacturing_engineer",
       "r-dec",
       undefined,
       "approver_1",
@@ -112,7 +117,7 @@ describe("extended adversarial scenarios (in-memory)", () => {
     const applyR = dR.executeOperation(
       "ApplyRedline",
       { redline_alias: "rl", run_alias: "run" },
-      "op",
+      "operator",
       "r-apply",
     );
     expect(applyR.succeeded).toBe(false);
@@ -131,7 +136,7 @@ describe("extended adversarial scenarios (in-memory)", () => {
         redline_alias: "rl",
         decision: "approved",
       },
-      "eng",
+      "manufacturing_engineer",
       "a-dec",
       undefined,
       "approver_1",
@@ -141,7 +146,7 @@ describe("extended adversarial scenarios (in-memory)", () => {
     const applyA = dA.executeOperation(
       "ApplyRedline",
       { redline_alias: "rl", run_alias: "run" },
-      "op",
+      "operator",
       "a-apply",
     );
     expect(applyA.succeeded).toBe(true);

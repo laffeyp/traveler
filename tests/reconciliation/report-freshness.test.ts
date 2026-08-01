@@ -159,7 +159,7 @@ describe("reconciliation + report freshness (deferred items: §18, B-Q-27/28)", 
         generated_at: T0,
         filtering_mode: "controled_export",
       },
-      "report_worker",
+      "system_worker",
       "s",
     );
     expect(r.succeeded).toBe(false);

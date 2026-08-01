@@ -103,7 +103,7 @@ export class World {
   /**
    * After reconstructing records from disk, resume the id counter past the highest existing id — otherwise the
    * next `create` on a fresh-from-disk instance mints an id that collides with a persisted record and the
-   * INSERT-OR-REPLACE write silently overwrites it (sprint-019 review). Ids are `${type}-${n}`.
+   * INSERT-OR-REPLACE write silently overwrites it (persona-gap review). Ids are `${type}-${n}`.
    */
   reseedIdCounter() {
     let max = 0;
