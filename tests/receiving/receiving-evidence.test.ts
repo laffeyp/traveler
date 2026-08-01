@@ -14,8 +14,14 @@
 import { describe, it, expect } from "vitest";
 import { InMemoryProductDriver } from "../../src/driver/driver.ts";
 
-/** A received consignment of one serial, declaring which documents it must carry. */
+/**
+ * A received consignment of one serial, declaring which documents it must carry. The clock is set because
+ * verification compares a document's expiry against it: an unset clock parses to NaN, every certificate reads
+ * as unverifiable, and the whole boundary fails closed. That is the RIGHT default and a useless fixture — the
+ * same empty-clock trap that once made a review look wrong.
+ */
 function seedConsignment(driver: InMemoryProductDriver, requiredDocuments: string[]) {
+  driver.setClock("2026-07-06T08:00:00Z");
   driver.executeOperation(
     "CreateInventoryItem",
     { inventory_alias: "item_1", part_revision: "vb_rev_a", serial_number: "VB-900" },
@@ -63,7 +69,27 @@ function applyResult(driver: InMemoryProductDriver) {
   );
 }
 
+/**
+ * Capture a certificate AND have a quality engineer accept it as evidence. These are two acts the boundary
+ * keeps apart (§9.4: attached is not verified), and most tests below are about whether the CHECK finds the
+ * right document — so they want paperwork that has already cleared verification. The tests that are about
+ * verification itself use `captureOnly`.
+ */
 function captureCertificate(driver: InMemoryProductDriver, fields: any, step = "sc") {
+  const captured = captureOnly(driver, fields, step);
+  if (!captured.succeeded) return captured;
+  return driver.executeOperation(
+    "AcceptCertificateAsEvidence",
+    { certificate_alias: fields.certificate_alias },
+    "quality_engineer",
+    `${step}v`,
+    undefined,
+    "quality_1",
+  );
+}
+
+/** Capture WITHOUT verifying: the paperwork exists and nobody has read it. */
+function captureOnly(driver: InMemoryProductDriver, fields: any, step = "sc") {
   return driver.executeOperation("CaptureCertificate", fields, "planner", step);
 }
 
@@ -104,7 +130,11 @@ describe("receiving evidence boundary", () => {
     expect(driver.readRecord("item_1").state).toBe("available");
   });
 
-  it("blocks when the certificate has expired", () => {
+  it("blocks when a verified certificate has since expired", () => {
+    // Verification cannot accept already-stale paperwork, so the ONLY way a verified certificate is expired at
+    // check time is that time passed: signed off in July against an August expiry, re-checked in December.
+    // That is also the real case — paperwork goes out of date sitting in a bin, it does not arrive out of date
+    // and get waved through.
     const driver = new InMemoryProductDriver();
     seedConsignment(driver, ["certificate_of_conformance"]);
     captureCertificate(driver, {
@@ -112,10 +142,11 @@ describe("receiving evidence boundary", () => {
       cert_type: "certificate_of_conformance",
       part_revision: "vb_rev_a",
       serial_or_lot: "VB-900",
-      expires_at: "2026-01-01T00:00:00Z",
+      expires_at: "2026-08-01T00:00:00Z",
     });
+    expect(driver.readRecord("coc_old").state).toBe("verified");
 
-    runCheck(driver, "2026-07-06T08:00:00Z");
+    runCheck(driver, "2026-12-01T00:00:00Z");
     expect(driver.readRecord("check_1").state).toBe("blocked");
     // Stale paperwork is its own fact, not "missing".
     expect(driver.readRecord("check_1").fields.blockers).toEqual([
@@ -166,6 +197,142 @@ describe("receiving evidence boundary", () => {
     const refused = runCheck(driver);
     expect(refused.succeeded).toBe(false);
     expect(driver.readRecord("check_1")).toBe(null);
+  });
+
+  it("a captured certificate nobody read does NOT release the goods (§9.4: attached is not verified)", () => {
+    // The invariant the whole verification lifecycle exists for. Before it, this test's consignment released:
+    // a receiving clerk typing in a certificate number satisfied a requirement no person had checked.
+    const driver = new InMemoryProductDriver();
+    seedConsignment(driver, ["certificate_of_conformance"]);
+    captureOnly(driver, {
+      certificate_alias: "coc_unread",
+      cert_type: "certificate_of_conformance",
+      part_revision: "vb_rev_a",
+      serial_or_lot: "VB-900",
+      expires_at: "2027-01-01T00:00:00Z",
+    });
+
+    runCheck(driver, "2026-07-06T08:00:00Z");
+    expect(driver.readRecord("check_1").state).toBe("blocked");
+    // Named for what is true: the document is PRESENT, so "..._present" would be a lie, and the unverified id
+    // is registered separately so a mutation suppressing one branch cannot be masked by the other.
+    expect(driver.readRecord("check_1").fields.blockers).toEqual([
+      "certificate_of_conformance_unverified",
+    ]);
+    applyResult(driver);
+    expect(driver.readRecord("item_1").state).toBe("quarantined");
+  });
+
+  it("a rejected certificate does not count, or rejection would be decorative", () => {
+    const driver = new InMemoryProductDriver();
+    seedConsignment(driver, ["certificate_of_conformance"]);
+    captureOnly(driver, {
+      certificate_alias: "coc_bad",
+      cert_type: "certificate_of_conformance",
+      part_revision: "vb_rev_a",
+      serial_or_lot: "VB-900",
+      expires_at: "2027-01-01T00:00:00Z",
+    });
+    driver.executeOperation(
+      "RejectCertificateAsEvidence",
+      { certificate_alias: "coc_bad", reason: "illegible scan" },
+      "quality_engineer",
+      "sr",
+      undefined,
+      "quality_1",
+    );
+    expect(driver.readRecord("coc_bad").state).toBe("rejected");
+
+    runCheck(driver, "2026-07-06T08:00:00Z");
+    expect(driver.readRecord("check_1").fields.blockers).toEqual([
+      "certificate_of_conformance_unverified",
+    ]);
+  });
+
+  it("verification refuses a mismatch, an expired document, and an unnamed verifier", () => {
+    const driver = new InMemoryProductDriver();
+    driver.setClock("2026-07-06T08:00:00Z");
+    seedConsignment(driver, ["certificate_of_conformance"]);
+    const base = {
+      cert_type: "certificate_of_conformance",
+      part_revision: "vb_rev_a",
+      serial_or_lot: "VB-900",
+      cage_code: "1ABC2",
+      expires_at: "2027-01-01T00:00:00Z",
+    };
+    captureOnly(driver, { ...base, certificate_alias: "c_mismatch" }, "s10");
+    captureOnly(
+      driver,
+      { ...base, certificate_alias: "c_stale", expires_at: "2026-01-01T00:00:00Z" },
+      "s11",
+    );
+    captureOnly(driver, { ...base, certificate_alias: "c_unsigned" }, "s12");
+
+    const accept = (alias: string, input: any, actor?: string) =>
+      driver.executeOperation(
+        "AcceptCertificateAsEvidence",
+        { certificate_alias: alias, ...input },
+        "quality_engineer",
+        `a-${alias}`,
+        undefined,
+        actor,
+      );
+
+    // The document says CAGE 1ABC2; the inspector expects the approved source. Refused, nothing written.
+    const mismatch = accept("c_mismatch", { expected_cage_code: "9ZZZ9" }, "quality_1");
+    expect(mismatch.failureClass).toBe("supplier_document_mismatch");
+    expect(driver.readRecord("c_mismatch").state).toBe("captured");
+
+    // Verification cannot make stale paperwork current.
+    expect(accept("c_stale", {}, "quality_1").failureClass).toBe("supplier_document_expired");
+    expect(driver.readRecord("c_stale").state).toBe("captured");
+
+    // A sign-off with no signer is not a sign-off.
+    expect(accept("c_unsigned", {}).failureClass).toBe("validation_error");
+    expect(driver.readRecord("c_unsigned").state).toBe("captured");
+
+    // CONTROL: the same operation, stated correctly by an identified person, succeeds. Without this the three
+    // refusals above would pass just as well against an operation that refused everything.
+    const ok = accept("c_unsigned", { expected_cage_code: "1ABC2" }, "quality_1");
+    expect(ok.succeeded).toBe(true);
+    expect(driver.readRecord("c_unsigned").state).toBe("verified");
+    expect(driver.readRecord("c_unsigned").fields.verified_by).toBe("quality_1");
+  });
+
+  it("an actor who cannot read a controlled document cannot verify it (§9.6)", () => {
+    // A dimensional or first article report is controlled technical data (ITAR 22 CFR 120.33 covers drawings,
+    // diagrams, tables and engineering specifications). A verifier who cannot read the document cannot have
+    // compared it against anything, so their verification would be a rubber stamp.
+    const driver = new InMemoryProductDriver();
+    driver.setClock("2026-07-06T08:00:00Z");
+    seedConsignment(driver, ["first_article_report"]);
+    captureOnly(driver, {
+      certificate_alias: "fai_controlled",
+      cert_type: "first_article_report",
+      part_revision: "vb_rev_a",
+      serial_or_lot: "VB-900",
+      export_control: { allowed_nationalities: ["US", "CA"] },
+    });
+    const accept = (nationality?: string) =>
+      driver.executeOperation(
+        "AcceptCertificateAsEvidence",
+        { certificate_alias: "fai_controlled", verifier_nationality: nationality },
+        "quality_engineer",
+        `a-${nationality ?? "none"}`,
+        undefined,
+        "quality_1",
+      );
+
+    expect(accept("FR").failureClass).toBe("controlled_supplier_document_denied");
+    expect(driver.readRecord("fai_controlled").state).toBe("captured");
+    // Fails CLOSED on an unstated nationality: unknown is not permitted.
+    expect(accept(undefined).failureClass).toBe("controlled_supplier_document_denied");
+
+    // CONTROL: a US person may read it, so their verification stands and the goods can then be released.
+    expect(accept("US").succeeded).toBe(true);
+    expect(driver.readRecord("fai_controlled").state).toBe("verified");
+    runCheck(driver, "2026-07-06T08:00:00Z");
+    expect(driver.readRecord("check_1").state).toBe("passed");
   });
 
   it("requires every declared document, not just the first", () => {

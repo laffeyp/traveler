@@ -48,7 +48,7 @@ records:
   # --- Beyond-spec additions (persona gaps 7-8; see ADDITIONS.md). Registered here so the vocabulary matches the
   #     handlers — a handler was governing a record the registry did not name (surfaced at close-out, sprint 019). ---
   - { name: Instrument,                  owning_module: measurement,            state_machine: false, note: "beyond-spec (persona gap 7; ISO 17025): status-light cal_status (in_cal|overdue|...); read by CaptureMeasurement's calibration gate" }
-  - { name: Certificate,                 owning_module: inventory,              state_machine: false, note: "beyond-spec (persona gap 8; AS9100 8.4.2): typed supplier cert (cert_type/serial_or_lot/cage_code/expires_at) on a received lot; status-light captured" }
+  - { name: Certificate,                 owning_module: inventory,              state_machine: Certificate, note: "beyond-spec (persona gap 8; AS9100 8.4.2): typed supplier cert (cert_type/serial_or_lot/cage_code/expires_at) on a received lot. Carries a lifecycle because boundary spec 9.4 says a document is not production evidence until a person verifies it" }
 
   # --- Receiving Evidence Module. The inbound boundary: a part arrives with a document package, and physical
   #     arrival is not production eligibility. Worked in from receiving-evidence-registry-pack v0.1, but expressed

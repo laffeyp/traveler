@@ -32,8 +32,15 @@ const receive = (d: InMemoryProductDriver, alias: string, part?: string, serial?
   );
   d.executeOperation("ReceiveInventory", { inventory_alias: alias }, "planner", key());
 };
-const capture = (d: InMemoryProductDriver, alias: string, part: string | undefined, lot: string) =>
-  d.executeOperation(
+// Capture AND verify: these tests are about whether the check binds a document to the right ITEM, so they
+// need paperwork that has already cleared verification (§9.4 — capture alone is not evidence).
+const capture = (
+  d: InMemoryProductDriver,
+  alias: string,
+  part: string | undefined,
+  lot: string,
+) => {
+  const captured = d.executeOperation(
     "CaptureCertificate",
     {
       certificate_alias: alias,
@@ -45,6 +52,16 @@ const capture = (d: InMemoryProductDriver, alias: string, part: string | undefin
     "planner",
     key(),
   );
+  if (!captured.succeeded) return captured;
+  return d.executeOperation(
+    "AcceptCertificateAsEvidence",
+    { certificate_alias: alias },
+    "quality_engineer",
+    key(),
+    undefined,
+    "quality_1",
+  );
+};
 const addLine = (
   d: InMemoryProductDriver,
   l: string,

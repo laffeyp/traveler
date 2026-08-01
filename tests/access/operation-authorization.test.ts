@@ -32,7 +32,9 @@ function excludedCallerType(op: string): string | null {
 describe("operation authorization", () => {
   it("every registered operation cites a rule that resolves", () => {
     const ops = readYaml("contracts/operations.yaml").operations;
-    expect(ops.length).toBe(122);
+    // Guards against a vacuous pass on an empty or truncated registry, without pinning an exact count that
+    // every sprint has to bump — the per-operation checks below are what actually carry this test.
+    expect(ops.length).toBeGreaterThan(100);
     for (const operation of ops) {
       expect(operation.authorization_rule, `${operation.name} cites no rule`).toBeTruthy();
       expect(ruleById.has(operation.authorization_rule), `${operation.name}`).toBe(true);

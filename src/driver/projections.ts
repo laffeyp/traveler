@@ -94,6 +94,17 @@ export function serialHistory(world: World, serial: string, access?: string): an
   }
   for (const evidenceRecord of world.byType("MachineEvidenceRecord"))
     if (evidenceRecord.fields.linked_serial === serial) owned.add(evidenceRecord.id);
+  // Supplier certificates name the lot or serial they cover as a plain string, not a record reference, so the
+  // ownership closure — which walks records POINTING AT the item — never reaches them, and the serial's story
+  // would omit the paperwork it was released on. Pulled in by the serial they cover, exactly as machine
+  // evidence is pulled in by its linked serial. Boundary spec §23.4 asks for supplier document verification
+  // to appear here; without this a rejected mill certificate leaves no mark on the part's history.
+  //
+  // Matched on serial_or_lot only. A first article report is scoped to a PART REVISION, so it covers every
+  // serial of that part rather than this one, and pulling it in here would put one document into the history
+  // of every part that shares the revision (B-Q-65).
+  for (const certificate of world.byType("Certificate"))
+    if (certificate.fields.serial_or_lot === serial) owned.add(certificate.id);
   // The closure walks records that POINT AT the item, so it reaches a ShipmentLine but never the Shipment the
   // line belongs to — and the serial's story would not say which consignment it arrived on or from whom. Pull
   // the header in explicitly, the same way machine evidence is pulled in by its linked serial.

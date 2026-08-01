@@ -84,8 +84,9 @@ const EQUIV_SCENARIOS = [
   "VF-014",
   "VF-015",
   "VF-016",
-  "VF-025",
   "VF-024",
+  "VF-025",
+  "VF-026",
   "VF-031",
   "VF-032",
   "VF-033",
@@ -484,7 +485,7 @@ for (const f of [DBI, DBI + "-journal"]) if (existsSync(f)) rmSync(f);
 const bidc = new BackendProductDriver(DBI);
 bidc.executeOperation(
   "CaptureCertificate",
-  { certificate_alias: "certA", cert_type: "mill_cert", serial_or_lot: "LOT-A" },
+  { certificate_alias: "certA", cert_type: "material_test_report", serial_or_lot: "LOT-A" },
   "planner",
   "s1",
 );
@@ -492,7 +493,7 @@ const idA = bidc.readRecord("certA")?.id;
 const bcold2 = new BackendProductDriver(DBI); // reload from disk
 bcold2.executeOperation(
   "CaptureCertificate",
-  { certificate_alias: "certB", cert_type: "cofc", serial_or_lot: "LOT-B" },
+  { certificate_alias: "certB", cert_type: "certificate_of_conformance", serial_or_lot: "LOT-B" },
   "planner",
   "s2",
 );

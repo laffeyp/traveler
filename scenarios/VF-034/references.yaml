@@ -14,6 +14,7 @@ operations:
   - ReceiveShipment
   - ReceiveInventory
   - CaptureCertificate
+  - AcceptCertificateAsEvidence
   - RunReceivingCheck
   - ReleaseFromQuarantine
   - ApplyReceivingCheckResultToInventory
@@ -24,6 +25,8 @@ events:
   - SHIPMENT_LINE_CREATED
   - SHIPMENT_RECEIVED
   - INVENTORY_RECEIVED
+  - CERTIFICATE_CAPTURED
+  - CERTIFICATE_VERIFIED
   - RECEIVING_CHECK_STARTED
   - RECEIVING_CHECK_BLOCKED
   - INVENTORY_QUARANTINED

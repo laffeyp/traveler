@@ -41,28 +41,31 @@ actors:
   - { actor_id: quality_1, actor_type: quality_engineer, product_caller_type: quality_engineer }
 
 steps:
-  - { step_id: "001", set_time: "2026-07-06T08:00:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf026-001, input: { inventory_alias: valve_body_003, part_revision: valve_body_rev_a, serial_number: "VB-003" }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
-  - { step_id: "002", set_time: "2026-07-06T08:05:00Z", actor: planner_1, operation: CreateShipment, idempotency_key: vf026-002, input: { shipment_alias: shipment_001, supplier: supplier_acme, purchase_order_ref: "PO-4471" }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_CREATED] } }
-  - { step_id: "003", actor: planner_1, operation: AddShipmentLine, idempotency_key: vf026-003, input: { shipment_alias: shipment_001, shipment_line_alias: shipment_line_valve_body, inventory_item_alias: valve_body_003, part_revision: valve_body_rev_a, serial_or_lot: "VB-003", required_documents: [certificate_of_conformance] }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_LINE_CREATED] } }
-  - { step_id: "004", set_time: "2026-07-06T08:10:00Z", actor: planner_1, operation: ReceiveShipment, idempotency_key: vf026-004, input: { shipment_alias: shipment_001 }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_RECEIVED] } }
-  - { step_id: "005", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf026-005, input: { inventory_alias: valve_body_003 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
-  - { step_id: "006", set_time: "2026-07-06T08:15:00Z", actor: planner_1, operation: CaptureCertificate, idempotency_key: vf026-006, input: { certificate_alias: coc_valve_body, cert_type: certificate_of_conformance, part_revision: valve_body_rev_a, serial_or_lot: "VB-003", cage_code: "1ABC2", expires_at: "2027-06-01T00:00:00Z" }, expect: { operation_succeeded: true } }
-  - { step_id: "007", set_time: "2026-07-06T08:20:00Z", actor: quality_1, operation: RunReceivingCheck, idempotency_key: vf026-007, input: { shipment_line_alias: shipment_line_valve_body, receiving_check_alias: receiving_check_001 }, expect: { operation_succeeded: true, events_emitted: [RECEIVING_CHECK_STARTED, RECEIVING_CHECK_PASSED] } }
-  - { step_id: "008", set_time: "2026-07-06T08:25:00Z", actor: quality_1, operation: ApplyReceivingCheckResultToInventory, idempotency_key: vf026-008, input: { receiving_check_alias: receiving_check_001, inventory_item_alias: valve_body_003 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+  - { step_id: "001", set_time: "2026-07-06T08:00:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf024-001, input: { inventory_alias: valve_body_003, part_revision: valve_body_rev_a, serial_number: "VB-003" }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "002", set_time: "2026-07-06T08:05:00Z", actor: planner_1, operation: CreateShipment, idempotency_key: vf024-002, input: { shipment_alias: shipment_001, supplier: supplier_acme, purchase_order_ref: "PO-4471" }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_CREATED] } }
+  - { step_id: "003", actor: planner_1, operation: AddShipmentLine, idempotency_key: vf024-003, input: { shipment_alias: shipment_001, shipment_line_alias: shipment_line_valve_body, inventory_item_alias: valve_body_003, part_revision: valve_body_rev_a, serial_or_lot: "VB-003", required_documents: [certificate_of_conformance] }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_LINE_CREATED] } }
+  - { step_id: "004", set_time: "2026-07-06T08:10:00Z", actor: planner_1, operation: ReceiveShipment, idempotency_key: vf024-004, input: { shipment_alias: shipment_001 }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_RECEIVED] } }
+  - { step_id: "005", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf024-005, input: { inventory_alias: valve_body_003 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "006", set_time: "2026-07-06T08:15:00Z", actor: planner_1, operation: CaptureCertificate, idempotency_key: vf024-006, input: { certificate_alias: coc_valve_body, cert_type: certificate_of_conformance, part_revision: valve_body_rev_a, serial_or_lot: "VB-003", cage_code: "1ABC2", expires_at: "2027-06-01T00:00:00Z" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_CAPTURED] } }
+  - { step_id: "007", set_time: "2026-07-06T08:18:00Z", actor: quality_1, operation: AcceptCertificateAsEvidence, idempotency_key: vf024-007, input: { certificate_alias: coc_valve_body, expected_part_revision: valve_body_rev_a, expected_serial_or_lot: "VB-003", expected_cage_code: "1ABC2" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_VERIFIED] } }
+  - { step_id: "008", set_time: "2026-07-06T08:20:00Z", actor: quality_1, operation: RunReceivingCheck, idempotency_key: vf024-008, input: { shipment_line_alias: shipment_line_valve_body, receiving_check_alias: receiving_check_001 }, expect: { operation_succeeded: true, events_emitted: [RECEIVING_CHECK_STARTED, RECEIVING_CHECK_PASSED] } }
+  - { step_id: "009", set_time: "2026-07-06T08:25:00Z", actor: quality_1, operation: ApplyReceivingCheckResultToInventory, idempotency_key: vf024-009, input: { receiving_check_alias: receiving_check_001, inventory_item_alias: valve_body_003 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
 
 assertions:
-  - { assertion_id: vf026_shipment_received, assertion_type: record_state, severity: blocking, target: { record_type: Shipment, alias: shipment_001 }, expected: { state: received } }
-  - { assertion_id: vf026_check_passed, assertion_type: record_state, severity: blocking, target: { record_type: ReceivingCheck, alias: receiving_check_001 }, expected: { state: passed } }
-  - { assertion_id: vf026_no_blockers, assertion_type: event_payload_contains, severity: blocking, target: { event_type: RECEIVING_CHECK_PASSED, producer_operation: RunReceivingCheck }, expected: { blockers: [] } }
-  - { assertion_id: vf026_inventory_available, assertion_type: record_state, severity: blocking, target: { record_type: InventoryItem, alias: valve_body_003 }, expected: { state: available } }
-  - { assertion_id: vf026_never_quarantined, assertion_type: event_not_emitted, severity: blocking, target: { event_type: INVENTORY_QUARANTINED }, expected: { reason: paperwork_was_present_and_in_date } }
-  - { assertion_id: vf026_check_did_not_block, assertion_type: event_not_emitted, severity: blocking, target: { event_type: RECEIVING_CHECK_BLOCKED }, expected: { reason: the_required_certificate_was_present } }
-  - { assertion_id: vf026_serial_history_tells_the_acceptance_story, assertion_type: access_full, severity: blocking, target: { projection: SerialHistory, key_serial: "VB-003" }, expected: { view: full, event_types_contain: [SHIPMENT_CREATED, SHIPMENT_RECEIVED, INVENTORY_RECEIVED, RECEIVING_CHECK_PASSED, INVENTORY_AVAILABLE] } }
+  - { assertion_id: vf024_shipment_received, assertion_type: record_state, severity: blocking, target: { record_type: Shipment, alias: shipment_001 }, expected: { state: received } }
+  - { assertion_id: vf024_check_passed, assertion_type: record_state, severity: blocking, target: { record_type: ReceivingCheck, alias: receiving_check_001 }, expected: { state: passed } }
+  - { assertion_id: vf024_no_blockers, assertion_type: event_payload_contains, severity: blocking, target: { event_type: RECEIVING_CHECK_PASSED, producer_operation: RunReceivingCheck }, expected: { blockers: [] } }
+  - { assertion_id: vf024_inventory_available, assertion_type: record_state, severity: blocking, target: { record_type: InventoryItem, alias: valve_body_003 }, expected: { state: available } }
+  - { assertion_id: vf024_never_quarantined, assertion_type: event_not_emitted, severity: blocking, target: { event_type: INVENTORY_QUARANTINED }, expected: { reason: paperwork_was_present_and_in_date } }
+  - { assertion_id: vf024_check_did_not_block, assertion_type: event_not_emitted, severity: blocking, target: { event_type: RECEIVING_CHECK_BLOCKED }, expected: { reason: the_required_certificate_was_present } }
+  - { assertion_id: vf024_certificate_verified, assertion_type: record_state, severity: blocking, target: { record_type: Certificate, alias: coc_valve_body }, expected: { state: verified } }
+  - { assertion_id: vf024_certificate_names_its_verifier, assertion_type: record_field_equals, severity: blocking, target: { record_type: Certificate, alias: coc_valve_body }, expected: { verified_by: quality_1 } }
+  - { assertion_id: vf024_serial_history_tells_the_acceptance_story, assertion_type: access_full, severity: blocking, target: { projection: SerialHistory, key_serial: "VB-003" }, expected: { view: full, event_types_contain: [SHIPMENT_CREATED, SHIPMENT_RECEIVED, INVENTORY_RECEIVED, RECEIVING_CHECK_PASSED, INVENTORY_AVAILABLE] } }
 
 # Harness section 14: every scenario carries at least one idempotency replay. Re-running the receiving check
 # under its own key must not mint a second ReceivingCheck or a second blocked event.
 idempotency_replay_checks:
-  - check_id: vf026_replay_receiving_check
-    step_id: "007"
+  - check_id: vf024_replay_receiving_check
+    step_id: "008"
     operation: RunReceivingCheck
-    idempotency_key: vf026-007
+    idempotency_key: vf024-008

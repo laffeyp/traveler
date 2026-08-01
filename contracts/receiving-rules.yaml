@@ -5,12 +5,37 @@ source: >
   The pack modelled receiving failures as a bespoke event taxonomy; here they are registered rule ids carried
   in ReceivingCheck.blockers[], exactly as run-close-rules.yaml ids are carried in RunCloseCheck.blockers[].
 note: >
-  A rule names one document type that must be present and valid for the goods on a shipment line before that
-  inventory may be released to production. `expires` records whether the document type carries an expiry at
-  all: a calibration or material certificate does, a material test report, dimensional report and first
-  article report do not. Without this the expiry check fails closed on documents that never expire.
-  `scope` records what the document covers, because a first article report is scoped to a part revision
-  rather than to the lot or serial that arrived.
+  A rule names one document type that must be present, verified and valid for the goods on a shipment line
+  before that inventory may be released to production. `expires` records whether the document type carries an
+  expiry at all: a calibration or material certificate does, a material test report, dimensional report and
+  first article report do not. Without this the expiry check fails closed on documents that never expire.
+  `scope` records what the document covers, because a first article report is scoped to a part revision rather
+  than to the lot or serial that arrived.
+
+  A document type carries THREE distinct failures, each its own registered id: absent, present-but-unverified,
+  and present-but-stale. They are separate facts about the consignment, and collapsing any two lets a mutation
+  that suppresses one branch stay green because another catches it — which is exactly what happened when
+  absent and expired shared an id (2026-07-31 mutation battery). `unverified_id` is the boundary spec's §9.4
+  invariant made checkable: attached is not verified, and only a certificate a person has accepted as evidence
+  may satisfy a release requirement.
+
+# The §9.3 classification invariant: every supplier document must carry a type, drawn from this list. It is
+# SEPARATE from the rules below, and the distinction is load-bearing. A type is what a document IS; a rule is
+# what a consignment must PRODUCE before its goods may be released. A dimensional report is a real document a
+# supplier sends and a receiving inspector reads, but no rule requires one, so it is a valid type with no rule.
+# Conflating the two made CaptureCertificate refuse a dimensional report outright — the system would not accept
+# a document a supplier had actually sent, because nothing gated on it.
+#
+# `other` may be stored and cannot satisfy a typed requirement, which holds by construction here: only a type
+# named by a rule's `cert_type` is ever consulted by RunReceivingCheck.
+document_types:
+  - certificate_of_conformance
+  - material_test_report
+  - dimensional_report
+  - first_article_report
+  - process_certificate
+  - packing_list
+  - other
 
 rules:
   - id: certificate_of_conformance_present
@@ -19,6 +44,7 @@ rules:
     scope: lot_or_serial
     expires: true
     expired_id: certificate_of_conformance_expired
+    unverified_id: certificate_of_conformance_unverified
     description: The consignment carries a certificate of conformance covering the delivered lot or serial.
   - id: certificate_of_conformance_expired
     blocking: true
@@ -28,18 +54,37 @@ rules:
       A certificate of conformance was presented but its expiry is past, missing or unparseable. Distinct from
       certificate_of_conformance_present: absent paperwork and stale paperwork are different facts about the
       consignment and a mutation that suppressed one must not be masked by the other.
+  - id: certificate_of_conformance_unverified
+    blocking: true
+    scope: lot_or_serial
+    expires: false
+    description: >
+      A certificate of conformance covering the delivered goods exists, but nobody has accepted it as evidence.
+      Capturing a certificate records that a supplier sent paperwork; it does not record that anyone read it.
   - id: material_test_report_present
     blocking: true
     cert_type: material_test_report
     scope: lot_or_serial
     expires: false
+    unverified_id: material_test_report_unverified
     description: Raw material carries a mill test report for the delivered heat or lot.
+  - id: material_test_report_unverified
+    blocking: true
+    scope: lot_or_serial
+    expires: false
+    description: A mill test report covering the delivered heat or lot exists but has not been verified.
   - id: first_article_report_present
     blocking: true
     cert_type: first_article_report
     scope: part_revision
     expires: false
+    unverified_id: first_article_report_unverified
     description: A new part revision carries a first article report. Scoped to the part revision, not the lot.
+  - id: first_article_report_unverified
+    blocking: true
+    scope: part_revision
+    expires: false
+    description: A first article report for the part revision exists but has not been verified.
   - id: document_matches_part_revision
     blocking: true
     scope: part_revision

@@ -27,7 +27,7 @@ assertion_types:
   - time_ordering_valid
   - operation_succeeded
   - operation_failed
-  - operation_output_contains   # sprint-019: value-level read of an operation's RETURNED output (e.g. GetReport freshness), so a scenario can assert what a read op returned, not only the record it read
+  - operation_output_contains   # persona-gap review: value-level read of an operation's RETURNED output (e.g. GetReport freshness), so a scenario can assert what a read op returned, not only the record it read
 
   - transition_succeeded
   - transition_blocked

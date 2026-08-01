@@ -2,7 +2,7 @@
 // Source: contracts/{events,operations,records}.yaml (the locked vocabulary).
 // Regenerate with `npm run generate:types`; CI fails on drift via `npm run verify:types`.
 
-/** Every registered FactoryEvent tag (128). */
+/** Every registered FactoryEvent tag (132). */
 export type EventType =
   | "ACCESS_DECISION_ALLOWED"
   | "ACCESS_DECISION_AUDITED"
@@ -27,6 +27,10 @@ export type EventType =
   | "BUILD_CHECK_FAILED"
   | "BUILD_CHECK_PASSED"
   | "BUILD_CHECK_STARTED"
+  | "CERTIFICATE_CAPTURED"
+  | "CERTIFICATE_REJECTED"
+  | "CERTIFICATE_REVIEW_REQUIRED"
+  | "CERTIFICATE_VERIFIED"
   | "DISPOSITION_RECORDED"
   | "EFFECTIVITY_AMBIGUOUS"
   | "EFFECTIVITY_RESOLVED"
@@ -133,9 +137,10 @@ export type EventType =
   | "VERIFICATION_COMPLETED"
   | "VERIFICATION_PENDING";
 
-/** Every registered operation name (122). */
+/** Every registered operation name (125). */
 export type OperationName =
   | "AcceptAttachmentAsEvidence"
+  | "AcceptCertificateAsEvidence"
   | "AcceptMachineEvidence"
   | "ActivateQualityContainment"
   | "AddBOMLine"
@@ -209,6 +214,7 @@ export type OperationName =
   | "RegisterMachine"
   | "RegisterMachineAdapter"
   | "RejectAttachmentAsEvidence"
+  | "RejectCertificateAsEvidence"
   | "RejectMachineEvidence"
   | "ReleaseFromQuarantine"
   | "ReleaseInventory"
@@ -233,6 +239,7 @@ export type OperationName =
   | "ReturnProcedureVersionToDraft"
   | "ReviewRedline"
   | "RouteAttachmentForReview"
+  | "RouteCertificateForReview"
   | "RouteMachineEvidenceForReview"
   | "RunBuildCheck"
   | "RunCloseCheck"

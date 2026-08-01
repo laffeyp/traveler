@@ -97,9 +97,9 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
     expect(runScenarioWithDriver("VF-003").result.status).toBe("passed"); // restored
   });
 
-  it("the receiving gate must RELEASE as well as block — forcing a blocker makes VF-026 red", () => {
+  it("the receiving gate must RELEASE as well as block — forcing a blocker makes VF-024 red", () => {
     // The pair to the suppression mutation below. A gate that only ever refuses is not a gate: if the check
-    // raised a blocker regardless of the paperwork, VF-025 would still pass and only VF-026 would catch it.
+    // raised a blocker regardless of the paperwork, VF-025 would still pass and only VF-024 would catch it.
     withMutation(
       "RunReceivingCheck",
       (orig) =>
@@ -117,8 +117,28 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
     expect(runScenarioWithDriver("VF-024").result.status).toBe("passed"); // restored
   });
 
-  it("export control must be per document — sweeping it onto every certificate makes VF-027 red", () => {
-    // VF-027 asserts an UNCONTROLLED certificate of conformance stays readable by the same foreign person who
+  it("a captured certificate must not count as evidence — accepting any state makes VF-026 red", () => {
+    // The §9.4 invariant, coupled. If RunReceivingCheck counted a document by its mere existence rather than
+    // by its verified state, VF-026's rejected mill certificate would satisfy its requirement and the goods
+    // would release. This is the mutation the whole verification lifecycle exists to make red.
+    withMutation(
+      "RunReceivingCheck",
+      (orig) =>
+        (w: any, i: any, ...rest: any[]) => {
+          // Promote every certificate to verified before the check reads them — the cheapest way to express
+          // "the check stopped caring whether anyone read the paperwork".
+          for (const record of w.byType("Certificate")) record.state = "verified";
+          return orig(w, i, ...rest);
+        },
+      () => {
+        expect(runScenarioWithDriver("VF-026").result.status).toBe("failed");
+      },
+    );
+    expect(runScenarioWithDriver("VF-026").result.status).toBe("passed"); // restored
+  });
+
+  it("export control must be per document — sweeping it onto every certificate makes VF-031 red", () => {
+    // VF-031 asserts an UNCONTROLLED certificate of conformance stays readable by the same foreign person who
     // is denied the dimensional report. Treating every supplier document as controlled would deny both, which
     // is the blanket behaviour B-Q-41 rejected.
     withMutation(

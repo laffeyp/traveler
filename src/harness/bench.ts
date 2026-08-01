@@ -53,7 +53,10 @@ const BENCHES: Record<string, { scenarios: string[]; required_pass_rate: number 
   authority: { scenarios: ["VF-016"], required_pass_rate: 1.0 },
   // Receiving evidence boundary (boundary spec §21 receiving_evidence_bench). VF-024/025 hold the ids the
   // specification assigns them; VF-031+ are boundary work the specification did not name (B-Q-58).
-  receiving: { scenarios: ["VF-024", "VF-025", "VF-031", "VF-034"], required_pass_rate: 1.0 },
+  receiving: {
+    scenarios: ["VF-024", "VF-025", "VF-026", "VF-031", "VF-034"],
+    required_pass_rate: 1.0,
+  },
   // Outbound: goods do not leave without a certificate of conformance (VF-032).
   shipping: { scenarios: ["VF-032"], required_pass_rate: 1.0 },
   // Attachments: the file behind a record, evidence until accepted (VF-033).

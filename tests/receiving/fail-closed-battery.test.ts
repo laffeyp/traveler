@@ -39,11 +39,17 @@ const rig = () => {
   d.executeOperation("ReceiveInventory", { inventory_alias: "it" }, "planner", key());
   return d;
 };
-const cert = (d: InMemoryProductDriver, fields: Record<string, unknown>) =>
-  d.executeOperation(
+/**
+ * Capture a certificate AND have it accepted as evidence. Capture alone now blocks on its own registered id
+ * (§9.4), and every arm below is about a DIFFERENT failure — so without the verification step each arm would
+ * "fail closed" for the wrong reason and the battery would prove nothing about what it names.
+ */
+const cert = (d: InMemoryProductDriver, fields: Record<string, unknown>) => {
+  const alias = "c" + key();
+  const captured = d.executeOperation(
     "CaptureCertificate",
     {
-      certificate_alias: "c" + key(),
+      certificate_alias: alias,
       cert_type: "certificate_of_conformance",
       part_revision: "pr_a",
       serial_or_lot: "S-1",
@@ -53,6 +59,36 @@ const cert = (d: InMemoryProductDriver, fields: Record<string, unknown>) =>
     "planner",
     key(),
   );
+  if (!captured.succeeded) return captured;
+  return d.executeOperation(
+    "AcceptCertificateAsEvidence",
+    { certificate_alias: alias },
+    "quality_engineer",
+    key(),
+    undefined,
+    "quality_1",
+  );
+};
+
+/** Capture only: the paperwork is in the system and nobody has read it. Returns the alias it used. */
+const certUnverified = (d: InMemoryProductDriver, fields: Record<string, unknown> = {}) => {
+  const alias = "u" + key();
+  const result = d.executeOperation(
+    "CaptureCertificate",
+    {
+      certificate_alias: alias,
+      cert_type: "certificate_of_conformance",
+      part_revision: "pr_a",
+      serial_or_lot: "S-1",
+      expires_at: "2027-01-01T00:00:00Z",
+      ...fields,
+    },
+    "planner",
+    key(),
+  );
+  if (!result.succeeded) throw new Error(`fixture broken: capture failed (${result.failureClass})`);
+  return alias;
+};
 const line = (d: InMemoryProductDriver, docs: string[] = ["certificate_of_conformance"]) =>
   d.executeOperation(
     "AddShipmentLine",
@@ -67,10 +103,10 @@ const line = (d: InMemoryProductDriver, docs: string[] = ["certificate_of_confor
     "planner",
     key(),
   );
-const check = (d: InMemoryProductDriver) => {
+const check = (d: InMemoryProductDriver, asOf?: string) => {
   d.executeOperation(
     "RunReceivingCheck",
-    { shipment_line_alias: "ln", receiving_check_alias: "chk" },
+    { shipment_line_alias: "ln", receiving_check_alias: "chk", as_of: asOf },
     "quality_engineer",
     key(),
   );
@@ -107,10 +143,48 @@ const ENFORCED: Record<string, () => boolean> = {
     return check(d).fields.blockers.includes("first_article_report_present") && !released(d);
   },
   "expire certificate": () => {
+    // Signed off while in date, then looked at years later. Verification refuses already-stale paperwork, so
+    // this is the only way a VERIFIED certificate is expired at check time — and it is the real one: paperwork
+    // goes out of date sitting in a bin.
     const d = rig();
-    cert(d, { expires_at: "2020-01-01T00:00:00Z" });
+    cert(d, { expires_at: "2026-08-01T00:00:00Z" });
     line(d);
-    return check(d).fields.blockers.includes("certificate_of_conformance_expired") && !released(d);
+    return (
+      check(d, "2030-01-01T00:00:00Z").fields.blockers.includes(
+        "certificate_of_conformance_expired",
+      ) && !released(d)
+    );
+  },
+  "capture the certificate but never verify it": () => {
+    // The §9.4 invariant as a mutation: the paperwork is present, in date, and matches the goods on every
+    // field — and nobody has read it. Before the verification lifecycle existed this consignment RELEASED.
+    const d = rig();
+    certUnverified(d);
+    line(d);
+    return (
+      check(d).fields.blockers.includes("certificate_of_conformance_unverified") && !released(d)
+    );
+  },
+  "reject the certificate, then try to release on it": () => {
+    // Rejection must actually cost the document its standing, or rejecting is decorative.
+    const d = rig();
+    const alias = certUnverified(d);
+    const rejected = d.executeOperation(
+      "RejectCertificateAsEvidence",
+      { certificate_alias: alias, reason: "illegible" },
+      "quality_engineer",
+      key(),
+      undefined,
+      "quality_1",
+    );
+    // Assert the rejection actually HAPPENED. Without this the arm passes when the rejection throws — the
+    // document would still be unverified, the blocker would still fire, and the probe would report a refusal
+    // it never tested. A vacuous arm is worse than a missing one.
+    if (!rejected.succeeded || d.readRecord(alias)?.state !== "rejected") return false;
+    line(d);
+    return (
+      check(d).fields.blockers.includes("certificate_of_conformance_unverified") && !released(d)
+    );
   },
   "wrong part number": () => {
     const d = rig();

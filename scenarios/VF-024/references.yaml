@@ -14,6 +14,7 @@ operations:
   - ReceiveShipment
   - ReceiveInventory
   - CaptureCertificate
+  - AcceptCertificateAsEvidence
   - RunReceivingCheck
   - ApplyReceivingCheckResultToInventory
 
@@ -23,17 +24,21 @@ events:
   - SHIPMENT_LINE_CREATED
   - SHIPMENT_RECEIVED
   - INVENTORY_RECEIVED
+  - CERTIFICATE_CAPTURED
+  - CERTIFICATE_VERIFIED
   - RECEIVING_CHECK_STARTED
   - RECEIVING_CHECK_PASSED
   - INVENTORY_AVAILABLE
 
 record_states:
   Shipment: [created, received]
+  Certificate: [captured, verified]
   ReceivingCheck: [passed]
   InventoryItem: [expected, received, available]
 
 assertion_types:
   - record_state
+  - record_field_equals
   - event_payload_contains
   - event_not_emitted
   - access_full

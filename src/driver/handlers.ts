@@ -10,7 +10,7 @@
 import type { World, FactoryRecord } from "./world.ts";
 import { moveState, moveStateTo, tryGet, step, createGrammarGap } from "./world.ts";
 import { NORMALIZE_GRAMMAR, keyPresentAndValid } from "./registry.ts";
-import { RECEIVING_RULES, guardRuleCallerTypes } from "./registry.ts";
+import { RECEIVING_RULES, DOCUMENT_TYPES, guardRuleCallerTypes } from "./registry.ts";
 import { assembleRunCloseReport } from "./projections.ts";
 
 /**
@@ -96,6 +96,35 @@ function stepRequirementGaps(world: World, runStep: FactoryRecord, runStepAlias:
     .some((event) => event.fields.run_step === runStepAlias);
   if (requiresInstallation && !installed) gaps.push("required_installations_present");
   return gaps;
+}
+
+/**
+ * The deemed-export access decision (ITAR 22 CFR 120.50: releasing controlled technical data to a foreign
+ * person is an export to their country). Extracted so `EvaluateAccess` and the certificate verification path
+ * decide by ONE policy. Two copies of an export rule drift, and the copy that drifts open is the one that
+ * leaks — the boundary spec's §9.6 invariant ("an actor cannot verify evidence they are not allowed to see")
+ * would otherwise be enforced by a second implementation nobody diffs against the first.
+ *
+ * Fails CLOSED on every unknown: an unresolvable resource and a present-but-malformed `export_control` are
+ * both denials, because for an export control the safe default is deny.
+ */
+export function exportAccessDecision(
+  world: World,
+  resourceAlias: string,
+  nationality: string | undefined,
+): { decision: "allowed" | "denied"; reason?: string } {
+  const resource = tryGet(world, resourceAlias);
+  if (!resource) return { decision: "denied", reason: "resource_not_found" };
+  const exportControl = resource.fields?.export_control;
+  if (exportControl === undefined || exportControl === null) return { decision: "allowed" }; // uncontrolled
+  if (
+    !Array.isArray(exportControl.allowed_nationalities) ||
+    exportControl.allowed_nationalities.length === 0
+  )
+    return { decision: "denied", reason: "export_control_malformed" };
+  if (!exportControl.allowed_nationalities.includes(nationality))
+    return { decision: "denied", reason: "deemed_export_denied" };
+  return { decision: "allowed" };
 }
 
 const DISPOSITION_KINDS = new Set(["scrap", "rework", "repair", "use_as_is", "return_to_supplier"]);
@@ -871,11 +900,25 @@ export const HANDLERS: Record<string, H> = {
         blockers.push(rule.id);
         continue;
       }
+      // §9.4: attached is not verified. A captured certificate records that a supplier sent paperwork; only one
+      // a person has accepted as evidence may satisfy a release requirement. Rejected and superseded documents
+      // are excluded here too — a rejected certificate that still counted would make rejection decorative.
+      // Present-but-unverified is its OWN registered blocker, not the absent one: if they shared an id, a
+      // mutation suppressing the presence branch would stay green because the verification branch caught it,
+      // which is precisely how absent and expired masked each other before they were split.
+      const verified = matches.filter((certificate) => certificate.state === "verified");
+      if (verified.length === 0) {
+        blockers.push(rule.unverified_id ?? rule.id);
+        continue;
+      }
       // Expiry is a property of the document TYPE. A material test report and a first article report never
       // expire, so a blanket expiry check would fail closed on valid paperwork.
       if (rule.expires) {
         const asOf = Date.parse(input.as_of ?? world.clock);
-        const valid = matches.some((certificate) => {
+        // Expiry is tested over the VERIFIED documents only. Testing it over every matching document would let
+        // an unverified in-date certificate rescue a verified expired one — the requirement would be satisfied
+        // by two documents, neither of which satisfies it alone.
+        const valid = verified.some((certificate) => {
           const expiry = Date.parse(certificate.fields.expires_at ?? "");
           return Number.isFinite(expiry) && Number.isFinite(asOf) && expiry >= asOf;
         });
@@ -1171,7 +1214,20 @@ export const HANDLERS: Record<string, H> = {
     // Typed supplier certificate (CofC / mill cert) tied to a received lot or serial (persona gap 8; AS9100
     // 8.4.2). Today these would be untyped attachments; this makes them first-class governed records with a
     // type, the lot/serial they cover, the supplier CAGE code, and an expiry.
-    world.create("Certificate", input.certificate_alias ?? "", "captured", {
+    //
+    // Capture is CLERICAL: it records that a supplier sent paperwork, and nothing more. It is not evidence
+    // until somebody accepts it as evidence (boundary spec §9.4), which is why the record lands in `captured`
+    // and RunReceivingCheck refuses to count it until it reaches `verified`.
+    //
+    // The type is required and must name a registered receiving-rule document type. An untyped certificate
+    // could never satisfy a rule (the cert_type comparison would miss), so it would sit in the world looking
+    // like evidence while counting for nothing — present to a reader, invisible to the check.
+    if (!input.cert_type) throw new Error("validation_error: a certificate must carry a cert_type");
+    if (!DOCUMENT_TYPES.includes(input.cert_type))
+      throw new Error(
+        `validation_error: '${input.cert_type}' is not a registered supplier-document type`,
+      );
+    const certificate = world.create("Certificate", input.certificate_alias ?? "", "captured", {
       cert_type: input.cert_type,
       part_revision: input.part_revision,
       serial_or_lot: input.serial_or_lot,
@@ -1183,6 +1239,88 @@ export const HANDLERS: Record<string, H> = {
       // it; a document with no export_control is uncontrolled, as that operation already defines (B-Q-41).
       export_control: input.export_control,
     });
+    world.emit("CERTIFICATE_CAPTURED", "CaptureCertificate", {
+      certificate_id: certificate.id,
+      cert_type: input.cert_type,
+    });
+  },
+  RouteCertificateForReview(world, input) {
+    const certificate = world.get(input.certificate_alias);
+    certificate.fields.review_reason = input.reason;
+    step(world, certificate, "RouteCertificateForReview");
+  },
+  AcceptCertificateAsEvidence(world, input, actor, role) {
+    // The verification act (boundary spec §9.4/§9.5/§9.6). Capturing a certificate records that paperwork
+    // arrived; THIS records that a qualified person compared it against the goods and put their name to it.
+    // Until this runs, RunReceivingCheck counts the document as unverified and the material stays quarantined.
+    const certificate = world.get(input.certificate_alias);
+    if (certificate.record_type !== "Certificate")
+      throw new Error(
+        `validation_error: '${input.certificate_alias}' is a ${certificate.record_type}, not a Certificate`,
+      );
+    // A sign-off with no signer is not a sign-off. Same rule as approvals, verifications and attachment
+    // acceptance — an unidentified acceptor is refused rather than recorded as an anonymous attestation.
+    if (!actor)
+      throw new Error(
+        "validation_error: accepting a certificate as evidence requires an identified actor",
+      );
+
+    // §9.6 access invariant: an actor cannot verify evidence they are not allowed to see. A first article or
+    // dimensional report is controlled technical data (ITAR 22 CFR 120.33 covers drawings, diagrams, tables and
+    // engineering specifications), and a verifier who cannot read the document cannot have compared it against
+    // anything — so a verification by a denied actor is a rubber stamp, refused here rather than recorded.
+    // The nationality is asserted by the caller because the system has no person record to derive it from
+    // (B-Q-64); the same limitation the existing EvaluateAccess operation carries.
+    const access = exportAccessDecision(world, input.certificate_alias, input.verifier_nationality);
+    if (access.decision === "denied")
+      throw new Error(
+        `controlled_supplier_document_denied: this actor cannot read '${input.certificate_alias}' (${access.reason}), so cannot verify it`,
+      );
+
+    // §9.5 mismatch invariant. Verification is where the document is compared against the material, so a
+    // mismatch fails HERE rather than being discovered later by the check. Each field is compared only when
+    // the caller states what it should be: an absent expectation is not agreement, but neither is it a
+    // conflict, and inventing a comparison against undefined is how `===` on two undefined fields once read
+    // as a match (review F12/F13).
+    for (const [field, expected] of [
+      ["part_revision", input.expected_part_revision],
+      ["serial_or_lot", input.expected_serial_or_lot],
+      ["cage_code", input.expected_cage_code],
+    ] as const) {
+      if (expected === undefined) continue;
+      if (certificate.fields[field] !== expected)
+        throw new Error(
+          `supplier_document_mismatch: certificate ${field} is '${certificate.fields[field] ?? "(absent)"}', expected '${expected}'`,
+        );
+    }
+
+    // An expired document cannot be verified into validity. The check re-tests expiry at its own as-of, but a
+    // verifier accepting already-stale paperwork must be refused at the moment they do it.
+    if (certificate.fields.expires_at !== undefined && certificate.fields.expires_at !== null) {
+      const expiry = Date.parse(certificate.fields.expires_at);
+      const asOf = Date.parse(input.as_of ?? world.clock);
+      if (!Number.isFinite(expiry) || !Number.isFinite(asOf) || expiry < asOf)
+        throw new Error(
+          `supplier_document_expired: certificate expiry '${certificate.fields.expires_at}' is not valid at '${input.as_of ?? world.clock}'`,
+        );
+    }
+
+    certificate.fields.verified_by = actor;
+    certificate.fields.verified_by_role = role;
+    certificate.fields.verified_at = world.clock;
+    certificate.fields.signature_meaning =
+      "supplier evidence verification: attests this document was compared against the received material and covers it";
+    step(world, certificate, "AcceptCertificateAsEvidence");
+  },
+  RejectCertificateAsEvidence(world, input, actor) {
+    const certificate = world.get(input.certificate_alias);
+    if (!actor)
+      throw new Error("validation_error: rejecting a certificate requires an identified actor");
+    if (!input.reason)
+      throw new Error("validation_error: rejecting a certificate requires a reason");
+    certificate.fields.rejected_by = actor;
+    certificate.fields.rejection_reason = input.reason;
+    step(world, certificate, "RejectCertificateAsEvidence");
   },
   VerifyCertificate(world, input) {
     // Verify a lot/serial has a valid typed certificate: one of the required type whose expiry (if any) is on or
@@ -1674,31 +1812,13 @@ export const HANDLERS: Record<string, H> = {
     // export-controlled to a set of nationalities is DENIED to a subject whose nationality is not in the set.
     // Fills the registered-but-unimplemented EvaluateAccess op; the nationality axis + the resource's
     // export_control are additions beyond the spec. Every decision is audited.
-    const resource = tryGet(world, input.resource_alias);
-    const nationality = input.subject_nationality;
-    const exportControl = resource?.fields?.export_control;
-    // Fail CLOSED (persona-gap review): only ALLOW when we can affirmatively confirm access. An unresolvable
+    // Fail CLOSED (persona-gap review): only ALLOW when access can be affirmatively confirmed. An unresolvable
     // resource, or a present-but-malformed export_control (not a non-empty nationality array), is DENIED — for
-    // an export control the safe default is deny, since a fail-open leaks controlled technical data.
-    let decision: string, reason: string | undefined;
-    if (!resource) {
-      decision = "denied";
-      reason = "resource_not_found";
-    } else if (exportControl === undefined || exportControl === null) {
-      decision = "allowed";
-    } // no control declared -> uncontrolled
-    else if (
-      !Array.isArray(exportControl.allowed_nationalities) ||
-      exportControl.allowed_nationalities.length === 0
-    ) {
-      decision = "denied";
-      reason = "export_control_malformed";
-    } else if (!exportControl.allowed_nationalities.includes(nationality)) {
-      decision = "denied";
-      reason = "deemed_export_denied";
-    } else {
-      decision = "allowed";
-    }
+    // an export control the safe default is deny, since a fail-open leaks controlled technical data. The
+    // decision itself lives in `exportAccessDecision` so the certificate verification path (§9.6) applies the
+    // same policy rather than a second copy of it.
+    const nationality = input.subject_nationality;
+    const { decision, reason } = exportAccessDecision(world, input.resource_alias, nationality);
     if (decision === "denied") {
       world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
         resource_alias: input.resource_alias,

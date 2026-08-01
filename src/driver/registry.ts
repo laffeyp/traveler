@@ -71,8 +71,18 @@ export const RECEIVING_RULES: {
   scope: string;
   expires: boolean;
   expired_id?: string;
+  unverified_id?: string;
   blocking: boolean;
 }[] = readYaml("contracts/receiving-rules.yaml").rules ?? [];
+
+/**
+ * The registered supplier-document types (boundary spec §9.3). SEPARATE from the rules above: a type is what a
+ * document IS, a rule is what a consignment must produce before release. A dimensional report is a valid type
+ * that no rule requires. Only a type named by a rule's `cert_type` can ever satisfy a release requirement, so
+ * §9.3's "`other` may be stored but cannot satisfy a typed requirement" holds by construction.
+ */
+export const DOCUMENT_TYPES: string[] =
+  readYaml("contracts/receiving-rules.yaml").document_types ?? [];
 
 /**
  * operation name -> the caller types allowed to invoke it (contracts/authorization-rules.yaml, cited per

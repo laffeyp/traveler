@@ -251,6 +251,33 @@ state_machines:
       - { from: generated,  to: superseded, via: SupersedeReport,       emits: REPORT_SUPERSEDED }
     forbidden: ["superseded -> *"]
 
+  # Certificate (the boundary spec's SupplierDocument, in our vocabulary). Its §9.4 invariant is that a document
+  # is not production evidence until a person has examined it: attached != verified. Until this machine existed
+  # the record was status-light and RunReceivingCheck accepted any captured certificate, so a receiving clerk
+  # typing in a certificate number satisfied a release requirement that nobody had checked.
+  #
+  # The spec's seven states (§8.4) map to five here. `attached` and `classified` collapse because
+  # CaptureCertificate cannot produce an untyped document — the type is required at capture and validated
+  # against the registered receiving-rule types, which is the same guarantee §9.3 asks for by other means
+  # (B-Q-62). `expired` is not a state: expiry is a date compared against the check's as-of, so a certificate
+  # that is valid today and stale tomorrow would otherwise need a scheduled transition nothing fires (B-Q-63).
+  # captured -> verified directly mirrors the Attachment machine's linked -> accepted: routing for review is
+  # for when a second pair of eyes is wanted, not a ceremony every document must pass through.
+  - record_type: Certificate
+    owning_module: inventory
+    state_field: status
+    initial_state: captured
+    terminal_states: [rejected, superseded]
+    creation_transition: explicit
+    states: [captured, review_required, verified, rejected, superseded]
+    transitions:
+      - { from: null,            to: captured,        via: CaptureCertificate,          emits: CERTIFICATE_CAPTURED }
+      - { from: captured,        to: review_required, via: RouteCertificateForReview,   emits: CERTIFICATE_REVIEW_REQUIRED }
+      - { from: captured,        to: verified,        via: AcceptCertificateAsEvidence, emits: CERTIFICATE_VERIFIED }
+      - { from: review_required, to: verified,        via: AcceptCertificateAsEvidence, emits: CERTIFICATE_VERIFIED }
+      - { from: captured,        to: rejected,        via: RejectCertificateAsEvidence, emits: CERTIFICATE_REJECTED }
+      - { from: review_required, to: rejected,        via: RejectCertificateAsEvidence, emits: CERTIFICATE_REJECTED }
+
   - record_type: Attachment
     owning_module: attachment
     state_field: status

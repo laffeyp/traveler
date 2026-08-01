@@ -273,6 +273,34 @@ for (const rule of registries.receivingRules?.rules ?? []) {
       `[receiving-rules] ${rule.id}: scope must be lot_or_serial | part_revision | supplier | shipment`,
     );
 }
+// Absent, unverified and stale are three distinct facts about a consignment, each carrying its own registered
+// id (see the registry's own note). A rule naming a document type must therefore say where an unverified one
+// lands, and every id it points at must resolve — otherwise a blocker is pushed under a name nothing defines,
+// and the citation rots into a bare string.
+const receivingRuleIds = new Set<string>(
+  (registries.receivingRules?.rules ?? []).map((rule: any) => rule.id),
+);
+// The §9.3 type list and the rules are separate registries of separate things, so they can drift: a rule could
+// gate on a document type the system will not let anyone capture. Bind them (practice #20 again — the check
+// must run in the direction the failure actually travels).
+const documentTypes = new Set<string>(registries.receivingRules?.document_types ?? []);
+if (documentTypes.size === 0)
+  err(`[receiving-rules] document_types is empty (§9.3 classification invariant)`);
+for (const rule of registries.receivingRules?.rules ?? []) {
+  if (rule.cert_type && !documentTypes.has(rule.cert_type))
+    err(
+      `[receiving-rules] ${rule.id}: cert_type '${rule.cert_type}' is not a registered document_type`,
+    );
+}
+for (const rule of registries.receivingRules?.rules ?? []) {
+  if (rule.cert_type && !rule.unverified_id)
+    err(
+      `[receiving-rules] ${rule.id}: names a document type but no unverified_id (§9.4: attached is not verified)`,
+    );
+  for (const field of ["expired_id", "unverified_id"])
+    if (rule[field] && !receivingRuleIds.has(rule[field]))
+      err(`[receiving-rules] ${rule.id}: ${field} '${rule[field]}' is not a registered rule`);
+}
 
 for (const rule of registries.runCloseRules?.rules ?? []) {
   if (!rule.id) err(`[run-close-rules] rule missing id`);
