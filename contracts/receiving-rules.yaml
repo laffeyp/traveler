@@ -85,6 +85,22 @@ rules:
     scope: part_revision
     expires: false
     description: A first article report for the part revision exists but has not been verified.
+  - id: process_certificate_present
+    blocking: true
+    cert_type: process_certificate
+    scope: lot_or_serial
+    expires: false
+    unverified_id: process_certificate_unverified
+    description: >
+      A part that went through a special process at the supplier — heat treat, plating, non-destructive test,
+      welding — carries the certificate for that process against the delivered lot or serial. Scoped to the
+      lot rather than the part revision because the process is performed on the material that arrived, not on
+      the design: two lots of the same revision can be heat treated in different furnace loads.
+  - id: process_certificate_unverified
+    blocking: true
+    scope: lot_or_serial
+    expires: false
+    description: A process certificate covering the delivered lot exists but nobody has verified it.
   - id: document_matches_part_revision
     blocking: true
     scope: part_revision

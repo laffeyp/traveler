@@ -5,6 +5,8 @@
  * has no runtime dependency on `world.ts`.
  */
 import type { World, FactoryRecord } from "./world.ts";
+import { tryGet } from "./world.ts";
+import { RECEIVING_RULES } from "./registry.ts";
 
 /** AsBuilt tree: the installed children of a parent inventory item. */
 export function asBuiltProjection(world: World, parentAlias: string): any {
@@ -157,6 +159,114 @@ export function serialHistory(world: World, serial: string, access?: string): an
  * Assemble the RunCloseReport body (Contract Spec §19). The `accessScope` this controlled_export binds is
  * captured in `access_policy_snapshot` at generation time and frozen there (see GenerateRunCloseReport).
  */
+/**
+ * Boundary spec §23.3 / acceptance criterion 12: what the close report says about the paperwork the installed
+ * material arrived on. A run close report that lists an installed child and says nothing about how that child
+ * became eligible leaves the reader to take receiving on trust — which is the whole thing this boundary exists
+ * to stop.
+ *
+ * Every installed child is reported, including ones that never came from a supplier. Omitting those would make
+ * "made here, no supplier paperwork applies" indistinguishable from "we lost the record", and a blank is the
+ * one answer a traceability report must never give.
+ *
+ * `accessScope` decides DEPTH, not presence (§23.3: "access rules determine whether raw supplier documents are
+ * visible"). A summary reader sees that the evidence was verified and by which decision; a full reader sees
+ * which document and who signed it. Existence is never hidden, because a customer being told a part has
+ * evidence is not the same as being shown a supplier's dimensional data.
+ */
+function receivingEvidenceSummary(
+  world: World,
+  installs: FactoryRecord[],
+  accessScope: string,
+): any[] {
+  const full = accessScope !== "customer_summary_access";
+  return installs.map((event) => {
+    const child = tryGet(world, event.fields.child);
+    if (!child)
+      return {
+        child: event.fields.child,
+        origin: "unresolvable",
+        supplier_evidence_complete: false,
+      };
+    const line = world
+      .byType("ShipmentLine")
+      .find((candidate) => tryGet(world, candidate.fields.inventory_item)?.id === child.id);
+    if (!line)
+      return {
+        child: event.fields.child,
+        serial_number: child.fields.serial_number,
+        // Said out loud rather than left blank: this part did not arrive from a supplier, so no supplier
+        // evidence is expected and none missing.
+        origin: "not_supplier_received",
+        supplier_evidence_complete: true,
+      };
+    const shipment = tryGet(world, line.fields.shipment);
+    const check = world
+      .byType("ReceivingCheck")
+      .filter((candidate) => candidate.fields.shipment_line === line.id)
+      .at(-1); // the LAST check decides: a re-run after paperwork arrives supersedes the earlier refusal
+    const required: string[] = line.fields.required_documents ?? [];
+    const documents = required.map((documentType) => {
+      const rule = RECEIVING_RULES.find((candidate) => candidate.cert_type === documentType);
+      const covering = world
+        .byType("Certificate")
+        .filter(
+          (certificate) =>
+            certificate.fields.cert_type === documentType &&
+            (rule?.scope === "part_revision"
+              ? certificate.fields.part_revision === line.fields.part_revision
+              : certificate.fields.serial_or_lot === line.fields.serial_or_lot),
+        );
+      const verified = covering.find((certificate) => certificate.state === "verified");
+      return {
+        document_type: documentType,
+        verified: !!verified,
+        // Full detail names the document and its signer; the summary view carries the fact of verification
+        // and stops there.
+        ...(full && verified
+          ? {
+              certificate_id: verified.id,
+              verified_by: verified.fields.verified_by,
+              verified_at: verified.fields.verified_at,
+            }
+          : {}),
+      };
+    });
+    return {
+      child: event.fields.child,
+      serial_number: child.fields.serial_number,
+      origin: "supplier_received",
+      supplier: shipment?.fields.supplier ?? null,
+      ...(full
+        ? {
+            shipment: shipment?.id ?? null,
+            purchase_order_ref: shipment?.fields.purchase_order_ref,
+          }
+        : {}),
+      receiving_check_status: check?.state ?? "never_checked",
+      documents,
+      // Quarantine is reported as RESOLVED rather than absent when it happened and was lifted. "No quarantine"
+      // and "quarantined, then released through the gate" are different histories, and flattening them would
+      // hide the more interesting one.
+      quarantine: world.events.some(
+        (recorded) =>
+          recorded.type === "INVENTORY_QUARANTINED" &&
+          recorded.payload?.inventory_item_id === child.id,
+      )
+        ? child.state === "quarantined"
+          ? "active"
+          : "resolved"
+        : "none",
+      // The claim the whole section exists to support, and it is deliberately conjunctive: every required
+      // document verified AND the check passed AND nothing is still on hold.
+      supplier_evidence_complete:
+        documents.every((document) => document.verified) &&
+        check?.state === "passed" &&
+        child.state !== "quarantined",
+    };
+  });
+}
+
 export function assembleRunCloseReport(
   world: World,
   run: FactoryRecord,
@@ -193,6 +303,7 @@ export function assembleRunCloseReport(
       child: event.fields.child,
       event_type: "INVENTORY_INSTALLED",
     })),
+    receiving_evidence_summary: receivingEvidenceSummary(world, installs, accessScope),
     machine_evidence_summary: evidenceRecord
       ? [
           {

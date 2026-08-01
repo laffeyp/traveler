@@ -396,6 +396,16 @@ The projection now pulls in supplier certificates by the serial or lot they cove
 ### B-Q-68 — `blocked` and `failed` are different answers
 `ReceivingCheck` carried `passed | blocked`. §8.3 lists both blocked and failed, and the distinction is load-bearing for this boundary: **blocked** means the file is incomplete and producing the document resolves it; **failed** means somebody looked and said no. A corrective action hangs on the second — you do not raise one against a supplier because your own inspector has not opened the file yet. The check now reports `failed` when a document covering the goods was actively rejected, and carries `rejected_documents` so the result names which. VF-025 (absent) gives blocked and VF-026 (rejected) gives failed, which is what stops the two collapsing into "not passed". Type: registry decision, built.
 
+## Discovered completing the boundary's scenario pack
+
+*Source: §17 (VF-027), §19 (VF-029), §20 (VF-030), §23.3 and acceptance criterion 12. All seven §13 scenarios now exist under the ids the specification assigns them.*
+
+### B-Q-69 — a process certificate is scoped to the lot, a first article to the revision
+Both are "the document that proves the part was made right", and they answer to different things. A first article report covers a DESIGN: certify the revision once and every later lot inherits it, which is why `first_article_report_present` is scoped to `part_revision`. A process certificate covers a FURNACE LOAD — two lots of the same revision go through different heat treat, plating or NDT cycles, so `process_certificate_present` is scoped to `lot_or_serial` and a certificate for another lot of the same revision satisfies nothing. VF-030 proves it by verifying a process certificate for a neighbouring lot and showing the consignment still refused. Type: registry decision, built.
+
+### B-Q-70 — the close report names material that never came from a supplier
+§23.3 asks the run close report to summarize receiving evidence "when installed inventory came from supplier-received material". The section reports EVERY installed child, including ones with no shipment behind them, marked `not_supplier_received`. Omitting them would have been the narrower reading of the specification and the wrong one: a blank row and an internally-made row would look identical, so "we make this ourselves" would be indistinguishable from "we lost the paperwork". A traceability report may say no; it may not say nothing. Type: registry decision, built beyond the literal wording.
+
 ## Discovered by the valve-body demo pack (writing the domain out as plain data)
 
 *Source: `demo-packs/valve-body-assembly-v0.1/`. Writing VF-003's valve body out as plain files — part, BOM, procedure, tool, serials, torque check, quality path, customer view, report — surfaced three things the vocabulary has no word for. The pack invents nothing (`check.mjs` proves every name it uses is registered); the gaps are recorded here and left unbuilt rather than papered over. None are blocking: VF-003 and the whole bench run without them, because the system carries the same information on other records.*

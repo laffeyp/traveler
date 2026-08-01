@@ -1,0 +1,145 @@
+scenario_id: VF-035
+scenario_version: "1"
+title: Supplier material carries its receiving evidence into the run close report
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  boundary_spec: Receiving Evidence Boundary Specification v0.1 (§23.3, acceptance criterion 12)
+  registry_version: contracts-0.4.1
+
+purpose: >
+  Acceptance criterion 12: the run close report summarizes receiving evidence for installed supplier material.
+
+  VF-001 is the clean production spine, and its gasket appears by fiat — created, received, released. Here the
+  same gasket arrives from a supplier with a certificate of conformance and a mill test report, both verified
+  by a quality engineer before the receiving check will pass. The valve body it goes into is made in-house and
+  releases the ordinary way, so one report covers both origins.
+
+  The point of the report section is that a reader can tell those two apart. The gasket reads
+  `supplier_received` with its supplier, its check result and its two verified documents; the valve body reads
+  `not_supplier_received`. Saying the second out loud matters as much as the first: if internally made parts
+  were simply omitted, "we make this ourselves" and "we lost the paperwork" would look identical, and a blank
+  is the one answer a traceability report must never give.
+
+seed: { deterministic_seed: 3035 }
+clock: { start_at: "2026-07-13T08:00:00Z", timezone: "UTC", mode: controlled }
+
+actors:
+  - { actor_id: mfg_eng_1, actor_type: manufacturing_engineer, product_caller_type: manufacturing_engineer }
+  - { actor_id: planner_1, actor_type: planner, product_caller_type: planner }
+  - { actor_id: quality_1, actor_type: quality_engineer, product_caller_type: quality_engineer }
+  - { actor_id: operator_1, actor_type: operator, product_caller_type: operator }
+  - { actor_id: report_worker_1, actor_type: system_worker, product_caller_type: system_worker }
+
+aliases:
+  procedure_version_v1: ProcedureVersion
+  procedure_step_torque: ProcedureStep
+  procedure_step_install_gasket: ProcedureStep
+  data_field_torque: DataCollectionField
+  manufacturing_structure_v1: ManufacturingStructureVersion
+  bom_line_gasket: BOMLine
+  valve_body_020: InventoryItem
+  gasket_020: InventoryItem
+  shipment_001: Shipment
+  shipment_line_gasket: ShipmentLine
+  coc_gasket: Certificate
+  mtr_gasket: Certificate
+  receiving_check_001: ReceivingCheck
+  effectivity_rule_procedure: EffectivityRule
+  effectivity_rule_structure: EffectivityRule
+  effectivity_resolution_001: EffectivityResolution
+  build_check_001: BuildCheckResult
+  run_001: Run
+  run_context_snapshot_001: RunContextSnapshot
+  run_step_torque: RunStep
+  run_step_install_gasket: RunStep
+  measurement_torque_passed: Measurement
+  installation_event_001: InstallationEvent
+  run_close_check_001: RunCloseCheck
+  run_close_report_001: GeneratedReport
+
+world:
+  access_policies:
+    - alias: customer_summary_access
+      visible: [RunCloseReport.summary, SerialHistory.summary, BoundedDrillDown.summary]
+      hidden: [controlled_machine_evidence_payload, internal_quality_notes, raw_machine_payload]
+
+steps:
+  - { step_id: "001", set_time: "2026-07-13T08:01:00Z", actor: mfg_eng_1, operation: CreateProcedureVersion, idempotency_key: vf035-001, input: { procedure_version_alias: procedure_version_v1, steps: [ { alias: procedure_step_torque, ordinal: 1, name: "Capture torque", data_collection_fields: [ { alias: data_field_torque, name: "Valve body torque", unit: Nm, lower_bound: 10.0, upper_bound: 12.0, nominal: 11.0, evaluation_mode: synchronous } ] }, { alias: procedure_step_install_gasket, ordinal: 2, name: "Install gasket", install_required: true } ] }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_CREATED] } }
+  - { step_id: "002", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf035-002, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUBMITTED] } }
+  - { step_id: "003", actor: mfg_eng_1, operation: ReleaseProcedureVersion, idempotency_key: vf035-003, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_RELEASED] } }
+  - { step_id: "004", actor: mfg_eng_1, operation: CreateManufacturingStructureVersion, idempotency_key: vf035-004, input: { manufacturing_structure_alias: manufacturing_structure_v1, part_revision: valve_body_rev_a }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_CREATED] } }
+  - { step_id: "005", actor: mfg_eng_1, operation: AddBOMLine, idempotency_key: vf035-005, input: { manufacturing_structure_alias: manufacturing_structure_v1, bom_line_alias: bom_line_gasket, part_revision: gasket_rev_b, install_required: true }, expect: { operation_succeeded: true, events_emitted: [BOM_LINE_CREATED] } }
+  - { step_id: "006", actor: mfg_eng_1, operation: ReleaseManufacturingStructureVersion, idempotency_key: vf035-006, input: { manufacturing_structure_alias: manufacturing_structure_v1 }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_RELEASED] } }
+
+  # The valve body is made here. It takes the ordinary internal path — no shipment, no supplier paperwork.
+  - { step_id: "007", set_time: "2026-07-13T08:05:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf035-007, input: { inventory_alias: valve_body_020, part_revision: valve_body_rev_a, serial_number: VB-020 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "008", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf035-008, input: { inventory_alias: valve_body_020 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "009", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf035-009, input: { inventory_alias: valve_body_020 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+
+  # The gasket comes from a supplier, and cannot reach `available` except through the receiving boundary.
+  - { step_id: "010", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf035-010, input: { inventory_alias: gasket_020, part_revision: gasket_rev_b, serial_number: GK-020 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "011", set_time: "2026-07-13T08:10:00Z", actor: planner_1, operation: CreateShipment, idempotency_key: vf035-011, input: { shipment_alias: shipment_001, supplier: supplier_acme, purchase_order_ref: "PO-9001" }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_CREATED] } }
+  - { step_id: "012", actor: planner_1, operation: AddShipmentLine, idempotency_key: vf035-012, input: { shipment_alias: shipment_001, shipment_line_alias: shipment_line_gasket, inventory_item_alias: gasket_020, part_revision: gasket_rev_b, serial_or_lot: "GK-020", required_documents: [certificate_of_conformance, material_test_report] }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_LINE_CREATED] } }
+  - { step_id: "013", actor: planner_1, operation: ReceiveShipment, idempotency_key: vf035-013, input: { shipment_alias: shipment_001 }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_RECEIVED] } }
+  - { step_id: "014", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf035-014, input: { inventory_alias: gasket_020 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "015", set_time: "2026-07-13T08:15:00Z", actor: planner_1, operation: CaptureCertificate, idempotency_key: vf035-015, input: { certificate_alias: coc_gasket, cert_type: certificate_of_conformance, part_revision: gasket_rev_b, serial_or_lot: "GK-020", cage_code: "1ABC2", expires_at: "2027-06-01T00:00:00Z" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_CAPTURED] } }
+  - { step_id: "016", actor: planner_1, operation: CaptureCertificate, idempotency_key: vf035-016, input: { certificate_alias: mtr_gasket, cert_type: material_test_report, part_revision: gasket_rev_b, serial_or_lot: "GK-020", cage_code: "1ABC2" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_CAPTURED] } }
+  - { step_id: "017", set_time: "2026-07-13T08:20:00Z", actor: quality_1, operation: AcceptCertificateAsEvidence, idempotency_key: vf035-017, input: { certificate_alias: coc_gasket, expected_part_revision: gasket_rev_b, expected_serial_or_lot: "GK-020", expected_cage_code: "1ABC2" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_VERIFIED] } }
+  - { step_id: "018", actor: quality_1, operation: AcceptCertificateAsEvidence, idempotency_key: vf035-018, input: { certificate_alias: mtr_gasket, expected_part_revision: gasket_rev_b, expected_serial_or_lot: "GK-020", expected_cage_code: "1ABC2" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_VERIFIED] } }
+  - { step_id: "019", set_time: "2026-07-13T08:25:00Z", actor: quality_1, operation: RunReceivingCheck, idempotency_key: vf035-019, input: { shipment_line_alias: shipment_line_gasket, receiving_check_alias: receiving_check_001 }, expect: { operation_succeeded: true, events_emitted: [RECEIVING_CHECK_STARTED, RECEIVING_CHECK_PASSED] } }
+  - { step_id: "020", actor: quality_1, operation: ApplyReceivingCheckResultToInventory, idempotency_key: vf035-020, input: { receiving_check_alias: receiving_check_001, inventory_item_alias: gasket_020 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+
+  - { step_id: "021", actor: planner_1, operation: ReserveInventory, idempotency_key: vf035-021, input: { inventory_alias: valve_body_020 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RESERVED] } }
+  - { step_id: "022", actor: planner_1, operation: ReserveInventory, idempotency_key: vf035-022, input: { inventory_alias: gasket_020 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RESERVED] } }
+  - { step_id: "023", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf035-023, input: { effectivity_rule_alias: effectivity_rule_procedure, target_record_type: ProcedureVersion, rule_type: serial_cut_in, serial_condition: "VB-020", target_alias: procedure_version_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "024", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf035-024, input: { effectivity_rule_alias: effectivity_rule_structure, target_record_type: ManufacturingStructureVersion, rule_type: serial_cut_in, serial_condition: "VB-020", target_alias: manufacturing_structure_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "025", actor: planner_1, operation: ResolveEffectivity, idempotency_key: vf035-025, input: { effectivity_resolution_alias: effectivity_resolution_001, target_serial: "VB-020", target_inventory_alias: valve_body_020 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RESOLVED] } }
+  - { step_id: "026", actor: planner_1, operation: RunBuildCheck, idempotency_key: vf035-026, input: { build_check_alias: build_check_001, target_inventory_alias: valve_body_020, effectivity_resolution_alias: effectivity_resolution_001 }, expect: { operation_succeeded: true, events_emitted: [BUILD_CHECK_STARTED, BUILD_CHECK_PASSED] } }
+  - { step_id: "027", set_time: "2026-07-13T08:30:00Z", actor: planner_1, operation: CreateRun, idempotency_key: vf035-027, input: { run_alias: run_001, run_context_snapshot_alias: run_context_snapshot_001, procedure_version_alias: procedure_version_v1, manufacturing_structure_alias: manufacturing_structure_v1, effectivity_resolution_alias: effectivity_resolution_001, build_check_alias: build_check_001, target_inventory_alias: valve_body_020, run_step_aliases: [run_step_torque, run_step_install_gasket] }, expect: { operation_succeeded: true, events_emitted: [RUN_CREATED] } }
+  - { step_id: "028", actor: report_worker_1, operation: ApplyBuildCheckResultToRun, idempotency_key: vf035-028, input: { run_alias: run_001, build_check_alias: build_check_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_READY] } }
+  - { step_id: "029", set_time: "2026-07-13T08:32:00Z", actor: operator_1, operation: StartRun, idempotency_key: vf035-029, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_STARTED] } }
+  - { step_id: "030", actor: operator_1, operation: StartRunWithInventory, idempotency_key: vf035-030, input: { run_alias: run_001, inventory_aliases: [valve_body_020, gasket_020] }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_IN_WIP] } }
+  - { step_id: "031", actor: operator_1, operation: StartRunStep, idempotency_key: vf035-031, input: { run_alias: run_001, run_step_alias: run_step_torque }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_STARTED] } }
+  - { step_id: "032", set_time: "2026-07-13T08:37:00Z", actor: operator_1, operation: CaptureMeasurement, idempotency_key: vf035-032, input: { run_alias: run_001, run_step_alias: run_step_torque, data_collection_field_alias: data_field_torque, measurement_alias: measurement_torque_passed, value: 11.1, unit: Nm, source_type: operator_entry, captured_at: "2026-07-13T08:37:00Z" }, expect: { operation_succeeded: true, events_emitted: [MEASUREMENT_CAPTURED, MEASUREMENT_EVALUATED, MEASUREMENT_PASSED] } }
+  - { step_id: "033", actor: operator_1, operation: CompleteRunStep, idempotency_key: vf035-033, input: { run_alias: run_001, run_step_alias: run_step_torque }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_COMPLETED] } }
+  - { step_id: "034", actor: operator_1, operation: StartRunStep, idempotency_key: vf035-034, input: { run_alias: run_001, run_step_alias: run_step_install_gasket }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_STARTED] } }
+  - { step_id: "035", set_time: "2026-07-13T08:45:00Z", actor: operator_1, operation: InstallInventory, idempotency_key: vf035-035, input: { run_alias: run_001, run_step_alias: run_step_install_gasket, parent_inventory_alias: valve_body_020, child_inventory_alias: gasket_020, bom_line_alias: bom_line_gasket, installation_event_alias: installation_event_001, installed_at: "2026-07-13T08:45:00Z" }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_INSTALLED] } }
+  - { step_id: "036", actor: operator_1, operation: CompleteRunStep, idempotency_key: vf035-036, input: { run_alias: run_001, run_step_alias: run_step_install_gasket }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_COMPLETED] } }
+  - { step_id: "037", actor: operator_1, operation: CompleteRunSteps, idempotency_key: vf035-037, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_COMPLETED] } }
+  - { step_id: "038", set_time: "2026-07-13T08:50:00Z", actor: operator_1, operation: AttemptRunClose, idempotency_key: vf035-038, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_ENTERED_CLOSE_CHECK] } }
+  - { step_id: "039", set_time: "2026-07-13T08:51:00Z", actor: report_worker_1, operation: RunCloseCheck, idempotency_key: vf035-039, input: { run_alias: run_001, run_close_check_alias: run_close_check_001, expected_result: passed }, expect: { operation_succeeded: true, events_emitted: [RUN_CLOSE_CHECK_STARTED, RUN_CLOSE_CHECK_PASSED] } }
+  - { step_id: "040", actor: report_worker_1, operation: RequestRunCloseReport, idempotency_key: vf035-040, input: { run_alias: run_001, run_close_check_alias: run_close_check_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_CLOSE_REPORT_REQUESTED] } }
+  # Generated for an INTERNAL scope, so the supplier evidence reads at full depth: which document, who signed
+  # it, when. A customer-scoped export of the same run would carry the same rows with the detail stripped.
+  - { step_id: "041", set_time: "2026-07-13T08:52:00Z", actor: report_worker_1, operation: GenerateRunCloseReport, idempotency_key: vf035-041, input: { report_alias: run_close_report_001, report_type: RunCloseReport, run_alias: run_001, run_close_check_alias: run_close_check_001, report_definition_version: 1, generated_at: "2026-07-13T08:52:00Z", access_scope: internal_full_access }, expect: { operation_succeeded: true, events_emitted: [REPORT_REQUESTED, REPORT_GENERATION_STARTED, REPORT_GENERATED] } }
+  - { step_id: "042", set_time: "2026-07-13T08:53:00Z", actor: report_worker_1, operation: ApplyRunCloseResultToRun, idempotency_key: vf035-042, input: { run_alias: run_001, run_close_check_alias: run_close_check_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_CLOSED] } }
+
+assertions:
+  - { assertion_id: vf035_gasket_released_through_receiving, assertion_type: record_state, severity: blocking, target: { record_type: ReceivingCheck, alias: receiving_check_001 }, expected: { state: passed } }
+  - { assertion_id: vf035_gasket_installed, assertion_type: record_state, severity: blocking, target: { record_type: InventoryItem, alias: gasket_020 }, expected: { status: installed } }
+  - { assertion_id: vf035_run_closed, assertion_type: record_state, severity: blocking, target: { record_type: Run, alias: run_001 }, expected: { status: closed } }
+  - { assertion_id: vf035_report_generated, assertion_type: report_generated, severity: blocking, target: { report_type: RunCloseReport, alias: run_close_report_001 } }
+  - { assertion_id: vf035_report_carries_the_receiving_section, assertion_type: report_payload_contains, severity: blocking, target: { report_type: RunCloseReport, alias: run_close_report_001 }, expected: { sections: [installed_inventory, receiving_evidence_summary] } }
+
+  # Criterion 12 proper: the installed gasket is reported as supplier material, named to its supplier, with
+  # both required documents verified and the completeness claim made explicitly rather than inferred.
+  - { assertion_id: vf035_installed_part_is_supplier_material, assertion_type: report_field_equals, severity: blocking, target: { alias: run_close_report_001, path: "sections.receiving_evidence_summary.0.origin" }, expected: { value: supplier_received } }
+  - { assertion_id: vf035_report_names_the_supplier, assertion_type: report_field_equals, severity: blocking, target: { alias: run_close_report_001, path: "sections.receiving_evidence_summary.0.supplier" }, expected: { value: supplier_acme } }
+  - { assertion_id: vf035_receiving_check_result_carried, assertion_type: report_field_equals, severity: blocking, target: { alias: run_close_report_001, path: "sections.receiving_evidence_summary.0.receiving_check_status" }, expected: { value: passed } }
+  - { assertion_id: vf035_certificate_of_conformance_verified, assertion_type: report_field_equals, severity: blocking, target: { alias: run_close_report_001, path: "sections.receiving_evidence_summary.0.documents.0.verified" }, expected: { value: true } }
+  - { assertion_id: vf035_material_test_report_verified, assertion_type: report_field_equals, severity: blocking, target: { alias: run_close_report_001, path: "sections.receiving_evidence_summary.0.documents.1.verified" }, expected: { value: true } }
+  # Full depth names WHO signed. Under a customer scope this key is absent, which is the §23.3 access rule.
+  - { assertion_id: vf035_full_depth_names_the_verifier, assertion_type: report_field_equals, severity: blocking, target: { alias: run_close_report_001, path: "sections.receiving_evidence_summary.0.documents.0.verified_by" }, expected: { value: quality_1 } }
+  - { assertion_id: vf035_no_quarantine_in_this_history, assertion_type: report_field_equals, severity: blocking, target: { alias: run_close_report_001, path: "sections.receiving_evidence_summary.0.quarantine" }, expected: { value: none } }
+  - { assertion_id: vf035_evidence_complete, assertion_type: report_field_equals, severity: blocking, target: { alias: run_close_report_001, path: "sections.receiving_evidence_summary.0.supplier_evidence_complete" }, expected: { value: true } }
+
+  - { assertion_id: vf035_serial_history_shows_the_arrival_and_the_build, assertion_type: projection_contains, severity: blocking, target: { projection: SerialHistory, key_serial: "GK-020" }, expected: { event_types: [SHIPMENT_RECEIVED, CERTIFICATE_VERIFIED, RECEIVING_CHECK_PASSED, INVENTORY_INSTALLED] } }
+
+idempotency_replay_checks:
+  - check_id: vf035_replay_receiving_check
+    step_id: "019"
+    operation: RunReceivingCheck
+    idempotency_key: vf035-019

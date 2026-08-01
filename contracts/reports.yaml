@@ -20,11 +20,12 @@ reports:
       [Run, RunContextSnapshot, ProcedureVersion, ManufacturingStructureVersion, RunStep,
        Measurement, MachineEvidenceRecord, Attachment, Nonconformance, AffectedPopulation,
        QualityContainmentAction, Disposition, ReworkRun, Verification, Redline,
-       ApprovalDecision, InstallationEvent, RemovalEvent, RunCloseCheck, RunCloseObservation]
+       ApprovalDecision, InstallationEvent, RemovalEvent, RunCloseCheck, RunCloseObservation,
+       Shipment, ShipmentLine, ReceivingCheck, Certificate]
     required_sections:
       [report_header, run_context, executed_steps, measurement_summary, quality_path,
-       redline_history, installed_inventory, machine_evidence_summary, run_close_observations,
-       final_close_result, source_traceability, access_policy_snapshot]
+       redline_history, installed_inventory, receiving_evidence_summary, machine_evidence_summary,
+       run_close_observations, final_close_result, source_traceability, access_policy_snapshot]
     regeneration_required_after:
       [report_definition_change, reconciliation_resolution_affecting_run,
        access_policy_change_for_controlled_export, source_record_correction]

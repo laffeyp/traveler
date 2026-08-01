@@ -1,0 +1,84 @@
+scenario_id: VF-029
+scenario_version: "1"
+title: An inspector who cannot read the document cannot verify it, and the goods wait for one who can
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  boundary_spec: Receiving Evidence Boundary Specification v0.1 (§19 VF-029, §9.6, §12)
+  registry_version: contracts-0.4.1
+
+purpose: >
+  The boundary specification's §19 and its §9.6 invariant: an actor cannot verify evidence they are not
+  allowed to see. A first article report is export-controlled technical data — ITAR 22 CFR 120.33 covers
+  drawings, diagrams, tables and engineering specifications, which is what a first article package contains.
+
+  A foreign person attempts the verification and is refused. This is not a formality. Verification means
+  comparing the document against the material in front of you, so a verifier who cannot read the document has
+  compared nothing, and recording their sign-off would put a name against an inspection that never happened.
+  The goods stay quarantined until an authorized person does the work.
+
+  The uncontrolled certificate of conformance in the same consignment is verified by the same foreign person
+  without difficulty. That contrast is what stops the scenario passing on a system that simply denied everyone.
+
+seed: { deterministic_seed: 3029 }
+clock: { start_at: "2026-07-12T08:00:00Z", timezone: "UTC", mode: controlled }
+
+world:
+  factory_node: node_la_001
+  station: station_receiving_01
+  program: program_valve_001
+  part_revisions:
+    - { alias: valve_body_rev_d, part_number: VB-100, revision: D }
+  inventory_truth:
+    - { alias: valve_body_040, part_revision: valve_body_rev_d, serial_number: VB-040 }
+  access_policies:
+    - alias: customer_summary_access
+      visible: [RunCloseReport.summary, SerialHistory.summary, BoundedDrillDown.summary]
+      hidden: [controlled_machine_evidence_payload, internal_quality_notes, raw_machine_payload]
+
+actors:
+  - { actor_id: planner_1, actor_type: planner, product_caller_type: planner }
+  - { actor_id: quality_fr, actor_type: quality_engineer, product_caller_type: quality_engineer }
+  - { actor_id: quality_us, actor_type: quality_engineer, product_caller_type: quality_engineer }
+
+steps:
+  - { step_id: "001", set_time: "2026-07-12T08:00:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf029-001, input: { inventory_alias: valve_body_040, part_revision: valve_body_rev_d, serial_number: "VB-040" }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "002", actor: planner_1, operation: CreateShipment, idempotency_key: vf029-002, input: { shipment_alias: shipment_001, supplier: supplier_acme, purchase_order_ref: "PO-8200" }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_CREATED] } }
+  - { step_id: "003", actor: planner_1, operation: AddShipmentLine, idempotency_key: vf029-003, input: { shipment_alias: shipment_001, shipment_line_alias: line_001, inventory_item_alias: valve_body_040, part_revision: valve_body_rev_d, serial_or_lot: "VB-040", required_documents: [certificate_of_conformance, first_article_report] }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_LINE_CREATED] } }
+  - { step_id: "004", set_time: "2026-07-12T08:10:00Z", actor: planner_1, operation: ReceiveShipment, idempotency_key: vf029-004, input: { shipment_alias: shipment_001 }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_RECEIVED] } }
+  - { step_id: "005", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf029-005, input: { inventory_alias: valve_body_040 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  # The certificate of conformance carries no controlled data. The first article report does.
+  - { step_id: "006", set_time: "2026-07-12T08:15:00Z", actor: planner_1, operation: CaptureCertificate, idempotency_key: vf029-006, input: { certificate_alias: coc_040, cert_type: certificate_of_conformance, part_revision: valve_body_rev_d, serial_or_lot: "VB-040", cage_code: "1ABC2", expires_at: "2027-06-01T00:00:00Z" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_CAPTURED] } }
+  - { step_id: "007", actor: planner_1, operation: CaptureCertificate, idempotency_key: vf029-007, input: { certificate_alias: fai_040, cert_type: first_article_report, part_revision: valve_body_rev_d, serial_or_lot: "VB-040", cage_code: "1ABC2", export_control: { allowed_nationalities: [US, CA] } }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_CAPTURED] } }
+
+  # The foreign person verifies the uncontrolled document without trouble...
+  - { step_id: "008", set_time: "2026-07-12T09:00:00Z", actor: quality_fr, operation: AcceptCertificateAsEvidence, idempotency_key: vf029-008, input: { certificate_alias: coc_040, expected_part_revision: valve_body_rev_d, expected_serial_or_lot: "VB-040", verifier_nationality: FR }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_VERIFIED] } }
+  # ...and is refused the controlled one. Releasing the technical data to them would itself be the export.
+  - { step_id: "009", actor: quality_fr, operation: AcceptCertificateAsEvidence, idempotency_key: vf029-009, input: { certificate_alias: fai_040, expected_part_revision: valve_body_rev_d, verifier_nationality: FR }, expect: { operation_succeeded: false, failure_class: controlled_supplier_document_denied } }
+
+  - { step_id: "010", set_time: "2026-07-12T09:10:00Z", actor: quality_fr, operation: RunReceivingCheck, idempotency_key: vf029-010, input: { shipment_line_alias: line_001, receiving_check_alias: check_before }, expect: { operation_succeeded: true, events_emitted: [RECEIVING_CHECK_STARTED, RECEIVING_CHECK_BLOCKED] } }
+  - { step_id: "011", actor: quality_fr, operation: ApplyReceivingCheckResultToInventory, idempotency_key: vf029-011, input: { receiving_check_alias: check_before, inventory_item_alias: valve_body_040 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_QUARANTINED] } }
+
+  # An authorized person does the work the other could not.
+  - { step_id: "012", set_time: "2026-07-12T11:00:00Z", actor: quality_us, operation: AcceptCertificateAsEvidence, idempotency_key: vf029-012, input: { certificate_alias: fai_040, expected_part_revision: valve_body_rev_d, verifier_nationality: US }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_VERIFIED] } }
+  - { step_id: "013", set_time: "2026-07-12T11:10:00Z", actor: quality_us, operation: RunReceivingCheck, idempotency_key: vf029-013, input: { shipment_line_alias: line_001, receiving_check_alias: check_after }, expect: { operation_succeeded: true, events_emitted: [RECEIVING_CHECK_STARTED, RECEIVING_CHECK_PASSED] } }
+  - { step_id: "014", actor: quality_us, operation: ReleaseFromQuarantine, idempotency_key: vf029-014, input: { inventory_alias: valve_body_040, reason: controlled_first_article_verified_by_authorized_person }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+
+assertions:
+  - { assertion_id: vf029_controlled_verification_denied, assertion_type: operation_failed, severity: blocking, target: { step_id: "009", operation: AcceptCertificateAsEvidence }, expected: { failure_class: controlled_supplier_document_denied } }
+  # The refusal wrote nothing: the document did not quietly become evidence with a denied signature on it.
+  - { assertion_id: vf029_denied_verification_left_no_mark, assertion_type: record_field_equals, severity: blocking, target: { record_type: Certificate, alias: fai_040 }, expected: { verified_by: quality_us } }
+  # The SAME foreign person verified the uncontrolled document, so the denial is about the data, not the person.
+  - { assertion_id: vf029_uncontrolled_document_still_verifiable, assertion_type: record_field_equals, severity: blocking, target: { record_type: Certificate, alias: coc_040 }, expected: { verified_by: quality_fr } }
+  - { assertion_id: vf029_blocked_while_unverifiable, assertion_type: record_state, severity: blocking, target: { record_type: ReceivingCheck, alias: check_before }, expected: { state: blocked } }
+  - { assertion_id: vf029_blocked_on_the_controlled_document, assertion_type: event_payload_contains, severity: blocking, target: { event_type: RECEIVING_CHECK_BLOCKED, producer_operation: RunReceivingCheck }, expected: { blockers: [first_article_report_unverified] } }
+  - { assertion_id: vf029_goods_waited, assertion_type: record_state, severity: blocking, target: { record_type: ReceivingCheck, alias: check_after }, expected: { state: passed } }
+  - { assertion_id: vf029_released_only_after_an_authorized_verification, assertion_type: record_state, severity: blocking, target: { record_type: InventoryItem, alias: valve_body_040 }, expected: { state: available } }
+
+idempotency_replay_checks:
+  - check_id: vf029_replay_second_check
+    step_id: "013"
+    operation: RunReceivingCheck
+    idempotency_key: vf029-013

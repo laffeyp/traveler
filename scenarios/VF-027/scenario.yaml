@@ -1,0 +1,81 @@
+scenario_id: VF-027
+scenario_version: "1"
+title: A new part revision needs its first article report before anything ships to the floor
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  boundary_spec: Receiving Evidence Boundary Specification v0.1 (§17 VF-027, §26.3)
+  registry_version: contracts-0.4.1
+
+purpose: >
+  The boundary specification's §17, both arms. A supplier's first delivery of a new revision arrives with its
+  certificate of conformance but no first article report. The consignment is refused and the goods quarantined.
+  The report then arrives, is verified, the check is re-run, and the same goods release.
+
+  Two things this scenario is careful about. The requirement is DECLARED on the shipment line, not inferred
+  from the fact that the revision is new (§26.3: do not infer a first-article requirement from standards) —
+  the line says what it must carry and the check reads that list. And the first article report is scoped to
+  the PART REVISION, not to the lot: the serial that arrived is not what a first article covers, so a document
+  filed against a different lot of the same revision still satisfies it. The second half of the scenario is
+  what proves the refusal was about the missing report and not about the boundary refusing everything.
+
+seed: { deterministic_seed: 3027 }
+clock: { start_at: "2026-07-12T08:00:00Z", timezone: "UTC", mode: controlled }
+
+world:
+  factory_node: node_la_001
+  station: station_receiving_01
+  program: program_valve_001
+  part_revisions:
+    - { alias: valve_body_rev_c, part_number: VB-100, revision: C }
+  inventory_truth:
+    - { alias: valve_body_030, part_revision: valve_body_rev_c, serial_number: VB-030 }
+  access_policies:
+    - alias: customer_summary_access
+      visible: [RunCloseReport.summary, SerialHistory.summary, BoundedDrillDown.summary]
+      hidden: [controlled_machine_evidence_payload, internal_quality_notes, raw_machine_payload]
+
+actors:
+  - { actor_id: planner_1, actor_type: planner, product_caller_type: planner }
+  - { actor_id: quality_1, actor_type: quality_engineer, product_caller_type: quality_engineer }
+
+steps:
+  - { step_id: "001", set_time: "2026-07-12T08:00:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf027-001, input: { inventory_alias: valve_body_030, part_revision: valve_body_rev_c, serial_number: "VB-030" }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "002", actor: planner_1, operation: CreateShipment, idempotency_key: vf027-002, input: { shipment_alias: shipment_001, supplier: supplier_acme, purchase_order_ref: "PO-8100" }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_CREATED] } }
+  # The requirement is stated here, on the line. Nothing infers it from the revision being new.
+  - { step_id: "003", actor: planner_1, operation: AddShipmentLine, idempotency_key: vf027-003, input: { shipment_alias: shipment_001, shipment_line_alias: line_001, inventory_item_alias: valve_body_030, part_revision: valve_body_rev_c, serial_or_lot: "VB-030", required_documents: [certificate_of_conformance, first_article_report] }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_LINE_CREATED] } }
+  - { step_id: "004", set_time: "2026-07-12T08:10:00Z", actor: planner_1, operation: ReceiveShipment, idempotency_key: vf027-004, input: { shipment_alias: shipment_001 }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_RECEIVED] } }
+  - { step_id: "005", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf027-005, input: { inventory_alias: valve_body_030 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "006", set_time: "2026-07-12T08:15:00Z", actor: planner_1, operation: CaptureCertificate, idempotency_key: vf027-006, input: { certificate_alias: coc_030, cert_type: certificate_of_conformance, part_revision: valve_body_rev_c, serial_or_lot: "VB-030", cage_code: "1ABC2", expires_at: "2027-06-01T00:00:00Z" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_CAPTURED] } }
+  - { step_id: "007", actor: quality_1, operation: AcceptCertificateAsEvidence, idempotency_key: vf027-007, input: { certificate_alias: coc_030, expected_part_revision: valve_body_rev_c, expected_serial_or_lot: "VB-030", expected_cage_code: "1ABC2" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_VERIFIED] } }
+
+  # First arm: the certificate is good and the first article report is simply absent.
+  - { step_id: "008", set_time: "2026-07-12T08:30:00Z", actor: quality_1, operation: RunReceivingCheck, idempotency_key: vf027-008, input: { shipment_line_alias: line_001, receiving_check_alias: check_before }, expect: { operation_succeeded: true, events_emitted: [RECEIVING_CHECK_STARTED, RECEIVING_CHECK_BLOCKED] } }
+  - { step_id: "009", actor: quality_1, operation: ApplyReceivingCheckResultToInventory, idempotency_key: vf027-009, input: { receiving_check_alias: check_before, inventory_item_alias: valve_body_030 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_QUARANTINED] } }
+
+  # Second arm. The report arrives, filed against a DIFFERENT lot of the same revision — which is correct for a
+  # first article, and would find nothing if the check matched it against the serial that turned up.
+  - { step_id: "010", set_time: "2026-07-12T14:00:00Z", actor: planner_1, operation: CaptureCertificate, idempotency_key: vf027-010, input: { certificate_alias: fai_rev_c, cert_type: first_article_report, part_revision: valve_body_rev_c, serial_or_lot: "LOT-FIRST-OFF", cage_code: "1ABC2" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_CAPTURED] } }
+  - { step_id: "011", set_time: "2026-07-12T14:10:00Z", actor: quality_1, operation: AcceptCertificateAsEvidence, idempotency_key: vf027-011, input: { certificate_alias: fai_rev_c, expected_part_revision: valve_body_rev_c, expected_cage_code: "1ABC2" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_VERIFIED] } }
+  - { step_id: "012", set_time: "2026-07-12T14:20:00Z", actor: quality_1, operation: RunReceivingCheck, idempotency_key: vf027-012, input: { shipment_line_alias: line_001, receiving_check_alias: check_after }, expect: { operation_succeeded: true, events_emitted: [RECEIVING_CHECK_STARTED, RECEIVING_CHECK_PASSED] } }
+  - { step_id: "013", actor: quality_1, operation: ReleaseFromQuarantine, idempotency_key: vf027-013, input: { inventory_alias: valve_body_030, reason: first_article_report_received_and_verified }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+
+assertions:
+  - { assertion_id: vf027_blocked_on_the_missing_first_article, assertion_type: event_payload_contains, severity: blocking, target: { event_type: RECEIVING_CHECK_BLOCKED, producer_operation: RunReceivingCheck }, expected: { blockers: [first_article_report_present] } }
+  # The certificate of conformance was verified, so it must NOT appear as a blocker. A check that refused
+  # everything would raise both and still satisfy the assertion above.
+  - { assertion_id: vf027_the_good_document_was_not_blamed, assertion_type: record_field_equals, severity: blocking, target: { record_type: ReceivingCheck, alias: check_before }, expected: { blockers: [first_article_report_present] } }
+  - { assertion_id: vf027_blocked_before, assertion_type: record_state, severity: blocking, target: { record_type: ReceivingCheck, alias: check_before }, expected: { state: blocked } }
+  - { assertion_id: vf027_passed_after, assertion_type: record_state, severity: blocking, target: { record_type: ReceivingCheck, alias: check_after }, expected: { state: passed } }
+  - { assertion_id: vf027_first_article_verified, assertion_type: record_state, severity: blocking, target: { record_type: Certificate, alias: fai_rev_c }, expected: { state: verified } }
+  - { assertion_id: vf027_goods_released_in_the_end, assertion_type: record_state, severity: blocking, target: { record_type: InventoryItem, alias: valve_body_030 }, expected: { state: available } }
+  - { assertion_id: vf027_release_records_who_and_why, assertion_type: record_field_equals, severity: blocking, target: { record_type: InventoryItem, alias: valve_body_030 }, expected: { released_from_quarantine_by: quality_1, release_reason: first_article_report_received_and_verified } }
+  - { assertion_id: vf027_history_shows_both_decisions, assertion_type: access_full, severity: blocking, target: { projection: SerialHistory, key_serial: "VB-030" }, expected: { view: full, event_types_contain: [RECEIVING_CHECK_BLOCKED, INVENTORY_QUARANTINED, RECEIVING_CHECK_PASSED, INVENTORY_AVAILABLE] } }
+
+idempotency_replay_checks:
+  - check_id: vf027_replay_second_check
+    step_id: "012"
+    operation: RunReceivingCheck
+    idempotency_key: vf027-012
