@@ -137,7 +137,7 @@ export type EventType =
   | "VERIFICATION_COMPLETED"
   | "VERIFICATION_PENDING";
 
-/** Every registered operation name (125). */
+/** Every registered operation name (127). */
 export type OperationName =
   | "AcceptAttachmentAsEvidence"
   | "AcceptCertificateAsEvidence"
@@ -202,6 +202,8 @@ export type OperationName =
   | "NormalizeMachineEvidence"
   | "OpenIssue"
   | "OpenNonconformance"
+  | "OpenReceivingNonconformance"
+  | "OpenSupplierCorrectiveAction"
   | "PauseRun"
   | "QuarantineInventory"
   | "QuarantineMachineEvidence"

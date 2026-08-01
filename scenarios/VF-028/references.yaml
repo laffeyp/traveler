@@ -1,0 +1,70 @@
+scenario_id: VF-028
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: >
+  Receiving Evidence Boundary Specification v0.1 §18 (VF-028: receiving rejection opens supplier corrective
+  action), §10.13 (OpenReceivingNonconformance) and §10.14 (OpenSupplierCorrectiveAction).
+note: >
+  The corrective action is our Issue with a typed source rather than a new SupplierCorrectiveAction record.
+  §26.2 rules out a supplier portal in v0.1, so the supplier's response arrives as something our own staff
+  capture, and the spec's supplier_response_pending / response_under_review states have no transition anything
+  could truthfully fire (B-Q-66). The receiving nonconformance is our existing Nonconformance with receiving
+  provenance — `return_to_supplier` was already a registered disposition kind.
+
+operations:
+  - CreateInventoryItem
+  - CreateShipment
+  - AddShipmentLine
+  - ReceiveShipment
+  - ReceiveInventory
+  - CaptureCertificate
+  - AcceptCertificateAsEvidence
+  - RejectCertificateAsEvidence
+  - RunReceivingCheck
+  - ApplyReceivingCheckResultToInventory
+  - OpenReceivingNonconformance
+  - OpenSupplierCorrectiveAction
+  - TriageIssue
+  - ResolveIssue
+  - CloseIssue
+
+events:
+  - INVENTORY_CREATED
+  - SHIPMENT_CREATED
+  - SHIPMENT_LINE_CREATED
+  - SHIPMENT_RECEIVED
+  - INVENTORY_RECEIVED
+  - CERTIFICATE_CAPTURED
+  - CERTIFICATE_VERIFIED
+  - CERTIFICATE_REJECTED
+  - RECEIVING_CHECK_STARTED
+  - RECEIVING_CHECK_PASSED
+  - RECEIVING_CHECK_BLOCKED
+  - INVENTORY_QUARANTINED
+  - INVENTORY_AVAILABLE
+  - NONCONFORMANCE_OPENED
+  - ISSUE_OPENED
+  - ISSUE_TRIAGED
+  - ISSUE_RESOLVED
+  - ISSUE_CLOSED
+
+record_states:
+  Shipment: [created, received]
+  Certificate: [captured, verified, rejected]
+  ReceivingCheck: [passed, failed]
+  InventoryItem: [expected, received, quarantined, available]
+  Nonconformance: [open]
+  Issue: [open, triaged, resolved, closed]
+
+assertion_types:
+  - record_exists
+  - record_state
+  - record_field_equals
+  - operation_failed
+  - access_full
+  - idempotent_replay # run by the harness replay pass, not as a post-assertion
+
+projections:
+  - SerialHistory
+
+caller_types: [planner, quality_engineer]

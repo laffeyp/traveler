@@ -38,11 +38,12 @@ events:
 record_states:
   Shipment: [created, received]
   Certificate: [captured, verified, rejected]
-  ReceivingCheck: [blocked]
+  ReceivingCheck: [failed]
   InventoryItem: [expected, received, quarantined]
 
 assertion_types:
   - record_state
+  - record_field_equals
   - event_payload_contains
   - event_not_emitted
   - operation_failed

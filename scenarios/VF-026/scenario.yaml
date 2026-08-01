@@ -74,7 +74,11 @@ assertions:
   # The blocker names the true fact. The document is PRESENT, so material_test_report_present would be a lie;
   # it is unverified, and that is its own registered rule id precisely so the two cannot be confused.
   - { assertion_id: vf026_blocked_on_unverified_not_absent, assertion_type: event_payload_contains, severity: blocking, target: { event_type: RECEIVING_CHECK_BLOCKED, producer_operation: RunReceivingCheck }, expected: { blockers: [material_test_report_unverified] } }
-  - { assertion_id: vf026_check_blocked, assertion_type: record_state, severity: blocking, target: { record_type: ReceivingCheck, alias: receiving_check_001 }, expected: { state: blocked } }
+  # FAILED, not blocked. Blocked means the file is incomplete and producing the document would resolve it;
+  # failed means somebody looked and said no. VF-025's absent certificate gives blocked, this one gives failed,
+  # and the pair is what stops the two answers collapsing into "not passed".
+  - { assertion_id: vf026_check_failed_not_merely_blocked, assertion_type: record_state, severity: blocking, target: { record_type: ReceivingCheck, alias: receiving_check_001 }, expected: { state: failed } }
+  - { assertion_id: vf026_check_names_the_refused_document, assertion_type: record_field_equals, severity: blocking, target: { record_type: ReceivingCheck, alias: receiving_check_001 }, expected: { rejected_documents: [mtr_vb009] } }
   - { assertion_id: vf026_goods_quarantined, assertion_type: record_state, severity: blocking, target: { record_type: InventoryItem, alias: valve_body_009 }, expected: { state: quarantined } }
   - { assertion_id: vf026_never_released, assertion_type: event_not_emitted, severity: blocking, target: { event_type: INVENTORY_AVAILABLE }, expected: { reason: the_mill_test_report_was_never_verified } }
   # Discrimination without new vocabulary: if the mismatch guard were inert, step 009 would SUCCEED and the

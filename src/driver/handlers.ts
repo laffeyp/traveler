@@ -863,6 +863,10 @@ export const HANDLERS: Record<string, H> = {
     world.emit("RECEIVING_CHECK_STARTED", "RunReceivingCheck", { shipment_line_id: line.id });
     const required: string[] = line.fields.required_documents ?? [];
     const blockers: string[] = [];
+    // Documents covering these goods that a person looked at and refused. Carried on the check so the result
+    // records WHY it is a failure and not merely an incomplete file, and so a supplier corrective action can
+    // name the document it is being raised about.
+    const rejectedDocuments: string[] = [];
     for (const documentType of required) {
       // Each required document type resolves to a REGISTERED receiving rule; an unregistered type is refused
       // rather than silently skipped, or an unknown document would read as satisfied.
@@ -908,6 +912,11 @@ export const HANDLERS: Record<string, H> = {
       // which is precisely how absent and expired masked each other before they were split.
       const verified = matches.filter((certificate) => certificate.state === "verified");
       if (verified.length === 0) {
+        // Record which of the matching documents were actively REJECTED, so the result can tell an incomplete
+        // file apart from a refused one. A document nobody has looked at yet leaves this empty.
+        for (const certificate of matches)
+          if (certificate.state === "rejected")
+            rejectedDocuments.push(certificate.alias || certificate.id);
         blockers.push(rule.unverified_id ?? rule.id);
         continue;
       }
@@ -928,18 +937,107 @@ export const HANDLERS: Record<string, H> = {
         if (!valid) blockers.push(rule.expired_id ?? rule.id);
       }
     }
-    const blocked = blockers.length > 0;
-    const check = world.create(
-      "ReceivingCheck",
-      input.receiving_check_alias,
-      blocked ? "blocked" : "passed",
-      { shipment_line: line.id, status: blocked ? "blocked" : "passed", blockers },
-    );
+    // BLOCKED and FAILED are different answers and the boundary spec keeps them apart (§8.3 lists both).
+    // Blocked means the receipt is incomplete: paperwork is missing or unread, and producing it resolves the
+    // consignment. Failed means somebody looked and said no — a document covering these goods was rejected, so
+    // there is a decision on file, not a gap. The distinction is what a supplier corrective action hangs on:
+    // you do not raise one against a supplier because your own inspector has not got to the file yet.
+    const rejectedHere = rejectedDocuments.length > 0;
+    const status = blockers.length === 0 ? "passed" : rejectedHere ? "failed" : "blocked";
+    const check = world.create("ReceivingCheck", input.receiving_check_alias, status, {
+      shipment_line: line.id,
+      status,
+      blockers,
+      rejected_documents: rejectedDocuments,
+    });
     world.emit(
-      blocked ? "RECEIVING_CHECK_BLOCKED" : "RECEIVING_CHECK_PASSED",
+      status === "passed" ? "RECEIVING_CHECK_PASSED" : "RECEIVING_CHECK_BLOCKED",
       "RunReceivingCheck",
-      { receiving_check_id: check.id, blockers },
+      { receiving_check_id: check.id, blockers, status },
     );
+  },
+  OpenReceivingNonconformance(world, input, actor) {
+    // Boundary spec §10.13. A receiving nonconformance is the SAME record type as a production one — a part
+    // that does not conform is a part that does not conform, and `return_to_supplier` was already a registered
+    // disposition kind, which is the tell that the quality machinery was always meant to reach receiving. What
+    // differs is provenance: OpenNonconformance requires a run and a source measurement, and inbound goods
+    // have neither. Rather than loosening that guard (which would let a production NC exist with no source at
+    // all) this operation carries the receiving provenance and leaves the production path alone.
+    const check = world.get(input.receiving_check_alias);
+    if (check.record_type !== "ReceivingCheck")
+      throw new Error(
+        `validation_error: '${input.receiving_check_alias}' is a ${check.record_type}, not a ReceivingCheck`,
+      );
+    // Fail CLOSED on a passing check: a nonconformance raised against goods the boundary cleared would be a
+    // quality record with nothing wrong behind it, and it would sit in the supplier queue forever.
+    if (check.state === "passed")
+      throw new Error(
+        "receiving_check_passed: there is nothing nonconforming about a consignment that cleared its check",
+      );
+    const item = world.get(input.inventory_item_alias);
+    // Bind the record to the goods the check actually decided about — the same identity binding
+    // ApplyReceivingCheckResultToInventory needs, and for the same reason (review F10).
+    const decidedLine = world.records.get(check.fields.shipment_line);
+    if (!decidedLine)
+      throw new Error("receiving_check_unresolvable: the check names no shipment line");
+    const lineItem = tryGet(world, decidedLine.fields.inventory_item);
+    if (!lineItem || lineItem.id !== item.id)
+      throw new Error(
+        `receiving_check_item_mismatch: the check decided '${decidedLine.fields.inventory_item}', not '${input.inventory_item_alias}'`,
+      );
+    const nonconformance = world.createInitial("Nonconformance", input.nonconformance_alias, {
+      source_type: "receiving",
+      source_receiving_check: check.id,
+      shipment_line: decidedLine.id,
+      inventory_item: item.id,
+      blockers: check.fields.blockers,
+      opened_by: actor,
+      opened_at: world.clock,
+    });
+    world.emit("NONCONFORMANCE_OPENED", "OpenReceivingNonconformance", {
+      nonconformance_id: nonconformance.id,
+    });
+  },
+  OpenSupplierCorrectiveAction(world, input, actor) {
+    // Boundary spec §10.14, expressed as our Issue rather than a new record type: an Issue already carries a
+    // typed source, an opener and a five-state lifecycle, and §26.2 rules out a supplier portal in v0.1 — so
+    // the supplier's response arrives as a document our own staff capture, and the spec's
+    // supplier_response_pending / response_under_review states have no transition anything could truthfully
+    // fire (B-Q-66). What this operation adds over a bare OpenIssue is the §10.14 preconditions.
+    if (!actor)
+      throw new Error(
+        "validation_error: opening a supplier corrective action requires an identified actor",
+      );
+    if (!input.supplier)
+      throw new Error(
+        "supplier_unknown: a corrective action must name the supplier it is raised against",
+      );
+    if (!input.summary)
+      throw new Error(
+        "validation_error: a corrective action must state what the supplier did wrong",
+      );
+    // §10.14 requires a REAL trigger: a failed receiving check, a rejected supplier document, or a receiving
+    // nonconformance. Without this the operation is a free-form complaint generator, and a corrective action
+    // raised against a supplier with nothing on file is exactly the thing that destroys a supplier scorecard's
+    // credibility. Fail closed: an unresolvable or wrong-typed trigger is a refusal, not a pass-through.
+    const trigger = world.get(input.trigger_alias);
+    const triggerIsReal =
+      (trigger.record_type === "ReceivingCheck" && trigger.state === "failed") ||
+      (trigger.record_type === "Certificate" && trigger.state === "rejected") ||
+      (trigger.record_type === "Nonconformance" && trigger.fields.source_type === "receiving");
+    if (!triggerIsReal)
+      throw new Error(
+        `supplier_corrective_action_untriggered: '${input.trigger_alias}' is a ${trigger.record_type} in state '${trigger.state}', which is not a failed receiving check, a rejected supplier document, or a receiving nonconformance`,
+      );
+    const issue = world.createInitial("Issue", input.issue_alias, {
+      source_type: "supplier_corrective_action",
+      source: trigger.id,
+      supplier: input.supplier,
+      summary: input.summary,
+      opened_by: actor,
+      opened_at: world.clock,
+    });
+    world.emit("ISSUE_OPENED", "OpenSupplierCorrectiveAction", { issue_id: issue.id });
   },
   ApplyReceivingCheckResultToInventory(world, input) {
     // Receiving decided; Inventory transitions. Fail closed on an unresolvable check rather than leaving the

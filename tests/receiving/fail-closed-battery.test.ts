@@ -165,6 +165,52 @@ const ENFORCED: Record<string, () => boolean> = {
       check(d).fields.blockers.includes("certificate_of_conformance_unverified") && !released(d)
     );
   },
+  "raise a corrective action against a supplier with nothing on file": () => {
+    // §10.14's precondition as a mutation. A corrective action opened on a consignment that PASSED is a
+    // complaint with no evidence behind it, and a supplier scorecard built from those stops meaning anything.
+    const d = rig();
+    cert(d, {});
+    line(d);
+    const passed = check(d);
+    if (passed.state !== "passed") return false; // fixture must actually be clean, or the arm proves nothing
+    const raised = d.executeOperation(
+      "OpenSupplierCorrectiveAction",
+      {
+        issue_alias: "sca_x",
+        trigger_alias: "chk",
+        supplier: "acme",
+        summary: "nothing actually went wrong",
+      },
+      "quality_engineer",
+      key(),
+      undefined,
+      "quality_1",
+    );
+    return (
+      !raised.succeeded &&
+      raised.failureClass === "supplier_corrective_action_untriggered" &&
+      d.readRecord("sca_x") === null
+    );
+  },
+  "open a receiving nonconformance against goods that cleared": () => {
+    const d = rig();
+    cert(d, {});
+    line(d);
+    if (check(d).state !== "passed") return false;
+    const raised = d.executeOperation(
+      "OpenReceivingNonconformance",
+      { receiving_check_alias: "chk", inventory_item_alias: "it", nonconformance_alias: "nc_x" },
+      "quality_engineer",
+      key(),
+      undefined,
+      "quality_1",
+    );
+    return (
+      !raised.succeeded &&
+      raised.failureClass === "receiving_check_passed" &&
+      d.readRecord("nc_x") === null
+    );
+  },
   "reject the certificate, then try to release on it": () => {
     // Rejection must actually cost the document its standing, or rejecting is decorative.
     const d = rig();

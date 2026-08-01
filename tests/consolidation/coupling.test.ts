@@ -137,6 +137,25 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
     expect(runScenarioWithDriver("VF-026").result.status).toBe("passed"); // restored
   });
 
+  it("a corrective action must need a real trigger — accepting any trigger makes VF-028 red", () => {
+    // VF-028 drives three refusals alongside the successful path: no action against a consignment that
+    // passed, none against a document nobody rejected, none without a named supplier. If the trigger check
+    // were inert the operation would become a complaint generator and two of those steps would succeed.
+    withMutation(
+      "OpenSupplierCorrectiveAction",
+      (orig) =>
+        (w: any, i: any, ...rest: any[]) => {
+          // Strip the trigger requirement by pointing every call at a rejected document that does exist.
+          const rejected = w.byType("Certificate").find((c: any) => c.state === "rejected");
+          return orig(w, { ...i, trigger_alias: rejected?.alias ?? i.trigger_alias }, ...rest);
+        },
+      () => {
+        expect(runScenarioWithDriver("VF-028").result.status).toBe("failed");
+      },
+    );
+    expect(runScenarioWithDriver("VF-028").result.status).toBe("passed"); // restored
+  });
+
   it("export control must be per document — sweeping it onto every certificate makes VF-031 red", () => {
     // VF-031 asserts an UNCONTROLLED certificate of conformance stays readable by the same foreign person who
     // is denied the dimensional report. Treating every supplier document as controlled would deny both, which

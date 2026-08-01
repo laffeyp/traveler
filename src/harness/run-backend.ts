@@ -87,6 +87,7 @@ const EQUIV_SCENARIOS = [
   "VF-024",
   "VF-025",
   "VF-026",
+  "VF-028",
   "VF-031",
   "VF-032",
   "VF-033",
@@ -445,6 +446,36 @@ console.log(
 );
 console.log(`  backend receiving-evidence durability proof (VF-025): ${okRcv ? "PASS" : "FAIL"}`);
 
+// SUPPLIER QUALITY across a cold reload (VF-028): a refusal that travels outward has to survive the trip. The
+// rejection, the receiving nonconformance and the corrective action are the records a supplier scorecard and
+// an audit are built from, so a reload that lost the certificate's rejected state, the nonconformance's
+// receiving provenance, or the corrective action's supplier would leave the factory holding quarantined goods
+// with no record of whose fault it was. Every other durable path here has a reload proof; the parity tell
+// (sprint 010) says a gap like that is where a fail-open hides.
+const DBSQ = join(tmpdir(), "supplier-quality-backend-cli.db");
+for (const f of [DBSQ, DBSQ + "-journal"]) if (existsSync(f)) rmSync(f);
+runScenarioOnDriver("VF-028", new BackendProductDriver(DBSQ), "backend", "VF-028-durability");
+const freshSq = new BackendProductDriver(DBSQ); // cold start: sees only what reached disk
+const sqCert = freshSq.readRecord("coc_bad");
+const sqCheck = freshSq.readRecord("check_bad");
+const sqNc = freshSq.readRecord("rnc_001");
+const sqSca = freshSq.readRecord("sca_001");
+const okSq =
+  sqCert?.state === "rejected" && // the refusal itself survived
+  sqCheck?.state === "failed" && // and it is a FAILURE, not merely an incomplete file
+  (sqCheck?.fields?.rejected_documents ?? []).includes("coc_bad") && // naming the document refused
+  sqNc?.state === "open" &&
+  sqNc?.fields?.source_type === "receiving" && // the nonconformance still knows where it came from
+  sqSca?.state === "closed" &&
+  sqSca?.fields?.supplier === "supplier_acme" && // and the action still names who it was against
+  freshSq.readRecord("valve_body_011")?.state === "quarantined" &&
+  freshSq.readRecord("valve_body_012")?.state === "available" && // the clean line still released
+  freshSq.readRecord("sca_should_not_exist") === null; // and the refused operations wrote nothing
+console.log(
+  `  supplier quality: fresh-from-disk cert=${sqCert?.state} check=${sqCheck?.state} nc=${sqNc?.state}/${sqNc?.fields?.source_type} sca=${sqSca?.state}/${sqSca?.fields?.supplier}`,
+);
+console.log(`  backend supplier-quality durability proof (VF-028): ${okSq ? "PASS" : "FAIL"}`);
+
 // WRITE-BOUNDARY IDEMPOTENCY across a cold reload (B-Q-13): a `transactional_unique_constraint` op's dedup
 // must survive a fresh-from-disk instance (unlike the in-instance memo). Commit a CreateInventoryItem under a
 // key, then a BRAND-NEW backend instance re-attempting the SAME key must conflict (zero facts) — the unique
@@ -634,6 +665,7 @@ process.exit(
     okR &&
     okD &&
     okRcv &&
+    okSq &&
     okOut
     ? 0
     : 1,

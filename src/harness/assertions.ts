@@ -52,6 +52,16 @@ function recEq(rec: any, key: string, val: any): boolean {
     : Object.hasOwn(rec, key)
       ? rec[key]
       : undefined;
+  // A LIST field compares by its members, not by reference. `got === val` is reference equality on arrays, so
+  // ANY list expectation was unsatisfiable regardless of what the record held: the assertion could not pass,
+  // and a primitive that cannot pass cannot discriminate. `event_payload_contains` carried the identical
+  // defect on list payloads and was fixed there; the parity tell says to look at the record leg next, and it
+  // was still broken. Membership-based and order-insensitive, matching how the event leg reads a list, so the
+  // two assertion families cannot disagree about what a list expectation means.
+  if (Array.isArray(val)) {
+    if (!Array.isArray(got)) return false;
+    return val.every((wanted) => got.includes(wanted));
+  }
   return got === val;
 }
 
@@ -254,8 +264,22 @@ export const EVALUATORS: Record<string, Evaluator> = {
   },
   record_exists(assertion, { driver }) {
     const target = assertion.target ?? {};
-    const ok = driver.readRecord(target.alias) !== null;
-    return { ok, msg: ok ? "" : `record ${target.alias} does not exist` };
+    const present = driver.readRecord(target.alias) !== null;
+    // Honour `expected.exists` — the primitive previously ignored its own `expected` and could only ever
+    // assert PRESENCE, so "the refused operation wrote nothing" was inexpressible in a scenario. That is a
+    // core fail-closed claim: per-operation rollback is proven in a unit test, but a scenario could not state
+    // that a refusal left no record behind. Defaults to true, so every existing assertion means what it did.
+    const wanted = (assertion.expected ?? {}).exists;
+    const shouldExist = wanted === undefined ? true : !!wanted;
+    const ok = present === shouldExist;
+    return {
+      ok,
+      msg: ok
+        ? ""
+        : shouldExist
+          ? `record ${target.alias} does not exist`
+          : `record ${target.alias} EXISTS, and the assertion says it must not`,
+    };
   },
 
   // ── projections (read AsBuilt / SerialHistory event-type sets) ─────────────

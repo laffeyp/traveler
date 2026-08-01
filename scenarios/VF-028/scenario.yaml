@@ -1,0 +1,115 @@
+scenario_id: VF-028
+scenario_version: "1"
+title: A refused consignment opens a nonconformance and a corrective action against the supplier
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  boundary_spec: Receiving Evidence Boundary Specification v0.1 (§18 VF-028, §10.13, §10.14)
+  registry_version: contracts-0.4.1
+
+purpose: >
+  The boundary specification's §18. VF-026 stops at the refusal: the mill certificate is rejected, the check
+  fails, the goods are quarantined. That leaves the material sitting in a corner and the supplier never told.
+
+  This scenario carries the refusal outward. The rejected document opens a receiving nonconformance against
+  the delivered goods — the same record type production uses, because a part that does not conform is a part
+  that does not conform, and `return_to_supplier` was already a registered disposition kind. It then opens a
+  corrective action against the supplier, which is our Issue with a typed source.
+
+  The teeth are in what is REFUSED. A corrective action cannot be raised without a real trigger on file: not
+  against a consignment that passed, not against a document nobody rejected, and not without naming the
+  supplier. A complaint generator that raises actions on nothing is how a supplier scorecard stops meaning
+  anything, so the scenario drives all three refusals alongside the successful path.
+
+seed:
+  deterministic_seed: 3030
+
+clock:
+  start_at: "2026-07-10T08:00:00Z"
+  timezone: "UTC"
+  mode: controlled
+
+world:
+  factory_node: node_la_001
+  station: station_receiving_01
+  program: program_valve_001
+  part_revisions:
+    - { alias: valve_body_rev_a, part_number: VB-100, revision: A }
+  inventory_truth:
+    - { alias: valve_body_011, part_revision: valve_body_rev_a, serial_number: VB-011 }
+    - { alias: valve_body_012, part_revision: valve_body_rev_a, serial_number: VB-012 }
+  access_policies:
+    - alias: customer_summary_access
+      visible: [RunCloseReport.summary, SerialHistory.summary, BoundedDrillDown.summary]
+      hidden: [controlled_machine_evidence_payload, internal_quality_notes, raw_machine_payload]
+
+actors:
+  - { actor_id: planner_1, actor_type: planner, product_caller_type: planner }
+  - { actor_id: quality_1, actor_type: quality_engineer, product_caller_type: quality_engineer }
+
+steps:
+  # A consignment of two serials from one supplier. VB-011 is the one that goes wrong; VB-012 is clean, and
+  # exists so the scenario has something the boundary must NOT raise an action about.
+  - { step_id: "001", set_time: "2026-07-10T08:00:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf028-001, input: { inventory_alias: valve_body_011, part_revision: valve_body_rev_a, serial_number: "VB-011" }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "002", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf028-002, input: { inventory_alias: valve_body_012, part_revision: valve_body_rev_a, serial_number: "VB-012" }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "003", actor: planner_1, operation: CreateShipment, idempotency_key: vf028-003, input: { shipment_alias: shipment_001, supplier: supplier_acme, purchase_order_ref: "PO-7788" }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_CREATED] } }
+  - { step_id: "004", actor: planner_1, operation: AddShipmentLine, idempotency_key: vf028-004, input: { shipment_alias: shipment_001, shipment_line_alias: line_bad, inventory_item_alias: valve_body_011, part_revision: valve_body_rev_a, serial_or_lot: "VB-011", required_documents: [certificate_of_conformance] }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_LINE_CREATED] } }
+  - { step_id: "005", actor: planner_1, operation: AddShipmentLine, idempotency_key: vf028-005, input: { shipment_alias: shipment_001, shipment_line_alias: line_good, inventory_item_alias: valve_body_012, part_revision: valve_body_rev_a, serial_or_lot: "VB-012", required_documents: [certificate_of_conformance] }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_LINE_CREATED] } }
+  - { step_id: "006", set_time: "2026-07-10T08:10:00Z", actor: planner_1, operation: ReceiveShipment, idempotency_key: vf028-006, input: { shipment_alias: shipment_001 }, expect: { operation_succeeded: true, events_emitted: [SHIPMENT_RECEIVED] } }
+  - { step_id: "007", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf028-007, input: { inventory_alias: valve_body_011 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "008", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf028-008, input: { inventory_alias: valve_body_012 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+
+  # VB-011's certificate is for a part revision the consignment does not carry: the supplier shipped rev A and
+  # certified rev B. VB-012's is correct.
+  - { step_id: "009", set_time: "2026-07-10T08:20:00Z", actor: planner_1, operation: CaptureCertificate, idempotency_key: vf028-009, input: { certificate_alias: coc_bad, cert_type: certificate_of_conformance, part_revision: valve_body_rev_a, serial_or_lot: "VB-011", cage_code: "1ABC2", expires_at: "2027-06-01T00:00:00Z" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_CAPTURED] } }
+  - { step_id: "010", actor: planner_1, operation: CaptureCertificate, idempotency_key: vf028-010, input: { certificate_alias: coc_good, cert_type: certificate_of_conformance, part_revision: valve_body_rev_a, serial_or_lot: "VB-012", cage_code: "1ABC2", expires_at: "2027-06-01T00:00:00Z" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_CAPTURED] } }
+  - { step_id: "011", set_time: "2026-07-10T08:30:00Z", actor: quality_1, operation: RejectCertificateAsEvidence, idempotency_key: vf028-011, input: { certificate_alias: coc_bad, reason: "certifies revision B; the goods delivered are revision A" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_REJECTED] } }
+  - { step_id: "012", actor: quality_1, operation: AcceptCertificateAsEvidence, idempotency_key: vf028-012, input: { certificate_alias: coc_good, expected_part_revision: valve_body_rev_a, expected_serial_or_lot: "VB-012", expected_cage_code: "1ABC2" }, expect: { operation_succeeded: true, events_emitted: [CERTIFICATE_VERIFIED] } }
+
+  - { step_id: "013", set_time: "2026-07-10T08:40:00Z", actor: quality_1, operation: RunReceivingCheck, idempotency_key: vf028-013, input: { shipment_line_alias: line_bad, receiving_check_alias: check_bad }, expect: { operation_succeeded: true, events_emitted: [RECEIVING_CHECK_STARTED, RECEIVING_CHECK_BLOCKED] } }
+  - { step_id: "014", actor: quality_1, operation: RunReceivingCheck, idempotency_key: vf028-014, input: { shipment_line_alias: line_good, receiving_check_alias: check_good }, expect: { operation_succeeded: true, events_emitted: [RECEIVING_CHECK_STARTED, RECEIVING_CHECK_PASSED] } }
+  - { step_id: "015", actor: quality_1, operation: ApplyReceivingCheckResultToInventory, idempotency_key: vf028-015, input: { receiving_check_alias: check_bad, inventory_item_alias: valve_body_011 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_QUARANTINED] } }
+  - { step_id: "016", actor: quality_1, operation: ApplyReceivingCheckResultToInventory, idempotency_key: vf028-016, input: { receiving_check_alias: check_good, inventory_item_alias: valve_body_012 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+
+  # The refusal travels outward: a nonconformance against the delivered goods, then an action on the supplier.
+  - { step_id: "017", set_time: "2026-07-10T09:00:00Z", actor: quality_1, operation: OpenReceivingNonconformance, idempotency_key: vf028-017, input: { receiving_check_alias: check_bad, inventory_item_alias: valve_body_011, nonconformance_alias: rnc_001 }, expect: { operation_succeeded: true, events_emitted: [NONCONFORMANCE_OPENED] } }
+  - { step_id: "018", actor: quality_1, operation: OpenSupplierCorrectiveAction, idempotency_key: vf028-018, input: { issue_alias: sca_001, trigger_alias: rnc_001, supplier: supplier_acme, summary: "certificate of conformance certified revision B against a revision A delivery" }, expect: { operation_succeeded: true, events_emitted: [ISSUE_OPENED] } }
+
+  # Three refusals. Without these the operations above would pass just as well if they raised records on
+  # nothing at all, which is the failure mode that makes a supplier scorecard worthless.
+  - { step_id: "019", actor: quality_1, operation: OpenReceivingNonconformance, idempotency_key: vf028-019, input: { receiving_check_alias: check_good, inventory_item_alias: valve_body_012, nonconformance_alias: rnc_should_not_exist }, expect: { operation_succeeded: false, failure_class: receiving_check_passed } }
+  - { step_id: "020", actor: quality_1, operation: OpenSupplierCorrectiveAction, idempotency_key: vf028-020, input: { issue_alias: sca_should_not_exist, trigger_alias: coc_good, supplier: supplier_acme, summary: "raised against a document nobody rejected" }, expect: { operation_succeeded: false, failure_class: supplier_corrective_action_untriggered } }
+  - { step_id: "021", actor: quality_1, operation: OpenSupplierCorrectiveAction, idempotency_key: vf028-021, input: { issue_alias: sca_unnamed, trigger_alias: rnc_001, summary: "raised against nobody in particular" }, expect: { operation_succeeded: false, failure_class: supplier_unknown } }
+
+  # The corrective action runs its course on the Issue lifecycle we already had.
+  - { step_id: "022", set_time: "2026-07-10T10:00:00Z", actor: quality_1, operation: TriageIssue, idempotency_key: vf028-022, input: { issue_alias: sca_001, assessment: "supplier document control: wrong revision certified", becomes_nonconformance: true }, expect: { operation_succeeded: true, events_emitted: [ISSUE_TRIAGED] } }
+  - { step_id: "023", set_time: "2026-07-11T10:00:00Z", actor: quality_1, operation: ResolveIssue, idempotency_key: vf028-023, input: { issue_alias: sca_001, resolution: "supplier reissued the certificate against revision A and corrected their release check" }, expect: { operation_succeeded: true, events_emitted: [ISSUE_RESOLVED] } }
+  - { step_id: "024", actor: quality_1, operation: CloseIssue, idempotency_key: vf028-024, input: { issue_alias: sca_001 }, expect: { operation_succeeded: true, events_emitted: [ISSUE_CLOSED] } }
+
+assertions:
+  - { assertion_id: vf028_bad_check_failed, assertion_type: record_state, severity: blocking, target: { record_type: ReceivingCheck, alias: check_bad }, expected: { state: failed } }
+  - { assertion_id: vf028_good_check_passed, assertion_type: record_state, severity: blocking, target: { record_type: ReceivingCheck, alias: check_good }, expected: { state: passed } }
+  - { assertion_id: vf028_bad_goods_quarantined, assertion_type: record_state, severity: blocking, target: { record_type: InventoryItem, alias: valve_body_011 }, expected: { state: quarantined } }
+  # Discrimination: the clean line on the SAME shipment from the SAME supplier still releases. A boundary that
+  # condemned the whole consignment would pass every assertion above and fail this one.
+  - { assertion_id: vf028_good_goods_released, assertion_type: record_state, severity: blocking, target: { record_type: InventoryItem, alias: valve_body_012 }, expected: { state: available } }
+
+  - { assertion_id: vf028_receiving_nonconformance_opened, assertion_type: record_state, severity: blocking, target: { record_type: Nonconformance, alias: rnc_001 }, expected: { state: open } }
+  - { assertion_id: vf028_nonconformance_knows_it_came_from_receiving, assertion_type: record_field_equals, severity: blocking, target: { record_type: Nonconformance, alias: rnc_001 }, expected: { source_type: receiving } }
+  - { assertion_id: vf028_corrective_action_names_its_supplier, assertion_type: record_field_equals, severity: blocking, target: { record_type: Issue, alias: sca_001 }, expected: { supplier: supplier_acme, source_type: supplier_corrective_action } }
+  - { assertion_id: vf028_corrective_action_closed, assertion_type: record_state, severity: blocking, target: { record_type: Issue, alias: sca_001 }, expected: { state: closed } }
+
+  - { assertion_id: vf028_no_nonconformance_on_a_clean_receipt, assertion_type: operation_failed, severity: blocking, target: { step_id: "019", operation: OpenReceivingNonconformance }, expected: { failure_class: receiving_check_passed } }
+  - { assertion_id: vf028_no_action_without_a_trigger, assertion_type: operation_failed, severity: blocking, target: { step_id: "020", operation: OpenSupplierCorrectiveAction }, expected: { failure_class: supplier_corrective_action_untriggered } }
+  - { assertion_id: vf028_no_action_without_a_supplier, assertion_type: operation_failed, severity: blocking, target: { step_id: "021", operation: OpenSupplierCorrectiveAction }, expected: { failure_class: supplier_unknown } }
+  - { assertion_id: vf028_refused_records_were_never_written, assertion_type: record_exists, severity: blocking, target: { record_type: Issue, alias: sca_should_not_exist }, expected: { exists: false } }
+
+  - { assertion_id: vf028_serial_history_carries_the_refusal, assertion_type: access_full, severity: blocking, target: { projection: SerialHistory, key_serial: "VB-011" }, expected: { view: full, event_types_contain: [SHIPMENT_RECEIVED, CERTIFICATE_REJECTED, RECEIVING_CHECK_BLOCKED, INVENTORY_QUARANTINED, NONCONFORMANCE_OPENED] } }
+
+idempotency_replay_checks:
+  - check_id: vf028_replay_corrective_action
+    step_id: "018"
+    operation: OpenSupplierCorrectiveAction
+    idempotency_key: vf028-018

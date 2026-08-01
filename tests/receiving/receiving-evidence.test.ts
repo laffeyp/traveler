@@ -358,6 +358,69 @@ describe("receiving evidence boundary", () => {
  * an array expectation could never match and RECEIVING_CHECK_BLOCKED.blockers was unassertable. A primitive
  * that cannot fail is not a test, so this proves it goes red on a blocker that was never raised.
  */
+/**
+ * The record leg of the same primitive. `recEq` compared with `===`, which is reference equality on arrays, so
+ * a list expectation on a record field could never be satisfied no matter what the record held. The event leg
+ * had the identical defect and was fixed; the parity tell says to look at the sibling, and it was still broken.
+ * A primitive that cannot pass cannot discriminate, so both directions are locked here.
+ */
+/**
+ * `record_exists` ignored its own `expected` and could only assert PRESENCE, so a scenario could not say "the
+ * refused operation wrote nothing" — a core fail-closed claim. All four combinations are locked, plus the
+ * legacy shape (no `expected`), which must still mean "must exist" or every prior assertion changes meaning.
+ */
+describe("record_exists discriminates in both directions", () => {
+  const evaluate = async (alias: string, expected: any) => {
+    const { EVALUATORS } = await import("../../src/harness/assertions.ts");
+    const driver = new InMemoryProductDriver();
+    driver.world.create("Issue", "real", "open", {});
+    return EVALUATORS["record_exists"]({ assertion_id: "probe", target: { alias }, expected }, {
+      driver,
+    } as any).ok;
+  };
+
+  it("a record that exists satisfies exists:true and FAILS exists:false", async () => {
+    expect(await evaluate("real", { exists: true })).toBe(true);
+    expect(await evaluate("real", { exists: false })).toBe(false);
+  });
+  it("a record that does not exist satisfies exists:false and FAILS exists:true", async () => {
+    expect(await evaluate("ghost", { exists: false })).toBe(true);
+    expect(await evaluate("ghost", { exists: true })).toBe(false);
+  });
+  it("omitting expected still means must-exist, so no prior assertion changed meaning", async () => {
+    expect(await evaluate("real", undefined)).toBe(true);
+    expect(await evaluate("ghost", undefined)).toBe(false);
+  });
+});
+
+describe("record_field_equals discriminates on list fields", () => {
+  const evaluate = async (expected: any) => {
+    const { EVALUATORS } = await import("../../src/harness/assertions.ts");
+    const driver = new InMemoryProductDriver();
+    driver.world.create("ReceivingCheck", "chk", "failed", {
+      rejected_documents: ["mtr_1", "coc_1"],
+    });
+    return EVALUATORS["record_field_equals"](
+      { assertion_id: "probe", target: { alias: "chk" }, expected },
+      { driver } as any,
+    ).ok;
+  };
+
+  it("passes on a member the field holds", async () => {
+    expect(await evaluate({ rejected_documents: ["mtr_1"] })).toBe(true);
+  });
+  it("FAILS on a member the field does not hold", async () => {
+    expect(await evaluate({ rejected_documents: ["never_rejected"] })).toBe(false);
+  });
+  it("FAILS when the field is not a list at all", async () => {
+    expect(await evaluate({ status: ["failed"] })).toBe(false);
+  });
+  it("still compares scalars exactly", async () => {
+    expect(await evaluate({ status: "failed" })).toBe(true);
+    expect(await evaluate({ status: "passed" })).toBe(false);
+  });
+});
+
 describe("event_payload_contains discriminates on list payloads", () => {
   const blockedRun = () => {
     const driver = new InMemoryProductDriver();
