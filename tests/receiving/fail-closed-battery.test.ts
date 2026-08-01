@@ -165,6 +165,146 @@ const ENFORCED: Record<string, () => boolean> = {
       check(d).fields.blockers.includes("certificate_of_conformance_unverified") && !released(d)
     );
   },
+  // --- §22.1 actor / access. These eight were declared NOT-ENFORCEABLE when the battery was first wired,
+  // for reasons that were true then and are not now: sprint 019 built operation authorization, sprint 020 the
+  // verification act and its access check, sprint 022 the process-certificate rule. A stale not-enforceable
+  // list is the mirror image of a fail-open — built behaviour with nothing proving it, and a criterion that
+  // reads worse than the system deserves. Re-checking the declarations is part of maintaining the battery.
+  "remove receiving inspector actor": () => {
+    // The check is a decision, and a decision needs somebody to make it. With no caller type the wrapper
+    // refuses before any handler runs, so no ReceivingCheck is written at all.
+    const d = rig();
+    cert(d, {});
+    line(d);
+    const ran = d.executeOperation(
+      "RunReceivingCheck",
+      { shipment_line_alias: "ln", receiving_check_alias: "chk" },
+      undefined as any,
+      key(),
+    );
+    return (
+      !ran.succeeded && ran.failureClass === "authorization_denied" && d.readRecord("chk") === null
+    );
+  },
+  "remove receiving inspector role": () => {
+    // A real person with a role the receiving decision does not grant. A planner books shipments in; clearing
+    // material for production is not theirs to do.
+    const d = rig();
+    cert(d, {});
+    line(d);
+    const ran = d.executeOperation(
+      "RunReceivingCheck",
+      { shipment_line_alias: "ln", receiving_check_alias: "chk" },
+      "planner",
+      key(),
+      undefined,
+      "planner_1",
+    );
+    return (
+      !ran.succeeded && ran.failureClass === "authorization_denied" && d.readRecord("chk") === null
+    );
+  },
+  "use actor with empty role list": () => {
+    const d = rig();
+    cert(d, {});
+    line(d);
+    const ran = d.executeOperation(
+      "RunReceivingCheck",
+      { shipment_line_alias: "ln", receiving_check_alias: "chk" },
+      "",
+      key(),
+    );
+    return (
+      !ran.succeeded && ran.failureClass === "authorization_denied" && d.readRecord("chk") === null
+    );
+  },
+  "remove supplier document verifier role": () => {
+    // Verification is a sign-off, so an unidentified verifier is refused and the document stays captured.
+    const d = rig();
+    const alias = certUnverified(d);
+    const accepted = d.executeOperation(
+      "AcceptCertificateAsEvidence",
+      { certificate_alias: alias },
+      "quality_engineer",
+      key(),
+      // no actor: nobody is putting their name to this
+    );
+    line(d);
+    return (
+      !accepted.succeeded &&
+      d.readRecord(alias)?.state === "captured" &&
+      check(d).fields.blockers.includes("certificate_of_conformance_unverified") &&
+      !released(d)
+    );
+  },
+  "use actor without export access": () => {
+    // §9.6. A verifier who cannot read controlled technical data has compared it against nothing, so their
+    // sign-off would be a name against an inspection that never happened.
+    const d = rig();
+    const alias = certUnverified(d, { export_control: { allowed_nationalities: ["US"] } });
+    const denied = d.executeOperation(
+      "AcceptCertificateAsEvidence",
+      { certificate_alias: alias, verifier_nationality: "FR" },
+      "quality_engineer",
+      key(),
+      undefined,
+      "quality_1",
+    );
+    line(d);
+    return (
+      !denied.succeeded &&
+      denied.failureClass === "controlled_supplier_document_denied" &&
+      d.readRecord(alias)?.state === "captured" &&
+      !released(d)
+    );
+  },
+  "use malformed access policy": () => {
+    // An export_control that is present but not a non-empty nationality list. Fails CLOSED: an unparseable
+    // control is treated as controlled, never as absent, because the other reading leaks.
+    const d = rig();
+    const alias = certUnverified(d, { export_control: { allowed_nationalities: [] } });
+    const denied = d.executeOperation(
+      "AcceptCertificateAsEvidence",
+      { certificate_alias: alias, verifier_nationality: "US" },
+      "quality_engineer",
+      key(),
+      undefined,
+      "quality_1",
+    );
+    line(d);
+    return (
+      !denied.succeeded &&
+      denied.failureClass === "controlled_supplier_document_denied" &&
+      !released(d)
+    );
+  },
+  "remove process certificate when required": () => {
+    const d = rig();
+    cert(d, {});
+    line(d, ["certificate_of_conformance", "process_certificate"]);
+    return check(d).fields.blockers.includes("process_certificate_present") && !released(d);
+  },
+  "wrong supplier": () => {
+    // The document is for the right part, revision and lot, and comes from a different mill. Caught at
+    // verification, where the inspector states the source they expect.
+    const d = rig();
+    const alias = certUnverified(d, { cage_code: "9ZZZ9" });
+    const mismatch = d.executeOperation(
+      "AcceptCertificateAsEvidence",
+      { certificate_alias: alias, expected_cage_code: "1ABC2" },
+      "quality_engineer",
+      key(),
+      undefined,
+      "quality_1",
+    );
+    line(d);
+    return (
+      !mismatch.succeeded &&
+      mismatch.failureClass === "supplier_document_mismatch" &&
+      d.readRecord(alias)?.state === "captured" &&
+      !released(d)
+    );
+  },
   "raise a corrective action against a supplier with nothing on file": () => {
     // §10.14's precondition as a mutation. A corrective action opened on a consignment that PASSED is a
     // complaint with no evidence behind it, and a supplier scorecard built from those stops meaning anything.
@@ -338,23 +478,25 @@ const ENFORCED: Record<string, () => boolean> = {
 };
 
 /** Arms that cannot be enforced yet, each naming the recorded decision that says why. */
+/**
+ * Arms that cannot be executed yet, each with the reason. This list is CHECKED, not assumed: eight entries
+ * were retired on 2026-07-31 once sprints 019-022 made them executable (operation authorization, the
+ * verification act and its access check, the process-certificate rule, cage-code matching at verification).
+ * A stale not-enforceable list is the mirror of a fail-open — built behaviour with nothing proving it — so
+ * re-reading these against what now exists is part of maintaining the battery, not paperwork.
+ *
+ * The four that remain all wait on the same missing thing: supplier evidence has no access-filtered READ
+ * path. Verification is access-gated (§9.6, proven above and in VF-029); reading a document afterwards is not,
+ * because §11.6's SupplierEvidencePacket report does not exist.
+ */
 const NOT_ENFORCEABLE: Record<string, string> = {
-  "remove receiving inspector actor":
-    "B-Q-54: the release path receives no actor and has no authority model",
-  "remove receiving inspector role": "B-Q-54: no role model on the release path",
-  "remove supplier document verifier role": "B-Q-53: capture is treated as verification in v0.1",
-  "use actor without export access": "B-Q-55: access is not consulted on the release path",
-  "use actor with empty role list": "B-Q-54: no authority check on this path",
-  "use malformed access policy": "B-Q-55: the release path consults no access policy",
-  "remove process certificate when required":
-    "process_certificate is not a registered receiving rule; requiring it would be invention",
-  "wrong supplier":
-    "supplier identity is captured (cage_code) but is not part of document matching",
   "read full supplier evidence without access":
-    "B-Q-55: supplier-evidence reads are not access-gated",
-  "read controlled evidence through summary actor": "B-Q-55",
-  "request receiving report after policy change": "SupplierEvidencePacket report is not built",
-  "attempt bounded drill-down into controlled supplier document": "B-Q-55",
+    "no access-filtered read path for supplier evidence: §11.6 SupplierEvidencePacket is unbuilt (B-Q-71)",
+  "read controlled evidence through summary actor": "B-Q-71: same missing read path",
+  "request receiving report after policy change":
+    "B-Q-71: no receiving report exists to go stale after a policy change",
+  "attempt bounded drill-down into controlled supplier document":
+    "B-Q-71: drill-down has no supplier-evidence surface to reach into",
 };
 
 describe("fail-closed mutation battery (boundary spec §22, acceptance criterion 13)", () => {
@@ -372,8 +514,13 @@ describe("fail-closed mutation battery (boundary spec §22, acceptance criterion
 
   it("reports coverage honestly", () => {
     const enforced = named.filter((m) => m in ENFORCED).length;
-    // Recorded so the number cannot drift silently: 16 of 28 arms are enforceable against today's build.
-    expect(enforced).toBe(14);
-    expect(named.length - enforced).toBe(12);
+    // Pinned so the number cannot drift silently in EITHER direction. It moved 14 -> 22 on 2026-07-31 when
+    // sprints 019-022 made eight declared-unenforceable arms executable; the four that remain all wait on the
+    // same unbuilt thing, an access-filtered read path for supplier evidence (B-Q-71). The prior version of
+    // this comment read "16 of 28" while the assertion said 14 of 26 — a stale count in a test about honest
+    // counting, which is why it is stated twice here and checked against the battery's own list.
+    expect(named.length).toBe(26);
+    expect(enforced).toBe(22);
+    expect(named.length - enforced).toBe(4);
   });
 });
