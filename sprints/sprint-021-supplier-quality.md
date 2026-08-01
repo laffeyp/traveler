@@ -71,11 +71,14 @@ all of it survives a cold reload; both repaired primitives are locked by tests t
 
 ## notes
 
-**What the specification asked for and did not get, stated plainly.** §8.6 gives the corrective action seven
-states; two of them — `supplier_response_pending` and `response_under_review` — are not built, because §26.2
-rules out a supplier portal in v0.1 and the supplier therefore has no way to respond to this system. A state
-meaning "waiting for the supplier" would be one the record enters and never leaves for reasons nothing can
-observe. Recorded as B-Q-66 rather than modelled as decoration.
+**What the specification asked for and did not get.** §8.6 gives the corrective action seven states; two —
+`supplier_response_pending` and `response_under_review` — are not built. They are WANTED: tracking the round
+trip is most of why the record exists, and `open → triaged → resolved` has nowhere to put an overdue response,
+so an action hanging for six months looks identical to one raised yesterday. They are absent because no
+scenario needs them yet — §18 asks only that the action reaches `opened`, and unexercised vocabulary is
+vocabulary nothing can regress. B-Q-66 carries the full entry, including a correction: its first version
+justified the gap by claiming a supplier with no portal cannot respond observably, which is false — nothing
+here has a portal, and a certificate exists because a receiving clerk typed it in.
 
 **Still not built from §27.** Criterion 12 (the close report's receiving-evidence summary for installed
 supplier material) and the VF-027/029/030 scenarios remain — sprint 022. The `VerifyCertificate` naming hazard
