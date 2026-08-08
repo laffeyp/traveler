@@ -83,9 +83,16 @@ describe("operation authorization", () => {
   it("an operation nobody built still reports not_implemented, not a denial", () => {
     // Ordering matters: the authorization check sits AFTER the not_implemented guard so an unbuilt operation
     // says it is unbuilt, instead of reporting a refusal that hides the fact there is nothing there to refuse.
+    // The unbuilt operation is DERIVED, not named: hardcoding one meant this test broke the day that operation
+    // was built, which is a test that fails for being out of date rather than for finding anything. If every
+    // registered operation is eventually built, the test says so and skips rather than pretending.
+    const unbuilt = readYaml("contracts/operations.yaml")
+      .operations.map((operation: any) => operation.name)
+      .filter((name: string) => !builtOperations.includes(name));
+    if (unbuilt.length === 0) return; // nothing left unbuilt: the guard has no subject, and that is fine
     const driver = new InMemoryProductDriver();
-    const result = driver.executeOperation("SkipRunStep", {}, "operator", "s");
-    expect(result.failureClass).toBe("not_implemented");
+    const result = driver.executeOperation(unbuilt[0], {}, "operator", "s");
+    expect(result.failureClass, `${unbuilt[0]}`).toBe("not_implemented");
   });
 
   describe("fails closed on every unknown", () => {
@@ -99,18 +106,15 @@ describe("operation authorization", () => {
     it("denies an operation that is in no registry", () => {
       expect(callerMayInvoke("NoSuchOperation", "manufacturing_engineer")).toBe(false);
     });
-    it("undecided_authority denies all ten registered caller types", () => {
-      // These four operations are unbuilt, so the driver answers not_implemented before authority is reached.
-      // The rule is therefore checked at the predicate, which is the only place its refusal is observable
-      // today. Stated plainly rather than dressed up as an end-to-end proof.
-      const undecided = readYaml("contracts/operations.yaml")
-        .operations.filter(
-          (operation: any) => operation.authorization_rule === "undecided_authority",
-        )
-        .map((operation: any) => operation.name);
-      expect(undecided.length).toBe(4);
-      for (const op of undecided)
-        for (const callerType of CALLER_TYPES) expect(callerMayInvoke(op, callerType)).toBe(false);
+    it("no rule silently permits everyone", () => {
+      // `undecided_authority` was retired on 2026-08-07 when B-Q-59 was answered: the four run-blocking
+      // operations now cite `run_blocking` (quality_engineer). The empty-caller-list MECHANISM is what this
+      // test guards now — a rule that permits all ten caller types is indistinguishable from no rule at all,
+      // and would let an operation past the wrapper while looking governed.
+      const permitsEveryone = RULES.filter(
+        (rule) => rule.caller_types.length === CALLER_TYPES.length,
+      ).map((rule) => rule.id);
+      expect(permitsEveryone).toEqual([]);
     });
   });
 

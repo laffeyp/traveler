@@ -477,6 +477,121 @@ export const HANDLERS: Record<string, H> = {
     }
   },
   StartRunStep: (world, input) => step(world, world.get(input.run_step_alias), "StartRunStep"),
+
+  // --- Run and step lifecycle: the transitions the state machines have always declared ------------------
+  // Every handler below transcribes a registered transition — from-state, to-state and event all come from
+  // contracts/state-machines.yaml, and `step`/`moveStateTo` refuse anything the machine does not allow. What
+  // the machine does NOT say is why a run stopped or who stopped it, and a hold nobody can act on is not a
+  // hold, so the interrupting operations record a reason and the actor the same way a rejection does.
+
+  /** Scheduling: work is paused, not condemned. The run keeps its place and resumes where it left off. */
+  PauseRun(world, input, actor) {
+    const run = world.get(input.run_alias);
+    run.fields.paused_by = actor;
+    run.fields.pause_reason = input.reason;
+    step(world, run, "PauseRun");
+  },
+  ResumeRun: (world, input) => step(world, world.get(input.run_alias), "ResumeRun"),
+  CancelRun(world, input, actor) {
+    // Cancellable from planned, ready or blocked — never once work has started. The machine enforces that;
+    // this records who called it off and why, because a cancelled run is a question somebody will ask about.
+    if (!input.reason)
+      throw new Error("validation_error: cancelling a run requires a stated reason");
+    const run = world.get(input.run_alias);
+    run.fields.cancelled_by = actor;
+    run.fields.cancellation_reason = input.reason;
+    step(world, run, "CancelRun");
+  },
+
+  /**
+   * Quality stops the line. Distinct from PauseRun: a pause is a scheduling decision about WHEN work happens,
+   * a block is a judgement that it must not happen yet — which is why the two carry different authority
+   * (B-Q-59, decided 2026-08-07) and why the blocker is named rather than left as a bare state change.
+   */
+  BlockRun(world, input, actor) {
+    if (!input.blocker)
+      throw new Error("validation_error: blocking a run requires a named blocker");
+    const run = world.get(input.run_alias);
+    run.fields.blocked_by = actor;
+    run.fields.blocker = input.blocker;
+    step(world, run, "BlockRun", { blocker: input.blocker });
+  },
+  /**
+   * Lift the block. The Run machine offers TWO destinations from `blocked` — back to `ready` if the run had
+   * not started, or straight to `in_progress` if it had — and they emit different events. The caller states
+   * which, because the record no longer remembers how far it had got: a run blocked out of `in_progress` and
+   * one blocked out of `planned` are both simply `blocked`. Defaulting would silently restart mid-run work at
+   * the beginning, or hand a never-started run to an operator as though it were already going.
+   */
+  ClearRunBlocker(world, input, actor) {
+    const run = world.get(input.run_alias);
+    const resumeTo = input.resume_to;
+    if (resumeTo !== "ready" && resumeTo !== "in_progress")
+      throw new Error(
+        `validation_error: clearing a run blocker requires resume_to of 'ready' or 'in_progress', got '${resumeTo ?? "(none)"}'`,
+      );
+    if (!input.resolution)
+      throw new Error("validation_error: clearing a run blocker requires a stated resolution");
+    run.fields.blocker_cleared_by = actor;
+    run.fields.blocker_resolution = input.resolution;
+    run.fields.blocker = null;
+    const transition = moveStateTo(run, "ClearRunBlocker", resumeTo);
+    world.emit(transition.emits, "ClearRunBlocker", { record_id: run.id });
+  },
+
+  /** A step becomes workable. Readiness is advanced by the system, not claimed by the operator. */
+  AdvanceStepReadiness: (world, input) =>
+    step(world, world.get(input.run_step_alias), "AdvanceStepReadiness"),
+  BlockRunStep(world, input, actor) {
+    if (!input.blocker)
+      throw new Error("validation_error: blocking a run step requires a named blocker");
+    const runStep = world.get(input.run_step_alias);
+    runStep.fields.blocked_by = actor;
+    runStep.fields.blocker = input.blocker;
+    step(world, runStep, "BlockRunStep", { blocker: input.blocker });
+  },
+  ClearRunStepBlocker(world, input, actor) {
+    // Unambiguous, unlike the run: a cleared step returns to `ready` and is started again explicitly. The step
+    // is the unit of work, so re-entering it is a decision somebody makes, not a state the system restores.
+    if (!input.resolution)
+      throw new Error("validation_error: clearing a step blocker requires a stated resolution");
+    const runStep = world.get(input.run_step_alias);
+    runStep.fields.blocker_cleared_by = actor;
+    runStep.fields.blocker_resolution = input.resolution;
+    runStep.fields.blocker = null;
+    step(world, runStep, "ClearRunStepBlocker");
+  },
+  /**
+   * The step was attempted and did not succeed. Distinct from a blocked step, which was never attempted: a
+   * failure is a fact about the work, a block is a fact about whether the work may proceed. Failure is what
+   * `rework_required` follows from, and a blocked step cannot reach rework at all.
+   */
+  FailRunStep(world, input, actor) {
+    if (!input.reason)
+      throw new Error("validation_error: failing a run step requires a stated reason");
+    const runStep = world.get(input.run_step_alias);
+    runStep.fields.failed_by = actor;
+    runStep.fields.failure_reason = input.reason;
+    step(world, runStep, "FailRunStep", { reason: input.reason });
+  },
+  RequireRunStepRework: (world, input) =>
+    step(world, world.get(input.run_step_alias), "RequireRunStepRework"),
+  StartRunStepRework: (world, input) =>
+    step(world, world.get(input.run_step_alias), "StartRunStepRework"),
+  /**
+   * A step that will not be performed on this run. Skipping is TERMINAL for the step (`forbidden: skipped -> *`)
+   * and only reachable before work starts, so it cannot be used to abandon a step half-done. The run-close
+   * rules treat a skipped step as accounted for rather than outstanding — see B-Q-35, which was unit-proven
+   * only because this handler did not exist; it now has a bench scenario like every other close path.
+   */
+  SkipRunStep(world, input, actor) {
+    if (!input.reason)
+      throw new Error("validation_error: skipping a run step requires a stated reason");
+    const runStep = world.get(input.run_step_alias);
+    runStep.fields.skipped_by = actor;
+    runStep.fields.skip_reason = input.reason;
+    step(world, runStep, "SkipRunStep", { reason: input.reason });
+  },
   CaptureMeasurement(world, input, actor) {
     const field = world.get(input.data_collection_field_alias);
     // Calibration gate (persona gap 7; ISO 17025): a reading from an out-of-calibration instrument is refused

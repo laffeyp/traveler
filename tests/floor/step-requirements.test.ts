@@ -123,9 +123,23 @@ describe("required step work must have happened", () => {
   it("the close gate blocks a SKIPPED step whose required measurement was never captured", () => {
     // The path CompleteRunStep cannot cover: CompleteRunSteps accepts complete OR skipped, so a skipped
     // step arrives at the close with its required work undone. Only the close rule catches it.
+    //
+    // Driven through the REAL operation since 2026-08-07. It used to hand-set the state, because SkipRunStep
+    // was registered and unimplemented — so this proved the close rule against a state no operation could
+    // produce (B-Q-35 said so at the time). Now the skip is a real act with a real reason on it, and the rule
+    // is proven against the path the factory would actually take.
     const driver = new InMemoryProductDriver();
     seedRun(driver, { data_collection_fields: [TORQUE_FIELD] });
-    driver.world.get("rs1").state = "skipped";
+    const skipped = driver.executeOperation(
+      "SkipRunStep",
+      { run_step_alias: "rs1", reason: "operator judged the reading unnecessary" },
+      "operator",
+      "sk",
+      undefined,
+      "operator_1",
+    );
+    expect(skipped.succeeded).toBe(true);
+    expect(driver.readRecord("rs1").state).toBe("skipped");
 
     const check = driver.executeOperation(
       "RunCloseCheck",
@@ -142,7 +156,15 @@ describe("required step work must have happened", () => {
   it("the close gate passes a skipped step that required nothing (no over-blocking)", () => {
     const driver = new InMemoryProductDriver();
     seedRun(driver, {});
-    driver.world.get("rs1").state = "skipped";
+    driver.executeOperation(
+      "SkipRunStep",
+      { run_step_alias: "rs1", reason: "nothing was required of this step" },
+      "operator",
+      "sk",
+      undefined,
+      "operator_1",
+    );
+    expect(driver.readRecord("rs1").state).toBe("skipped");
 
     driver.executeOperation(
       "RunCloseCheck",

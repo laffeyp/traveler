@@ -84,11 +84,13 @@ rules:
       Hold or condemn material: quarantine, scrap, and apply a receiving decision to inventory. Observed on
       QuarantineInventory, ApplyReceivingCheckResultToInventory.
   - id: quarantine_release
-    caller_types: [planner, quality_engineer]
+    caller_types: [quality_engineer]
     description: >
-      Release material from quarantine. TWO caller types are observed on ReleaseFromQuarantine across the
-      bench, and whether a planner should hold that authority at all is an open product question (B-Q-60).
-      Recorded as observed rather than narrowed by assumption.
+      Release material from quarantine. NARROWED from [planner, quality_engineer] on 2026-08-07 (B-Q-60). The
+      bench had observed both, and the observation was recorded rather than narrowed by assumption until the
+      question could be answered. It has been: clearing a consignment through the receiving decision is
+      quality-only, so a planner lifting a hold on the same goods was the two paths onto the floor disagreeing.
+      Material held for a quality reason is released by quality.
   - id: build_check
     caller_types: [planner]
     description: Run the pre-build eligibility check. Observed on RunBuildCheck.
@@ -197,12 +199,14 @@ rules:
       Harness Spec §4.1 wording — "product creates GrammarGap" — which makes raising one runtime product
       behavior when a payload cannot be normalized, not an act a person performs.
 
-  # --- Fail-closed default ---
-  - id: undecided_authority
-    caller_types: []
+  - id: run_blocking
+    caller_types: [quality_engineer]
     description: >
-      No caller type may invoke this operation. Cited by the four operations whose authority is a real
-      unanswered product question rather than a derivable fact: who may block a run or a run step, and who may
-      clear that blocker. No scenario exercises them and no handler implements them, so an empty caller_types
-      list denies every caller — the registered way to say "not decided yet" without guessing (B-Q-59).
-      Answering it is a product decision, not a code change.
+      Stop a run or a run step, and lift that stop. DECIDED 2026-08-07 (B-Q-59), having been refused to every
+      caller until somebody answered it. Halting production is a quality act, the same act as quarantining
+      material or refusing a consignment; a planner reschedules work and quality stops it. Distinct from
+      run_planning, which owns pause, resume and cancel — pausing is a scheduling decision about when work
+      happens, and blocking is a judgement that it must not happen yet.
+
+      The `undecided_authority` rule this replaces has been removed rather than left defined: an orphan rule is
+      dead vocabulary, and the gate refuses one. It returns the next time an operation needs it.

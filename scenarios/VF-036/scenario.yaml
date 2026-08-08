@@ -1,0 +1,159 @@
+scenario_id: VF-036
+scenario_version: "1"
+title: A run that is interrupted, blocked, failed, reworked and partly skipped still closes honestly
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  VF-001 is the clean spine: nothing goes wrong and the run closes first time. Real runs do not behave like
+  that. This one is interrupted at every point the Run and RunStep machines allow, and still arrives at a close
+  that says truthfully what happened.
+
+  Eleven transitions the state machines have declared since the first slice and nothing exercised: a step made
+  ready before it is started, a step blocked and cleared, a run paused for scheduling and resumed, a run
+  blocked by quality and cleared back into progress, a step that fails and is reworked to completion, and a
+  step that is skipped and never performed at all.
+
+  Two distinctions this scenario exists to hold apart, because both are easy to collapse and expensive to get
+  wrong. A PAUSE is a scheduling decision about when work happens; a BLOCK is a judgement that it must not
+  happen yet — they carry different authority. And a step that FAILED was attempted and did not succeed, while
+  a step that is BLOCKED was never attempted: only the first can reach rework.
+
+seed: { deterministic_seed: 3036 }
+clock: { start_at: "2026-08-07T08:00:00Z", timezone: "UTC", mode: controlled }
+
+actors:
+  - { actor_id: mfg_eng_1, actor_type: manufacturing_engineer, product_caller_type: manufacturing_engineer }
+  - { actor_id: planner_1, actor_type: planner, product_caller_type: planner }
+  - { actor_id: operator_1, actor_type: operator, product_caller_type: operator }
+  - { actor_id: quality_1, actor_type: quality_engineer, product_caller_type: quality_engineer }
+  - { actor_id: report_worker_1, actor_type: system_worker, product_caller_type: system_worker }
+
+aliases:
+  procedure_version_v1: ProcedureVersion
+  procedure_step_torque: ProcedureStep
+  procedure_step_install: ProcedureStep
+  procedure_step_secondary: ProcedureStep
+  procedure_step_optional_mark: ProcedureStep
+  data_field_torque: DataCollectionField
+  manufacturing_structure_v1: ManufacturingStructureVersion
+  bom_line_gasket: BOMLine
+  valve_body_060: InventoryItem
+  gasket_060: InventoryItem
+  effectivity_rule_procedure: EffectivityRule
+  effectivity_rule_structure: EffectivityRule
+  effectivity_resolution_001: EffectivityResolution
+  build_check_001: BuildCheckResult
+  run_001: Run
+  run_context_snapshot_001: RunContextSnapshot
+  run_step_torque: RunStep
+  run_step_install: RunStep
+  run_step_secondary: RunStep
+  run_step_optional_mark: RunStep
+  measurement_torque_passed: Measurement
+  installation_event_001: InstallationEvent
+  run_close_check_001: RunCloseCheck
+  run_close_report_001: GeneratedReport
+
+world:
+  access_policies:
+    - alias: customer_summary_access
+      visible: [RunCloseReport.summary, SerialHistory.summary, BoundedDrillDown.summary]
+      hidden: [controlled_machine_evidence_payload, internal_quality_notes, raw_machine_payload]
+
+steps:
+  - { step_id: "001", set_time: "2026-08-07T08:01:00Z", actor: mfg_eng_1, operation: CreateProcedureVersion, idempotency_key: vf036-001, input: { procedure_version_alias: procedure_version_v1, steps: [ { alias: procedure_step_torque, ordinal: 1, name: "Capture torque", data_collection_fields: [ { alias: data_field_torque, name: "Valve body torque", unit: Nm, lower_bound: 10.0, upper_bound: 12.0, nominal: 11.0, evaluation_mode: synchronous } ] }, { alias: procedure_step_install, ordinal: 2, name: "Install gasket", install_required: true }, { alias: procedure_step_secondary, ordinal: 3, name: "Deburr edge" }, { alias: procedure_step_optional_mark, ordinal: 4, name: "Apply optional laser mark" } ] }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_CREATED] } }
+  - { step_id: "002", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf036-002, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUBMITTED] } }
+  - { step_id: "003", actor: mfg_eng_1, operation: ReleaseProcedureVersion, idempotency_key: vf036-003, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_RELEASED] } }
+  - { step_id: "004", actor: mfg_eng_1, operation: CreateManufacturingStructureVersion, idempotency_key: vf036-004, input: { manufacturing_structure_alias: manufacturing_structure_v1, part_revision: valve_body_rev_a }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_CREATED] } }
+  - { step_id: "005", actor: mfg_eng_1, operation: AddBOMLine, idempotency_key: vf036-005, input: { manufacturing_structure_alias: manufacturing_structure_v1, bom_line_alias: bom_line_gasket, part_revision: gasket_rev_b, install_required: true }, expect: { operation_succeeded: true, events_emitted: [BOM_LINE_CREATED] } }
+  - { step_id: "006", actor: mfg_eng_1, operation: ReleaseManufacturingStructureVersion, idempotency_key: vf036-006, input: { manufacturing_structure_alias: manufacturing_structure_v1 }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_RELEASED] } }
+  - { step_id: "007", set_time: "2026-08-07T08:05:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf036-007, input: { inventory_alias: valve_body_060, part_revision: valve_body_rev_a, serial_number: VB-060 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "008", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf036-008, input: { inventory_alias: gasket_060, part_revision: gasket_rev_b, serial_number: GK-060 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "009", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf036-009, input: { inventory_alias: valve_body_060 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "010", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf036-010, input: { inventory_alias: gasket_060 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "011", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf036-011, input: { inventory_alias: valve_body_060 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+  - { step_id: "012", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf036-012, input: { inventory_alias: gasket_060 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+  - { step_id: "013", actor: planner_1, operation: ReserveInventory, idempotency_key: vf036-013, input: { inventory_alias: valve_body_060 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RESERVED] } }
+  - { step_id: "014", actor: planner_1, operation: ReserveInventory, idempotency_key: vf036-014, input: { inventory_alias: gasket_060 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RESERVED] } }
+  - { step_id: "015", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf036-015, input: { effectivity_rule_alias: effectivity_rule_procedure, target_record_type: ProcedureVersion, rule_type: serial_cut_in, serial_condition: "VB-060", target_alias: procedure_version_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "016", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf036-016, input: { effectivity_rule_alias: effectivity_rule_structure, target_record_type: ManufacturingStructureVersion, rule_type: serial_cut_in, serial_condition: "VB-060", target_alias: manufacturing_structure_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "017", actor: planner_1, operation: ResolveEffectivity, idempotency_key: vf036-017, input: { effectivity_resolution_alias: effectivity_resolution_001, target_serial: "VB-060", target_inventory_alias: valve_body_060 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RESOLVED] } }
+  - { step_id: "018", actor: planner_1, operation: RunBuildCheck, idempotency_key: vf036-018, input: { build_check_alias: build_check_001, target_inventory_alias: valve_body_060, effectivity_resolution_alias: effectivity_resolution_001 }, expect: { operation_succeeded: true, events_emitted: [BUILD_CHECK_STARTED, BUILD_CHECK_PASSED] } }
+  - { step_id: "019", set_time: "2026-08-07T08:10:00Z", actor: planner_1, operation: CreateRun, idempotency_key: vf036-019, input: { run_alias: run_001, run_context_snapshot_alias: run_context_snapshot_001, procedure_version_alias: procedure_version_v1, manufacturing_structure_alias: manufacturing_structure_v1, effectivity_resolution_alias: effectivity_resolution_001, build_check_alias: build_check_001, target_inventory_alias: valve_body_060, run_step_aliases: [run_step_torque, run_step_install, run_step_secondary, run_step_optional_mark] }, expect: { operation_succeeded: true, events_emitted: [RUN_CREATED] } }
+  - { step_id: "020", actor: report_worker_1, operation: ApplyBuildCheckResultToRun, idempotency_key: vf036-020, input: { run_alias: run_001, build_check_alias: build_check_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_READY] } }
+  - { step_id: "021", set_time: "2026-08-07T08:12:00Z", actor: operator_1, operation: StartRun, idempotency_key: vf036-021, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_STARTED] } }
+  - { step_id: "022", actor: operator_1, operation: StartRunWithInventory, idempotency_key: vf036-022, input: { run_alias: run_001, inventory_aliases: [valve_body_060, gasket_060] }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_IN_WIP] } }
+
+  # A step made workable before anybody picks it up. not_started -> ready, by the system, not claimed.
+  - { step_id: "023", set_time: "2026-08-07T08:15:00Z", actor: report_worker_1, operation: AdvanceStepReadiness, idempotency_key: vf036-023, input: { run_step_alias: run_step_torque }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_READY] } }
+  - { step_id: "024", actor: operator_1, operation: StartRunStep, idempotency_key: vf036-024, input: { run_alias: run_001, run_step_alias: run_step_torque }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_STARTED] } }
+  # The torque wrench is out of calibration. The step is stopped before any reading is taken — nothing failed,
+  # because nothing was measured.
+  - { step_id: "025", set_time: "2026-08-07T08:20:00Z", actor: quality_1, operation: BlockRunStep, idempotency_key: vf036-025, input: { run_step_alias: run_step_torque, blocker: torque_wrench_out_of_calibration }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_BLOCKED] } }
+  - { step_id: "026", set_time: "2026-08-07T09:30:00Z", actor: quality_1, operation: ClearRunStepBlocker, idempotency_key: vf036-026, input: { run_step_alias: run_step_torque, resolution: "wrench recalibrated and certificate on file" }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_READY] } }
+  - { step_id: "027", actor: operator_1, operation: StartRunStep, idempotency_key: vf036-027, input: { run_alias: run_001, run_step_alias: run_step_torque }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_STARTED] } }
+  - { step_id: "028", set_time: "2026-08-07T09:35:00Z", actor: operator_1, operation: CaptureMeasurement, idempotency_key: vf036-028, input: { run_alias: run_001, run_step_alias: run_step_torque, data_collection_field_alias: data_field_torque, measurement_alias: measurement_torque_passed, value: 11.0, unit: Nm, source_type: operator_entry, captured_at: "2026-08-07T09:35:00Z" }, expect: { operation_succeeded: true, events_emitted: [MEASUREMENT_CAPTURED, MEASUREMENT_EVALUATED, MEASUREMENT_PASSED] } }
+  - { step_id: "029", actor: operator_1, operation: CompleteRunStep, idempotency_key: vf036-029, input: { run_alias: run_001, run_step_alias: run_step_torque }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_COMPLETED] } }
+
+  # End of shift. A scheduling decision: the work is fine, there is nobody to do it until morning.
+  - { step_id: "030", set_time: "2026-08-07T17:00:00Z", actor: planner_1, operation: PauseRun, idempotency_key: vf036-030, input: { run_alias: run_001, reason: end_of_shift }, expect: { operation_succeeded: true, events_emitted: [RUN_PAUSED] } }
+  - { step_id: "031", set_time: "2026-08-08T07:00:00Z", actor: planner_1, operation: ResumeRun, idempotency_key: vf036-031, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_RESUMED] } }
+
+  # A different kind of stop: quality holds the whole run pending a supplier question. Not scheduling.
+  - { step_id: "032", set_time: "2026-08-08T08:00:00Z", actor: quality_1, operation: BlockRun, idempotency_key: vf036-032, input: { run_alias: run_001, blocker: awaiting_supplier_response_on_gasket_lot }, expect: { operation_succeeded: true, events_emitted: [RUN_BLOCKED] } }
+  # Cleared back into progress, not to ready: this run had already started, and the caller says which.
+  - { step_id: "033", set_time: "2026-08-08T11:00:00Z", actor: quality_1, operation: ClearRunBlocker, idempotency_key: vf036-033, input: { run_alias: run_001, resume_to: in_progress, resolution: "supplier confirmed the lot; no impact on this build" }, expect: { operation_succeeded: true, events_emitted: [RUN_RESUMED] } }
+
+  - { step_id: "034", actor: operator_1, operation: StartRunStep, idempotency_key: vf036-034, input: { run_alias: run_001, run_step_alias: run_step_install }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_STARTED] } }
+  - { step_id: "035", set_time: "2026-08-08T11:30:00Z", actor: operator_1, operation: InstallInventory, idempotency_key: vf036-035, input: { run_alias: run_001, run_step_alias: run_step_install, parent_inventory_alias: valve_body_060, child_inventory_alias: gasket_060, bom_line_alias: bom_line_gasket, installation_event_alias: installation_event_001, installed_at: "2026-08-08T11:30:00Z" }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_INSTALLED] } }
+  - { step_id: "036", actor: operator_1, operation: CompleteRunStep, idempotency_key: vf036-036, input: { run_alias: run_001, run_step_alias: run_step_install }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_COMPLETED] } }
+
+  # The deburr is attempted and does not come out right. Attempted and unsuccessful — which is what makes it a
+  # FAILURE rather than a block, and what lets it reach rework at all.
+  - { step_id: "037", actor: operator_1, operation: StartRunStep, idempotency_key: vf036-037, input: { run_alias: run_001, run_step_alias: run_step_secondary }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_STARTED] } }
+  - { step_id: "038", set_time: "2026-08-08T12:00:00Z", actor: operator_1, operation: FailRunStep, idempotency_key: vf036-038, input: { run_step_alias: run_step_secondary, reason: "edge finish outside visual standard" }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_FAILED] } }
+  - { step_id: "039", actor: quality_1, operation: RequireRunStepRework, idempotency_key: vf036-039, input: { run_step_alias: run_step_secondary }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_REWORK_REQUIRED] } }
+  - { step_id: "040", set_time: "2026-08-08T13:00:00Z", actor: operator_1, operation: StartRunStepRework, idempotency_key: vf036-040, input: { run_step_alias: run_step_secondary }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_REWORK_STARTED] } }
+  - { step_id: "041", actor: operator_1, operation: CompleteRunStep, idempotency_key: vf036-041, input: { run_alias: run_001, run_step_alias: run_step_secondary }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_COMPLETED] } }
+
+  # The laser mark is not applied on this build. Skipped is terminal and only reachable before work starts, so
+  # it cannot be used to abandon a step half-done — and the close treats it as accounted for, not outstanding.
+  - { step_id: "042", set_time: "2026-08-08T13:30:00Z", actor: operator_1, operation: SkipRunStep, idempotency_key: vf036-042, input: { run_step_alias: run_step_optional_mark, reason: "customer waived cosmetic marking for this serial" }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_SKIPPED] } }
+
+  - { step_id: "043", actor: operator_1, operation: CompleteRunSteps, idempotency_key: vf036-043, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_COMPLETED] } }
+  - { step_id: "044", set_time: "2026-08-08T14:00:00Z", actor: operator_1, operation: AttemptRunClose, idempotency_key: vf036-044, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_ENTERED_CLOSE_CHECK] } }
+  - { step_id: "045", set_time: "2026-08-08T14:01:00Z", actor: report_worker_1, operation: RunCloseCheck, idempotency_key: vf036-045, input: { run_alias: run_001, run_close_check_alias: run_close_check_001, expected_result: passed }, expect: { operation_succeeded: true, events_emitted: [RUN_CLOSE_CHECK_STARTED, RUN_CLOSE_CHECK_PASSED] } }
+  - { step_id: "046", actor: report_worker_1, operation: RequestRunCloseReport, idempotency_key: vf036-046, input: { run_alias: run_001, run_close_check_alias: run_close_check_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_CLOSE_REPORT_REQUESTED] } }
+  - { step_id: "047", set_time: "2026-08-08T14:02:00Z", actor: report_worker_1, operation: GenerateRunCloseReport, idempotency_key: vf036-047, input: { report_alias: run_close_report_001, report_type: RunCloseReport, run_alias: run_001, run_close_check_alias: run_close_check_001, report_definition_version: 1, generated_at: "2026-08-08T14:02:00Z" }, expect: { operation_succeeded: true, events_emitted: [REPORT_REQUESTED, REPORT_GENERATION_STARTED, REPORT_GENERATED] } }
+  - { step_id: "048", actor: report_worker_1, operation: ApplyRunCloseResultToRun, idempotency_key: vf036-048, input: { run_alias: run_001, run_close_check_alias: run_close_check_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_CLOSED] } }
+
+assertions:
+  - { assertion_id: vf036_run_closed, assertion_type: record_state, severity: blocking, target: { record_type: Run, alias: run_001 }, expected: { status: closed } }
+  - { assertion_id: vf036_blocked_step_completed_in_the_end, assertion_type: record_state, severity: blocking, target: { record_type: RunStep, alias: run_step_torque }, expected: { status: complete } }
+  - { assertion_id: vf036_reworked_step_completed, assertion_type: record_state, severity: blocking, target: { record_type: RunStep, alias: run_step_secondary }, expected: { status: complete } }
+  - { assertion_id: vf036_skipped_step_stayed_skipped, assertion_type: record_state, severity: blocking, target: { record_type: RunStep, alias: run_step_optional_mark }, expected: { status: skipped } }
+
+  # A stop is not a fact-free state change. Each records who and why, so the run's history can be read.
+  - { assertion_id: vf036_run_block_named_its_cause, assertion_type: record_field_equals, severity: blocking, target: { record_type: Run, alias: run_001 }, expected: { blocked_by: quality_1, blocker_resolution: "supplier confirmed the lot; no impact on this build" } }
+  - { assertion_id: vf036_pause_recorded_its_reason, assertion_type: record_field_equals, severity: blocking, target: { record_type: Run, alias: run_001 }, expected: { pause_reason: end_of_shift, paused_by: planner_1 } }
+  - { assertion_id: vf036_skip_recorded_its_reason, assertion_type: record_field_equals, severity: blocking, target: { record_type: RunStep, alias: run_step_optional_mark }, expected: { skip_reason: "customer waived cosmetic marking for this serial", skipped_by: operator_1 } }
+  - { assertion_id: vf036_failure_recorded_its_reason, assertion_type: record_field_equals, severity: blocking, target: { record_type: RunStep, alias: run_step_secondary }, expected: { failure_reason: "edge finish outside visual standard" } }
+  - { assertion_id: vf036_cleared_blocker_is_gone_not_stale, assertion_type: record_field_equals, severity: blocking, target: { record_type: RunStep, alias: run_step_torque }, expected: { blocker: null } }
+
+  # Both kinds of stop happened, and they are different events. If pause and block had been collapsed into one
+  # state, only one of these could be true.
+  - { assertion_id: vf036_paused_once, assertion_type: event_emitted, severity: blocking, target: { event_type: RUN_PAUSED, producer_operation: PauseRun }, expected: { count: 1 } }
+  - { assertion_id: vf036_blocked_once, assertion_type: event_emitted, severity: blocking, target: { event_type: RUN_BLOCKED, producer_operation: BlockRun }, expected: { count: 1 } }
+  - { assertion_id: vf036_never_cancelled, assertion_type: event_not_emitted, severity: blocking, target: { event_type: RUN_CANCELLED }, expected: { reason: every_interruption_here_was_recoverable } }
+  - { assertion_id: vf036_history_carries_the_interruptions, assertion_type: projection_contains, severity: blocking, target: { projection: SerialHistory, key_serial: "VB-060" }, expected: { event_types: [RUN_STEP_BLOCKED, RUN_PAUSED, RUN_BLOCKED, RUN_STEP_FAILED, RUN_STEP_SKIPPED, RUN_CLOSED] } }
+
+idempotency_replay_checks:
+  - check_id: vf036_replay_block
+    step_id: "032"
+    operation: BlockRun
+    idempotency_key: vf036-032
