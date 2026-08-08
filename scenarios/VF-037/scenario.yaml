@@ -1,0 +1,130 @@
+scenario_id: VF-037
+scenario_version: "1"
+title: A deviation on the floor becomes the way the job is done, and the old procedure is kept
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  The controlled-change loop, end to end. A procedure is written, rejected at review, fixed and released. An
+  operator hits a problem with it and raises a redline, which is approved and applied to that build. Engineering
+  judges the deviation worth keeping, so it is marked as a merge candidate and merged into a NEW draft, which
+  is released and supersedes the original. The redline closes as merged.
+
+  What the scenario is really about is the one rule underneath it: a released document is never edited. The
+  machines forbid `released -> draft`, so improving released work means a new version, and the old version is
+  KEPT rather than overwritten — the run that executed against it has to stay readable years from now. The
+  superseded version carries a link to its successor, so a reader holding the old one can find what replaced it.
+
+  Rejection at review is here for contrast: it is the ONLY way back to draft, and it is available before
+  release and never after.
+
+seed: { deterministic_seed: 3037 }
+clock: { start_at: "2026-08-07T08:00:00Z", timezone: "UTC", mode: controlled }
+
+actors:
+  - { actor_id: mfg_eng_1, actor_type: manufacturing_engineer, product_caller_type: manufacturing_engineer }
+  - { actor_id: mfg_eng_2, actor_type: manufacturing_engineer, product_caller_type: manufacturing_engineer }
+  - { actor_id: planner_1, actor_type: planner, product_caller_type: planner }
+  - { actor_id: operator_1, actor_type: operator, product_caller_type: operator }
+
+aliases:
+  procedure_version_v1: ProcedureVersion
+  procedure_version_v2: ProcedureVersion
+  procedure_step_torque: ProcedureStep
+  procedure_step_torque_v2: ProcedureStep
+  data_field_torque: DataCollectionField
+  data_field_torque_v2: DataCollectionField
+  manufacturing_structure_v1: ManufacturingStructureVersion
+  bom_line_gasket: BOMLine
+  valve_body_070: InventoryItem
+  effectivity_rule_procedure: EffectivityRule
+  effectivity_rule_structure: EffectivityRule
+  effectivity_resolution_001: EffectivityResolution
+  build_check_001: BuildCheckResult
+  run_001: Run
+  run_context_snapshot_001: RunContextSnapshot
+  run_step_torque: RunStep
+  redline_001: Redline
+  approval_request_001: ApprovalRequest
+  approval_decision_001: ApprovalDecision
+
+world:
+  access_policies:
+    - alias: customer_summary_access
+      visible: [RunCloseReport.summary, SerialHistory.summary, BoundedDrillDown.summary]
+      hidden: [controlled_machine_evidence_payload, internal_quality_notes, raw_machine_payload]
+
+steps:
+  # Written, and sent back: the acceptance limits were missing. Returning to draft is the only route backwards
+  # and it exists only before release.
+  - { step_id: "001", set_time: "2026-08-07T08:01:00Z", actor: mfg_eng_1, operation: CreateProcedureVersion, idempotency_key: vf037-001, input: { procedure_version_alias: procedure_version_v1, steps: [ { alias: procedure_step_torque, ordinal: 1, name: "Capture torque", data_collection_fields: [ { alias: data_field_torque, name: "Valve body torque", unit: Nm, lower_bound: 10.0, upper_bound: 12.0, nominal: 11.0, evaluation_mode: synchronous } ] } ] }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_CREATED] } }
+  - { step_id: "002", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf037-002, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUBMITTED] } }
+  - { step_id: "003", set_time: "2026-08-07T09:00:00Z", actor: mfg_eng_2, operation: ReturnProcedureVersionToDraft, idempotency_key: vf037-003, input: { procedure_version_alias: procedure_version_v1, reason: "torque band cites no drawing revision" }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_RETURNED] } }
+  - { step_id: "004", set_time: "2026-08-07T10:00:00Z", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf037-004, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUBMITTED] } }
+  - { step_id: "005", actor: mfg_eng_2, operation: ReleaseProcedureVersion, idempotency_key: vf037-005, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_RELEASED] } }
+
+  # A structure, and a run against the released procedure.
+  - { step_id: "006", actor: mfg_eng_1, operation: CreateManufacturingStructureVersion, idempotency_key: vf037-006, input: { manufacturing_structure_alias: manufacturing_structure_v1, part_revision: valve_body_rev_a }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_CREATED] } }
+  # Edited while still a draft — the only time a BOM line may be changed in place.
+  - { step_id: "007", actor: mfg_eng_1, operation: AddBOMLine, idempotency_key: vf037-007, input: { manufacturing_structure_alias: manufacturing_structure_v1, bom_line_alias: bom_line_gasket, part_revision: gasket_rev_a, install_required: false }, expect: { operation_succeeded: true, events_emitted: [BOM_LINE_CREATED] } }
+  - { step_id: "008", actor: mfg_eng_1, operation: UpdateDraftBOMLine, idempotency_key: vf037-008, input: { bom_line_alias: bom_line_gasket, part_revision: gasket_rev_b }, expect: { operation_succeeded: true, events_emitted: [BOM_LINE_CHANGED] } }
+  - { step_id: "009", actor: mfg_eng_1, operation: SubmitManufacturingStructureForReview, idempotency_key: vf037-009, input: { manufacturing_structure_alias: manufacturing_structure_v1 }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_SUBMITTED] } }
+  - { step_id: "010", actor: mfg_eng_2, operation: ReleaseManufacturingStructureVersion, idempotency_key: vf037-010, input: { manufacturing_structure_alias: manufacturing_structure_v1 }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_RELEASED] } }
+
+  - { step_id: "011", set_time: "2026-08-07T11:00:00Z", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf037-011, input: { inventory_alias: valve_body_070, part_revision: valve_body_rev_a, serial_number: VB-070 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "012", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf037-012, input: { inventory_alias: valve_body_070 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "013", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf037-013, input: { inventory_alias: valve_body_070 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+  - { step_id: "014", actor: planner_1, operation: ReserveInventory, idempotency_key: vf037-014, input: { inventory_alias: valve_body_070 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RESERVED] } }
+  - { step_id: "014b", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf037-014b, input: { effectivity_rule_alias: effectivity_rule_procedure, target_record_type: ProcedureVersion, rule_type: serial_cut_in, serial_condition: "VB-070", target_alias: procedure_version_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "014c", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf037-014c, input: { effectivity_rule_alias: effectivity_rule_structure, target_record_type: ManufacturingStructureVersion, rule_type: serial_cut_in, serial_condition: "VB-070", target_alias: manufacturing_structure_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "015", actor: planner_1, operation: ResolveEffectivity, idempotency_key: vf037-015, input: { effectivity_resolution_alias: effectivity_resolution_001, target_serial: "VB-070", target_inventory_alias: valve_body_070 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RESOLVED] } }
+  - { step_id: "016", actor: planner_1, operation: RunBuildCheck, idempotency_key: vf037-016, input: { build_check_alias: build_check_001, target_inventory_alias: valve_body_070, effectivity_resolution_alias: effectivity_resolution_001 }, expect: { operation_succeeded: true, events_emitted: [BUILD_CHECK_STARTED, BUILD_CHECK_PASSED] } }
+  - { step_id: "017", actor: planner_1, operation: CreateRun, idempotency_key: vf037-017, input: { run_alias: run_001, run_context_snapshot_alias: run_context_snapshot_001, procedure_version_alias: procedure_version_v1, manufacturing_structure_alias: manufacturing_structure_v1, effectivity_resolution_alias: effectivity_resolution_001, build_check_alias: build_check_001, target_inventory_alias: valve_body_070, run_step_aliases: [run_step_torque] }, expect: { operation_succeeded: true, events_emitted: [RUN_CREATED] } }
+
+  # The operator hits the problem and writes it up. Approved by somebody other than the author.
+  - { step_id: "018", set_time: "2026-08-07T12:00:00Z", actor: operator_1, operation: CreateRedlineDraft, idempotency_key: vf037-018, input: { redline_alias: redline_001, run_alias: run_001, procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [REDLINE_DRAFT_CREATED] } }
+  - { step_id: "019", actor: operator_1, operation: SubmitRedline, idempotency_key: vf037-019, input: { redline_alias: redline_001 }, expect: { operation_succeeded: true, events_emitted: [REDLINE_SUBMITTED] } }
+  - { step_id: "020", actor: mfg_eng_2, operation: ReviewRedline, idempotency_key: vf037-020, input: { redline_alias: redline_001 }, expect: { operation_succeeded: true, events_emitted: [REDLINE_UNDER_REVIEW] } }
+  - { step_id: "021", actor: mfg_eng_2, operation: RequestApproval, idempotency_key: vf037-021, input: { approval_request_alias: approval_request_001, redline_alias: redline_001 }, expect: { operation_succeeded: true, events_emitted: [APPROVAL_REQUESTED] } }
+  - { step_id: "022", set_time: "2026-08-07T13:00:00Z", actor: mfg_eng_2, operation: RecordApprovalDecision, idempotency_key: vf037-022, input: { approval_request_alias: approval_request_001, approval_decision_alias: approval_decision_001, redline_alias: redline_001, decision: approved }, expect: { operation_succeeded: true, events_emitted: [APPROVAL_APPROVED, REDLINE_APPROVED] } }
+  - { step_id: "023", actor: operator_1, operation: ApplyRedline, idempotency_key: vf037-023, input: { redline_alias: redline_001 }, expect: { operation_succeeded: true, events_emitted: [REDLINE_APPLIED] } }
+
+  # Every build hits this, so it stops being a deviation and becomes the procedure.
+  - { step_id: "024", set_time: "2026-08-07T14:00:00Z", actor: mfg_eng_1, operation: MarkRedlineAsMergeCandidate, idempotency_key: vf037-024, input: { redline_alias: redline_001, rationale: "seen on every serial in this lot" }, expect: { operation_succeeded: true, events_emitted: [REDLINE_MERGE_CANDIDATE] } }
+  # A NEW draft carries the change. The released version is not touched.
+  - { step_id: "025", actor: mfg_eng_1, operation: CreateProcedureVersion, idempotency_key: vf037-025, input: { procedure_version_alias: procedure_version_v2, steps: [ { alias: procedure_step_torque_v2, ordinal: 1, name: "Capture torque (revised band)", data_collection_fields: [ { alias: data_field_torque_v2, name: "Valve body torque", unit: Nm, lower_bound: 10.5, upper_bound: 12.5, nominal: 11.5, evaluation_mode: synchronous } ] } ] }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_CREATED] } }
+  - { step_id: "026", actor: mfg_eng_1, operation: MergeRedlineIntoProcedureVersion, idempotency_key: vf037-026, input: { redline_alias: redline_001, procedure_version_alias: procedure_version_v2 }, expect: { operation_succeeded: true, events_emitted: [REDLINE_MERGED] } }
+  - { step_id: "027", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf037-027, input: { procedure_version_alias: procedure_version_v2 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUBMITTED] } }
+  - { step_id: "028", set_time: "2026-08-07T15:00:00Z", actor: mfg_eng_2, operation: ReleaseProcedureVersion, idempotency_key: vf037-028, input: { procedure_version_alias: procedure_version_v2 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_RELEASED] } }
+  # The old version steps aside and says what replaced it. It is kept, not deleted: run_001 executed against it.
+  - { step_id: "029", actor: mfg_eng_1, operation: SupersedeProcedureVersion, idempotency_key: vf037-029, input: { procedure_version_alias: procedure_version_v1, superseding_procedure_version_alias: procedure_version_v2 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUPERSEDED] } }
+  - { step_id: "030", actor: mfg_eng_1, operation: CloseRedline, idempotency_key: vf037-030, input: { redline_alias: redline_001 }, expect: { operation_succeeded: true, events_emitted: [REDLINE_CLOSED] } }
+
+assertions:
+  - { assertion_id: vf037_rejected_at_review_then_released, assertion_type: record_state, severity: blocking, target: { record_type: ProcedureVersion, alias: procedure_version_v1 }, expected: { status: superseded } }
+  - { assertion_id: vf037_return_recorded_what_to_fix, assertion_type: record_field_equals, severity: blocking, target: { record_type: ProcedureVersion, alias: procedure_version_v1 }, expected: { return_reason: "torque band cites no drawing revision" } }
+  # The link that makes the old version findable-forward. Without it the record says only that it stopped
+  # being current, not what to read instead.
+  - { assertion_id: vf037_superseded_names_its_successor, assertion_type: record_field_equals, severity: blocking, target: { record_type: ProcedureVersion, alias: procedure_version_v1 }, expected: { superseded_at: "2026-08-07T15:00:00Z" } }
+  - { assertion_id: vf037_successor_is_the_live_one, assertion_type: record_state, severity: blocking, target: { record_type: ProcedureVersion, alias: procedure_version_v2 }, expected: { status: released } }
+  # The superseded version is KEPT. A run executed against it, and that run must stay readable.
+  - { assertion_id: vf037_old_version_still_exists, assertion_type: record_exists, severity: blocking, target: { record_type: ProcedureVersion, alias: procedure_version_v1 }, expected: { exists: true } }
+
+  - { assertion_id: vf037_redline_merged_and_closed, assertion_type: record_state, severity: blocking, target: { record_type: Redline, alias: redline_001 }, expected: { status: closed } }
+  - { assertion_id: vf037_redline_closed_as_merged, assertion_type: record_field_equals, severity: blocking, target: { record_type: Redline, alias: redline_001 }, expected: { close_disposition: merged, merge_rationale: "seen on every serial in this lot" } }
+  - { assertion_id: vf037_bom_line_edited_while_draft, assertion_type: record_field_equals, severity: blocking, target: { record_type: BOMLine, alias: bom_line_gasket }, expected: { part_revision: gasket_rev_b } }
+
+  - { assertion_id: vf037_returned_once, assertion_type: event_emitted, severity: blocking, target: { event_type: PROCEDURE_VERSION_RETURNED, producer_operation: ReturnProcedureVersionToDraft }, expected: { count: 1 } }
+  - { assertion_id: vf037_merged_once, assertion_type: event_emitted, severity: blocking, target: { event_type: REDLINE_MERGED, producer_operation: MergeRedlineIntoProcedureVersion }, expected: { count: 1 } }
+  # Nothing was retired. Superseded and retired are different endings and this run had a successor.
+  - { assertion_id: vf037_nothing_retired, assertion_type: event_not_emitted, severity: blocking, target: { event_type: PROCEDURE_VERSION_RETIRED }, expected: { reason: this_version_had_a_successor_so_it_was_superseded } }
+
+idempotency_replay_checks:
+  - check_id: vf037_replay_merge
+    step_id: "026"
+    operation: MergeRedlineIntoProcedureVersion
+    idempotency_key: vf037-026

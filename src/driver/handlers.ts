@@ -158,6 +158,58 @@ export const HANDLERS: Record<string, H> = {
     step(world, world.get(input.procedure_version_alias), "SubmitProcedureVersionForReview"),
   ReleaseProcedureVersion: (world, input) =>
     step(world, world.get(input.procedure_version_alias), "ReleaseProcedureVersion"),
+
+  // --- The rest of the controlled-document lifecycle ----------------------------------------------------
+  // A released document is never edited. The machines forbid `released -> draft` outright, so a change to
+  // released work means a NEW version that supersedes the old one — and the old one is kept, not overwritten,
+  // because a run that executed against it must still be readable years later. That is the same
+  // supersede-not-overwrite rule the report layer follows, applied to the documents runs are built from.
+
+  /** Review said no. Back to the author, with what they have to address. */
+  ReturnProcedureVersionToDraft(world, input, actor) {
+    if (!input.reason)
+      throw new Error("validation_error: returning a procedure version requires a stated reason");
+    const procedureVersion = world.get(input.procedure_version_alias);
+    procedureVersion.fields.returned_by = actor;
+    procedureVersion.fields.return_reason = input.reason;
+    step(world, procedureVersion, "ReturnProcedureVersionToDraft", { reason: input.reason });
+  },
+  /**
+   * A newer version takes over. The superseded document names its successor, so a reader holding the old one
+   * can find what replaced it — the same link `SupersedeReport` carries, and for the same reason: without it
+   * the record says only that it stopped being current, not what to read instead.
+   */
+  SupersedeProcedureVersion(world, input, actor) {
+    const superseding = world.get(input.superseding_procedure_version_alias);
+    if (superseding.record_type !== "ProcedureVersion")
+      throw new Error(
+        `validation_error: '${input.superseding_procedure_version_alias}' is a ${superseding.record_type}, not a ProcedureVersion`,
+      );
+    const procedureVersion = world.get(input.procedure_version_alias);
+    // A document cannot supersede itself. Left unguarded this reads as a valid transition and leaves a record
+    // pointing at itself as its own successor — a loop for anyone following the chain.
+    if (superseding.id === procedureVersion.id)
+      throw new Error("validation_error: a procedure version cannot supersede itself");
+    procedureVersion.fields.superseded_by = superseding.id;
+    procedureVersion.fields.superseded_at = world.clock;
+    procedureVersion.fields.superseded_by_actor = actor;
+    step(world, procedureVersion, "SupersedeProcedureVersion", {
+      superseding_procedure_version_id: superseding.id,
+    });
+  },
+  /**
+   * Withdrawn with no replacement — the part is out of production, or the process is abandoned. Distinct from
+   * superseded, which says "read this other one instead". Retiring leaves nothing to read instead, and that
+   * is a different fact about the document.
+   */
+  RetireProcedureVersion(world, input, actor) {
+    if (!input.reason)
+      throw new Error("validation_error: retiring a procedure version requires a stated reason");
+    const procedureVersion = world.get(input.procedure_version_alias);
+    procedureVersion.fields.retired_by = actor;
+    procedureVersion.fields.retirement_reason = input.reason;
+    step(world, procedureVersion, "RetireProcedureVersion", { reason: input.reason });
+  },
   CreateManufacturingStructureVersion(world, input) {
     const structureVersion = world.createInitial(
       "ManufacturingStructureVersion",
@@ -177,6 +229,87 @@ export const HANDLERS: Record<string, H> = {
       install_required: !!input.install_required,
     });
     world.emit("BOM_LINE_CREATED", "AddBOMLine", { bom_line_alias: input.bom_line_alias });
+  },
+  /**
+   * Edit a BOM line while its structure is still a draft. The DRAFT qualifier is the whole operation: a
+   * released structure's bill of material is what runs were built against, and editing it in place would
+   * rewrite history for every serial already assembled to it. The state machine cannot express this, because
+   * the line has no lifecycle of its own — it is the parent structure's state that decides, so the guard is
+   * here and it fails closed on an unresolvable parent.
+   */
+  UpdateDraftBOMLine(world, input) {
+    const bomLine = world.get(input.bom_line_alias);
+    if (bomLine.record_type !== "BOMLine")
+      throw new Error(
+        `validation_error: '${input.bom_line_alias}' is a ${bomLine.record_type}, not a BOMLine`,
+      );
+    const structure = tryGet(world, bomLine.fields.manufacturing_structure);
+    if (!structure)
+      throw new Error(
+        "bom_line_unresolvable: the line names no manufacturing structure, so nothing says whether it may be edited",
+      );
+    if (structure.state !== "draft")
+      throw new Error(
+        `structure_not_draft: '${structure.alias || structure.id}' is ${structure.state}; a released structure's BOM is what runs were built against and is superseded, not edited`,
+      );
+    const changed: Record<string, unknown> = {};
+    if (input.part_revision !== undefined) {
+      changed.part_revision = { from: bomLine.fields.part_revision, to: input.part_revision };
+      bomLine.fields.part_revision = input.part_revision;
+    }
+    if (input.install_required !== undefined) {
+      changed.install_required = {
+        from: bomLine.fields.install_required,
+        to: !!input.install_required,
+      };
+      bomLine.fields.install_required = !!input.install_required;
+    }
+    // An edit that changes nothing is not an edit. Emitting BOM_LINE_CHANGED for it would put a change in the
+    // log that a reader could not account for against the record.
+    if (Object.keys(changed).length === 0)
+      throw new Error("validation_error: an update must change part_revision or install_required");
+    world.emit("BOM_LINE_CHANGED", "UpdateDraftBOMLine", {
+      bom_line_alias: input.bom_line_alias,
+      changed,
+    });
+  },
+  SubmitManufacturingStructureForReview: (world, input) =>
+    step(
+      world,
+      world.get(input.manufacturing_structure_alias),
+      "SubmitManufacturingStructureForReview",
+    ),
+  ReturnManufacturingStructureToDraft(world, input, actor) {
+    if (!input.reason)
+      throw new Error("validation_error: returning a structure version requires a stated reason");
+    const structure = world.get(input.manufacturing_structure_alias);
+    structure.fields.returned_by = actor;
+    structure.fields.return_reason = input.reason;
+    step(world, structure, "ReturnManufacturingStructureToDraft", { reason: input.reason });
+  },
+  SupersedeManufacturingStructureVersion(world, input, actor) {
+    const superseding = world.get(input.superseding_manufacturing_structure_alias);
+    if (superseding.record_type !== "ManufacturingStructureVersion")
+      throw new Error(
+        `validation_error: '${input.superseding_manufacturing_structure_alias}' is a ${superseding.record_type}, not a ManufacturingStructureVersion`,
+      );
+    const structure = world.get(input.manufacturing_structure_alias);
+    if (superseding.id === structure.id)
+      throw new Error("validation_error: a structure version cannot supersede itself");
+    structure.fields.superseded_by = superseding.id;
+    structure.fields.superseded_at = world.clock;
+    structure.fields.superseded_by_actor = actor;
+    step(world, structure, "SupersedeManufacturingStructureVersion", {
+      superseding_manufacturing_structure_version_id: superseding.id,
+    });
+  },
+  RetireManufacturingStructureVersion(world, input, actor) {
+    if (!input.reason)
+      throw new Error("validation_error: retiring a structure version requires a stated reason");
+    const structure = world.get(input.manufacturing_structure_alias);
+    structure.fields.retired_by = actor;
+    structure.fields.retirement_reason = input.reason;
+    step(world, structure, "RetireManufacturingStructureVersion", { reason: input.reason });
   },
   ReleaseManufacturingStructureVersion: (world, input) =>
     step(
@@ -784,6 +917,58 @@ export const HANDLERS: Record<string, H> = {
     });
   },
   ApplyRedline: (world, input) => step(world, world.get(input.redline_alias), "ApplyRedline"),
+
+  // --- The redline's back half: from a deviation on one run to a change in the procedure ------------------
+  // A redline starts as one operator's problem on one build. Applying it fixes that build. What the machine
+  // declares beyond that is the path by which a one-off deviation becomes the way the job is done: marked as a
+  // merge candidate, merged into a procedure version, closed. Without it, the same deviation is rediscovered
+  // and re-approved on every serial, which is how a redline log becomes a list of the same complaint.
+
+  /** Engineering judges this deviation worth folding into the procedure, not just tolerating on one run. */
+  MarkRedlineAsMergeCandidate(world, input, actor) {
+    const redline = world.get(input.redline_alias);
+    redline.fields.merge_candidate_by = actor;
+    redline.fields.merge_rationale = input.rationale;
+    step(world, redline, "MarkRedlineAsMergeCandidate");
+  },
+  /**
+   * Record that the redline was folded into a procedure version. It does NOT author that version: creating one
+   * is `CreateProcedureVersion`, and the new version goes through review and release like any other. This
+   * operation records WHICH version carries the change, so the redline and the procedure that absorbed it can
+   * be read from either end.
+   *
+   * The target must be a DRAFT. Merging into a released version would edit released work in place, which is
+   * exactly what supersession exists to prevent — the change belongs in a new draft that supersedes the old.
+   */
+  MergeRedlineIntoProcedureVersion(world, input, actor) {
+    const procedureVersion = world.get(input.procedure_version_alias);
+    if (procedureVersion.record_type !== "ProcedureVersion")
+      throw new Error(
+        `validation_error: '${input.procedure_version_alias}' is a ${procedureVersion.record_type}, not a ProcedureVersion`,
+      );
+    if (procedureVersion.state !== "draft")
+      throw new Error(
+        `procedure_version_not_draft: '${input.procedure_version_alias}' is ${procedureVersion.state}; a redline merges into a new draft, which then supersedes the released version`,
+      );
+    const redline = world.get(input.redline_alias);
+    redline.fields.merged_into = procedureVersion.id;
+    redline.fields.merged_by = actor;
+    redline.fields.merged_at = world.clock;
+    step(world, redline, "MergeRedlineIntoProcedureVersion", {
+      procedure_version_id: procedureVersion.id,
+    });
+  },
+  /**
+   * The redline is finished with, from either end: applied to the build and left as a one-off, or merged into
+   * the procedure. Terminal. Closing is what distinguishes a deviation that was dealt with from one still
+   * open on somebody's list.
+   */
+  CloseRedline(world, input, actor) {
+    const redline = world.get(input.redline_alias);
+    redline.fields.closed_by = actor;
+    redline.fields.close_disposition = redline.state === "merged" ? "merged" : "applied_only";
+    step(world, redline, "CloseRedline");
+  },
   RecordDisposition(world, input, actor, role) {
     // Typed disposition kind + differentiated authority (AS9100 8.7; persona gap 3). The kind must be one of
     // the registered dispositions; use-as-is and repair need quality/engineering authority (an operator or

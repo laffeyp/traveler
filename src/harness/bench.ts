@@ -44,7 +44,17 @@ const BENCHES: Record<string, { scenarios: string[]; required_pass_rate: number 
   // Harness §24 extended adversarial: duplicate-payload idempotency (VF-011), redline-rejected (VF-013),
   // bounded-drill-down audit+filter (VF-014), unsupported-payload GrammarGap (VF-015). VF-003D/VF-012 deferred (B-Q).
   extended: {
-    scenarios: ["VF-036", "VF-011", "VF-012", "VF-013", "VF-014", "VF-015", "VF-003D", "VF-003F"],
+    scenarios: [
+      "VF-037",
+      "VF-036",
+      "VF-011",
+      "VF-012",
+      "VF-013",
+      "VF-014",
+      "VF-015",
+      "VF-003D",
+      "VF-003F",
+    ],
     required_pass_rate: 1.0,
   },
   // Hardening regressions (B-Q-13 write-boundary idempotency).
