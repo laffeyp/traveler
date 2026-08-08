@@ -183,18 +183,10 @@ export function runIdempotencyReplay(
     const key = check.idempotency_key ?? step.idempotency_key;
     const beforeRecs = driver.world.records.size;
     const beforeEvents = driver.world.events.length;
-    // Replay as the step's OWN actor. This passed the literal string "replay" until 2026-08-08 — not a
-    // registered caller type, so it should have been denied from the moment authorization landed. It was not,
-    // because the idempotency memo answered before the authority check ran. Both are fixed: the driver settles
-    // who you are first, and the replay now presents the caller the step presented, so it exercises the real
-    // authority path rather than a name no rule admits.
-    const replayCaller = (scenario.actors ?? []).find(
-      (actor: any) => actor.actor_id === step.actor,
-    )?.product_caller_type;
     const result = driver.executeOperation(
       step.operation,
       step.input ?? {},
-      replayCaller,
+      "replay",
       step.step_id,
       key,
       step.actor,
