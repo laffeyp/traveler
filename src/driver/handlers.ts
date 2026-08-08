@@ -337,6 +337,84 @@ export const HANDLERS: Record<string, H> = {
   // INVENTORY_QUARANTINED via the state-machine transition. Places a unit on quality hold.
   QuarantineInventory: (world, input) =>
     step(world, world.get(input.inventory_alias), "QuarantineInventory"),
+
+  // --- The rest of the inventory path ---------------------------------------------------------------------
+
+  /** Picked and staged against a run, ahead of work starting. Reserved says allocated; kitted says on the trolley. */
+  KitInventory: (world, input) => step(world, world.get(input.inventory_alias), "KitInventory"),
+
+  /**
+   * A part comes back OUT of an assembly. The mirror of InstallInventory, and it writes the matching
+   * RemovalEvent — without one the as-built could only ever be added to, and a part physically taken off a
+   * unit would still read as fitted to it. Which is why `asBuiltProjection` pairs installs against removals
+   * rather than listing installs: an as-built that cannot shrink is a record of what was once done, not of
+   * what the customer is holding.
+   */
+  RemoveInventory(world, input, actor) {
+    if (!input.reason)
+      throw new Error("validation_error: removing an installed part requires a stated reason");
+    const child = world.get(input.child_inventory_alias);
+    const parent = world.get(input.parent_inventory_alias);
+    // Bind the removal to the installation it undoes. Without this a part could be "removed" from an assembly
+    // it was never in, leaving one as-built short a part it still holds and another with a phantom removal.
+    const installed = world
+      .byType("InstallationEvent")
+      .some(
+        (event) =>
+          tryGet(world, event.fields.child)?.id === child.id &&
+          tryGet(world, event.fields.parent)?.id === parent.id,
+      );
+    if (!installed)
+      throw new Error(
+        `not_installed_here: '${input.child_inventory_alias}' has no installation into '${input.parent_inventory_alias}' to undo`,
+      );
+    world.create("RemovalEvent", input.removal_event_alias ?? "", "created", {
+      parent: input.parent_inventory_alias,
+      child: input.child_inventory_alias,
+      reason: input.reason,
+      removed_by: actor,
+      removed_at: world.clock,
+    });
+    step(world, child, "RemoveInventory", { reason: input.reason });
+  },
+  /**
+   * A removed part goes back to stock. Distinct from quarantining it: this one is judged fit to fly again, and
+   * somebody has to say so — which is why it records who, the same way a quarantine release does.
+   */
+  ReleaseRemovedInventory(world, input, actor) {
+    if (!input.reason)
+      throw new Error(
+        "validation_error: returning a removed part to stock requires a stated reason",
+      );
+    const item = world.get(input.inventory_alias);
+    item.fields.returned_to_stock_by = actor;
+    item.fields.return_to_stock_reason = input.reason;
+    step(world, item, "ReleaseRemovedInventory");
+  },
+  /** A removed part put on hold instead — suspect, damaged in removal, or pending investigation. */
+  QuarantineRemovedInventory(world, input, actor) {
+    if (!input.reason)
+      throw new Error("validation_error: quarantining a removed part requires a stated reason");
+    const item = world.get(input.inventory_alias);
+    item.fields.quarantined_by = actor;
+    item.fields.quarantine_reason = input.reason;
+    step(world, item, "QuarantineRemovedInventory", { reason: input.reason });
+  },
+  /**
+   * Condemned. TERMINAL — the machine has no transition out of `scrapped`, which is the point: a part written
+   * off must not come back into stock on somebody's say-so, because the paper trail that condemned it is the
+   * only thing standing between a scrapped part and a delivered one.
+   */
+  ScrapInventory(world, input, actor) {
+    if (!input.reason)
+      throw new Error("validation_error: scrapping a part requires a stated reason");
+    if (!actor) throw new Error("validation_error: scrapping a part requires an identified actor");
+    const item = world.get(input.inventory_alias);
+    item.fields.scrapped_by = actor;
+    item.fields.scrap_reason = input.reason;
+    item.fields.scrapped_at = world.clock;
+    step(world, item, "ScrapInventory", { reason: input.reason });
+  },
   CreateEffectivityRule(world, input) {
     // serial_from/serial_to carry a cut-in/cut-out RANGE (gap 6); absent for the existing exact serial_condition
     // rules, which keep matching by exact serial.
@@ -867,6 +945,31 @@ export const HANDLERS: Record<string, H> = {
       approval_request_id: approvalRequest.id,
     });
   },
+  /** Withdrawn by the requester: the deviation was resolved another way, or is no longer wanted. */
+  CancelApprovalRequest(world, input, actor) {
+    if (!input.reason)
+      throw new Error("validation_error: cancelling an approval request requires a stated reason");
+    const approvalRequest = world.get(input.approval_request_alias);
+    approvalRequest.fields.cancelled_by = actor;
+    approvalRequest.fields.cancellation_reason = input.reason;
+    step(world, approvalRequest, "CancelApprovalRequest", { reason: input.reason });
+  },
+  /**
+   * Timed out. Expiry is a SYSTEM act, not a person's — which is why it carries `system_lifecycle` authority
+   * and records no approver. The distinction matters: an expired request must never read as a decision. A
+   * request nobody answered and a request somebody refused are different facts, and only the second is a
+   * judgement about the deviation.
+   *
+   * The deadline itself is supplied by the caller. The contract stack names no expiry period anywhere, and
+   * inventing one here would put a number in the system that no document justifies (the same reasoning that
+   * left the outbox retry schedule unbuilt, B-Q-30).
+   */
+  ExpireApprovalRequest(world, input) {
+    const approvalRequest = world.get(input.approval_request_alias);
+    approvalRequest.fields.expired_at = world.clock;
+    approvalRequest.fields.expiry_deadline = input.deadline;
+    step(world, approvalRequest, "ExpireApprovalRequest");
+  },
   RecordApprovalDecision(world, input, actor) {
     // Honor the recorded decision (was hard-coded "approved" — a reject silently force-approved, letting a
     // rejected redline be applied; sprint-011 review). The decision is REQUIRED and MUST be exactly one of
@@ -1042,6 +1145,28 @@ export const HANDLERS: Record<string, H> = {
   },
   CloseNonconformance: (world, input) =>
     step(world, world.get(input.nonconformance_alias), "CloseNonconformance"),
+  /**
+   * Withdrawn without a disposition — raised in error, or the same defect already covered by another record.
+   * Only from `open`: once containment has started or a disposition is recorded there is a decision on file
+   * about physical product, and that is CLOSED after verification, not cancelled away. The machine enforces
+   * the states; the reason is required because a cancelled nonconformance is the one an auditor asks about.
+   */
+  CancelNonconformance(world, input, actor) {
+    if (!input.reason)
+      throw new Error("validation_error: cancelling a nonconformance requires a stated reason");
+    const nonconformance = world.get(input.nonconformance_alias);
+    nonconformance.fields.cancelled_by = actor;
+    nonconformance.fields.cancellation_reason = input.reason;
+    step(world, nonconformance, "CancelNonconformance", { reason: input.reason });
+  },
+  /**
+   * Send a dispositioned nonconformance for verification WITHOUT rework. The rework path reaches
+   * verification through CompleteRework; this is the other way in — a use-as-is or return-to-supplier
+   * disposition that still needs a second person to confirm the decision was carried out. Without it, every
+   * disposition that is not rework would close unverified.
+   */
+  RequireVerification: (world, input) =>
+    step(world, world.get(input.nonconformance_alias), "RequireVerification"),
   CompleteRunStep(world, input, actor) {
     const runStep = world.get(input.run_step_alias);
     // Build Readiness §7 CompleteRunStep precondition: "required measurements/installations for step are

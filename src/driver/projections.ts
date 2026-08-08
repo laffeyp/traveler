@@ -8,12 +8,37 @@ import type { World, FactoryRecord } from "./world.ts";
 import { tryGet } from "./world.ts";
 import { RECEIVING_RULES } from "./registry.ts";
 
-/** AsBuilt tree: the installed children of a parent inventory item. */
+/**
+ * AsBuilt tree: the children CURRENTLY installed in a parent inventory item.
+ *
+ * Installs are paired against removals rather than simply listed. Before `RemoveInventory` existed the tree
+ * could only grow, so listing installations was the same thing as listing what was fitted. It is not any more:
+ * a part physically taken off a unit would still read as fitted to it, and an as-built that cannot shrink is a
+ * record of what was once done rather than of what the customer is holding.
+ *
+ * Counted, not "has a removal", because a part can be fitted, removed and fitted again — a fastener taken off
+ * for access and put back. Counting per (parent, child) pair also gets re-installation into a DIFFERENT parent
+ * right: each pair is tallied on its own, so the old parent loses the part and the new one gains it.
+ */
 export function asBuiltProjection(world: World, parentAlias: string): any {
   const parentId = world.get(parentAlias).id;
+  const pairKey = (event: FactoryRecord) =>
+    `${tryGet(world, event.fields.parent)?.id}|${tryGet(world, event.fields.child)?.id}`;
+  const netInstalls = new Map<string, number>();
+  for (const event of world.byType("InstallationEvent"))
+    netInstalls.set(pairKey(event), (netInstalls.get(pairKey(event)) ?? 0) + 1);
+  for (const event of world.byType("RemovalEvent"))
+    netInstalls.set(pairKey(event), (netInstalls.get(pairKey(event)) ?? 0) - 1);
+  const seen = new Set<string>();
   const children = world
     .byType("InstallationEvent")
     .filter((event) => world.get(event.fields.parent).id === parentId)
+    .filter((event) => {
+      const key = pairKey(event);
+      if (seen.has(key)) return false; // one row per child, not one per fitting
+      seen.add(key);
+      return (netInstalls.get(key) ?? 0) > 0;
+    })
     .map((event) => ({
       child_alias: event.fields.child,
       child_id: world.get(event.fields.child).id,
