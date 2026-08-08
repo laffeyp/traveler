@@ -11,7 +11,7 @@ import type { World, FactoryRecord } from "./world.ts";
 import { moveState, moveStateTo, tryGet, step, createGrammarGap } from "./world.ts";
 import { NORMALIZE_GRAMMAR, keyPresentAndValid } from "./registry.ts";
 import { RECEIVING_RULES, DOCUMENT_TYPES, guardRuleCallerTypes } from "./registry.ts";
-import { assembleRunCloseReport } from "./projections.ts";
+import { assembleRunCloseReport, asBuiltProjection } from "./projections.ts";
 
 /**
  * An operation handler: mutate the World for `input` (the operation input), emitting events explicitly. `actor` is
@@ -2282,6 +2282,107 @@ export const HANDLERS: Record<string, H> = {
     world.emit("RUN_CLOSE_REPORT_REQUESTED", "RequestRunCloseReport", {
       run_alias: input.run_alias,
       run_close_check_alias: input.run_close_check_alias,
+    });
+  },
+
+  // --- Report generation as four steps rather than one ----------------------------------------------------
+  // `GenerateRunCloseReport` walks requested -> generating -> generated in a single call, and the machine names
+  // it on all three transitions, so that is legitimate. These operations are the same walk taken one step at a
+  // time, which is what a generator that can FAIL needs: a report that takes real work to assemble has a state
+  // in which it is being assembled, and something has to be able to say it did not finish. Nothing can fail
+  // half-way through an atomic call, so `failed` and its retry were unreachable until these existed.
+
+  RequestReportGeneration(world, input) {
+    const report = world.createInitial("GeneratedReport", input.report_alias, {
+      status: "requested",
+      run: tryGet(world, input.run_alias)?.id,
+      report_type: input.report_type,
+      report_definition_version: input.report_definition_version,
+      access_scope: input.access_scope ?? "customer_summary_access",
+      regeneration_required: false,
+    });
+    world.emit("REPORT_REQUESTED", "RequestReportGeneration", { report_id: report.id });
+  },
+  StartReportGeneration: (world, input) =>
+    step(world, world.get(input.report_alias), "StartReportGeneration"),
+  /**
+   * Finish the assembly. The BODY is written here rather than at request time, because a report is a snapshot
+   * of what was true when it was generated — assembling it early and storing it against a `requested` record
+   * would freeze the wrong moment.
+   */
+  CompleteReportGeneration(world, input) {
+    const report = world.get(input.report_alias);
+    const run = tryGet(world, report.fields.run) ?? tryGet(world, input.run_alias);
+    if (!run)
+      throw new Error(
+        "report_run_unresolvable: the report names no run, so there is nothing to assemble it from",
+      );
+    report.fields.generated_at = input.generated_at ?? world.clock;
+    report.fields.sections = assembleRunCloseReport(world, run, report.fields.access_scope);
+    step(world, report, "CompleteReportGeneration");
+  },
+  /**
+   * The generation did not finish. Records why, because a failed report is one somebody has to act on, and
+   * "it failed" without a cause is a ticket nobody can work.
+   */
+  FailReportGeneration(world, input) {
+    if (!input.reason)
+      throw new Error("validation_error: a failed report generation requires a stated reason");
+    const report = world.get(input.report_alias);
+    report.fields.failure_reason = input.reason;
+    report.fields.failed_at = world.clock;
+    step(world, report, "FailReportGeneration", { reason: input.reason });
+  },
+  /**
+   * Try again. Back to `requested`, and the failure is CLEARED rather than left behind — a report that
+   * eventually generated should not still carry the reason an earlier attempt failed, or a reader cannot tell
+   * a current problem from a historical one. The attempt count survives, because a report that took four
+   * tries is worth noticing even once it succeeds.
+   */
+  RetryReportGeneration(world, input) {
+    const report = world.get(input.report_alias);
+    report.fields.generation_attempts = (report.fields.generation_attempts ?? 1) + 1;
+    report.fields.previous_failure_reason = report.fields.failure_reason;
+    report.fields.failure_reason = null;
+    step(world, report, "RetryReportGeneration");
+  },
+
+  /** The as-built tree as an operation. The projection already existed; nothing exposed it as a read. */
+  GetAsBuiltView: (world, input) => asBuiltProjection(world, input.parent_inventory_alias),
+
+  // --- Machine registration -------------------------------------------------------------------------------
+  // What makes "which machine produced this reading" answerable. See B-Q-73: machine evidence still names its
+  // machine by an unchecked string, so registration is available and not yet required.
+  RegisterMachine(world, input) {
+    if (!input.machine_id) throw new Error("validation_error: a machine must have an identifier");
+    const machine = world.create("Machine", input.machine_alias ?? "", "registered", {
+      machine_id: input.machine_id,
+      name: input.name,
+      machine_type: input.machine_type,
+      station: input.station,
+    });
+    world.emit("MACHINE_REGISTERED", "RegisterMachine", {
+      machine_id: machine.id,
+      machine_identifier: input.machine_id,
+    });
+  },
+  RegisterMachineAdapter(world, input) {
+    if (!input.adapter_id) throw new Error("validation_error: an adapter must have an identifier");
+    // An adapter speaks FOR a machine, so it names one. Fails closed on an unresolvable machine: an adapter
+    // attributed to nothing would deliver evidence attributed to nothing.
+    const machine = world.get(input.machine_alias);
+    if (machine.record_type !== "Machine")
+      throw new Error(
+        `validation_error: '${input.machine_alias}' is a ${machine.record_type}, not a Machine`,
+      );
+    const adapter = world.create("MachineAdapter", input.adapter_alias ?? "", "registered", {
+      adapter_id: input.adapter_id,
+      machine: machine.id,
+      payload_type: input.payload_type,
+    });
+    world.emit("MACHINE_ADAPTER_REGISTERED", "RegisterMachineAdapter", {
+      machine_adapter_id: adapter.id,
+      machine_id: machine.id,
     });
   },
   GenerateRunCloseReport(world, input) {

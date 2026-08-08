@@ -416,6 +416,17 @@ Verification is access-gated: §9.6 is enforced in `AcceptCertificateAsEvidence`
 ### B-Q-72 — a supplier is a reference, not a record
 §7.1 lists `Supplier` and `SupplierPartApproval` among the boundary's candidate records; §24's demo-pack tree gives the supplier a file of its own. Neither is built. A supplier is a string carried on the `Shipment` and on a corrective action, exactly as the purchase order is a reference into ERP (§26.1: reference only, do not build procurement). **Why not:** with no supplier portal (§26.2), no approved-part list and no quality rating in scope, a `Supplier` record would hold a name and a CAGE code — and the CAGE code is already carried on each certificate, where verification actually matches it. A record holding only a name earns nothing and invites the assumption that supplier approval is modelled when it is not. **It is wanted the moment** supplier approval, a scorecard or an ageing corrective-action queue is specified — all three need somewhere to hang state per supplier rather than per consignment. Type: recorded gap, unbuilt.
 
+## Discovered building the specified remainder
+
+### B-Q-73 — machine evidence names its machine by an unchecked string
+`RegisterMachine` and `RegisterMachineAdapter` are now built, so a machine and the adapter that speaks for it can be recorded. `ReceiveMachineEvidence` still takes `machine_alias` and `adapter_alias` as plain strings and resolves neither, so evidence can arrive attributed to a machine nobody registered — and "which machine produced this reading" is answerable only as far as that string is honest.
+
+**Not closed, and the reason is cost rather than principle.** Ten scenarios call `ReceiveMachineEvidence`, including VF-003 — the reference scenario the entire nine-document stack is written around, and the one every other artifact cites by step number. Enforcing the binding means inserting a registration step into all ten, renumbering their steps, and moving the assertions and idempotency-replay targets that point at them. That is a large change to the project's most load-bearing artifact in service of a guard no scenario currently needs.
+
+**The fudge that was considered and rejected:** enforce the binding only once at least one machine is registered. It reads as principled and is not — it fails open by default, and the way to defeat it is to register nothing.
+
+**Revisit when** a scenario needs evidence traced to a specific machine (a calibration recall, or a machine-level quality question — "what else did this tool touch"), which is the first thing that makes the guard worth the churn. Type: recorded gap, deliberately unbuilt.
+
 ## Discovered by the valve-body demo pack (writing the domain out as plain data)
 
 *Source: `demo-packs/valve-body-assembly-v0.1/`. Writing VF-003's valve body out as plain files — part, BOM, procedure, tool, serials, torque check, quality path, customer view, report — surfaced three things the vocabulary has no word for. The pack invents nothing (`check.mjs` proves every name it uses is registered); the gaps are recorded here and left unbuilt rather than papered over. None are blocking: VF-003 and the whole bench run without them, because the system carries the same information on other records.*
