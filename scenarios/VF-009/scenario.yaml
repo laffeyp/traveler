@@ -24,6 +24,7 @@ seed: { deterministic_seed: 30090 }
 clock: { start_at: "2026-06-29T08:00:00Z", timezone: "UTC", mode: controlled }
 
 actors:
+  - { actor_id: machine_owner_1, actor_type: machine_integration_owner, product_caller_type: machine_integration_owner }
   - { actor_id: mfg_eng_1, actor_type: manufacturing_engineer, product_caller_type: manufacturing_engineer }
   - { actor_id: planner_1, actor_type: planner,                product_caller_type: planner }
   - { actor_id: operator_1, actor_type: operator,              product_caller_type: operator }
@@ -64,6 +65,10 @@ world:
       hidden: [controlled_machine_evidence_payload, internal_quality_notes, raw_machine_payload]
 
 steps:
+  # Equipment is registered before it can report anything. Evidence names its machine and adapter by
+  # RESOLVED reference, so an unregistered tool cannot file a reading (B-Q-73).
+  - { step_id: "000a", actor: machine_owner_1, operation: RegisterMachine, idempotency_key: vf009-reg-tt-001, input: { machine_alias: torque_tool_001, machine_id: "TT-001", name: "Torque tool 1", machine_type: torque_tool }, expect: { operation_succeeded: true, events_emitted: [MACHINE_REGISTERED] } }
+  - { step_id: "000b", actor: machine_owner_1, operation: RegisterMachineAdapter, idempotency_key: vf009-reg-machine_adapter_1, input: { adapter_alias: machine_adapter_1, adapter_id: "AD-TT-001", machine_alias: torque_tool_001 }, expect: { operation_succeeded: true, events_emitted: [MACHINE_ADAPTER_REGISTERED] } }
   - { step_id: "001", set_time: "2026-06-29T08:01:00Z", actor: mfg_eng_1, operation: CreateProcedureVersion, idempotency_key: vf009-001, input: { procedure_version_alias: procedure_version_v1, steps: [ { alias: procedure_step_torque, ordinal: 1, name: "Capture torque", data_collection_fields: [ { alias: data_field_torque, name: "Valve body torque", unit: Nm, lower_bound: 10.0, upper_bound: 12.0, nominal: 11.0, evaluation_mode: synchronous } ] } ] }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_CREATED] } }
   - { step_id: "002", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf009-002, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUBMITTED] } }
   - { step_id: "003", actor: mfg_eng_1, operation: ReleaseProcedureVersion, idempotency_key: vf009-003, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_RELEASED] } }

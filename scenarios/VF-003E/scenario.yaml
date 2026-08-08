@@ -20,6 +20,7 @@ seed: { deterministic_seed: 30035 }
 clock: { start_at: "2026-06-29T08:00:00Z", timezone: "UTC", mode: controlled }
 
 actors:
+  - { actor_id: machine_owner_1, actor_type: machine_integration_owner, product_caller_type: machine_integration_owner }
   - { actor_id: machine_adapter_1, actor_type: adapter, product_caller_type: adapter }
   - { actor_id: report_worker_1, actor_type: system_worker, product_caller_type: system_worker }
   - { actor_id: quality_1, actor_type: quality_engineer, product_caller_type: quality_engineer }
@@ -31,6 +32,10 @@ world:
   access_policies: []
 
 steps:
+  # Equipment is registered before it can report anything. Evidence names its machine and adapter by
+  # RESOLVED reference, so an unregistered tool cannot file a reading (B-Q-73).
+  - { step_id: "000a", actor: machine_owner_1, operation: RegisterMachine, idempotency_key: vf003e-reg-tt-001, input: { machine_alias: torque_tool_001, machine_id: "TT-001", name: "Torque tool 1", machine_type: torque_tool }, expect: { operation_succeeded: true, events_emitted: [MACHINE_REGISTERED] } }
+  - { step_id: "000b", actor: machine_owner_1, operation: RegisterMachineAdapter, idempotency_key: vf003e-reg-machine_adapter_1, input: { adapter_alias: machine_adapter_1, adapter_id: "AD-TT-001", machine_alias: torque_tool_001 }, expect: { operation_succeeded: true, events_emitted: [MACHINE_ADAPTER_REGISTERED] } }
   - { step_id: "001", set_time: "2026-06-29T08:40:00Z", actor: machine_adapter_1, operation: ReceiveMachineEvidence, idempotency_key: vf003e-001, input: { alias: torque_evidence_001, machine_alias: torque_tool_001, adapter_alias: machine_adapter_1, payload_type: torque_trace, occurred_at: "2026-06-29T08:34:30Z", received_at: "2026-06-29T08:40:00Z", payload: { serial_number: "VB-001", tool_id: "TT-001", measured_torque_nm: 11.1, trace_quality: acceptable } }, expect: { operation_succeeded: true, events_emitted: [MACHINE_EVIDENCE_RECEIVED] } }
   # FORBIDDEN: raw -> accepted. Must fail and leave the record raw.
   - { step_id: "002", actor: quality_1, operation: AcceptMachineEvidence, idempotency_key: vf003e-002, input: { evidence_alias: torque_evidence_001 }, expect: { operation_succeeded: false } }

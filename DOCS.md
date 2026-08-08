@@ -47,14 +47,16 @@ The nine-document stack in group 5 governs the first executable slice and stops 
 | [demo-packs/receiving-evidence-valve-body-v0.1/](demo-packs/receiving-evidence-valve-body-v0.1/) | The receiving boundary written out as plain files (boundary spec §24): one consignment of one valve body with its shipment, lines, supplier reference, certificates, receiving check, requirements, access policy and the fail-closed mutation list. Its `manifest.yaml` also records what §24 assumes and this build deliberately does not have — Supplier, PackingList, PurchaseOrderRef and ReceivingInspection as records — each with the reason. |
 | [demo-packs/valve-body-assembly-v0.1/](demo-packs/valve-body-assembly-v0.1/) | The valve body VF-003 already builds, written out as plain files (part, BOM, procedure, tool + calibration, serials, torque requirement, machine evidence, quality path, customer view, expected report) with a `README.md` and `manifest.yaml`. Data only — changes no code, runs nothing at build time. `demo-packs/check.mjs` proves every name it uses is registered in `contracts/` (the no-invention rule on the data side), and is gated. Writing it surfaced three vocabulary gaps, recorded as B-Q-31/32/33. |
 
-## 3. Sprint history — numbered 1:1 pairs (input contract → output report)
+## 3. Sprint history — sprints 001-028
 
-Two paired sets keyed by sprint number. Read the pair by number: the `sprints/` file for what was promised, the `signal-reports/` file for what was delivered and how it was checked.
+`sprints/sprint-NNN-*.md`, contiguous 001 to 028. One file per sprint, and the numbering scheme is recorded in [WORKING_AGREEMENT.md](WORKING_AGREEMENT.md) `§Numbering`.
+
+**Sprints 001-018 are 1:1 PAIRS**: an input contract in `sprints/` and an output report in `signal-reports/`, read together by number. **From 019 the two merged into one file.** The sprint file carries both halves — `## artifact contract` for what was promised and built, `## observation contract` for what was observed and how it was checked, which is what the signal report carried. That was not a decision anybody made; the pairing lapsed and the sprint file absorbed the content. Recorded here rather than backfilled, because ten retrospective reports derived from the sprint files that replaced them would add pages and no facts.
 
 | Folder | What it is |
 |---|---|
-| [sprints/](sprints/) `sprint-001..018-*.md` | The INPUT contract written before each sprint — plan/scope + signal/artifact/observation contracts + done criteria (the acceptance bar), later stamped closed. |
-| [signal-reports/](signal-reports/) `sprint-001..018-report.md` | The OUTPUT — a retrospective SIGNAL_REPORT (Observed / Expected / Delta self-grade / Hypothesis) with a timestamped signal trace, adversarial-review findings, and status. |
+| [sprints/](sprints/) `sprint-001..028-*.md` | Per sprint: plan/scope, artifact contract (files, exit codes), observation contract (what was observed, including the Rubber Duck Pass findings), done criteria, notes. Stamped closed with a date. |
+| [signal-reports/](signal-reports/) `sprint-001..018-report.md` | The separate OUTPUT half for sprints 001-018 only — a retrospective SIGNAL_REPORT (Observed / Expected / Delta self-grade / Hypothesis) with a timestamped signal trace and adversarial-review findings. |
 
 ## 4. Reviews — reusable kit + this project's pass
 

@@ -6,12 +6,33 @@
 import { describe, it, expect } from "vitest";
 import { InMemoryProductDriver } from "../../src/driver/engine.ts";
 
+/**
+ * Register the equipment before it can report. Machine evidence names its machine and adapter by resolved
+ * reference since B-Q-73, so a fixture that skips this cannot get a payload in at all — and these tests are
+ * about idempotency and assertion discrimination, not about the receiving guard.
+ */
+function equip(d: any) {
+  d.executeOperation(
+    "RegisterMachine",
+    { machine_alias: "m", machine_id: "TT-TEST" },
+    "machine_integration_owner",
+    "eq-m",
+  );
+  d.executeOperation(
+    "RegisterMachineAdapter",
+    { adapter_alias: "a", adapter_id: "AD-TEST", machine_alias: "m" },
+    "machine_integration_owner",
+    "eq-a",
+  );
+  return d;
+}
+
 const invCount = (d: any) =>
   [...d.world.records.values()].filter((r: any) => r.record_type === "InventoryItem").length;
 
 describe("write-boundary idempotency (transactional_unique_constraint)", () => {
   it("a duplicate key on CreateInventoryItem conflicts and creates zero new facts", () => {
-    const d = new InMemoryProductDriver();
+    const d = equip(new InMemoryProductDriver());
     const r1 = d.executeOperation(
       "CreateInventoryItem",
       { inventory_alias: "a1", serial_number: "S1", part_revision: "p" },
@@ -33,7 +54,7 @@ describe("write-boundary idempotency (transactional_unique_constraint)", () => {
   });
 
   it("distinct keys are NOT collapsed — a different key writes a new record", () => {
-    const d = new InMemoryProductDriver();
+    const d = equip(new InMemoryProductDriver());
     d.executeOperation(
       "CreateInventoryItem",
       { inventory_alias: "a1", serial_number: "S1", part_revision: "p" },
@@ -54,7 +75,7 @@ describe("write-boundary idempotency (transactional_unique_constraint)", () => {
 
   // Sprint-013 review [2]/[3]: idempotency keys are OP-SCOPED — two DIFFERENT ops sharing a key must NOT collide.
   it("two different ops sharing a key string do NOT collide (keys are op-scoped)", () => {
-    const d = new InMemoryProductDriver();
+    const d = equip(new InMemoryProductDriver());
     const a = d.executeOperation(
       "CreateInventoryItem",
       { inventory_alias: "inv", serial_number: "S1", part_revision: "p" },
@@ -77,7 +98,7 @@ describe("write-boundary idempotency (transactional_unique_constraint)", () => {
 
   // Sprint-013 review [4]: a FAILED op must not poison its key — a legitimate retry can still succeed.
   it("a transient failure does not poison the key (retry can succeed)", () => {
-    const d = new InMemoryProductDriver();
+    const d = equip(new InMemoryProductDriver());
     // ReceiveMachineEvidence is required_idempotency_key; force a handler failure with a bad input, same key.
     const bad = d.executeOperation(
       "NormalizeMachineEvidence",
@@ -113,13 +134,13 @@ describe("write-boundary idempotency (transactional_unique_constraint)", () => {
 
   it("the write-boundary constraint is DISTINCT from the required_idempotency_key memo (different failure mode)", () => {
     // required_idempotency_key (ReceiveMachineEvidence): a duplicate key returns the prior SUCCESS (retry).
-    const d = new InMemoryProductDriver();
+    const d = equip(new InMemoryProductDriver());
     const a = d.executeOperation(
       "ReceiveMachineEvidence",
       {
         alias: "e",
         machine_alias: "m",
-        adapter_alias: "ad",
+        adapter_alias: "a",
         payload_type: "torque_trace",
         payload: {},
       },
@@ -132,7 +153,7 @@ describe("write-boundary idempotency (transactional_unique_constraint)", () => {
       {
         alias: "e2",
         machine_alias: "m",
-        adapter_alias: "ad",
+        adapter_alias: "a",
         payload_type: "torque_trace",
         payload: {},
       },

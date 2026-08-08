@@ -10,8 +10,11 @@ describe("VF-003 — valve body failed torque redline rework (in-memory)", () =>
     expect(r.compilation_status).toBe("passed");
   });
 
-  it("executes all 58 steps", () => {
-    expect(r.steps_executed).toBe(58);
+  it("executes all 60 steps", () => {
+    // 58 until 2026-08-07, when two registration steps were prepended: machine evidence now names its machine
+    // and adapter by resolved reference (B-Q-73), so the equipment exists before it reports. Added with suffix
+    // ids ("000a"/"000b") so every later step keeps its number and no assertion or citation moved.
+    expect(r.steps_executed).toBe(60);
   });
 
   it("passes every blocking assertion (no failures)", () => {

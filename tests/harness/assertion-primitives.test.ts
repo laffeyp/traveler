@@ -118,6 +118,21 @@ describe("SDD assertion primitives discriminate", () => {
       payload: { serial_number: "S9" },
     });
     const d = new InMemoryProductDriver();
+    // Register the equipment first. Machine evidence names its machine and adapter by resolved reference
+    // since B-Q-73, so without this nothing arrives and the replay has no fact to duplicate — the test would
+    // pass on an empty world, which is the vacuous green this file exists to rule out.
+    d.executeOperation(
+      "RegisterMachine",
+      { machine_alias: "m", machine_id: "TT-TEST" },
+      "machine_integration_owner",
+      "eq-m",
+    );
+    d.executeOperation(
+      "RegisterMachineAdapter",
+      { adapter_alias: "a", adapter_id: "AD-TEST", machine_alias: "m" },
+      "machine_integration_owner",
+      "eq-a",
+    );
     d.executeOperation("ReceiveMachineEvidence", rme("x"), "adapter", "s1", "warm-key");
     // same (warm) key -> memo short-circuits -> zero new facts -> passes
     const warm = runIdempotencyReplay(d, {

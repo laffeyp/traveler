@@ -203,3 +203,73 @@ describe("the as-built is readable as an operation", () => {
     expect(result.output.children.map((c: any) => c.serial_number)).toEqual(["GK-400"]);
   });
 });
+
+describe("machine evidence names a machine that exists", () => {
+  // B-Q-73, closed 2026-08-07. The machine and adapter used to be plain strings nobody resolved, so evidence
+  // could arrive attributed to equipment that did not exist. "What else did this tool touch" is the question a
+  // calibration recall asks, and an unchecked string cannot answer it.
+  const equipped = () => {
+    const driver = new InMemoryProductDriver();
+    driver.setClock("2026-08-07T08:00:00Z");
+    call(
+      driver,
+      "RegisterMachine",
+      { machine_alias: "tool_a", machine_id: "TT-A" },
+      "machine_integration_owner",
+    );
+    call(
+      driver,
+      "RegisterMachine",
+      { machine_alias: "tool_b", machine_id: "TT-B" },
+      "machine_integration_owner",
+    );
+    call(
+      driver,
+      "RegisterMachineAdapter",
+      { adapter_alias: "adapter_a", adapter_id: "AD-A", machine_alias: "tool_a" },
+      "machine_integration_owner",
+    );
+    return driver;
+  };
+  const receive = (driver: any, machine: string, adapter: string) =>
+    call(
+      driver,
+      "ReceiveMachineEvidence",
+      {
+        alias: "ev",
+        machine_alias: machine,
+        adapter_alias: adapter,
+        payload_type: "torque_trace",
+        payload: {},
+      },
+      "adapter",
+    );
+
+  it("accepts evidence from a registered machine through its own adapter", () => {
+    const driver = equipped();
+    const result = receive(driver, "tool_a", "adapter_a");
+    expect(result.succeeded).toBe(true);
+    // Stored as a RESOLVED reference, not the alias string it came in as.
+    expect(driver.readRecord("ev").fields.machine).toBe(driver.readRecord("tool_a").id);
+  });
+
+  it("refuses evidence from a machine nobody registered", () => {
+    const driver = equipped();
+    expect(receive(driver, "ghost_tool", "adapter_a").succeeded).toBe(false);
+    expect(driver.readRecord("ev")).toBe(null);
+  });
+
+  it("refuses an adapter nobody registered", () => {
+    const driver = equipped();
+    expect(receive(driver, "tool_a", "ghost_adapter").succeeded).toBe(false);
+  });
+
+  it("refuses an adapter that speaks for a DIFFERENT machine", () => {
+    // The subtle one: both halves resolve, nothing looks wrong, and the attribution is still incorrect. This
+    // is how a reading from one tool ends up filed against another — and a recall on tool_b would miss it.
+    const driver = equipped();
+    const result = receive(driver, "tool_b", "adapter_a");
+    expect(result.failureClass).toBe("adapter_machine_mismatch");
+    expect(driver.readRecord("ev")).toBe(null);
+  });
+});

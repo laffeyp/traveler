@@ -1910,9 +1910,31 @@ export const HANDLERS: Record<string, H> = {
     };
   },
   ReceiveMachineEvidence(world, input) {
+    // The machine and the adapter are RESOLVED, not copied in as strings. They used to be exactly that —
+    // unchecked text — so evidence could arrive attributed to a machine that did not exist, and "which machine
+    // produced this reading" was answerable only as far as the string happened to be honest. That is the
+    // question a calibration recall asks ("what else did this tool touch"), and a string cannot answer it.
+    //
+    // Fails closed on both, and on a mismatch BETWEEN them. The mismatch is the subtler fault: both halves
+    // resolve, nothing looks wrong, and the attribution is still incorrect — which is how a reading from one
+    // tool ends up filed against another (B-Q-73).
+    const machine = world.get(input.machine_alias);
+    if (machine.record_type !== "Machine")
+      throw new Error(
+        `unregistered_machine: '${input.machine_alias}' is a ${machine.record_type}, not a registered Machine`,
+      );
+    const adapter = world.get(input.adapter_alias);
+    if (adapter.record_type !== "MachineAdapter")
+      throw new Error(
+        `unregistered_adapter: '${input.adapter_alias}' is a ${adapter.record_type}, not a registered MachineAdapter`,
+      );
+    if (adapter.fields.machine !== machine.id)
+      throw new Error(
+        `adapter_machine_mismatch: adapter '${input.adapter_alias}' speaks for a different machine than '${input.machine_alias}'`,
+      );
     const evidenceRecord = world.createInitial("MachineEvidenceRecord", input.alias, {
-      machine: input.machine_alias,
-      adapter: input.adapter_alias,
+      machine: machine.id,
+      adapter: adapter.id,
       payload_type: input.payload_type,
       occurred_at: input.occurred_at,
       received_at: input.received_at,

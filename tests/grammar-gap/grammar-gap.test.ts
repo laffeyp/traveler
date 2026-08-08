@@ -17,6 +17,26 @@ const norm = (d: any, alias: string) =>
     `n-${alias}`,
     `k-${alias}`,
   );
+/**
+ * Register the equipment before it can report anything. Machine evidence names its machine and adapter by
+ * resolved reference since B-Q-73, so a fixture that skips this is a fixture where nothing can arrive — and
+ * these tests are about what happens to a payload AFTER it arrives.
+ */
+const equip = (d: any) => {
+  d.executeOperation(
+    "RegisterMachine",
+    { machine_alias: "m", machine_id: "TT-TEST" },
+    "machine_integration_owner",
+    "reg-m",
+  );
+  d.executeOperation(
+    "RegisterMachineAdapter",
+    { adapter_alias: "a", adapter_id: "AD-TEST", machine_alias: "m" },
+    "machine_integration_owner",
+    "reg-a",
+  );
+  return d;
+};
 const recv = (d: any, alias: string, payload_type: string, payload: any) =>
   d.executeOperation(
     "ReceiveMachineEvidence",
@@ -54,7 +74,7 @@ describe("grammar-gap escalation (in-memory)", () => {
   // The trigger DISCRIMINATES across three cases — this is what makes it not a blanket rule.
   it("normalize discriminates: unsupported type -> gap; missing field -> gap; well-formed -> normalized", () => {
     // (1) unsupported payload_type
-    const d1 = new InMemoryProductDriver();
+    const d1 = equip(new InMemoryProductDriver());
     recv(d1, "e1", "vibration_spectrum", { serial_number: "S", blob: "x" });
     const r1 = norm(d1, "e1");
     expect(r1.succeeded).toBe(true);
@@ -65,7 +85,7 @@ describe("grammar-gap escalation (in-memory)", () => {
     expect(gaps(d1)[0].fields.reason).toBe("unsupported_payload_type");
 
     // (2) known type but MISSING a required normalized key
-    const d2 = new InMemoryProductDriver();
+    const d2 = equip(new InMemoryProductDriver());
     recv(d2, "e2", "torque_trace", { serial_number: "S" }); // no measured_torque_nm
     norm(d2, "e2");
     expect(d2.readRecord("e2").state).toBe("raw");
@@ -75,7 +95,7 @@ describe("grammar-gap escalation (in-memory)", () => {
     expect(gaps(d2)[0].fields.reason).toBe("missing_required_field");
 
     // (3) well-formed -> normalizes, NO gap (proves not a blanket refusal)
-    const d3 = new InMemoryProductDriver();
+    const d3 = equip(new InMemoryProductDriver());
     recv(d3, "e3", "torque_trace", { serial_number: "S", measured_torque_nm: 11.1 });
     norm(d3, "e3");
     expect(d3.readRecord("e3").state).toBe("normalized");
@@ -87,7 +107,7 @@ describe("grammar-gap escalation (in-memory)", () => {
   // escalate (invalid_required_field), not fabricate a reading from garbage.
   it("a present-but-invalid required field (null / NaN / wrong-type / empty) escalates, not normalizes", () => {
     for (const badVal of [null, NaN, "not-a-number", {}, ""]) {
-      const d = new InMemoryProductDriver();
+      const d = equip(new InMemoryProductDriver());
       recv(d, "e", "torque_trace", { serial_number: "S", measured_torque_nm: badVal });
       norm(d, "e");
       expect(d.readRecord("e").state, `measured_torque_nm=${JSON.stringify(badVal)}`).toBe("raw");
@@ -97,7 +117,7 @@ describe("grammar-gap escalation (in-memory)", () => {
       expect(gaps(d)[0].fields.reason).toBe("invalid_required_field");
     }
     // ...and an empty serial_number likewise escalates (string must be non-empty).
-    const d2 = new InMemoryProductDriver();
+    const d2 = equip(new InMemoryProductDriver());
     recv(d2, "e2", "torque_trace", { serial_number: "", measured_torque_nm: 11.1 });
     norm(d2, "e2");
     expect(d2.readRecord("e2").state).toBe("raw");
@@ -108,7 +128,7 @@ describe("grammar-gap escalation (in-memory)", () => {
   // must escalate as an unsupported type, NOT crash the normalizer.
   it("a prototype-name payload_type escalates (does not crash)", () => {
     for (const evil of ["toString", "constructor", "hasOwnProperty", "__proto__", "valueOf"]) {
-      const d = new InMemoryProductDriver();
+      const d = equip(new InMemoryProductDriver());
       recv(d, "e", evil, { serial_number: "S", measured_torque_nm: 11.1 });
       const r = norm(d, "e");
       expect(r.succeeded, `payload_type=${evil}`).toBe(true); // did not crash
@@ -120,7 +140,7 @@ describe("grammar-gap escalation (in-memory)", () => {
   // Sprint-012 review [3]: re-normalizing the same un-normalizable evidence with a DIFFERENT key must not
   // create a second (orphaning) GrammarGap — escalation is idempotent per record.
   it("re-normalize with a fresh key does not create a duplicate gap", () => {
-    const d = new InMemoryProductDriver();
+    const d = equip(new InMemoryProductDriver());
     recv(d, "e", "vibration_spectrum", { serial_number: "S" });
     d.executeOperation(
       "NormalizeMachineEvidence",
@@ -141,7 +161,7 @@ describe("grammar-gap escalation (in-memory)", () => {
   });
 
   it("CreateGrammarGap (the explicit op) also creates a gap + emits GRAMMAR_GAP_CREATED", () => {
-    const d = new InMemoryProductDriver();
+    const d = equip(new InMemoryProductDriver());
     const r = d.executeOperation(
       "CreateGrammarGap",
       {

@@ -159,3 +159,28 @@ None in the first slice. The project uses TypeScript, the Node standard library,
 ---
 
 *WORKING_AGREEMENT.md for the Distributed Factory Execution Record System. Project class backend / contract-first. Stack TS/Node. Strict validator extras. Contract registries are the locked vocabulary. The executor never invents behavior; missing behavior becomes ContractGap/TODO. Run `npm run validate:contracts` to gate.*
+
+## Numbering
+
+Three sequences, and they do not track each other. Written down because two of them have drifted and the drift
+was invisible until somebody counted.
+
+**Sprints** — `sprints/sprint-NNN-*.md`, contiguous from 001. A sprint gets a file whether or not it gets a
+separate signal report (see `DOCS.md §3`: the pairing lapsed at 019 and the sprint file absorbed both halves).
+`sprint-022` was backfilled on 2026-08-07 after landing without one; the file says so rather than pretending
+otherwise.
+
+**Scenarios** — `VF-NNN`, plus `IDEM-001` and `NEG-001` for the two that are not virtual-factory scenarios.
+**The sequence has a deliberate hole at VF-017 through VF-023**, and it stays: the receiving boundary
+specification's §13 assigns VF-024 through VF-030 to seven named scenarios, so those ids were reserved for
+their own content, and five scenarios that had wrongly taken them were renumbered out to VF-031..034
+(B-Q-58). Closing the hole now would renumber scenarios cited by name in the doc stack, the benches, the
+cross-driver equivalence list, the tests and every ledger entry that refers to them — a large edit whose only
+gain is that a number nobody counts becomes consecutive. **A gap is cheaper than a rename, provided it is
+explained.** New scenarios continue from the highest id in use.
+
+Letter suffixes (`VF-003A`..`VF-003F`) mean a variant of one scenario's subject, not a separate scenario.
+
+**B-Q entries** — `contracts/CONTRACT_GAPS.md`, contiguous from B-Q-1, appended in the order decisions were
+made. The file is grouped by the work that surfaced each entry, so the ids are NOT in file order; read them by
+number, not by position.

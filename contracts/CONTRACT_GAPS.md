@@ -424,14 +424,16 @@ All 26 battery arms now execute against the real driver. Type: recorded gap, clo
 
 ## Discovered building the specified remainder
 
-### B-Q-73 — machine evidence names its machine by an unchecked string
-`RegisterMachine` and `RegisterMachineAdapter` are now built, so a machine and the adapter that speaks for it can be recorded. `ReceiveMachineEvidence` still takes `machine_alias` and `adapter_alias` as plain strings and resolves neither, so evidence can arrive attributed to a machine nobody registered — and "which machine produced this reading" is answerable only as far as that string is honest.
+### B-Q-73 — machine evidence names its machine by an unchecked string — **CLOSED 2026-08-07**
+`ReceiveMachineEvidence` took `machine_alias` and `adapter_alias` as plain strings and resolved neither, so evidence could arrive attributed to equipment nobody had registered. Both are now resolved to registered records, and the adapter must actually speak for the machine the evidence names.
 
-**Not closed, and the reason is cost rather than principle.** Ten scenarios call `ReceiveMachineEvidence`, including VF-003 — the reference scenario the entire nine-document stack is written around, and the one every other artifact cites by step number. Enforcing the binding means inserting a registration step into all ten, renumbering their steps, and moving the assertions and idempotency-replay targets that point at them. That is a large change to the project's most load-bearing artifact in service of a guard no scenario currently needs.
+**Three refusals, and the third is the one worth having.** An unregistered machine and an unregistered adapter are obvious. The MISMATCH — an adapter that resolves, a machine that resolves, and the adapter speaks for a different machine — is the fault that looks like nothing: both halves check out and the attribution is still wrong, which is how a reading from one tool ends up filed against another. A calibration recall on the second tool would then miss it.
 
-**The fudge that was considered and rejected:** enforce the binding only once at least one machine is registered. It reads as principled and is not — it fails open by default, and the way to defeat it is to register nothing.
+**The cost I said this would carry was wrong.** The entry claimed closing it meant renumbering ten scenarios including VF-003. It did not: suffix step ids (`000a`, `000b`) were already in use elsewhere in this project, so the registration steps were prepended and every later step kept its number. No assertion, replay target or citation moved. The estimate was made without checking whether the harness allowed what it already allowed — and it deferred a real guard for a week on that basis.
 
-**Revisit when** a scenario needs evidence traced to a specific machine (a calibration recall, or a machine-level quality question — "what else did this tool touch"), which is the first thing that makes the guard worth the churn. Type: recorded gap, deliberately unbuilt.
+VF-015 needed a second adapter rather than a looser rule: it reports from two machines, and one adapter speaking for both would have made the mismatch check unenforceable. One adapter, one machine.
+
+Type: recorded gap, closed.
 
 ## Discovered by the valve-body demo pack (writing the domain out as plain data)
 
