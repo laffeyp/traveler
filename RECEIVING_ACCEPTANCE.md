@@ -1,13 +1,13 @@
 # Receiving evidence boundary — acceptance against §27
 
-*Measured 2026-08-01. Every row cites the artifact that settles it, so a reader can check the claim rather than
+*First measured 2026-08-01; criteria 13 and the deferred-decision section updated 2026-08-07. Every row cites the artifact that settles it, so a reader can check the claim rather than
 take it. Where a criterion is met in part, the row says which part and what is missing.*
 
 The boundary specification asks one question: **how does material become eligible to enter production?** Its
 answer is that arriving is not enough, and its §27 lists fifteen conditions for accepting the answer as built.
 
-**Fourteen pass. One passes in part.** The shortfall is criterion 13, and it is precise: 22 of the 26 named
-mutation arms execute against the real driver; the remaining four all wait on the same unbuilt thing.
+**All fifteen pass, as of 2026-08-07.** The last shortfall was criterion 13, and it closed when §11.6's
+supplier evidence packet was built: all 26 named mutation arms now execute against the real driver.
 
 ---
 
@@ -20,41 +20,34 @@ mutation arms execute against the real driver; the remaining four all wait on th
 | 3 | VF-024 through VF-030 compile | **pass** | all seven exist under the ids §13 assigns them. Five were renumbered to VF-031..034 on 2026-07-31 (B-Q-58) precisely to free these ids |
 | 4 | Receiving bench passes in memory | **pass** | 10/10 |
 | 5 | Receiving bench passes on node:sqlite | **pass** | 10/10 |
-| 6 | Cross-driver traces match | **pass** | byte-identical over 35 scenarios, `npm run test:vf003:backend` |
+| 6 | Cross-driver traces match | **pass** | byte-identical over 37 scenarios, `npm run test:vf003:backend` |
 | 7 | Missing evidence blocks release | **pass** | VF-025; battery arms *remove CoC*, *remove MTR*, *remove FAI*, *remove process certificate* |
 | 8 | Mismatched evidence blocks release | **pass** | VF-026 (wrong mill); battery arms for wrong part, revision, lot, serial, supplier |
 | 9 | Inaccessible controlled evidence cannot be verified by an unauthorized actor | **pass** | VF-029 end to end; `AcceptCertificateAsEvidence` refuses with `controlled_supplier_document_denied` |
 | 10 | Receiving-quarantined inventory cannot pass BuildCheck | **pass** | battery arms *RunBuildCheck with receiving-blocked inventory* and *InstallInventory with receiving-blocked inventory* |
 | 11 | Released inventory carries receiving evidence into SerialHistory | **pass** | VF-024, VF-035; the projection pulls certificates in by the serial they cover (§23.4) |
 | 12 | RunCloseReport summarizes receiving evidence for installed supplier material | **pass** | VF-035 end to end; `tests/receiving/close-report-receiving-evidence.test.ts` for the access contrast |
-| 13 | Fail-closed mutation battery passes | **partial** | **22 of 26 arms execute.** See below |
+| 13 | Fail-closed mutation battery passes | **pass** | **26 of 26 arms execute** against the real driver. See below |
 | 14 | Existing first-slice and extended benches still pass | **pass** | 14/14 and 7/7, both drivers, unchanged |
-| 15 | No open blocking ContractGaps | **pass** | 75 entries, none blocking. One open decision (B-Q-60) and three recorded gaps, all non-blocking |
+| 15 | No open blocking ContractGaps | **pass** | 77 entries, none blocking. The one open decision (B-Q-60) was answered on 2026-08-07 |
 
 ---
 
 ## Criterion 13, stated exactly
 
-The specification's §22 names 26 mutations. Twenty-two run against the real driver in
+The specification's §22 names 26 mutations. All 26 run against the real driver in
 `tests/receiving/fail-closed-battery.test.ts` and are required to fail closed. The suite also fails if an arm
-is in neither list, so the battery cannot quietly shrink.
+is in neither the enforced nor the not-enforceable list, so the battery cannot quietly shrink — and the
+not-enforceable list is now empty.
 
-The four that do not run wait on one thing: **supplier evidence has no access-filtered read path.** §11.6's
-`SupplierEvidencePacket` is unbuilt, so there is nothing to read a document *through*. Verification is
-access-gated and VF-029 proves it; reading a document afterwards is not. Recorded as B-Q-71.
-
-- read full supplier evidence without access
-- read controlled evidence through a summary actor
-- request a receiving report after a policy change
-- drill down into a controlled supplier document
-
-**A note on how that number moved.** It was 14 an hour before this document was written, and nothing was built
-to raise it. Eight arms had been declared not-enforceable for reasons the intervening sprints removed — "the
+**A note on how that number moved.** It was 14 when this document was first written, then 22, now 26. Nothing was built
+for the first jump. Eight arms had been declared not-enforceable for reasons the intervening sprints removed — "the
 release path has no authority model", "capture is treated as verification", "process_certificate is not a
 registered rule", "supplier identity is not part of document matching" — and the declarations never moved with
 them. A stale not-enforceable list is the mirror image of a fail-open: behaviour built with nothing proving it,
 and a criterion reading worse than the system deserves. Re-reading the list against what exists is part of
-maintaining the battery.
+maintaining the battery. The final four moved on 2026-08-07 when the evidence packet gave them a surface to
+act on — that jump was real work, not a re-reading.
 
 ---
 
@@ -71,14 +64,12 @@ and the check result (`passed | blocked | failed`) — B-Q-62/63/68.
 tracking the round trip is most of why the record exists, and `open → triaged → resolved` has nowhere to put an
 overdue response. They are absent because no scenario needs them yet (B-Q-66).
 
-**Four run-blocking operations** cite `undecided_authority`, whose caller list is empty, so every caller is
-refused. Who may stop a run and who may lift that stop is a real question nothing in the doc stack answers
-(B-Q-59).
-
-**One decision waiting on the Architect.** `ReleaseFromQuarantine` is exercised by both a planner and a quality
-engineer (B-Q-60). Its revisit trigger fired when the verification lifecycle landed: clearing a consignment is
-now a quality act, so the two paths onto the floor no longer agree. Narrowing it would change behaviour VF-034
-depends on, so it is recorded rather than decided here.
+**Two authority questions, both since answered.** `BlockRun` and its three siblings cited an
+`undecided_authority` rule that refused every caller, and `ReleaseFromQuarantine` was exercised by both a
+planner and a quality engineer. Both were decided on 2026-08-07 (B-Q-59, B-Q-60) and the operations built:
+stopping a run is quality's act, and material held for a quality reason is released by quality. Narrowing the
+second cost VF-034 a proof — its planner had been refused for having no passed check and would now be refused
+on authority first — so that step was re-actored and the authority refusal added beside it, keeping both.
 
 ---
 

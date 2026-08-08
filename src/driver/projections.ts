@@ -292,6 +292,173 @@ function receivingEvidenceSummary(
   });
 }
 
+/**
+ * The boundary spec's §11.6 supplier evidence packet: everything the receiving decision on one consignment
+ * rested on, assembled for a named reader at a named depth.
+ *
+ * This is the READ path supplier evidence never had. Verification has been access-gated since §9.6 was built —
+ * an actor who cannot see a controlled document cannot verify it — but reading a document AFTERWARDS went
+ * through nothing, so four arms of the fail-closed mutation battery had no surface to act on (B-Q-71).
+ *
+ * `accessScope` decides depth, and existence is never hidden. A customer is told their consignment carried a
+ * verified certificate of conformance; they are not shown its number, the engineer who signed it, the mill's
+ * CAGE code or the supplier's test values. That distinction is the whole §12 access model in one function:
+ * summary answers "was this checked", full answers "by whom, against what".
+ */
+export function assembleSupplierEvidencePacket(
+  world: World,
+  shipment: FactoryRecord,
+  accessScope = "customer_summary_access",
+): any {
+  const full = accessScope !== "customer_summary_access";
+  const lines = world
+    .byType("ShipmentLine")
+    .filter((line) => tryGet(world, line.fields.shipment)?.id === shipment.id);
+
+  const documentsFor = (line: FactoryRecord) =>
+    world.byType("Certificate").filter((certificate) => {
+      const rule = RECEIVING_RULES.find(
+        (candidate) => candidate.cert_type === certificate.fields.cert_type,
+      );
+      return rule?.scope === "part_revision"
+        ? certificate.fields.part_revision === line.fields.part_revision
+        : certificate.fields.serial_or_lot === line.fields.serial_or_lot;
+    });
+
+  const checksFor = (line: FactoryRecord) =>
+    world.byType("ReceivingCheck").filter((check) => check.fields.shipment_line === line.id);
+
+  const attached: any[] = [];
+  const decisions: any[] = [];
+  const mismatches: any[] = [];
+  for (const line of lines) {
+    for (const certificate of documentsFor(line)) {
+      // A CONTROLLED document is named and its state given; its contents are not. Withholding its existence
+      // would be worse than useless — a reader who cannot tell whether a document exists cannot tell an
+      // incomplete consignment from a restricted one, and would chase paperwork that is already on file.
+      const controlled = certificate.fields.export_control != null;
+      attached.push({
+        certificate_alias: certificate.alias || certificate.id,
+        document_type: certificate.fields.cert_type,
+        status: certificate.state,
+        controlled,
+        ...(full
+          ? {
+              part_revision: certificate.fields.part_revision,
+              serial_or_lot: certificate.fields.serial_or_lot,
+              cage_code: certificate.fields.cage_code,
+              expires_at: certificate.fields.expires_at,
+              export_control: certificate.fields.export_control,
+            }
+          : { withheld: controlled ? "export_controlled_detail" : "summary_scope" }),
+      });
+      if (certificate.state === "verified")
+        decisions.push({
+          certificate_alias: certificate.alias || certificate.id,
+          decision: "verified",
+          ...(full
+            ? {
+                verified_by: certificate.fields.verified_by,
+                verified_at: certificate.fields.verified_at,
+              }
+            : {}),
+        });
+      if (certificate.state === "rejected")
+        decisions.push({
+          certificate_alias: certificate.alias || certificate.id,
+          decision: "rejected",
+          ...(full ? { rejected_by: certificate.fields.rejected_by } : {}),
+          // The REASON a document was refused is summary-safe on purpose. A customer being told their
+          // consignment was held for a wrong-revision certificate learns nothing controlled, and telling them
+          // only that something was rejected is the kind of answer that generates a phone call.
+          reason: certificate.fields.rejection_reason,
+        });
+      if (
+        certificate.fields.part_revision !== undefined &&
+        certificate.fields.part_revision !== line.fields.part_revision
+      )
+        mismatches.push({
+          certificate_alias: certificate.alias || certificate.id,
+          field: "part_revision",
+          document_says: certificate.fields.part_revision,
+          goods_are: line.fields.part_revision,
+        });
+    }
+  }
+
+  const lastChecks = lines.map((line) => checksFor(line).at(-1)).filter(Boolean) as FactoryRecord[];
+  const status =
+    lastChecks.length === 0
+      ? "never_checked"
+      : lastChecks.every((check) => check.state === "passed")
+        ? "passed"
+        : lastChecks.some((check) => check.state === "failed")
+          ? "failed"
+          : "blocked";
+
+  return {
+    packet_header: {
+      title: "Supplier Evidence Packet",
+      shipment_alias: shipment.alias || shipment.id,
+      access_scope: accessScope,
+      depth: full ? "full" : "summary",
+    },
+    shipment: {
+      shipment_id: shipment.id,
+      supplier: shipment.fields.supplier,
+      status: shipment.state,
+      ...(full
+        ? {
+            purchase_order_ref: shipment.fields.purchase_order_ref,
+            packing_list_ref: shipment.fields.packing_list_ref,
+            received_at: shipment.fields.received_at,
+          }
+        : {}),
+    },
+    shipment_lines: lines.map((line) => ({
+      shipment_line_alias: line.alias || line.id,
+      part_revision: line.fields.part_revision,
+      serial_or_lot: line.fields.serial_or_lot,
+      status: line.state,
+    })),
+    inventory_items: lines.map((line) => {
+      const item = tryGet(world, line.fields.inventory_item);
+      return {
+        inventory_alias: line.fields.inventory_item,
+        serial_number: item?.fields.serial_number ?? null,
+        status: item?.state ?? "unresolvable",
+      };
+    }),
+    required_documents: lines.flatMap((line) =>
+      (line.fields.required_documents ?? []).map((documentType: string) => ({
+        shipment_line_alias: line.alias || line.id,
+        document_type: documentType,
+        satisfied: documentsFor(line).some(
+          (certificate) =>
+            certificate.fields.cert_type === documentType && certificate.state === "verified",
+        ),
+      })),
+    ),
+    attached_documents: attached,
+    verification_decisions: decisions,
+    mismatches,
+    access_filtering: {
+      scope: accessScope,
+      depth: full ? "full" : "summary",
+      // Named rather than implied: a reader at summary depth should be able to see WHAT was withheld from
+      // them, so they know to ask rather than assume the consignment was thin.
+      withheld: full
+        ? []
+        : ["certificate_detail", "supplier_test_values", "verifier_identity", "purchase_order_ref"],
+      controlled_documents_present: attached.some((document) => document.controlled),
+    },
+    final_receiving_status: {
+      status,
+      blockers: [...new Set(lastChecks.flatMap((check) => check.fields.blockers ?? []))],
+    },
+  };
+}
+
 export function assembleRunCloseReport(
   world: World,
   run: FactoryRecord,

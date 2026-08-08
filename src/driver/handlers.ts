@@ -11,7 +11,11 @@ import type { World, FactoryRecord } from "./world.ts";
 import { moveState, moveStateTo, tryGet, step, createGrammarGap } from "./world.ts";
 import { NORMALIZE_GRAMMAR, keyPresentAndValid } from "./registry.ts";
 import { RECEIVING_RULES, DOCUMENT_TYPES, guardRuleCallerTypes } from "./registry.ts";
-import { assembleRunCloseReport, asBuiltProjection } from "./projections.ts";
+import {
+  assembleRunCloseReport,
+  asBuiltProjection,
+  assembleSupplierEvidencePacket,
+} from "./projections.ts";
 
 /**
  * An operation handler: mutate the World for `input` (the operation input), emitting events explicitly. `actor` is
@@ -1505,6 +1509,39 @@ export const HANDLERS: Record<string, H> = {
   // number, a revision reason and a new release date - which is this project's existing report supersession
   // (B-Q-46). The signature is the same three-part manifestation used for approvals: who, when, and what it
   // attests, and it refuses an unidentified signer (B-Q-47).
+  /**
+   * The §11.6 supplier evidence packet for one consignment: what the receiving decision rested on, assembled
+   * for a named reader at a named depth. A governed report, so it inherits the access-policy snapshot, the
+   * staleness rules and supersession that already exist — and so a packet generated for one scope goes
+   * `regeneration_required` when that policy changes, rather than being served stale at a depth nobody
+   * currently holds (B-Q-71).
+   */
+  GenerateSupplierEvidencePacket(world, input) {
+    const shipment = world.get(input.shipment_alias);
+    if (shipment.record_type !== "Shipment")
+      throw new Error(
+        `validation_error: '${input.shipment_alias}' is a ${shipment.record_type}, not a Shipment`,
+      );
+    const scope = input.access_scope ?? "customer_summary_access";
+    const report = world.create("GeneratedReport", input.report_alias, "generated", {
+      status: "generated",
+      report_type: "SupplierEvidencePacket",
+      shipment: shipment.id,
+      report_definition_version: input.report_definition_version ?? 1,
+      generated_at: input.generated_at ?? world.clock,
+      access_scope: scope,
+      // A packet is bound to the scope it was generated for, like any other controlled export: it carries
+      // supplier detail that a later policy change may put out of reach, so it must be able to go stale.
+      filtering_mode: "controlled_export",
+      regeneration_required: false,
+      sections: assembleSupplierEvidencePacket(world, shipment, scope),
+    });
+    world.emit("REPORT_REQUESTED", "GenerateSupplierEvidencePacket", { report_id: report.id });
+    world.emit("REPORT_GENERATION_STARTED", "GenerateSupplierEvidencePacket", {
+      report_id: report.id,
+    });
+    world.emit("REPORT_GENERATED", "GenerateSupplierEvidencePacket", { report_id: report.id });
+  },
   GenerateCertificateOfConformance(world, input, actor) {
     if (!actor)
       throw new Error(

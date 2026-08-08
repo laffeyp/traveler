@@ -305,6 +305,128 @@ const ENFORCED: Record<string, () => boolean> = {
       !released(d)
     );
   },
+  // --- §22.4 report / access. These four were the last declared not-enforceable, and they all waited on the
+  // same missing thing: supplier evidence had no access-filtered READ path. Verification was gated from the
+  // start (§9.6) but reading a document afterwards went through nothing, so there was no surface for these to
+  // act on. §11.6's SupplierEvidencePacket is that surface (B-Q-71 closed 2026-08-07).
+  "read full supplier evidence without access": () => {
+    const d = rig();
+    cert(d, { export_control: { allowed_nationalities: ["US"] } });
+    line(d);
+    d.executeOperation(
+      "GenerateSupplierEvidencePacket",
+      { report_alias: "pkt", shipment_alias: "sh", access_scope: "customer_summary_access" },
+      "quality_engineer",
+      key(),
+      undefined,
+      "quality_1",
+    );
+    const sections = d.readRecord("pkt")?.fields?.sections;
+    if (!sections) return false;
+    const document = sections.attached_documents[0];
+    // Existence is disclosed; the contents are not. A reader who cannot tell whether a document exists cannot
+    // tell an incomplete consignment from a restricted one.
+    return (
+      document.certificate_alias !== undefined &&
+      document.cage_code === undefined &&
+      document.export_control === undefined &&
+      document.withheld === "export_controlled_detail" &&
+      sections.shipment.purchase_order_ref === undefined
+    );
+  },
+  "read controlled evidence through summary actor": () => {
+    // The same consignment read at both depths. A summary that withholds nothing, or a full read that
+    // withholds something, both fail here — so the arm cannot pass on a packet that is simply always empty.
+    const d = rig();
+    cert(d, { export_control: { allowed_nationalities: ["US"] } });
+    line(d);
+    for (const [alias, scope] of [
+      ["pkt_summary", "customer_summary_access"],
+      ["pkt_full", "internal_full_access"],
+    ] as const)
+      d.executeOperation(
+        "GenerateSupplierEvidencePacket",
+        { report_alias: alias, shipment_alias: "sh", access_scope: scope },
+        "quality_engineer",
+        key(),
+        undefined,
+        "quality_1",
+      );
+    const summary = d.readRecord("pkt_summary")?.fields?.sections;
+    const deep = d.readRecord("pkt_full")?.fields?.sections;
+    if (!summary || !deep) return false;
+    return (
+      summary.access_filtering.depth === "summary" &&
+      summary.access_filtering.withheld.length > 0 &&
+      summary.attached_documents[0].export_control === undefined &&
+      deep.access_filtering.depth === "full" &&
+      deep.access_filtering.withheld.length === 0 &&
+      deep.attached_documents[0].export_control !== undefined
+    );
+  },
+  "request receiving report after policy change": () => {
+    // A packet is bound to the scope it was generated for, so a later policy change must make it stale rather
+    // than let it be served at a depth nobody currently holds. The report layer already does this for the
+    // run-close export; the packet inherits it by being a governed report rather than a bare read model.
+    const d = rig();
+    cert(d, {});
+    line(d);
+    d.executeOperation(
+      "GenerateSupplierEvidencePacket",
+      { report_alias: "pkt", shipment_alias: "sh", access_scope: "customer_summary_access" },
+      "quality_engineer",
+      key(),
+      undefined,
+      "quality_1",
+    );
+    const report = d.readRecord("pkt");
+    if (report?.fields?.filtering_mode !== "controlled_export") return false;
+    // Mark the policy as changed AFTER generation, in the shape GetReport actually reads.
+    d.world.accessPolicyChanges = [
+      { policy_alias: "customer_summary_access", effective_at: "2030-01-01T00:00:00Z" },
+    ];
+    const read = d.executeOperation("GetReport", { report_alias: "pkt" }, "system_worker", key());
+    return (
+      read.succeeded &&
+      read.output?.regeneration_required === true &&
+      read.output.regeneration_reason === "access_policy_change_for_controlled_export"
+    );
+  },
+  "attempt bounded drill-down into controlled supplier document": () => {
+    const d = rig();
+    cert(d, { export_control: { allowed_nationalities: ["US"] } });
+    line(d);
+    d.world.accessPolicies = [
+      {
+        alias: "customer_summary_access",
+        visible: ["SupplierEvidencePacket.summary"],
+        hidden: ["certificate_detail", "supplier_test_values", "verifier_identity"],
+      },
+    ];
+    d.executeOperation(
+      "GenerateSupplierEvidencePacket",
+      { report_alias: "pkt", shipment_alias: "sh", access_scope: "customer_summary_access" },
+      "quality_engineer",
+      key(),
+      undefined,
+      "quality_1",
+    );
+    const drill = d.executeOperation(
+      "BoundedDrillDown",
+      { scope: "shipment", report_alias: "pkt", access_profile: "customer_summary_access" },
+      "support_user",
+      key(),
+      undefined,
+      "viewer_1",
+    );
+    // Filtered AND audited: §19 requires the drill-down to be scoped, capped, access-filtered and recorded.
+    return (
+      drill.succeeded &&
+      drill.output?.access_filtered === true &&
+      drill.output.hidden.includes("certificate_detail") &&
+      d.world.events.some((e: any) => e.type === "BOUNDED_DRILL_DOWN_REQUESTED")
+    );
+  },
   "raise a corrective action against a supplier with nothing on file": () => {
     // §10.14's precondition as a mutation. A corrective action opened on a consignment that PASSED is a
     // complaint with no evidence behind it, and a supplier scorecard built from those stops meaning anything.
@@ -479,25 +601,15 @@ const ENFORCED: Record<string, () => boolean> = {
 
 /** Arms that cannot be enforced yet, each naming the recorded decision that says why. */
 /**
- * Arms that cannot be executed yet, each with the reason. This list is CHECKED, not assumed: eight entries
- * were retired on 2026-07-31 once sprints 019-022 made them executable (operation authorization, the
- * verification act and its access check, the process-certificate rule, cage-code matching at verification).
- * A stale not-enforceable list is the mirror of a fail-open — built behaviour with nothing proving it — so
- * re-reading these against what now exists is part of maintaining the battery, not paperwork.
+ * Arms that cannot be executed. There are none.
  *
- * The four that remain all wait on the same missing thing: supplier evidence has no access-filtered READ
- * path. Verification is access-gated (§9.6, proven above and in VF-029); reading a document afterwards is not,
- * because §11.6's SupplierEvidencePacket report does not exist.
+ * The list is kept rather than deleted, because it is the mechanism that stops the battery drifting: an arm
+ * absent from BOTH lists fails the suite, so a mutation cannot quietly stop being checked. It has been wrong
+ * in both directions — twelve stale declarations were retired on 2026-07-31 and the last four on 2026-08-07,
+ * each for reasons the intervening work had removed. Re-reading it against what exists is part of maintaining
+ * the battery, not paperwork about it.
  */
-const NOT_ENFORCEABLE: Record<string, string> = {
-  "read full supplier evidence without access":
-    "no access-filtered read path for supplier evidence: §11.6 SupplierEvidencePacket is unbuilt (B-Q-71)",
-  "read controlled evidence through summary actor": "B-Q-71: same missing read path",
-  "request receiving report after policy change":
-    "B-Q-71: no receiving report exists to go stale after a policy change",
-  "attempt bounded drill-down into controlled supplier document":
-    "B-Q-71: drill-down has no supplier-evidence surface to reach into",
-};
+const NOT_ENFORCEABLE: Record<string, string> = {};
 
 describe("fail-closed mutation battery (boundary spec §22, acceptance criterion 13)", () => {
   const named = Object.values(battery.mutations as Record<string, string[]>).flat();
@@ -520,7 +632,7 @@ describe("fail-closed mutation battery (boundary spec §22, acceptance criterion
     // this comment read "16 of 28" while the assertion said 14 of 26 — a stale count in a test about honest
     // counting, which is why it is stated twice here and checked against the battery's own list.
     expect(named.length).toBe(26);
-    expect(enforced).toBe(22);
-    expect(named.length - enforced).toBe(4);
+    expect(enforced).toBe(26);
+    expect(named.length - enforced).toBe(0);
   });
 });

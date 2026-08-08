@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/reports/SupplierEvidencePacket.schema.json",
+  "title": "SupplierEvidencePacket payload (generated from reports.yaml required_sections)",
+  "type": "object",
+  "required": [
+    "report_type",
+    "report_definition_version",
+    "generated_at",
+    "sections"
+  ],
+  "properties": {
+    "report_type": {
+      "const": "SupplierEvidencePacket"
+    },
+    "report_definition_version": {
+      "type": "integer"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "sections": {
+      "type": "object",
+      "required": [
+        "packet_header",
+        "shipment",
+        "shipment_lines",
+        "inventory_items",
+        "required_documents",
+        "attached_documents",
+        "verification_decisions",
+        "mismatches",
+        "access_filtering",
+        "final_receiving_status"
+      ],
+      "properties": {
+        "packet_header": {},
+        "shipment": {},
+        "shipment_lines": {},
+        "inventory_items": {},
+        "required_documents": {},
+        "attached_documents": {},
+        "verification_decisions": {},
+        "mismatches": {},
+        "access_filtering": {},
+        "final_receiving_status": {}
+      }
+    }
+  }
+}

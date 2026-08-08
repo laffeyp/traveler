@@ -42,3 +42,22 @@ reports:
        traceability, authorized_signature]
     regeneration_required_after:
       [report_definition_change, source_record_correction]
+
+  # The boundary spec's §11.6. A governed report rather than a bare read model, because three of the four
+  # unexercised fail-closed mutation arms are about a report going STALE after a policy change, being read at
+  # the wrong depth, and being drilled into — and the report layer already carries the access_policy_snapshot,
+  # the regeneration triggers and the supersession that those need. A read model would have meant building all
+  # of it again under a different name (B-Q-71 closed).
+  - name: SupplierEvidencePacket
+    owning_module: report
+    report_definition_version: 1
+    payload_schema_ref: schemas/reports/SupplierEvidencePacket.schema.json
+    generated_by: GenerateSupplierEvidencePacket
+    source_projections: [SerialHistory, ReportSourceIndex]
+    source_records: [Shipment, ShipmentLine, InventoryItem, Certificate, ReceivingCheck, Nonconformance]
+    required_sections:
+      [packet_header, shipment, shipment_lines, inventory_items, required_documents,
+       attached_documents, verification_decisions, mismatches, access_filtering,
+       final_receiving_status]
+    regeneration_required_after:
+      [report_definition_change, access_policy_change_for_controlled_export, source_record_correction]
