@@ -133,3 +133,91 @@ describe("operation authorization", () => {
     });
   });
 });
+
+describe("authority is settled before idempotency", () => {
+  /**
+   * Found by reading `driver.ts` on 2026-08-08. Both idempotency short-circuits — the memo for
+   * `required_idempotency_key` and the write-boundary conflict for `transactional_unique_constraint` — return
+   * a result without running a handler, and both sat AHEAD of the authorization check. So a caller with no
+   * authority who knew a used key got the prior result back, `output` included, for any of the 106 memoized
+   * operations. No handler ran and no facts changed, so it was disclosure rather than escalation. It was still
+   * an authority check standing behind a cache lookup.
+   *
+   * It went unnoticed because the harness's own idempotency replay passed the literal string "replay" as its
+   * caller type — a name no rule admits, which should have been denied from the moment authorization landed.
+   * The memo answered before anything asked.
+   */
+  // SubmitProcedureVersionForReview is `required_idempotency_key`, so a second call with the same key is
+  // served from the MEMO — which is the short-circuit under test. CreateProcedureVersion is
+  // `transactional_unique_constraint` and would conflict instead, testing the other branch by accident.
+  const seed = () => {
+    const driver = new InMemoryProductDriver();
+    driver.setClock("2026-08-08T08:00:00Z");
+    driver.executeOperation(
+      "CreateProcedureVersion",
+      { procedure_version_alias: "pv", steps: [] },
+      "manufacturing_engineer",
+      "s0",
+    );
+    const first = driver.executeOperation(
+      "SubmitProcedureVersionForReview",
+      { procedure_version_alias: "pv" },
+      "manufacturing_engineer",
+      "s1",
+      "KEY-1",
+    );
+    expect(first.succeeded).toBe(true); // the key is now warm in the memo
+    return driver;
+  };
+
+  it("an unauthorized caller cannot read a memoized result by presenting its key", () => {
+    const driver = seed();
+    const replay = driver.executeOperation(
+      "SubmitProcedureVersionForReview",
+      { procedure_version_alias: "pv" },
+      "operator", // not permitted by procedure_authoring
+      "s2",
+      "KEY-1",
+    );
+    expect(replay.succeeded).toBe(false);
+    expect(replay.failureClass).toBe("authorization_denied");
+    expect(replay.recordsWritten).toBeUndefined(); // no prior result served back
+  });
+
+  it("an unregistered caller type cannot either — the string the replay used to pass", () => {
+    const driver = seed();
+    expect(
+      driver.executeOperation(
+        "SubmitProcedureVersionForReview",
+        { procedure_version_alias: "pv" },
+        "replay",
+        "s2",
+        "KEY-1",
+      ).failureClass,
+    ).toBe("authorization_denied");
+  });
+
+  it("the PERMITTED caller still gets the memoized result, so the fix did not break the retry", () => {
+    // Without this the two refusals above would pass just as well against a driver whose memo never returns.
+    const driver = seed();
+    const retry = driver.executeOperation(
+      "SubmitProcedureVersionForReview",
+      { procedure_version_alias: "pv" },
+      "manufacturing_engineer",
+      "s2",
+      "KEY-1",
+    );
+    expect(retry.succeeded).toBe(true);
+    // Served from the memo: the handler did not re-run, so no second submission event was emitted.
+    expect(
+      driver.world.events.filter((e: any) => e.type === "PROCEDURE_VERSION_SUBMITTED").length,
+    ).toBe(1);
+  });
+
+  it("an unbuilt operation still reports not_implemented ahead of any denial", () => {
+    const driver = new InMemoryProductDriver();
+    expect(
+      driver.executeOperation("GenerateRunCloseNarration", {}, "operator", "s1", "K").failureClass,
+    ).toBe("not_implemented");
+  });
+});

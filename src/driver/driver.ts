@@ -49,6 +49,34 @@ export class InMemoryProductDriver {
     // Without this, two DIFFERENT ops sharing a key string collide — a write-bounded op would suppress an
     // unrelated write, and a memoized op would return another op's result object (sprint-013 review [2]/[3]).
     const scopedKey = idempotencyKey ? `${op}:${idempotencyKey}` : undefined;
+
+    // WHO you are is settled before WHETHER this is a retry. Both idempotency short-circuits below return a
+    // result without running a handler, and until 2026-08-08 both sat AHEAD of the authorization check — so a
+    // caller with no authority who knew a used key got the prior result back, including its `output`, for any
+    // of the 106 memoized operations. No handler ran and no facts changed, so it was disclosure rather than
+    // escalation; it was still an authority check standing behind a cache lookup. The harness's own idempotency
+    // replay had been passing the literal string "replay" as its caller type since authorization landed, and
+    // nothing noticed, because the memo answered before anything asked.
+    //
+    // `not_implemented` stays first: an operation nobody built must say so rather than report a denial that
+    // hides the fact there is nothing there to deny.
+    const handlerExists = Object.hasOwn(HANDLERS, op);
+    if (handlerExists && !callerMayInvoke(op, actorCallerType)) {
+      return {
+        operationName: op,
+        succeeded: false,
+        failureClass: "authorization_denied",
+        output: {
+          caller_type: actorCallerType ?? null,
+          authorization_rule: opAuthorizationRule.get(op),
+        },
+        correlationId: this.world.correlation,
+        idempotencyKey,
+        contractVersion: "contracts-0.4.1",
+        operationContractVersion: `${op}.v1`,
+        productBuild: "build_001",
+      };
+    }
     // required_idempotency_key: in-instance memo returns the prior result (idempotent retry, Contract Spec §6).
     if (memoized && scopedKey && this.idempotencyMemo.has(scopedKey))
       return this.idempotencyMemo.get(scopedKey)!;

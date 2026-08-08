@@ -134,16 +134,37 @@ describe("SDD assertion primitives discriminate", () => {
       "eq-a",
     );
     d.executeOperation("ReceiveMachineEvidence", rme("x"), "adapter", "s1", "warm-key");
+    // The synthetic scenario declares its actor, as a real one must: the compiler requires every step's actor
+    // to be a declared actor, and since 2026-08-08 the replay presents that actor's caller type rather than
+    // the literal string "replay". A fixture with no actors was replaying as nobody, which no compiled
+    // scenario can do.
+    const actors = [{ actor_id: "machine_adapter_1", product_caller_type: "adapter" }];
     // same (warm) key -> memo short-circuits -> zero new facts -> passes
     const warm = runIdempotencyReplay(d, {
-      steps: [{ step_id: "s1", operation: "ReceiveMachineEvidence", input: rme("x2") }],
+      actors,
+      steps: [
+        {
+          step_id: "s1",
+          actor: "machine_adapter_1",
+          operation: "ReceiveMachineEvidence",
+          input: rme("x2"),
+        },
+      ],
       idempotency_replay_checks: [{ check_id: "c1", step_id: "s1", idempotency_key: "warm-key" }],
     });
     expect(warm).toEqual([]);
     // COLD key -> the handler actually re-runs (mints a fresh record) -> a duplicate fact IS created ->
     // the check FAILS. This proves the replay assertion has teeth (it is the memo doing the work).
     const cold = runIdempotencyReplay(d, {
-      steps: [{ step_id: "s1", operation: "ReceiveMachineEvidence", input: rme("x3") }],
+      actors,
+      steps: [
+        {
+          step_id: "s1",
+          actor: "machine_adapter_1",
+          operation: "ReceiveMachineEvidence",
+          input: rme("x3"),
+        },
+      ],
       idempotency_replay_checks: [
         { check_id: "c2", step_id: "s1", idempotency_key: "cold-key-unused" },
       ],

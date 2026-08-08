@@ -437,6 +437,13 @@ VF-015 needed a second adapter rather than a looser rule: it reports from two ma
 
 Type: recorded gap, closed.
 
+### B-Q-74 — the authorization check sat behind the idempotency short-circuits
+Found on 2026-08-08 by reading `src/driver/driver.ts` rather than by running anything. `executeOperation` ordered its checks: memo short-circuit for `required_idempotency_key`, write-boundary conflict for `transactional_unique_constraint`, `not_implemented`, then authorization. Both idempotency paths return a result without running a handler, and both preceded the authority check — so a caller with no authority who presented a used key received the prior result, `output` included, for any of the 106 memoized operations. No handler ran and no facts changed: **disclosure, not escalation.** It was still an authority check standing behind a cache lookup.
+
+**Why nothing caught it.** The harness's own idempotency replay (`src/harness/run.ts`) passed the literal string `"replay"` as its caller type — a name no rule admits, which should have been refused from the moment authorization landed in sprint 019. It was not, because the memo answered before anything asked. The replay path had therefore been exercising no authority at all for nine days, and every gate stayed green throughout.
+
+**Fixed.** Authority is settled before either short-circuit; `not_implemented` stays first, so an operation nobody built still says so rather than reporting a denial that hides the absence. The replay now presents the step's own actor's caller type, so it exercises the real authority path. Locked by four tests including a positive control — a permitted caller must still be served from the memo, or the two refusals would pass equally against a driver whose memo never returns. Verified red-capable by moving the check back. Type: recorded defect, fixed.
+
 ## Discovered by the valve-body demo pack (writing the domain out as plain data)
 
 *Source: `demo-packs/valve-body-assembly-v0.1/`. Writing VF-003's valve body out as plain files — part, BOM, procedure, tool, serials, torque check, quality path, customer view, report — surfaced three things the vocabulary has no word for. The pack invents nothing (`check.mjs` proves every name it uses is registered); the gaps are recorded here and left unbuilt rather than papered over. None are blocking: VF-003 and the whole bench run without them, because the system carries the same information on other records.*
