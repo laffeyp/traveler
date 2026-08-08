@@ -828,6 +828,72 @@ For TECHNIQUES.md.
 
 ---
 
+## Entry 30 — Building what the machines already declared, and finding the bookkeeping had drifted (2026-08-01/07)
+
+**The arc.** Forty-three registered operations returned `not_implemented`. Thirty-six had their behaviour fully
+declared by a state machine — from-state, to-state, event — so building them was transcription, and the sprint
+plan wrote itself: run lifecycle, controlled documents, inventory and quality, report generation, the supplier
+evidence packet. 124 of 128 operations now exist. Three are refused on record, which matters more than the 124.
+
+**What building found that reviewing had not.** Three defects, none of which any adversarial pass would have
+surfaced, because each was invisible until the operation that exposed it existed.
+
+The as-built projection listed installation events. That was correct for as long as the tree could only grow —
+and `RemoveInventory` ends that. Adding removal without changing the projection would have left a part reading
+as fitted to a unit it had physically been taken off: the projection telling a customer they are holding
+something they are not. **A read model is only as correct as the set of writes that exist**, and adding a write
+can silently invalidate a projection nobody touched.
+
+Report `failed` and its retry were states the machine declared and nothing could produce, because
+`GenerateRunCloseReport` walks requested → generating → generated atomically and nothing fails half-way through
+an atomic call. The states were not unimplemented; they were *unreachable*, which no coverage measure reports.
+
+And a five-week coverage shortfall closed as a side effect: B-Q-35's rule that a skipped step with undone
+required work still blocks the close had been proven against a hand-set state, because `SkipRunStep` was
+registered and unimplemented so no scenario could reach it. The rule was right and the proof was standing on a
+state no operation could produce.
+
+**Lesson 1: a deferral justified by an unchecked estimate is a decision made on a guess.** B-Q-73 — machine
+evidence naming its machine by an unchecked string — was deferred for a week on my claim that closing it meant
+renumbering ten scenarios including VF-003, the reference the whole doc stack is written around. It did not.
+Suffix step ids (`000a`, `000b`) were already in use in this project, added *by me* to VF-034 and VF-037 days
+earlier, so the registration steps prepend and every later step keeps its number. Nothing moved. The estimate
+was made from memory of what the harness allowed rather than from the harness. The entry even reasoned
+carefully about a fudge it rejected — enforce only once something is registered, which fails open by default —
+and got the honest-sounding part right while the load-bearing number was never checked.
+
+**Lesson 2: a stale not-enforceable list is the mirror image of a fail-open.** The receiving mutation battery
+declared twelve arms unenforceable, each with a reason that was true when written. Four sprints later eight of
+those reasons had been removed by the intervening work and the declarations had not moved with them. Enforced
+arms went 14 → 22 without a line of product code, purely by re-reading the list against what existed. The
+failure mode is exact: behaviour that IS built with nothing proving it, and an acceptance criterion reading
+worse than the system deserves. A deferral list needs re-reading on the same cadence as the code it defers.
+
+**Lesson 3: a defaulted parameter can make a negative test vacuous.** The anonymous-scrap case called a helper
+whose actor parameter has a default, and JavaScript hands you the default when you pass `undefined` — so the
+call was never anonymous and the refusal was never tested. The handler was right; the test proving it was not.
+Two battery arms had the same shape from a different cause: written from memory of the system's field names
+rather than from the code (`output.stale` and `access_policy_changes`, where the system exposes
+`regeneration_required` and `accessPolicyChanges.effective_at`).
+
+**Lesson 4: the bookkeeping drifted where nothing was grading it.** `sprints/` skipped from 021 to 023 because
+sprint 022 landed with a BLACKBOARD entry and no file, while sprint 023 cited the number in its own frontmatter.
+`signal-reports/` stopped at 018 while `DOCS.md §3` went on calling them "numbered 1:1 pairs" — from 019 the
+pairing had quietly lapsed and the sprint file absorbed both halves. Every gate this project owns was green
+throughout: they check the contract vocabulary, the drivers and the scenarios, and nothing checks that the
+record of the work is internally consistent. The project has a poka-yoke for a handler escaping the registry
+and none for a sprint escaping the sprint log.
+
+**Kit observation (three new practices).** (28) **Verify the cost of a deferral against the tool, not against
+your memory of the tool. A deferral is a decision, and an unchecked cost estimate is the same failure as an
+unchecked fact — it just hides behind sounding prudent.** (29) **Re-read the not-enforceable list on the cadence
+of the code it defers. A declaration that was true when written becomes a stale claim the moment the work that
+would falsify it lands, and stale exemptions are behaviour built with nothing proving it.** (30) **Check that a
+negative test produced the negative condition. A defaulted parameter, an unset clock, a field name recalled
+rather than read — each yields a test that passes without ever reaching the guard it names.** For TECHNIQUES.md.
+
+---
+
 ## Hypothesis tracking
 
 *Updated 2026-07-31 against the full entry record (0–29); the first three had been left at their sprint-001/002 verdicts long after the evidence moved.*
@@ -842,8 +908,9 @@ For TECHNIQUES.md.
 | Coverage testing cannot surface a missing domain concept; a domain-first pass can. | supported (1 data point, Entry 26) | 23 green scenarios found none of B-Q-31/32/33; the demo pack found all three immediately. Structural rather than lucky — scenarios are authored from the vocabulary. Needs a second pass (a different sub-domain written out plainly) before calling it confirmed. |
 | An outside spec should be mapped onto existing vocabulary, not merged. | supported (1 data point, Entry 29) | A 13-record, 21-operation receiving pack reduced to 3 records and 5 operations once each concept was matched against what the project already named; merging it would have shipped two records for a supplier certificate and two for a verification. |
 | Reading the code cannot establish what the system refuses; only execution can. | confirmed (Entry 27) | A registry+source read said `RunCloseCheck` ignores 11 rules. Execution showed 4 of them are enforced elsewhere (state machine, upstream precondition, rework chain) and 2 are genuine holes that close a run on an uninspected part. The read was directionally right and specifically wrong; the probe's positive control is what separated them. |
+| Building a specified operation surfaces defects no review finds, because the defect is invisible until the operation exists. | supported (3 data points, Entry 30) | The as-built could not shrink until removal existed; report `failed` was unreachable until generation could be stepped; B-Q-35's close rule was proven against a state no operation could produce. All three passed every gate and every adversarial pass beforehand. |
 | A registered rule can be unimplementable because an earlier handler under-implemented a specified write. | supported (1 data point, Entry 27) | Neither required-work rule could be written until `CreateRun` recorded the RunStep→ProcedureStep link that Build Readiness already specified, and `InstallInventory` stopped discarding the `run_step_alias` it receives. No gate this project owns checks that a specified field actually landed. |
 
 ---
 
-*KIT_DIARY.md for the Distributed Factory Execution Record System. Entries 0–29 plus phase syntheses, from the registry-extraction founding act through the closed line, the two roadmap phases (Phase B §18 auto-cascades, Phase A outbox delivery leg), the documentation-index step, the readability arc, and the valve-body demo pack. The through-line it records: applying sdd-kit-2 to a contract-first manufacturing-execution build, where across fourteen straight increments the distrust-the-green review never once came back empty by inspection — the discipline, not the green, was the load-bearing thing. Entry 26 adds the direction the bench structurally could not look: scenarios are authored from the vocabulary, so only a domain-first pass can show what the vocabulary lacks. Entries 27-29 turn the discipline on the record itself — reading is not probing, an authority citation must resolve outside the building as well as inside it, and an outside spec is input to be mapped, never vocabulary to be merged.*
+*KIT_DIARY.md for the Distributed Factory Execution Record System. Entries 0–30 plus phase syntheses, from the registry-extraction founding act through the closed line, the two roadmap phases (Phase B §18 auto-cascades, Phase A outbox delivery leg), the documentation-index step, the readability arc, and the valve-body demo pack. The through-line it records: applying sdd-kit-2 to a contract-first manufacturing-execution build, where across fourteen straight increments the distrust-the-green review never once came back empty by inspection — the discipline, not the green, was the load-bearing thing. Entry 26 adds the direction the bench structurally could not look: scenarios are authored from the vocabulary, so only a domain-first pass can show what the vocabulary lacks. Entry 30 records the arc that built the specified remainder — and found that the deferral ledger and the sprint log had both drifted while every mechanical gate stayed green. Entries 27-30 turn the discipline on the record itself — reading is not probing, an authority citation must resolve outside the building as well as inside it, and an outside spec is input to be mapped, never vocabulary to be merged.*
