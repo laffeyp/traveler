@@ -59,9 +59,9 @@ describe("the as-built shrinks when a part comes off", () => {
       "operator",
     );
     expect(result.succeeded).toBe(true);
-    expect(driver.readRecord("child").state).toBe("removed");
+    expect(driver.mustReadRecord("child").state).toBe("removed");
     expect(asBuilt(driver)).toEqual([]);
-    expect(driver.readRecord("removal_1").fields.reason).toBe(
+    expect(driver.mustReadRecord("removal_1").fields.reason).toBe(
       "gasket damaged during adjacent work",
     );
   });
@@ -99,7 +99,7 @@ describe("the as-built shrinks when a part comes off", () => {
       },
       "operator",
     );
-    expect(driver.readRecord("child").state).toBe("installed");
+    expect(driver.mustReadRecord("child").state).toBe("installed");
     expect(asBuilt(driver)).toEqual(["child"]); // one row, not two
   });
 
@@ -119,7 +119,7 @@ describe("the as-built shrinks when a part comes off", () => {
       "operator",
     );
     expect(result.failureClass).toBe("not_installed_here");
-    expect(driver.readRecord("child").state).toBe("installed"); // untouched
+    expect(driver.mustReadRecord("child").state).toBe("installed"); // untouched
     expect(asBuilt(driver)).toEqual(["child"]);
   });
 
@@ -150,8 +150,8 @@ describe("what happens to a removed part", () => {
         "quality_engineer",
       ).succeeded,
     ).toBe(true);
-    expect(driver.readRecord("part").state).toBe("available");
-    expect(driver.readRecord("part").fields.returned_to_stock_by).toBe("person_1");
+    expect(driver.mustReadRecord("part").state).toBe("available");
+    expect(driver.mustReadRecord("part").fields.returned_to_stock_by).toBe("person_1");
   });
 
   it("or goes on hold instead", () => {
@@ -162,7 +162,7 @@ describe("what happens to a removed part", () => {
       { inventory_alias: "part", reason: "suspected damage during removal" },
       "quality_engineer",
     );
-    expect(driver.readRecord("part").state).toBe("quarantined");
+    expect(driver.mustReadRecord("part").state).toBe("quarantined");
   });
 
   it("refuses either without a reason", () => {
@@ -172,7 +172,7 @@ describe("what happens to a removed part", () => {
         call(driver, op, { inventory_alias: "part" }, "quality_engineer").failureClass,
         op,
       ).toBe("validation_error");
-      expect(driver.readRecord("part").state).toBe("removed");
+      expect(driver.mustReadRecord("part").state).toBe("removed");
     }
   });
 });
@@ -187,9 +187,9 @@ describe("scrap is terminal", () => {
       "quality_engineer",
     );
     expect(result.succeeded).toBe(true);
-    expect(driver.readRecord("part").state).toBe("scrapped");
-    expect(driver.readRecord("part").fields.scrap_reason).toBe("cracked during machining");
-    expect(driver.readRecord("part").fields.scrapped_at).toBe("2026-08-07T08:00:00Z");
+    expect(driver.mustReadRecord("part").state).toBe("scrapped");
+    expect(driver.mustReadRecord("part").fields.scrap_reason).toBe("cracked during machining");
+    expect(driver.mustReadRecord("part").fields.scrapped_at).toBe("2026-08-07T08:00:00Z");
   });
 
   it("nothing comes back out of scrapped", () => {
@@ -203,7 +203,7 @@ describe("scrap is terminal", () => {
     ] as const) {
       const result = call(driver, op, input, "planner");
       expect(result.succeeded, op).toBe(false);
-      expect(driver.readRecord("part").state).toBe("scrapped");
+      expect(driver.mustReadRecord("part").state).toBe("scrapped");
     }
   });
 
@@ -224,7 +224,7 @@ describe("scrap is terminal", () => {
       "s-anon",
     );
     expect(anonymous.failureClass).toBe("validation_error");
-    expect(noActor.readRecord("part").state).toBe("available");
+    expect(noActor.mustReadRecord("part").state).toBe("available");
   });
 });
 
@@ -241,7 +241,7 @@ describe("the quality and approval endings", () => {
         "quality_engineer",
       ).succeeded,
     ).toBe(true);
-    expect(open.readRecord("nc").state).toBe("cancelled");
+    expect(open.mustReadRecord("nc").state).toBe("cancelled");
 
     for (const state of ["disposition_pending", "dispositioned", "verified"]) {
       const later = driverWith([["Nonconformance", "nc", state, {}]]);
@@ -266,7 +266,7 @@ describe("the quality and approval endings", () => {
       call(driver, "RequireVerification", { nonconformance_alias: "nc" }, "quality_engineer")
         .succeeded,
     ).toBe(true);
-    expect(driver.readRecord("nc").state).toBe("verification_pending");
+    expect(driver.mustReadRecord("nc").state).toBe("verification_pending");
   });
 
   it("an expired approval request is not a decision", () => {
@@ -280,8 +280,8 @@ describe("the quality and approval endings", () => {
       "s-expire",
     ); // no actor at all: expiry is a system act and records no approver
     expect(result.succeeded).toBe(true);
-    expect(driver.readRecord("ar").state).toBe("expired");
-    expect(driver.readRecord("ar").fields.decided_by).toBeUndefined();
+    expect(driver.mustReadRecord("ar").state).toBe("expired");
+    expect(driver.mustReadRecord("ar").fields.decided_by).toBeUndefined();
     expect(driver.world.events.some((e: any) => e.type === "APPROVAL_APPROVED")).toBe(false);
     expect(driver.world.events.some((e: any) => e.type === "APPROVAL_REJECTED")).toBe(false);
   });
@@ -296,7 +296,7 @@ describe("the quality and approval endings", () => {
         "manufacturing_engineer",
       ).succeeded,
     ).toBe(true);
-    expect(driver.readRecord("ar").state).toBe("cancelled");
-    expect(driver.readRecord("ar").fields.cancelled_by).toBe("person_1");
+    expect(driver.mustReadRecord("ar").state).toBe("cancelled");
+    expect(driver.mustReadRecord("ar").fields.cancelled_by).toBe("person_1");
   });
 });

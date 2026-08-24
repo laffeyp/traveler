@@ -46,15 +46,15 @@ describe("calibration gate + operator identity (persona gaps 7 & 9)", () => {
 
     const ok = capture(d, "m2", "gauge_ok", "op_alice");
     expect(ok.succeeded).toBe(true);
-    expect(d.readRecord("m2").fields.instrument).toBe("gauge_ok");
-    expect(d.readRecord("m2").fields.captured_by).toBe("op_alice"); // operator identity recorded (gap 9)
+    expect(d.mustReadRecord("m2").fields.instrument).toBe("gauge_ok");
+    expect(d.mustReadRecord("m2").fields.captured_by).toBe("op_alice"); // operator identity recorded (gap 9)
   });
 
   it("a measurement that names no instrument is unaffected (existing behavior preserved)", () => {
     const d = new InMemoryProductDriver();
     seedField(d);
     expect(capture(d, "m3", undefined, "op_bob").succeeded).toBe(true);
-    expect(d.readRecord("m3").fields.captured_by).toBe("op_bob");
+    expect(d.mustReadRecord("m3").fields.captured_by).toBe("op_bob");
   });
 
   it("CompleteRunStep records who bought off the step", () => {
@@ -83,6 +83,6 @@ describe("calibration gate + operator identity (persona gaps 7 & 9)", () => {
       "op_alice",
     );
     expect(rc.succeeded).toBe(true);
-    expect(d.readRecord("rs1").fields.completed_by).toBe("op_alice");
+    expect(d.mustReadRecord("rs1").fields.completed_by).toBe("op_alice");
   });
 });

@@ -99,13 +99,13 @@ describe("receiving evidence boundary", () => {
     seedConsignment(driver, ["certificate_of_conformance"]);
 
     runCheck(driver);
-    expect(driver.readRecord("check_1").state).toBe("blocked");
-    expect(driver.readRecord("check_1").fields.blockers).toContain(
+    expect(driver.mustReadRecord("check_1").state).toBe("blocked");
+    expect(driver.mustReadRecord("check_1").fields.blockers).toContain(
       "certificate_of_conformance_present",
     );
 
     applyResult(driver);
-    expect(driver.readRecord("item_1").state).toBe("quarantined");
+    expect(driver.mustReadRecord("item_1").state).toBe("quarantined");
     // The goods never became available, so they can never be reserved into a run.
     expect(driver.world.events.filter((e) => e.type === "INVENTORY_AVAILABLE").length).toBe(0);
   });
@@ -123,11 +123,11 @@ describe("receiving evidence boundary", () => {
     });
 
     runCheck(driver, "2026-07-06T08:00:00Z");
-    expect(driver.readRecord("check_1").state).toBe("passed");
-    expect(driver.readRecord("check_1").fields.blockers).toEqual([]);
+    expect(driver.mustReadRecord("check_1").state).toBe("passed");
+    expect(driver.mustReadRecord("check_1").fields.blockers).toEqual([]);
 
     applyResult(driver);
-    expect(driver.readRecord("item_1").state).toBe("available");
+    expect(driver.mustReadRecord("item_1").state).toBe("available");
   });
 
   it("blocks when a verified certificate has since expired", () => {
@@ -144,12 +144,12 @@ describe("receiving evidence boundary", () => {
       serial_or_lot: "VB-900",
       expires_at: "2026-08-01T00:00:00Z",
     });
-    expect(driver.readRecord("coc_old").state).toBe("verified");
+    expect(driver.mustReadRecord("coc_old").state).toBe("verified");
 
     runCheck(driver, "2026-12-01T00:00:00Z");
-    expect(driver.readRecord("check_1").state).toBe("blocked");
+    expect(driver.mustReadRecord("check_1").state).toBe("blocked");
     // Stale paperwork is its own fact, not "missing".
-    expect(driver.readRecord("check_1").fields.blockers).toEqual([
+    expect(driver.mustReadRecord("check_1").fields.blockers).toEqual([
       "certificate_of_conformance_expired",
     ]);
   });
@@ -168,8 +168,8 @@ describe("receiving evidence boundary", () => {
     });
 
     runCheck(driver, "2026-07-06T08:00:00Z");
-    expect(driver.readRecord("check_1").state).toBe("passed");
-    expect(driver.readRecord("check_1").fields.blockers).toEqual([]);
+    expect(driver.mustReadRecord("check_1").state).toBe("passed");
+    expect(driver.mustReadRecord("check_1").fields.blockers).toEqual([]);
   });
 
   it("finds a first article report scoped to the part revision, not the lot that arrived", () => {
@@ -184,7 +184,7 @@ describe("receiving evidence boundary", () => {
     });
 
     runCheck(driver, "2026-07-06T08:00:00Z");
-    expect(driver.readRecord("check_1").state).toBe("passed");
+    expect(driver.mustReadRecord("check_1").state).toBe("passed");
   });
 
   it("refuses an unregistered document type at the line, before it can reach a check", () => {
@@ -213,14 +213,14 @@ describe("receiving evidence boundary", () => {
     });
 
     runCheck(driver, "2026-07-06T08:00:00Z");
-    expect(driver.readRecord("check_1").state).toBe("blocked");
+    expect(driver.mustReadRecord("check_1").state).toBe("blocked");
     // Named for what is true: the document is PRESENT, so "..._present" would be a lie, and the unverified id
     // is registered separately so a mutation suppressing one branch cannot be masked by the other.
-    expect(driver.readRecord("check_1").fields.blockers).toEqual([
+    expect(driver.mustReadRecord("check_1").fields.blockers).toEqual([
       "certificate_of_conformance_unverified",
     ]);
     applyResult(driver);
-    expect(driver.readRecord("item_1").state).toBe("quarantined");
+    expect(driver.mustReadRecord("item_1").state).toBe("quarantined");
   });
 
   it("a rejected certificate does not count, or rejection would be decorative", () => {
@@ -241,10 +241,10 @@ describe("receiving evidence boundary", () => {
       undefined,
       "quality_1",
     );
-    expect(driver.readRecord("coc_bad").state).toBe("rejected");
+    expect(driver.mustReadRecord("coc_bad").state).toBe("rejected");
 
     runCheck(driver, "2026-07-06T08:00:00Z");
-    expect(driver.readRecord("check_1").fields.blockers).toEqual([
+    expect(driver.mustReadRecord("check_1").fields.blockers).toEqual([
       "certificate_of_conformance_unverified",
     ]);
   });
@@ -281,22 +281,22 @@ describe("receiving evidence boundary", () => {
     // The document says CAGE 1ABC2; the inspector expects the approved source. Refused, nothing written.
     const mismatch = accept("c_mismatch", { expected_cage_code: "9ZZZ9" }, "quality_1");
     expect(mismatch.failureClass).toBe("supplier_document_mismatch");
-    expect(driver.readRecord("c_mismatch").state).toBe("captured");
+    expect(driver.mustReadRecord("c_mismatch").state).toBe("captured");
 
     // Verification cannot make stale paperwork current.
     expect(accept("c_stale", {}, "quality_1").failureClass).toBe("supplier_document_expired");
-    expect(driver.readRecord("c_stale").state).toBe("captured");
+    expect(driver.mustReadRecord("c_stale").state).toBe("captured");
 
     // A sign-off with no signer is not a sign-off.
     expect(accept("c_unsigned", {}).failureClass).toBe("validation_error");
-    expect(driver.readRecord("c_unsigned").state).toBe("captured");
+    expect(driver.mustReadRecord("c_unsigned").state).toBe("captured");
 
     // CONTROL: the same operation, stated correctly by an identified person, succeeds. Without this the three
     // refusals above would pass just as well against an operation that refused everything.
     const ok = accept("c_unsigned", { expected_cage_code: "1ABC2" }, "quality_1");
     expect(ok.succeeded).toBe(true);
-    expect(driver.readRecord("c_unsigned").state).toBe("verified");
-    expect(driver.readRecord("c_unsigned").fields.verified_by).toBe("quality_1");
+    expect(driver.mustReadRecord("c_unsigned").state).toBe("verified");
+    expect(driver.mustReadRecord("c_unsigned").fields.verified_by).toBe("quality_1");
   });
 
   it("an actor who cannot read a controlled document cannot verify it (§9.6)", () => {
@@ -324,15 +324,15 @@ describe("receiving evidence boundary", () => {
       );
 
     expect(accept("FR").failureClass).toBe("controlled_supplier_document_denied");
-    expect(driver.readRecord("fai_controlled").state).toBe("captured");
+    expect(driver.mustReadRecord("fai_controlled").state).toBe("captured");
     // Fails CLOSED on an unstated nationality: unknown is not permitted.
     expect(accept(undefined).failureClass).toBe("controlled_supplier_document_denied");
 
     // CONTROL: a US person may read it, so their verification stands and the goods can then be released.
     expect(accept("US").succeeded).toBe(true);
-    expect(driver.readRecord("fai_controlled").state).toBe("verified");
+    expect(driver.mustReadRecord("fai_controlled").state).toBe("verified");
     runCheck(driver, "2026-07-06T08:00:00Z");
-    expect(driver.readRecord("check_1").state).toBe("passed");
+    expect(driver.mustReadRecord("check_1").state).toBe("passed");
   });
 
   it("requires every declared document, not just the first", () => {
@@ -347,9 +347,9 @@ describe("receiving evidence boundary", () => {
     });
 
     runCheck(driver, "2026-07-06T08:00:00Z");
-    const blockers = driver.readRecord("check_1").fields.blockers;
+    const blockers = driver.mustReadRecord("check_1").fields.blockers;
     expect(blockers).toEqual(["material_test_report_present"]);
-    expect(driver.readRecord("check_1").state).toBe("blocked");
+    expect(driver.mustReadRecord("check_1").state).toBe("blocked");
   });
 });
 

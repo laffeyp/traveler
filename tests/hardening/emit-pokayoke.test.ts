@@ -9,7 +9,9 @@ import { World, InMemoryProductDriver } from "../../src/driver/engine.ts";
 describe("emit poka-yoke (runtime vocabulary enforcement)", () => {
   it("rejects an unregistered event type", () => {
     const w = new World();
-    expect(() => w.emit("NOT_A_REAL_EVENT", "SomeOp", {})).toThrow(/emit_vocabulary_violation/);
+    expect(() => w.emit("NOT_A_REAL_EVENT" as any, "SomeOp", {})).toThrow(
+      /emit_vocabulary_violation/,
+    );
   });
 
   it("rejects a registered event emitted by a producer NOT registered for it", () => {

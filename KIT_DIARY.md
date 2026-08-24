@@ -894,6 +894,55 @@ rather than read — each yields a test that passes without ever reaching the gu
 
 ---
 
+## Entry 31 — A green written narrower than the command that produced it (2026-08-24)
+
+**What happened.** A fresh session re-ran every gate STATE.md lists, on the way to authoring against the newly
+arrived access-and-visibility boundary spec. Eleven of the twelve held identically. The twelfth — the types
+row — did not. STATE.md read `npx tsc --noEmit — 0 errors in src`. `tsconfig.json` includes both `src/**/*.ts`
+and `tests/**/*.ts` under one project. Running the printed command against the printed config produced 236
+errors across 27 test files. The narrower clause "in `src`" was doing the work of making the row true; the
+command as written was not.
+
+**Lesson 1: a gate row's command and its result must describe the same thing.** Practice #7 (a citation must
+resolve) and Entry 30's finding on stale-list drift are the two rules this violates jointly. A ledger claim
+survives if its evidence half is quietly narrower than its command half — a caller who copy-pastes the command
+gets a different answer than the ledger promises. The row was true when written, when the tests happened to be
+under-annotated in a way tsc did not yet flag; something moved (a test added, a strict setting sharpened) and
+the row went on reading green because its scope had been narrowed at authoring time, not because a re-run
+still returned zero. This is Entry 30's stale-list shape applied to gate rows, not deferral rows.
+
+**Lesson 2: fix the code, do not narrow the ledger.** The two honest fixes were to (a) narrow the CI command
+to match the ledger (a source-only `tsconfig.src.json` and `tsc -p tsconfig.src.json`) or to (b) sharpen the
+tests to satisfy the config as written. (a) locks the drift in place and cedes strictness in tests forever;
+(b) leaves the project strict end to end and forces test fixtures to say what they mean. The user asked for
+(b): "tests must always be correct". Two hundred five of the 236 errors were `readRecord(alias).field` where
+the alias must exist because the same test set it up — a null return would be a broken fixture. A test-only
+`mustReadRecord(alias): FactoryRecord` that throws on null, added to `InMemoryProductDriver` +
+`BackendProductDriver` + the harness `Driver` interface, converted "silent null dereference" into "named
+alias, loud failure". The rest were `.find()` results genuinely undefined (`if (!x) throw`), two deliberate
+poka-yoke tests emitting unregistered event names (`as any` cast, honest), and one property typo
+(`.ex` → `.execution`). After the pass tsc runs green over the whole tsconfig, 301/301 tests still pass, bench
+29/29 both drivers, backend gate exit 0, prettier clean. The gate row now reads `npx tsc -p tsconfig.json
+--noEmit — 0 errors across src and tests`, matching what a caller would find.
+
+**Lesson 3: the tests fixture patterns had the same shape the product fixes keep having.** Each
+`readRecord(alias).field` was a conditional operation on a potentially-null value — a fail-open by omission.
+The product's own guards were adversarially reviewed into fail-closed on every increment; the test fixtures
+were writing the same latent shape at the discipline's edge and no gate caught it because they compiled at
+the time they were written. The fix — a helper whose type signature refuses null — is the test-side of the
+same "invert every conditional guard to fail-closed" law recorded three product-side times in Addendum A. Log
+this as the fourth recurrence, at a different altitude.
+
+**Kit observation (one new practice).** (31) **A gate row's command and its result must be a single-command
+round trip: copy the command, run it fresh, and the row's claim must hold. A narrower qualifier in the result
+column ("in src", "on Monday", "for the paths I remembered") turns a repeatable check into a promise that
+depends on institutional memory, and Entry 30's stale-list shape reappears one altitude up. Same rule for
+test-fixture strictness: the type-checker either reads the tests or it does not, and a config that reads them
+without a runtime that enforces its findings is a piece of green that does not measure what its command name
+claims.** For TECHNIQUES.md.
+
+---
+
 ## Hypothesis tracking
 
 *Updated 2026-07-31 against the full entry record (0–29); the first three had been left at their sprint-001/002 verdicts long after the evidence moved.*
@@ -913,4 +962,4 @@ rather than read — each yields a test that passes without ever reaching the gu
 
 ---
 
-*KIT_DIARY.md for the Distributed Factory Execution Record System. Entries 0–30 plus phase syntheses, from the registry-extraction founding act through the closed line, the two roadmap phases (Phase B §18 auto-cascades, Phase A outbox delivery leg), the documentation-index step, the readability arc, and the valve-body demo pack. The through-line it records: applying sdd-kit-2 to a contract-first manufacturing-execution build, where across fourteen straight increments the distrust-the-green review never once came back empty by inspection — the discipline, not the green, was the load-bearing thing. Entry 26 adds the direction the bench structurally could not look: scenarios are authored from the vocabulary, so only a domain-first pass can show what the vocabulary lacks. Entry 30 records the arc that built the specified remainder — and found that the deferral ledger and the sprint log had both drifted while every mechanical gate stayed green. Entries 27-30 turn the discipline on the record itself — reading is not probing, an authority citation must resolve outside the building as well as inside it, and an outside spec is input to be mapped, never vocabulary to be merged.*
+*KIT_DIARY.md for the Distributed Factory Execution Record System. Entries 0–31 plus phase syntheses, from the registry-extraction founding act through the closed line, the two roadmap phases (Phase B §18 auto-cascades, Phase A outbox delivery leg), the documentation-index step, the readability arc, the valve-body demo pack, and the tsc-drift housekeeping ahead of the access-and-visibility boundary. The through-line it records: applying sdd-kit-2 to a contract-first manufacturing-execution build, where across fourteen straight increments the distrust-the-green review never once came back empty by inspection — the discipline, not the green, was the load-bearing thing. Entry 26 adds the direction the bench structurally could not look: scenarios are authored from the vocabulary, so only a domain-first pass can show what the vocabulary lacks. Entry 30 records the arc that built the specified remainder — and found that the deferral ledger and the sprint log had both drifted while every mechanical gate stayed green. Entries 27-31 turn the discipline on the record itself — reading is not probing, an authority citation must resolve outside the building as well as inside it, an outside spec is input to be mapped never vocabulary to be merged, and a ledger's gate row must be a single-command round trip whose result depends on nothing narrower than its command.*

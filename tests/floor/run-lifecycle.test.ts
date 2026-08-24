@@ -37,11 +37,11 @@ describe("cancelling a run", () => {
       "planner",
     );
     expect(result.succeeded).toBe(true);
-    expect(driver.readRecord("run_1").state).toBe("cancelled");
-    expect(driver.readRecord("run_1").fields.cancellation_reason).toBe(
+    expect(driver.mustReadRecord("run_1").state).toBe("cancelled");
+    expect(driver.mustReadRecord("run_1").fields.cancellation_reason).toBe(
       "customer cancelled the order",
     );
-    expect(driver.readRecord("run_1").fields.cancelled_by).toBe("person_1");
+    expect(driver.mustReadRecord("run_1").fields.cancelled_by).toBe("person_1");
   });
 
   it.each(["in_progress", "paused", "complete", "close_check", "closed"])(
@@ -56,7 +56,7 @@ describe("cancelling a run", () => {
       );
       expect(result.succeeded).toBe(false);
       expect(result.failureClass).toBe("state_transition_forbidden");
-      expect(driver.readRecord("run_1").state).toBe(state); // unchanged
+      expect(driver.mustReadRecord("run_1").state).toBe(state); // unchanged
     },
   );
 
@@ -65,7 +65,7 @@ describe("cancelling a run", () => {
     expect(call(driver, "CancelRun", { run_alias: "run_1" }, "planner").failureClass).toBe(
       "validation_error",
     );
-    expect(driver.readRecord("run_1").state).toBe("ready");
+    expect(driver.mustReadRecord("run_1").state).toBe("ready");
   });
 });
 
@@ -76,7 +76,7 @@ describe("a stop records why, and who", () => {
     expect(call(driver, "BlockRun", { run_alias: "run_1" }, "quality_engineer").failureClass).toBe(
       "validation_error",
     );
-    expect(driver.readRecord("run_1").state).toBe("in_progress");
+    expect(driver.mustReadRecord("run_1").state).toBe("in_progress");
   });
 
   it("refuses to clear a run blocker without saying what resolved it", () => {
@@ -89,7 +89,7 @@ describe("a stop records why, and who", () => {
         "quality_engineer",
       ).failureClass,
     ).toBe("validation_error");
-    expect(driver.readRecord("run_1").state).toBe("blocked");
+    expect(driver.mustReadRecord("run_1").state).toBe("blocked");
   });
 
   it("refuses to clear a run blocker without saying where the run resumes", () => {
@@ -106,7 +106,7 @@ describe("a stop records why, and who", () => {
         "quality_engineer",
       );
       expect(result.failureClass, `resume_to=${resume_to}`).toBe("validation_error");
-      expect(driver.readRecord("run_1").state).toBe("blocked");
+      expect(driver.mustReadRecord("run_1").state).toBe("blocked");
     }
   });
 
@@ -121,7 +121,7 @@ describe("a stop records why, and who", () => {
         "quality_engineer",
       ).succeeded,
     ).toBe(true);
-    expect(toReady.readRecord("run_1").state).toBe("ready");
+    expect(toReady.mustReadRecord("run_1").state).toBe("ready");
     expect(toReady.world.events.map((event: any) => event.type)).toContain("RUN_READY");
 
     const toProgress = runIn("blocked");
@@ -131,7 +131,7 @@ describe("a stop records why, and who", () => {
       { run_alias: "run_1", resume_to: "in_progress", resolution: "material arrived" },
       "quality_engineer",
     );
-    expect(toProgress.readRecord("run_1").state).toBe("in_progress");
+    expect(toProgress.mustReadRecord("run_1").state).toBe("in_progress");
     expect(toProgress.world.events.map((event: any) => event.type)).toContain("RUN_RESUMED");
   });
 
@@ -144,7 +144,7 @@ describe("a stop records why, and who", () => {
     expect(
       call(skipping, "SkipRunStep", { run_step_alias: "step_1" }, "operator").failureClass,
     ).toBe("validation_error");
-    expect(skipping.readRecord("step_1").state).toBe("not_started");
+    expect(skipping.mustReadRecord("step_1").state).toBe("not_started");
   });
 });
 
@@ -159,12 +159,12 @@ describe("a blocked step is not a failed step", () => {
       { run_step_alias: "step_1", reason: "out of tolerance" },
       "operator",
     );
-    expect(driver.readRecord("step_1").state).toBe("failed");
+    expect(driver.mustReadRecord("step_1").state).toBe("failed");
     expect(
       call(driver, "RequireRunStepRework", { run_step_alias: "step_1" }, "quality_engineer")
         .succeeded,
     ).toBe(true);
-    expect(driver.readRecord("step_1").state).toBe("rework_required");
+    expect(driver.mustReadRecord("step_1").state).toBe("rework_required");
   });
 
   it("a blocked step cannot", () => {
@@ -175,7 +175,7 @@ describe("a blocked step is not a failed step", () => {
       { run_step_alias: "step_1", blocker: "fixture unavailable" },
       "quality_engineer",
     );
-    expect(driver.readRecord("step_1").state).toBe("blocked");
+    expect(driver.mustReadRecord("step_1").state).toBe("blocked");
     const result = call(
       driver,
       "RequireRunStepRework",
@@ -183,7 +183,7 @@ describe("a blocked step is not a failed step", () => {
       "quality_engineer",
     );
     expect(result.failureClass).toBe("state_transition_forbidden");
-    expect(driver.readRecord("step_1").state).toBe("blocked");
+    expect(driver.mustReadRecord("step_1").state).toBe("blocked");
   });
 });
 
@@ -194,7 +194,7 @@ describe("skipping is terminal and only reachable before work starts", () => {
       call(driver, "SkipRunStep", { run_step_alias: "step_1", reason: "waived" }, "operator")
         .succeeded,
     ).toBe(true);
-    expect(driver.readRecord("step_1").state).toBe("skipped");
+    expect(driver.mustReadRecord("step_1").state).toBe("skipped");
   });
 
   it.each(["in_progress", "blocked", "failed", "rework_in_progress"])(
@@ -209,7 +209,7 @@ describe("skipping is terminal and only reachable before work starts", () => {
         "operator",
       );
       expect(result.failureClass).toBe("state_transition_forbidden");
-      expect(driver.readRecord("step_1").state).toBe(state);
+      expect(driver.mustReadRecord("step_1").state).toBe(state);
     },
   );
 
@@ -244,7 +244,7 @@ describe("authority on the new operations", () => {
       "planner",
     );
     expect(denied.failureClass).toBe("authorization_denied");
-    expect(blocking.readRecord("run_1").state).toBe("in_progress");
+    expect(blocking.mustReadRecord("run_1").state).toBe("in_progress");
   });
 
   it("quality may block, and an operator may not", () => {

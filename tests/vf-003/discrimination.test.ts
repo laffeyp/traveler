@@ -89,7 +89,7 @@ describe("VF-003 assertion discrimination (the green must be able to fail)", () 
     );
     expect(r.succeeded).toBe(false);
     expect(r.failureClass).toBe("state_transition_forbidden");
-    expect(d.readRecord("ar").state).toBe("requested"); // not advanced to approved
+    expect(d.mustReadRecord("ar").state).toBe("requested"); // not advanced to approved
     expect(d.readRecord("ad")).toBe(null); // decision record not persisted
     expect(d.readEventTrace().length).toBe(eventsBefore); // no events added
   });

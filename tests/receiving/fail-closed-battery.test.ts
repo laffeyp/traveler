@@ -110,7 +110,7 @@ const check = (d: InMemoryProductDriver, asOf?: string) => {
     "quality_engineer",
     key(),
   );
-  return d.readRecord("chk");
+  return d.mustReadRecord("chk");
 };
 /** Drive the whole boundary and report whether the goods ended up production-eligible. */
 const released = (d: InMemoryProductDriver) => {
@@ -120,7 +120,7 @@ const released = (d: InMemoryProductDriver) => {
     "quality_engineer",
     key(),
   );
-  return d.readRecord("it").state === "available";
+  return d.mustReadRecord("it").state === "available";
 };
 
 /** name -> probe. A probe returns true when the mutation is REFUSED (fails closed). */
@@ -321,7 +321,7 @@ const ENFORCED: Record<string, () => boolean> = {
       undefined,
       "quality_1",
     );
-    const sections = d.readRecord("pkt")?.fields?.sections;
+    const sections = d.mustReadRecord("pkt")?.fields?.sections;
     if (!sections) return false;
     const document = sections.attached_documents[0];
     // Existence is disclosed; the contents are not. A reader who cannot tell whether a document exists cannot
@@ -352,8 +352,8 @@ const ENFORCED: Record<string, () => boolean> = {
         undefined,
         "quality_1",
       );
-    const summary = d.readRecord("pkt_summary")?.fields?.sections;
-    const deep = d.readRecord("pkt_full")?.fields?.sections;
+    const summary = d.mustReadRecord("pkt_summary")?.fields?.sections;
+    const deep = d.mustReadRecord("pkt_full")?.fields?.sections;
     if (!summary || !deep) return false;
     return (
       summary.access_filtering.depth === "summary" &&
@@ -379,7 +379,7 @@ const ENFORCED: Record<string, () => boolean> = {
       undefined,
       "quality_1",
     );
-    const report = d.readRecord("pkt");
+    const report = d.mustReadRecord("pkt");
     if (report?.fields?.filtering_mode !== "controlled_export") return false;
     // Mark the policy as changed AFTER generation, in the shape GetReport actually reads.
     d.world.accessPolicyChanges = [
@@ -554,7 +554,7 @@ const ENFORCED: Record<string, () => boolean> = {
       "quality_engineer",
       key(),
     );
-    return !early.succeeded && d.readRecord("it").state === "quarantined";
+    return !early.succeeded && d.mustReadRecord("it").state === "quarantined";
   },
   "attempt ReleaseInventoryFromReceiving with active quarantine": () => {
     const d = rig();
@@ -563,7 +563,7 @@ const ENFORCED: Record<string, () => boolean> = {
     released(d);
     const byId = d.executeOperation(
       "ReleaseFromQuarantine",
-      { inventory_alias: d.readRecord("it").id, reason: "x" },
+      { inventory_alias: d.mustReadRecord("it").id, reason: "x" },
       "quality_engineer",
       key(),
     );
@@ -580,7 +580,7 @@ const ENFORCED: Record<string, () => boolean> = {
       "planner",
       key(),
     );
-    return (d.readRecord("bc").fields.blockers as string[]).some((b) =>
+    return (d.mustReadRecord("bc").fields.blockers as string[]).some((b) =>
       b.startsWith("quarantined_inventory"),
     );
   },

@@ -66,8 +66,8 @@ describe("grammar-gap escalation (in-memory)", () => {
     const ev = vf015.driver.readEventTrace().map((e: any) => e.type);
     expect(ev.filter((t: string) => t === "GRAMMAR_GAP_CREATED").length).toBe(1);
     expect(ev.filter((t: string) => t === "MACHINE_EVIDENCE_NORMALIZED").length).toBe(1); // only the good one
-    expect(vf015.driver.readRecord("bad_evidence_001").state).toBe("raw"); // false certainty avoided
-    expect(vf015.driver.readRecord("good_evidence_001").state).toBe("normalized");
+    expect(vf015.driver.mustReadRecord("bad_evidence_001").state).toBe("raw"); // false certainty avoided
+    expect(vf015.driver.mustReadRecord("good_evidence_001").state).toBe("normalized");
     expect(gaps(vf015.driver)[0].fields.reason).toBe("unsupported_payload_type");
   });
 
@@ -78,7 +78,7 @@ describe("grammar-gap escalation (in-memory)", () => {
     recv(d1, "e1", "vibration_spectrum", { serial_number: "S", blob: "x" });
     const r1 = norm(d1, "e1");
     expect(r1.succeeded).toBe(true);
-    expect(d1.readRecord("e1").state).toBe("raw");
+    expect(d1.mustReadRecord("e1").state).toBe("raw");
     expect(d1.readEventTrace().map((e: any) => e.type)).not.toContain(
       "MACHINE_EVIDENCE_NORMALIZED",
     );
@@ -88,7 +88,7 @@ describe("grammar-gap escalation (in-memory)", () => {
     const d2 = equip(new InMemoryProductDriver());
     recv(d2, "e2", "torque_trace", { serial_number: "S" }); // no measured_torque_nm
     norm(d2, "e2");
-    expect(d2.readRecord("e2").state).toBe("raw");
+    expect(d2.mustReadRecord("e2").state).toBe("raw");
     expect(d2.readEventTrace().map((e: any) => e.type)).not.toContain(
       "MACHINE_EVIDENCE_NORMALIZED",
     );
@@ -98,7 +98,7 @@ describe("grammar-gap escalation (in-memory)", () => {
     const d3 = equip(new InMemoryProductDriver());
     recv(d3, "e3", "torque_trace", { serial_number: "S", measured_torque_nm: 11.1 });
     norm(d3, "e3");
-    expect(d3.readRecord("e3").state).toBe("normalized");
+    expect(d3.mustReadRecord("e3").state).toBe("normalized");
     expect(d3.readEventTrace().map((e: any) => e.type)).toContain("MACHINE_EVIDENCE_NORMALIZED");
     expect(gaps(d3).length).toBe(0);
   });
@@ -110,7 +110,9 @@ describe("grammar-gap escalation (in-memory)", () => {
       const d = equip(new InMemoryProductDriver());
       recv(d, "e", "torque_trace", { serial_number: "S", measured_torque_nm: badVal });
       norm(d, "e");
-      expect(d.readRecord("e").state, `measured_torque_nm=${JSON.stringify(badVal)}`).toBe("raw");
+      expect(d.mustReadRecord("e").state, `measured_torque_nm=${JSON.stringify(badVal)}`).toBe(
+        "raw",
+      );
       expect(d.readEventTrace().map((x: any) => x.type)).not.toContain(
         "MACHINE_EVIDENCE_NORMALIZED",
       );
@@ -120,7 +122,7 @@ describe("grammar-gap escalation (in-memory)", () => {
     const d2 = equip(new InMemoryProductDriver());
     recv(d2, "e2", "torque_trace", { serial_number: "", measured_torque_nm: 11.1 });
     norm(d2, "e2");
-    expect(d2.readRecord("e2").state).toBe("raw");
+    expect(d2.mustReadRecord("e2").state).toBe("raw");
     expect(gaps(d2)[0].fields.reason).toBe("invalid_required_field");
   });
 
@@ -133,7 +135,7 @@ describe("grammar-gap escalation (in-memory)", () => {
       const r = norm(d, "e");
       expect(r.succeeded, `payload_type=${evil}`).toBe(true); // did not crash
       expect(gaps(d)[0].fields.reason).toBe("unsupported_payload_type"); // escalated as unknown type
-      expect(d.readRecord("e").state).toBe("raw");
+      expect(d.mustReadRecord("e").state).toBe("raw");
     }
   });
 
@@ -174,7 +176,7 @@ describe("grammar-gap escalation (in-memory)", () => {
       "cgk",
     );
     expect(r.succeeded).toBe(true);
-    expect(d.readRecord("g1").fields.reason).toBe("unsupported_redline_type");
+    expect(d.mustReadRecord("g1").fields.reason).toBe("unsupported_redline_type");
     expect(d.readEventTrace().map((e: any) => e.type)).toContain("GRAMMAR_GAP_CREATED");
   });
 });

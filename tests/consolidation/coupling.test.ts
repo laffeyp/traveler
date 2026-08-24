@@ -232,7 +232,7 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
       guarded.executeOperation("CompleteRunStep", { run_step_alias: "rs" }, "operator", "s2")
         .succeeded,
     ).toBe(false);
-    expect(guarded.readRecord("rs").state).toBe("in_progress");
+    expect(guarded.mustReadRecord("rs").state).toBe("in_progress");
     // Neutered: it completes on no evidence — which is the defect the gate exists to stop.
     withMutation(
       "CompleteRunStep",
@@ -244,7 +244,7 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
       () => {
         const mutated = seed();
         mutated.executeOperation("CompleteRunStep", { run_step_alias: "rs" }, "operator", "s2");
-        expect(mutated.readRecord("rs").state).toBe("complete");
+        expect(mutated.mustReadRecord("rs").state).toBe("complete");
       },
     );
   });
@@ -380,7 +380,7 @@ describe("consolidation: headline behaviors are coupled (mutation goes red)", ()
           "planner",
           "run",
         );
-        return d.readRecord("snap").fields.procedure_version;
+        return d.mustReadRecord("snap").fields.procedure_version;
       };
       return patch
         ? withMutation(
@@ -502,7 +502,7 @@ describe("consolidation: accreted safety invariants hold", () => {
     expect(() => d.world.emit("RUN_CLOSED", "CreateInventoryItem", {})).toThrow(
       /emit_vocabulary_violation/,
     );
-    expect(() => d.world.emit("NOT_A_REAL_EVENT", "CreateInventoryItem", {})).toThrow(
+    expect(() => d.world.emit("NOT_A_REAL_EVENT" as any, "CreateInventoryItem", {})).toThrow(
       /emit_vocabulary_violation/,
     );
   });
@@ -531,6 +531,6 @@ describe("consolidation: accreted safety invariants hold", () => {
     );
     expect(res.succeeded).toBe(false);
     expect(res.failureClass).toBe("validation_error");
-    expect(d.readRecord("rl").state).toBe("under_review"); // the redline was NOT force-approved
+    expect(d.mustReadRecord("rl").state).toBe("under_review"); // the redline was NOT force-approved
   });
 });

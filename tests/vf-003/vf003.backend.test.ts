@@ -34,14 +34,14 @@ describe("VF-003 against the backend skeleton (persistent, same scenario)", () =
     const fresh = new BackendProductDriver(DB); // loads only from disk; never executed the scenario
     const reconstructed = fresh.rebuildCheckpointsFromEvents(); // historical state replayed from the event log
     // durable subset only: no cached step results; excludes operation_succeeded + bounded_drill_down (behavior)
-    const dur = evaluateDurable(run.ex.compiled, fresh, reconstructed);
+    const dur = evaluateDurable(run.execution.compiled, fresh, reconstructed);
     expect(dur.failures).toEqual([]);
     expect(dur.passed).toBe(dur.total);
     expect(dur.total).toBeGreaterThan(80); // a substantial persisted-state set
     // direct durable reads from the persisted store
-    expect(fresh.readRecord("run_001").state).toBe("closed");
-    expect(fresh.readRecord("nonconformance_001").state).toBe("closed");
-    expect(fresh.readRecord("torque_evidence_001").state).toBe("review_required");
+    expect(fresh.mustReadRecord("run_001").state).toBe("closed");
+    expect(fresh.mustReadRecord("nonconformance_001").state).toBe("closed");
+    expect(fresh.mustReadRecord("torque_evidence_001").state).toBe("review_required");
     expect(fresh.readEventTrace().some((e: any) => e.type === "RUN_CLOSED")).toBe(true);
     expect(fresh.readProjection("SerialHistory", "VB-001").event_types).toContain(
       "MEASUREMENT_FAILED",

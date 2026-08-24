@@ -160,6 +160,9 @@ export class BackendProductDriver {
   readRecord(alias: string) {
     return this.memoryDriver.readRecord(alias);
   }
+  mustReadRecord(alias: string) {
+    return this.memoryDriver.mustReadRecord(alias);
+  }
   readProjection(name: string, key: string, actorContext?: string) {
     return this.memoryDriver.readProjection(name, key, actorContext);
   }

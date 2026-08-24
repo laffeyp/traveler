@@ -114,7 +114,7 @@ describe("segregation of duties (persona gap 1)", () => {
     );
     expect(self.succeeded).toBe(false);
     expect(self.failureClass).toBe("segregation_of_duties_violation");
-    expect(d.readRecord("rl").state).toBe("under_review"); // refused, nothing changed
+    expect(d.mustReadRecord("rl").state).toBe("under_review"); // refused, nothing changed
     const other = op(
       d,
       "RecordApprovalDecision",
@@ -128,16 +128,16 @@ describe("segregation of duties (persona gap 1)", () => {
       "manufacturing_engineer",
     );
     expect(other.succeeded).toBe(true);
-    expect(d.readRecord("rl").state).toBe("approved");
-    expect(d.readRecord("ad2").fields.decided_by).toBe("bob"); // who decided is recorded
-    expect(d.readRecord("ad2").fields.signature_meaning).toContain("approval"); // signature carries its meaning (gap 2)
-    expect(d.readRecord("ad2").fields.signed_at).toBe("2026-07-01T00:00:00Z"); // and a real timestamp, not empty
+    expect(d.mustReadRecord("rl").state).toBe("approved");
+    expect(d.mustReadRecord("ad2").fields.decided_by).toBe("bob"); // who decided is recorded
+    expect(d.mustReadRecord("ad2").fields.signature_meaning).toContain("approval"); // signature carries its meaning (gap 2)
+    expect(d.mustReadRecord("ad2").fields.signed_at).toBe("2026-07-01T00:00:00Z"); // and a real timestamp, not empty
   });
 
   it("verification: the person who did the rework cannot verify it; a distinct verifier can", () => {
     const d = new InMemoryProductDriver();
     ncAtVerificationPending(d, "quality_1");
-    expect(d.readRecord("nc").state).toBe("verification_pending");
+    expect(d.mustReadRecord("nc").state).toBe("verification_pending");
     const self = op(
       d,
       "VerifyRework",
@@ -146,7 +146,7 @@ describe("segregation of duties (persona gap 1)", () => {
     ); // reworker
     expect(self.succeeded).toBe(false);
     expect(self.failureClass).toBe("segregation_of_duties_violation");
-    expect(d.readRecord("nc").state).toBe("verification_pending"); // refused, unchanged
+    expect(d.mustReadRecord("nc").state).toBe("verification_pending"); // refused, unchanged
     const other = op(
       d,
       "VerifyRework",
@@ -154,9 +154,9 @@ describe("segregation of duties (persona gap 1)", () => {
       "quality_2",
     ); // distinct
     expect(other.succeeded).toBe(true);
-    expect(d.readRecord("nc").state).toBe("verified");
-    expect(d.readRecord("v2").fields.verified_by).toBe("quality_2");
-    expect(d.readRecord("v2").fields.signature_meaning).toContain("verification"); // signature meaning (gap 2)
+    expect(d.mustReadRecord("nc").state).toBe("verified");
+    expect(d.mustReadRecord("v2").fields.verified_by).toBe("quality_2");
+    expect(d.mustReadRecord("v2").fields.signature_meaning).toContain("verification"); // signature meaning (gap 2)
   });
 
   it("fails CLOSED: an approval carrying no approver identity is refused, not committed unsigned", () => {
@@ -177,6 +177,6 @@ describe("segregation of duties (persona gap 1)", () => {
     );
     expect(noActor.succeeded).toBe(false);
     expect(noActor.failureClass).toBe("segregation_of_duties_violation");
-    expect(d.readRecord("rl").state).toBe("under_review"); // unchanged, not force-approved
+    expect(d.mustReadRecord("rl").state).toBe("under_review"); // unchanged, not force-approved
   });
 });

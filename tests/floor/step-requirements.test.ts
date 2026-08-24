@@ -55,7 +55,7 @@ describe("required step work must have happened", () => {
     expect(refused.succeeded).toBe(false);
     expect(refused.failureClass).toBe("required_measurements_present");
     // A refused operation persists no facts (Contract Spec §8): the step did not complete.
-    expect(driver.readRecord("rs1").state).toBe("in_progress");
+    expect(driver.mustReadRecord("rs1").state).toBe("in_progress");
   });
 
   it("CompleteRunStep ALLOWS the step once the measurement exists (the guard is not blanket)", () => {
@@ -84,7 +84,7 @@ describe("required step work must have happened", () => {
       "op_alice",
     );
     expect(completed.succeeded).toBe(true);
-    expect(driver.readRecord("rs1").state).toBe("complete");
+    expect(driver.mustReadRecord("rs1").state).toBe("complete");
   });
 
   it("CompleteRunStep REFUSES a step whose required installation never happened", () => {
@@ -139,7 +139,7 @@ describe("required step work must have happened", () => {
       "operator_1",
     );
     expect(skipped.succeeded).toBe(true);
-    expect(driver.readRecord("rs1").state).toBe("skipped");
+    expect(driver.mustReadRecord("rs1").state).toBe("skipped");
 
     const check = driver.executeOperation(
       "RunCloseCheck",
@@ -148,9 +148,9 @@ describe("required step work must have happened", () => {
       "s1",
     );
     expect(check.succeeded).toBe(true);
-    const blockers = driver.readRecord("rcc1").fields.blockers;
+    const blockers = driver.mustReadRecord("rcc1").fields.blockers;
     expect(blockers).toContain("required_measurements_present");
-    expect(driver.readRecord("rcc1").state).toBe("blocked");
+    expect(driver.mustReadRecord("rcc1").state).toBe("blocked");
   });
 
   it("the close gate passes a skipped step that required nothing (no over-blocking)", () => {
@@ -164,7 +164,7 @@ describe("required step work must have happened", () => {
       undefined,
       "operator_1",
     );
-    expect(driver.readRecord("rs1").state).toBe("skipped");
+    expect(driver.mustReadRecord("rs1").state).toBe("skipped");
 
     driver.executeOperation(
       "RunCloseCheck",
@@ -172,7 +172,7 @@ describe("required step work must have happened", () => {
       "system_worker",
       "s1",
     );
-    expect(driver.readRecord("rcc1").fields.blockers).toEqual([]);
-    expect(driver.readRecord("rcc1").state).toBe("passed");
+    expect(driver.mustReadRecord("rcc1").fields.blockers).toEqual([]);
+    expect(driver.mustReadRecord("rcc1").state).toBe("passed");
   });
 });

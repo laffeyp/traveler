@@ -24,7 +24,7 @@ describe("extended adversarial scenarios (in-memory)", () => {
       .readEventTrace()
       .filter((e: any) => e.type === "MACHINE_EVIDENCE_RECEIVED");
     expect(ev.length).toBe(1); // the second delivery emitted nothing
-    expect(vf011.driver.readRecord("torque_evidence_001").state).toBe("normalized"); // downstream proceeded on the one record
+    expect(vf011.driver.mustReadRecord("torque_evidence_001").state).toBe("normalized"); // downstream proceeded on the one record
   });
 
   it("VF-014: the drill-down both filters AND audits (the audit event is the discriminator)", () => {
@@ -33,6 +33,7 @@ describe("extended adversarial scenarios (in-memory)", () => {
     const audit = vf014.driver
       .readEventTrace()
       .find((e: any) => e.type === "BOUNDED_DRILL_DOWN_REQUESTED");
+    if (!audit) throw new Error("BOUNDED_DRILL_DOWN_REQUESTED not emitted");
     expect(audit.payload.access_profile).toBe("customer_summary_access");
     expect(audit.payload.scope).toBe("run");
   });
@@ -112,7 +113,7 @@ describe("extended adversarial scenarios (in-memory)", () => {
       undefined,
       "approver_1",
     );
-    expect(dR.readRecord("rl").state).toBe("rejected");
+    expect(dR.mustReadRecord("rl").state).toBe("rejected");
     expect(dR.readEventTrace().map((e: any) => e.type)).toContain("REDLINE_REJECTED");
     const applyR = dR.executeOperation(
       "ApplyRedline",
@@ -141,7 +142,7 @@ describe("extended adversarial scenarios (in-memory)", () => {
       undefined,
       "approver_1",
     );
-    expect(dA.readRecord("rl").state).toBe("approved");
+    expect(dA.mustReadRecord("rl").state).toBe("approved");
     expect(dA.readEventTrace().map((e: any) => e.type)).toContain("REDLINE_APPROVED");
     const applyA = dA.executeOperation(
       "ApplyRedline",

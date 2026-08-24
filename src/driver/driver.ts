@@ -175,6 +175,14 @@ export class InMemoryProductDriver {
       return null;
     }
   }
+  // A read that refuses the null case. For callers (chiefly tests and read-projections) that have set up an
+  // alias in the same turn and would treat a null return as a setup bug, not a legitimate absence. Failing
+  // here names the missing alias, so a broken test fixture surfaces the name rather than a NullPointer trace.
+  mustReadRecord(alias: string): FactoryRecord {
+    const record = this.readRecord(alias);
+    if (record == null) throw new Error(`mustReadRecord: alias '${alias}' resolves to no record`);
+    return record;
+  }
   readProjection(name: string, key: string, actorContext?: string): any {
     if (name === "AsBuiltProjection") return asBuiltProjection(this.world, key);
     if (name === "SerialHistory") return serialHistory(this.world, key, actorContext); // Harness §11: access-aware read

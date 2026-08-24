@@ -43,9 +43,11 @@ describe("a released document is superseded, never edited", () => {
       "manufacturing_engineer",
     );
     expect(result.succeeded).toBe(true);
-    expect(driver.readRecord("pv_1").state).toBe("superseded");
-    expect(driver.readRecord("pv_1").fields.superseded_by).toBe(driver.readRecord("pv_2").id);
-    expect(driver.readRecord("pv_1").fields.superseded_at).toBe("2026-08-07T08:00:00Z");
+    expect(driver.mustReadRecord("pv_1").state).toBe("superseded");
+    expect(driver.mustReadRecord("pv_1").fields.superseded_by).toBe(
+      driver.mustReadRecord("pv_2").id,
+    );
+    expect(driver.mustReadRecord("pv_1").fields.superseded_at).toBe("2026-08-07T08:00:00Z");
   });
 
   it("refuses to let a document supersede itself", () => {
@@ -59,7 +61,7 @@ describe("a released document is superseded, never edited", () => {
       "manufacturing_engineer",
     );
     expect(result.failureClass).toBe("validation_error");
-    expect(driver.readRecord("pv_1").state).toBe("released");
+    expect(driver.mustReadRecord("pv_1").state).toBe("released");
   });
 
   it("refuses a successor of the wrong record type", () => {
@@ -88,9 +90,9 @@ describe("a released document is superseded, never edited", () => {
       "manufacturing_engineer",
     );
     expect(result.succeeded).toBe(true);
-    expect(driver.readRecord("pv_1").state).toBe("retired");
-    expect(driver.readRecord("pv_1").fields.superseded_by).toBeUndefined();
-    expect(driver.readRecord("pv_1").fields.retirement_reason).toBe("part out of production");
+    expect(driver.mustReadRecord("pv_1").state).toBe("retired");
+    expect(driver.mustReadRecord("pv_1").fields.superseded_by).toBeUndefined();
+    expect(driver.mustReadRecord("pv_1").fields.retirement_reason).toBe("part out of production");
   });
 
   it.each(["superseded", "retired"])("nothing moves out of %s", (state) => {
@@ -118,8 +120,10 @@ describe("a released document is superseded, never edited", () => {
         "manufacturing_engineer",
       ).succeeded,
     ).toBe(true);
-    expect(driver.readRecord("pv_1").state).toBe("draft");
-    expect(driver.readRecord("pv_1").fields.return_reason).toBe("step 4 has no acceptance limits");
+    expect(driver.mustReadRecord("pv_1").state).toBe("draft");
+    expect(driver.mustReadRecord("pv_1").fields.return_reason).toBe(
+      "step 4 has no acceptance limits",
+    );
   });
 
   it("refuses a return with no reason: an author needs to know what to fix", () => {
@@ -132,7 +136,7 @@ describe("a released document is superseded, never edited", () => {
         "manufacturing_engineer",
       ).failureClass,
     ).toBe("validation_error");
-    expect(driver.readRecord("pv_1").state).toBe("in_review");
+    expect(driver.mustReadRecord("pv_1").state).toBe("in_review");
   });
 });
 
@@ -157,8 +161,9 @@ describe("a BOM line is editable only while its structure is a draft", () => {
       "manufacturing_engineer",
     );
     expect(result.succeeded).toBe(true);
-    expect(driver.readRecord("bom_1").fields.part_revision).toBe("gasket_rev_b");
+    expect(driver.mustReadRecord("bom_1").fields.part_revision).toBe("gasket_rev_b");
     const changed = driver.world.events.find((e: any) => e.type === "BOM_LINE_CHANGED");
+    if (!changed) throw new Error("BOM_LINE_CHANGED not emitted");
     expect(changed.payload.changed.part_revision).toEqual({
       from: "gasket_rev_a",
       to: "gasket_rev_b",
@@ -177,7 +182,7 @@ describe("a BOM line is editable only while its structure is a draft", () => {
         "manufacturing_engineer",
       );
       expect(result.failureClass).toBe("structure_not_draft");
-      expect(driver.readRecord("bom_1").fields.part_revision).toBe("gasket_rev_a"); // untouched
+      expect(driver.mustReadRecord("bom_1").fields.part_revision).toBe("gasket_rev_a"); // untouched
     },
   );
 
@@ -219,7 +224,7 @@ describe("a redline becomes the way the job is done", () => {
         "manufacturing_engineer",
       ).succeeded,
     ).toBe(true);
-    expect(driver.readRecord("rl_1").state).toBe("merge_candidate");
+    expect(driver.mustReadRecord("rl_1").state).toBe("merge_candidate");
 
     expect(
       call(
@@ -229,12 +234,12 @@ describe("a redline becomes the way the job is done", () => {
         "manufacturing_engineer",
       ).succeeded,
     ).toBe(true);
-    expect(driver.readRecord("rl_1").state).toBe("merged");
-    expect(driver.readRecord("rl_1").fields.merged_into).toBe(driver.readRecord("pv_2").id);
+    expect(driver.mustReadRecord("rl_1").state).toBe("merged");
+    expect(driver.mustReadRecord("rl_1").fields.merged_into).toBe(driver.mustReadRecord("pv_2").id);
 
     call(driver, "CloseRedline", { redline_alias: "rl_1" }, "manufacturing_engineer");
-    expect(driver.readRecord("rl_1").state).toBe("closed");
-    expect(driver.readRecord("rl_1").fields.close_disposition).toBe("merged");
+    expect(driver.mustReadRecord("rl_1").state).toBe("closed");
+    expect(driver.mustReadRecord("rl_1").fields.close_disposition).toBe("merged");
   });
 
   it("refuses to merge into a RELEASED procedure version", () => {
@@ -251,7 +256,7 @@ describe("a redline becomes the way the job is done", () => {
       "manufacturing_engineer",
     );
     expect(result.failureClass).toBe("procedure_version_not_draft");
-    expect(driver.readRecord("rl_1").state).toBe("merge_candidate");
+    expect(driver.mustReadRecord("rl_1").state).toBe("merge_candidate");
   });
 
   it("an applied redline closes as applied_only, not as merged", () => {
@@ -259,8 +264,8 @@ describe("a redline becomes the way the job is done", () => {
     // as the same would make a redline log say the process improved when nothing about it changed.
     const driver = driverWith([["Redline", "rl_1", "applied"]]);
     call(driver, "CloseRedline", { redline_alias: "rl_1" }, "manufacturing_engineer");
-    expect(driver.readRecord("rl_1").state).toBe("closed");
-    expect(driver.readRecord("rl_1").fields.close_disposition).toBe("applied_only");
+    expect(driver.mustReadRecord("rl_1").state).toBe("closed");
+    expect(driver.mustReadRecord("rl_1").fields.close_disposition).toBe("applied_only");
   });
 
   it("a rejected redline can never be marked, merged or closed", () => {
@@ -281,6 +286,6 @@ describe("a redline becomes the way the job is done", () => {
       const result = call(driver, op, input, "manufacturing_engineer");
       expect(result.failureClass, op).toBe("state_transition_forbidden");
     }
-    expect(driver.readRecord("rl_1").state).toBe("rejected");
+    expect(driver.mustReadRecord("rl_1").state).toBe("rejected");
   });
 });

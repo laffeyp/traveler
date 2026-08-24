@@ -25,7 +25,7 @@ describe("smoke bench (in-memory)", () => {
     expect(ev).not.toContain("RUN_CLOSE_CHECK_BLOCKED");
     expect(ev).toContain("RUN_CLOSE_CHECK_PASSED"); // closes on the first check
     expect(ev).toContain("RUN_CLOSED");
-    expect(vf001.driver.readRecord("run_001").state).toBe("closed");
+    expect(vf001.driver.mustReadRecord("run_001").state).toBe("closed");
   });
 
   it("VF-002 is the failure path: MEASUREMENT_FAILED + NC opened, close BLOCKED, run NOT closed", () => {
@@ -36,7 +36,7 @@ describe("smoke bench (in-memory)", () => {
     expect(ev).not.toContain("MEASUREMENT_PASSED");
     expect(ev).not.toContain("RUN_CLOSE_CHECK_PASSED"); // the check never passed
     expect(ev).not.toContain("RUN_CLOSED"); // the run never closed
-    expect(vf002.driver.readRecord("run_001").state).toBe("close_blocked");
-    expect(vf002.driver.readRecord("nonconformance_001").state).toBe("disposition_pending");
+    expect(vf002.driver.mustReadRecord("run_001").state).toBe("close_blocked");
+    expect(vf002.driver.mustReadRecord("nonconformance_001").state).toBe("disposition_pending");
   });
 });

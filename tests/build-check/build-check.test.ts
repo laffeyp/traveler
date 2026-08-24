@@ -37,7 +37,7 @@ describe("build-check-blocker family (in-memory)", () => {
       expect(ev).toContain("RUN_BLOCKED");
       expect(ev).not.toContain("BUILD_CHECK_PASSED");
       expect(ev).not.toContain("RUN_READY");
-      expect(v.driver.readRecord("run_001").state).toBe("blocked");
+      expect(v.driver.mustReadRecord("run_001").state).toBe("blocked");
     }
   });
 
@@ -162,7 +162,7 @@ describe("build-check-blocker family (in-memory)", () => {
 
   it("VF-005 quarantined child cannot be reserved — the state machine fails closed", () => {
     // Independent of the build check: quarantined -> reserved is unregistered; the reserve must fail.
-    const gasket = vf005.driver.readRecord("gasket_001");
+    const gasket = vf005.driver.mustReadRecord("gasket_001");
     expect(gasket.state).toBe("quarantined"); // never left quarantine
   });
 
@@ -268,7 +268,7 @@ describe("build check names WHY the target is unusable", () => {
       "planner",
       "s1",
     );
-    return driver.readRecord("bc").fields.blockers as string[];
+    return driver.mustReadRecord("bc").fields.blockers as string[];
   };
 
   it("a quarantined target is reported as quarantined, not as merely unavailable", () => {

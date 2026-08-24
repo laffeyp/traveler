@@ -29,8 +29,8 @@ describe("report supersession + report_field_equals (VF-012)", () => {
   });
 
   it("supersede + regenerate, not overwrite: prior superseded (frozen S0), new generated (S1), both exist", () => {
-    const oldR = vf012.driver.readRecord("run_close_report_t0");
-    const newR = vf012.driver.readRecord("run_close_report_t1");
+    const oldR = vf012.driver.mustReadRecord("run_close_report_t0");
+    const newR = vf012.driver.mustReadRecord("run_close_report_t1");
     expect(oldR.state).toBe("superseded"); // terminal — frozen, not overwritten
     expect(newR.state).toBe("generated");
     expect(oldR.fields.sections.access_policy_snapshot.policy_alias).toBe(
@@ -86,6 +86,6 @@ describe("report supersession + report_field_equals (VF-012)", () => {
     );
     expect(again.succeeded).toBe(false);
     expect(again.failureClass).toBe("state_transition_forbidden");
-    expect(vf012.driver.readRecord("run_close_report_t0").state).toBe("superseded"); // unchanged
+    expect(vf012.driver.mustReadRecord("run_close_report_t0").state).toBe("superseded"); // unchanged
   });
 });

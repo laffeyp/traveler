@@ -44,7 +44,7 @@ describe("reconciliation + report freshness (deferred items: §18, B-Q-27/28)", 
       "qe_1",
     );
     expect(inv.succeeded).toBe(true);
-    expect(d.readRecord("mer").state).toBe("invalidated");
+    expect(d.mustReadRecord("mer").state).toBe("invalidated");
     expect(d.readEventTrace().map((e: any) => e.type)).toContain("MACHINE_EVIDENCE_INVALIDATED");
 
     const g = getReport(d, "rep");
@@ -66,7 +66,7 @@ describe("reconciliation + report freshness (deferred items: §18, B-Q-27/28)", 
     );
     expect(inv.succeeded).toBe(false);
     expect(inv.failureClass).toBe("state_transition_forbidden");
-    expect(d.readRecord("mer").state).toBe("normalized"); // unchanged
+    expect(d.mustReadRecord("mer").state).toBe("normalized"); // unchanged
   });
 
   it("§19 two-mode contrast: a policy change after generation staleness a controlled_export but NOT a dynamic_view_filter", () => {
@@ -104,7 +104,7 @@ describe("reconciliation + report freshness (deferred items: §18, B-Q-27/28)", 
     ); // no run_alias
     expect(inv.succeeded).toBe(false);
     expect(inv.failureClass).toBe("precondition_failed");
-    expect(d.readRecord("mer").state).toBe("accepted"); // NOT invalidated — rolled back, no false reconciliation
+    expect(d.mustReadRecord("mer").state).toBe("accepted"); // NOT invalidated — rolled back, no false reconciliation
   });
 
   it("invalidation fails CLOSED when the caller run_alias disagrees with the evidence's own linked run", () => {
@@ -122,7 +122,7 @@ describe("reconciliation + report freshness (deferred items: §18, B-Q-27/28)", 
     );
     expect(inv.succeeded).toBe(false);
     expect(inv.failureClass).toBe("precondition_failed");
-    expect(d.readRecord("mer").state).toBe("accepted");
+    expect(d.mustReadRecord("mer").state).toBe("accepted");
   });
 
   it("GetReport fails CLOSED: a controlled_export with unverifiable freshness reads STALE", () => {

@@ -34,19 +34,21 @@ describe("a report that has to be assembled can fail and be retried", () => {
   it("walks requested -> generating -> generated one step at a time", () => {
     const driver = runReadyForReport();
     expect(request(driver).succeeded).toBe(true);
-    expect(driver.readRecord("rep_1").state).toBe("requested");
+    expect(driver.mustReadRecord("rep_1").state).toBe("requested");
 
     expect(call(driver, "StartReportGeneration", { report_alias: "rep_1" }).succeeded).toBe(true);
-    expect(driver.readRecord("rep_1").state).toBe("generating");
+    expect(driver.mustReadRecord("rep_1").state).toBe("generating");
 
     expect(call(driver, "CompleteReportGeneration", { report_alias: "rep_1" }).succeeded).toBe(
       true,
     );
-    expect(driver.readRecord("rep_1").state).toBe("generated");
+    expect(driver.mustReadRecord("rep_1").state).toBe("generated");
     // The body is written at COMPLETION, not at request: a report is a snapshot of what was true when it was
     // generated, and assembling it early would freeze the wrong moment.
-    expect(driver.readRecord("rep_1").fields.sections.report_header.title).toBe("Run Close Report");
-    expect(driver.readRecord("rep_1").fields.generated_at).toBe("2026-08-07T08:00:00Z");
+    expect(driver.mustReadRecord("rep_1").fields.sections.report_header.title).toBe(
+      "Run Close Report",
+    );
+    expect(driver.mustReadRecord("rep_1").fields.generated_at).toBe("2026-08-07T08:00:00Z");
   });
 
   it("fails with a stated cause, and refuses to fail without one", () => {
@@ -58,7 +60,7 @@ describe("a report that has to be assembled can fail and be retried", () => {
     expect(call(driver, "FailReportGeneration", { report_alias: "rep_1" }).failureClass).toBe(
       "validation_error",
     );
-    expect(driver.readRecord("rep_1").state).toBe("generating");
+    expect(driver.mustReadRecord("rep_1").state).toBe("generating");
 
     expect(
       call(driver, "FailReportGeneration", {
@@ -66,8 +68,8 @@ describe("a report that has to be assembled can fail and be retried", () => {
         reason: "source measurement record was mid-correction",
       }).succeeded,
     ).toBe(true);
-    expect(driver.readRecord("rep_1").state).toBe("failed");
-    expect(driver.readRecord("rep_1").fields.failure_reason).toBe(
+    expect(driver.mustReadRecord("rep_1").state).toBe("failed");
+    expect(driver.mustReadRecord("rep_1").fields.failure_reason).toBe(
       "source measurement record was mid-correction",
     );
   });
@@ -82,16 +84,16 @@ describe("a report that has to be assembled can fail and be retried", () => {
     call(driver, "FailReportGeneration", { report_alias: "rep_1", reason: "source locked" });
 
     expect(call(driver, "RetryReportGeneration", { report_alias: "rep_1" }).succeeded).toBe(true);
-    expect(driver.readRecord("rep_1").state).toBe("requested");
-    expect(driver.readRecord("rep_1").fields.failure_reason).toBeNull();
-    expect(driver.readRecord("rep_1").fields.previous_failure_reason).toBe("source locked");
-    expect(driver.readRecord("rep_1").fields.generation_attempts).toBe(2);
+    expect(driver.mustReadRecord("rep_1").state).toBe("requested");
+    expect(driver.mustReadRecord("rep_1").fields.failure_reason).toBeNull();
+    expect(driver.mustReadRecord("rep_1").fields.previous_failure_reason).toBe("source locked");
+    expect(driver.mustReadRecord("rep_1").fields.generation_attempts).toBe(2);
 
     call(driver, "StartReportGeneration", { report_alias: "rep_1" });
     call(driver, "CompleteReportGeneration", { report_alias: "rep_1" });
-    expect(driver.readRecord("rep_1").state).toBe("generated");
-    expect(driver.readRecord("rep_1").fields.failure_reason).toBeNull();
-    expect(driver.readRecord("rep_1").fields.generation_attempts).toBe(2);
+    expect(driver.mustReadRecord("rep_1").state).toBe("generated");
+    expect(driver.mustReadRecord("rep_1").fields.failure_reason).toBeNull();
+    expect(driver.mustReadRecord("rep_1").fields.generation_attempts).toBe(2);
   });
 
   it("cannot complete a report that was never started", () => {
@@ -111,7 +113,7 @@ describe("a report that has to be assembled can fail and be retried", () => {
       call(driver, "FailReportGeneration", { report_alias: "rep_1", reason: "second thoughts" })
         .failureClass,
     ).toBe("state_transition_forbidden");
-    expect(driver.readRecord("rep_1").state).toBe("generated");
+    expect(driver.mustReadRecord("rep_1").state).toBe("generated");
   });
 
   it("fails closed when the report names no run to assemble from", () => {
@@ -144,7 +146,7 @@ describe("machine registration", () => {
 
   it("registers a machine and an adapter that speaks for it", () => {
     const driver = registered();
-    expect(driver.readRecord("torque_tool_001").fields.machine_id).toBe("TT-001");
+    expect(driver.mustReadRecord("torque_tool_001").fields.machine_id).toBe("TT-001");
     const adapter = call(
       driver,
       "RegisterMachineAdapter",
@@ -157,8 +159,8 @@ describe("machine registration", () => {
       "machine_integration_owner",
     );
     expect(adapter.succeeded).toBe(true);
-    expect(driver.readRecord("adapter_1").fields.machine).toBe(
-      driver.readRecord("torque_tool_001").id,
+    expect(driver.mustReadRecord("adapter_1").fields.machine).toBe(
+      driver.mustReadRecord("torque_tool_001").id,
     );
   });
 
@@ -250,7 +252,7 @@ describe("machine evidence names a machine that exists", () => {
     const result = receive(driver, "tool_a", "adapter_a");
     expect(result.succeeded).toBe(true);
     // Stored as a RESOLVED reference, not the alias string it came in as.
-    expect(driver.readRecord("ev").fields.machine).toBe(driver.readRecord("tool_a").id);
+    expect(driver.mustReadRecord("ev").fields.machine).toBe(driver.mustReadRecord("tool_a").id);
   });
 
   it("refuses evidence from a machine nobody registered", () => {

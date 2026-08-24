@@ -46,7 +46,7 @@ describe("disposition kinds + authority (persona gap 3)", () => {
     });
     expect(r.succeeded).toBe(false);
     expect(r.failureClass).toBe("validation_error");
-    expect(d.readRecord("nc").state).toBe("disposition_pending"); // unchanged
+    expect(d.mustReadRecord("nc").state).toBe("disposition_pending"); // unchanged
   });
 
   it("use-as-is needs quality/engineering authority: refused for an operator, allowed for quality", () => {
@@ -59,7 +59,7 @@ describe("disposition kinds + authority (persona gap 3)", () => {
     );
     expect(refused.succeeded).toBe(false);
     expect(refused.failureClass).toBe("disposition_authority_violation");
-    expect(asOperator.readRecord("nc").state).toBe("disposition_pending"); // unchanged
+    expect(asOperator.mustReadRecord("nc").state).toBe("disposition_pending"); // unchanged
 
     const asQuality = ncAtDispositionPending();
     const ok = op(
@@ -69,7 +69,7 @@ describe("disposition kinds + authority (persona gap 3)", () => {
       "quality_engineer",
     );
     expect(ok.succeeded).toBe(true);
-    expect(asQuality.readRecord("nc").state).toBe("dispositioned");
+    expect(asQuality.mustReadRecord("nc").state).toBe("dispositioned");
     expect(dispositionField(asQuality).disposition).toBe("use_as_is");
     expect(dispositionField(asQuality).dispositioned_by).toBe("person_1"); // who dispositioned is recorded
   });
@@ -115,7 +115,7 @@ describe("disposition kinds + authority (persona gap 3)", () => {
       );
       expect(r.succeeded).toBe(false);
       expect(r.failureClass).toBe("authorization_denied");
-      expect(d.readRecord("nc").state).toBe("disposition_pending"); // unchanged
+      expect(d.mustReadRecord("nc").state).toBe("disposition_pending"); // unchanged
       expect(dispositionField(d)).toBeUndefined(); // and no Disposition record was written
     }
   });
@@ -126,6 +126,6 @@ describe("disposition kinds + authority (persona gap 3)", () => {
       op(d, "RecordDisposition", { nonconformance_alias: "nc", disposition: "rework" }, "operator")
         .succeeded,
     ).toBe(true);
-    expect(d.readRecord("nc").state).toBe("dispositioned");
+    expect(d.mustReadRecord("nc").state).toBe("dispositioned");
   });
 });

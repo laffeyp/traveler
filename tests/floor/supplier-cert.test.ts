@@ -33,7 +33,7 @@ describe("typed supplier certificates (persona gap 8)", () => {
       "planner",
       "s",
     );
-    const c = d.readRecord("cert1");
+    const c = d.mustReadRecord("cert1");
     expect(c.fields.cert_type).toBe("material_test_report"); // typed, not a loose attachment
     expect(c.fields.serial_or_lot).toBe("LOT-1"); // tied to the lot
     expect(c.fields.cage_code).toBe("1ABC1");

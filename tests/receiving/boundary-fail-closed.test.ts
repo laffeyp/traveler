@@ -98,14 +98,14 @@ describe("the receiving boundary fails closed on identity, not just state", () =
     capture(d, "c", "pr", "S");
     addLine(d, "l", "i", "pr", "S", ["certificate_of_conformance"]);
     check(d, "l", "chk");
-    expect(d.readRecord("chk").state).toBe("passed");
+    expect(d.mustReadRecord("chk").state).toBe("passed");
     d.executeOperation(
       "ApplyReceivingCheckResultToInventory",
       { receiving_check_alias: "chk", inventory_item_alias: "i" },
       "quality_engineer",
       key(),
     );
-    expect(d.readRecord("i").state).toBe("available");
+    expect(d.mustReadRecord("i").state).toBe("available");
   });
 
   it("a passed check cannot release another line's goods (F10)", () => {
@@ -117,8 +117,8 @@ describe("the receiving boundary fails closed on identity, not just state", () =
     addLine(d, "lnC", "itemC", "pr_c", "S-C", ["certificate_of_conformance"]);
     check(d, "lnA", "chkA");
     check(d, "lnC", "chkC");
-    expect(d.readRecord("chkA").state).toBe("passed");
-    expect(d.readRecord("chkC").state).toBe("blocked");
+    expect(d.mustReadRecord("chkA").state).toBe("passed");
+    expect(d.mustReadRecord("chkC").state).toBe("blocked");
     const cross = d.executeOperation(
       "ApplyReceivingCheckResultToInventory",
       { receiving_check_alias: "chkA", inventory_item_alias: "itemC" },
@@ -127,7 +127,7 @@ describe("the receiving boundary fails closed on identity, not just state", () =
     );
     expect(cross.succeeded).toBe(false);
     expect(cross.failureClass).toBe("receiving_check_item_mismatch");
-    expect(d.readRecord("itemC").state).toBe("received"); // never reached available
+    expect(d.mustReadRecord("itemC").state).toBe("received"); // never reached available
   });
 
   it("the quarantine gate holds when the item is addressed by record id (F11)", () => {
@@ -159,7 +159,7 @@ describe("the receiving boundary fails closed on identity, not just state", () =
       expect(attempt.succeeded).toBe(false);
       expect(attempt.failureClass).toBe("receiving_check_not_passed");
     }
-    expect(d.readRecord("it").state).toBe("quarantined");
+    expect(d.mustReadRecord("it").state).toBe("quarantined");
   });
 
   it("a shipment line cannot claim an identity the goods do not have (F12)", () => {
@@ -185,9 +185,9 @@ describe("the receiving boundary fails closed on identity, not just state", () =
     addLine(d, "lng", "gk", "gk_rev_b", "LOT-9", ["certificate_of_conformance"]);
     check(d, "lnv", "cv");
     check(d, "lng", "cg");
-    expect(d.readRecord("cv").state).toBe("blocked");
-    expect(d.readRecord("cg").state).toBe("blocked");
-    expect(d.readRecord("cv").fields.blockers).toContain("document_matches_part_revision");
+    expect(d.mustReadRecord("cv").state).toBe("blocked");
+    expect(d.mustReadRecord("cg").state).toBe("blocked");
+    expect(d.mustReadRecord("cv").fields.blockers).toContain("document_matches_part_revision");
   });
 
   it("an empty required_documents list is refused, not treated as nothing required (F14)", () => {
@@ -199,7 +199,7 @@ describe("the receiving boundary fails closed on identity, not just state", () =
     // Omitting it still takes the default, which blocks with no paperwork present.
     addLine(d, "ln2", "it", "pr", "S");
     check(d, "ln2", "c");
-    expect(d.readRecord("c").state).toBe("blocked");
+    expect(d.mustReadRecord("c").state).toBe("blocked");
   });
 
   it("a certificate cannot release goods whose part identity is absent on both sides (F13)", () => {

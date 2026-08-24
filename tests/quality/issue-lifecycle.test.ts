@@ -45,7 +45,7 @@ describe("an issue can be worked from open to closed", () => {
       undefined,
       "quality_3",
     );
-    const issue = d.readRecord("issue_1");
+    const issue = d.mustReadRecord("issue_1");
     expect(issue.state).toBe("closed");
     expect(issue.fields.opened_by).toBe("quality_1");
     expect(issue.fields.triaged_by).toBe("quality_2");
@@ -69,7 +69,7 @@ describe("an issue can be worked from open to closed", () => {
     );
     expect(skipped.succeeded).toBe(false);
     expect(skipped.failureClass).toBe("state_transition_forbidden");
-    expect(d.readRecord("issue_2").state).toBe("open");
+    expect(d.mustReadRecord("issue_2").state).toBe("open");
   });
 
   it("refuses a resolution with nothing stated, and a cancellation with no reason", () => {
@@ -125,7 +125,7 @@ describe("an issue can be worked from open to closed", () => {
       "quality_1",
     );
     expect(cancelled.succeeded).toBe(true);
-    expect(d.readRecord("issue_4").state).toBe("cancelled");
-    expect(d.readRecord("issue_4").fields.cancellation_reason).toBe("duplicate");
+    expect(d.mustReadRecord("issue_4").state).toBe("cancelled");
+    expect(d.mustReadRecord("issue_4").fields.cancellation_reason).toBe("duplicate");
   });
 });

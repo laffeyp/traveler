@@ -26,8 +26,8 @@ describe("affected-population closure (persona gap 4)", () => {
       "s1",
     );
     expect(r1.succeeded).toBe(true); // the op succeeds; the CHECK result is blocked
-    expect(d.readRecord("rcc1").state).toBe("blocked");
-    const blockers1: string[] = d.readRecord("rcc1").fields.blockers;
+    expect(d.mustReadRecord("rcc1").state).toBe("blocked");
+    const blockers1: string[] = d.mustReadRecord("rcc1").fields.blockers;
     expect(blockers1.some((b) => b.startsWith("affected_population_not_remediated"))).toBe(true);
     expect(blockers1.some((b) => b.includes("VB-002"))).toBe(true); // VB-002 is the unremediated batch-mate
     expect(blockers1.some((b) => b.includes("VB-001"))).toBe(false); // VB-001 IS remediated (its own closed NC)
@@ -43,8 +43,8 @@ describe("affected-population closure (persona gap 4)", () => {
       "system_worker",
       "s2",
     );
-    expect(d.readRecord("rcc2").state).toBe("passed"); // whole batch remediated -> no population blocker
-    expect((d.readRecord("rcc2").fields.blockers ?? []).length).toBe(0);
+    expect(d.mustReadRecord("rcc2").state).toBe("passed"); // whole batch remediated -> no population blocker
+    expect((d.mustReadRecord("rcc2").fields.blockers ?? []).length).toBe(0);
   });
 
   it("a same-serial closed NC of a DIFFERENT part does not count as remediation (serial reuse across parts)", () => {
@@ -77,9 +77,9 @@ describe("affected-population closure (persona gap 4)", () => {
       "s1",
     );
     // The P-B unit is NOT a remediation of the P-A batch -> VB-002 still unremediated -> blocked.
-    expect(d.readRecord("rcc").state).toBe("blocked");
+    expect(d.mustReadRecord("rcc").state).toBe("blocked");
     expect(
-      (d.readRecord("rcc").fields.blockers as string[]).some((b) => b.includes("VB-002")),
+      (d.mustReadRecord("rcc").fields.blockers as string[]).some((b) => b.includes("VB-002")),
     ).toBe(true);
   });
 
@@ -100,6 +100,6 @@ describe("affected-population closure (persona gap 4)", () => {
       "system_worker",
       "s1",
     );
-    expect(d.readRecord("rcc").state).toBe("passed");
+    expect(d.mustReadRecord("rcc").state).toBe("passed");
   });
 });

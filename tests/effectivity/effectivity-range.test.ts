@@ -40,8 +40,8 @@ describe("effectivity by serial range (persona gap 6)", () => {
     const d = withRangeRules();
     const inside = resolve(d, "res_in", "VB-050");
     expect(inside.succeeded).toBe(true);
-    expect(d.readRecord("res_in").state).toBe("resolved");
-    expect(d.readRecord("res_in").fields.selected_procedure_version).toBe("pv_c");
+    expect(d.mustReadRecord("res_in").state).toBe("resolved");
+    expect(d.mustReadRecord("res_in").fields.selected_procedure_version).toBe("pv_c");
 
     const outside = resolve(d, "res_out", "VB-200");
     expect(outside.succeeded).toBe(false);

@@ -26,14 +26,14 @@ describe("effectivity family (in-memory)", () => {
     const ev = vf007.driver.readEventTrace().map((e: any) => e.type);
     expect(ev).toContain("EFFECTIVITY_AMBIGUOUS");
     expect(ev).not.toContain("EFFECTIVITY_RESOLVED"); // ambiguity did not resolve
-    expect(vf007.driver.readRecord("effectivity_resolution_001").state).toBe("ambiguous");
+    expect(vf007.driver.mustReadRecord("effectivity_resolution_001").state).toBe("ambiguous");
     // effectivity is the SOLE, isolating build blocker (inventory is fully staged).
     const blockers = vf007.driver
       .readEventTrace()
       .filter((e: any) => e.type === "BUILD_BLOCKER_CREATED")
       .map((e: any) => e.payload.blocker);
     expect(blockers).toEqual(["effectivity_ambiguous"]);
-    expect(vf007.driver.readRecord("run_001").state).toBe("blocked");
+    expect(vf007.driver.mustReadRecord("run_001").state).toBe("blocked");
   });
 
   // "no required match fails resolution" is a DIFFERENT outcome (a fail), not an ambiguity — the two
@@ -70,9 +70,9 @@ describe("effectivity family (in-memory)", () => {
   // VF-008 immutability: the snapshot is pinned to the original selection, while a fresh resolution over
   // the changed rule set genuinely re-selects the superseding version. The contrast is the proof.
   it("VF-008 snapshot is pinned to v1 while a fresh resolution re-selects v1b", () => {
-    const snap = vf008.driver.readRecord("run_context_snapshot_001");
-    const res1 = vf008.driver.readRecord("effectivity_resolution_001");
-    const res2 = vf008.driver.readRecord("effectivity_resolution_002");
+    const snap = vf008.driver.mustReadRecord("run_context_snapshot_001");
+    const res1 = vf008.driver.mustReadRecord("effectivity_resolution_001");
+    const res2 = vf008.driver.mustReadRecord("effectivity_resolution_002");
     expect(snap.fields.procedure_version).toBe("procedure_version_v1"); // snapshot did not follow the world
     expect(res1.fields.selected_procedure_version).toBe("procedure_version_v1");
     expect(res2.fields.selected_procedure_version).toBe("procedure_version_v1b"); // the later rule genuinely re-selects
@@ -131,7 +131,7 @@ describe("effectivity family (in-memory)", () => {
       "planner",
       "s-run",
     );
-    const snap = d.readRecord("snap");
+    const snap = d.mustReadRecord("snap");
     expect(snap.fields.procedure_version).toBe("pv_resolved"); // captured from the resolution...
     expect(snap.fields.procedure_version).not.toBe("DECOY_pv"); // ...NOT the caller's literal
     expect(snap.fields.manufacturing_structure).toBe("msv_resolved");
@@ -155,7 +155,7 @@ describe("effectivity family (in-memory)", () => {
       "planner",
       "s-res2",
     );
-    expect(d.readRecord("eff2").fields.selected_procedure_version).toBe("pv_superseding"); // the world moved on
-    expect(d.readRecord("snap").fields.procedure_version).toBe("pv_resolved"); // the snapshot did not
+    expect(d.mustReadRecord("eff2").fields.selected_procedure_version).toBe("pv_superseding"); // the world moved on
+    expect(d.mustReadRecord("snap").fields.procedure_version).toBe("pv_resolved"); // the snapshot did not
   });
 });

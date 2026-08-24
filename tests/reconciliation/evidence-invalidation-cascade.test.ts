@@ -33,7 +33,7 @@ describe("§18 evidence-invalidation auto-cascades (Phase B, B-Q-29)", () => {
     expect(d.world.byType("Issue").length).toBe(1);
     expect(d.world.byType("Issue")[0].state).toBe("open");
     // coupled to the SUBJECT, not just present: both artifacts point back at the invalidated evidence.
-    const merId = d.readRecord("mer").id;
+    const merId = d.mustReadRecord("mer").id;
     expect(d.world.byType("Issue")[0].fields.source_evidence).toBe(merId);
     expect(d.world.byType("RunCloseObservation")[0].fields.source_evidence).toBe(merId);
   });
@@ -77,6 +77,6 @@ describe("§18 evidence-invalidation auto-cascades (Phase B, B-Q-29)", () => {
     expect(inv.failureClass).toBe("precondition_failed");
     expect(d.world.byType("Issue").length).toBe(0); // no cascade on a failed op (rolled back)
     expect(d.world.byType("RunCloseObservation").length).toBe(0);
-    expect(d.readRecord("mer").state).toBe("accepted");
+    expect(d.mustReadRecord("mer").state).toBe("accepted");
   });
 });
