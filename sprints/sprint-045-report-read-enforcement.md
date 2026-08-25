@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 045
-status: pending
+status: closed # [closed 2026-08-25 — GetReport refuses report_audience_mismatch when caller_profile differs from audience_profile; absent caller_profile bypasses]
 phase: C.3-enforcement
 pass_kind: functional
 ---

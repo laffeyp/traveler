@@ -2140,6 +2140,22 @@ export const HANDLERS: Record<string, H> = {
     // read SURFACES regeneration_required (it does not silently return as fresh). GetReport is a read: no event.
     const report = tryGet(world, input.report_alias);
     if (!report || report.record_type !== "GeneratedReport") return { found: false };
+    // Sprint 045: audience check. If the caller opts in by passing `caller_profile` AND the report was
+    // generated for an audience_profile that does not match, refuse with report_audience_mismatch — the
+    // load-bearing §7.6 rule: report read is a SEPARATE decision from report generation. Absent
+    // caller_profile passes through, so existing scenarios stay byte-identical.
+    if (
+      input.caller_profile &&
+      report.fields.audience_profile &&
+      report.fields.audience_profile !== input.caller_profile
+    ) {
+      return {
+        found: false,
+        reason: "report_audience_mismatch",
+        expected_audience: report.fields.audience_profile,
+        caller_profile: input.caller_profile,
+      };
+    }
     const mode = report.fields.filtering_mode ?? "controlled_export";
     let stale = report.fields.regeneration_required === true; // the stored flag applies to BOTH modes (an invalidation cascade)
     let reason = stale ? report.fields.regeneration_reason : undefined;
