@@ -2468,7 +2468,11 @@ export const HANDLERS: Record<string, H> = {
       throw new Error(
         `validation_error: filtering_mode must be controlled_export or dynamic_view_filter, got '${mode}'`,
       );
-    const report = world.create("GeneratedReport", input.report_alias, "generated", {
+    // Sprint 044: audience_profile and generation_context are optional preservation fields per §7.5. When
+    // the caller passes them, they persist on the record so a later report_read (§7.6, sprint 045) can
+    // decide against them. Existing scenarios pass neither, so the record shape is unchanged for VF-012 /
+    // VF-003D / and the whole-bench diff-to-zero.
+    const reportFields: Record<string, unknown> = {
       status: "generated",
       run: run.id,
       report_type: "RunCloseReport",
@@ -2478,7 +2482,10 @@ export const HANDLERS: Record<string, H> = {
       filtering_mode: mode,
       regeneration_required: false,
       sections: assembleRunCloseReport(world, run, scope),
-    });
+    };
+    if (input.audience_profile) reportFields.audience_profile = input.audience_profile;
+    if (input.generation_context) reportFields.generation_context = input.generation_context;
+    const report = world.create("GeneratedReport", input.report_alias, "generated", reportFields);
     world.emit("REPORT_REQUESTED", "GenerateRunCloseReport", { report_id: report.id });
     world.emit("REPORT_GENERATION_STARTED", "GenerateRunCloseReport", { report_id: report.id });
     world.emit("REPORT_GENERATED", "GenerateRunCloseReport", { report_id: report.id });

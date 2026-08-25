@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 044
-status: pending
+status: closed # [closed 2026-08-25 — audience_profile and generation_context preservation fields on GeneratedReport; byte-identical for callers who omit them]
 phase: C.3-enforcement
 pass_kind: functional
 ---
