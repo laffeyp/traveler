@@ -10,7 +10,7 @@ import type { FactoryRecord, FactoryEvent } from "./world.ts";
 import { HANDLERS } from "./handlers.ts";
 import { opIdempotency, callerMayInvoke, opAuthorizationRule } from "./registry.ts";
 import { asBuiltProjection, serialHistory } from "./projections.ts";
-import type { CallerContext, VisibilityDecision } from "./visibility.ts";
+import type { CallerContext, VisibilityDecision, VisibilityLevel } from "./visibility.ts";
 import { summarizeRecord, notFoundResponse } from "./visibility.ts";
 
 /** The Harness §11 OperationResult: the outcome envelope every operation returns. */
