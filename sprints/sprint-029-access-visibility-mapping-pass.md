@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 029
-status: pending
+status: closed # [closed 2026-08-25 — 22-row mapping table produced; four concept calls recorded as B-Q-74 through B-Q-77 with candidate answers; every gate preserved]
 phase: C.1-foundations
 pass_kind: architecture
 ---
