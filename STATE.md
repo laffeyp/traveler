@@ -7,7 +7,7 @@ are given so it can be checked.
 
 ## 1. What this is measured against
 
-Three things ask for something, and they ask for different things.
+Four things ask for something, and they ask for different things.
 
 The **nine-document founding stack** governs the first executable slice. It runs from theory to a file-by-file
 work order: a research dossier, a product specification, a technical architecture document, an
@@ -23,6 +23,11 @@ answer as built.
 
 The **directive of 7 August** was to build everything in scope that was not built. At that point 43 of the 128
 registered operations returned `not_implemented`.
+
+The **access and visibility boundary specification** arrived on 2026-08-24 and was built and closed on
+2026-08-25. It asks who may act, who may see, at what level of detail, in what context. Its §16 lists
+eighteen conditions for accepting the answer as built. It names eleven access dimensions and eleven
+enforcement points.
 
 ---
 
@@ -190,19 +195,47 @@ machine, an unregistered adapter, and an adapter that resolves but speaks for a 
 
 ---
 
+## 4a. Against the access and visibility boundary specification
+
+The full row-by-row scoring lives in `ACCESS_AND_VISIBILITY_ACCEPTANCE.md`. Eighteen of eighteen §16
+criteria pass or pass-in-part. Row 4 is the only pass-in-part: the driver's operation-authorization wrapper
+still emits generic `authorization_denied` rather than the specific `role_not_authorized`; unifying the two
+paths was deferred to protect what the first-slice scenarios' assertions read.
+
+Twenty-four sprints (029-052) opened and closed on 2026-08-25. The narrative is in `SESSION_2026-08-25.md`.
+
+Registry delta from the boundary: +4 operations (`OpenSupportSession`, `CloseSupportSession`,
+`AccessAttachment`, `AmendAccessPolicy`), +4 events (`SUPPORT_SESSION_OPENED / CLOSED`,
+`ATTACHMENT_ACCESS_DECISION_RECORDED`, `ACCESS_POLICY_AMENDED`), +1 record (`SupportSession`), +1 state
+machine (`SupportSession`), +1 authorization rule (`support_session_management`), +3 registry files
+(`contracts/reason-codes.yaml`, `contracts/failure-classes.yaml`, `contracts/visibility-profiles.yaml`).
+Only one new record because B-Q-74/75/77 candidate answers kept `access_group`, `customer`, `program`,
+`contract`, `factory_node`, and `service_account_scope` as fields rather than records.
+
+A red-team pass at day's end found three defects, all in claims about the code rather than in code itself:
+two phantom reason-code citations (`role_not_authorized` and `controlled_data_denied` cited
+`used_by_sprint: 031` but never emit — marked `used_by_sprint: deferred`); a vacuous audit-does-not-leak
+test (extended to drive every dimension); and an overstated "byte-identical" claim
+(diff-to-zero measures cross-driver fidelity, not against-baseline). A golden-trace regression check is
+recorded as a follow-up in `ROADMAP.md §Post-Phase-C deferred items`.
+
+---
+
 ## 5. What exists
 
-### Thirteen registries
+### Sixteen registries
 
-Behaviour is data. `src/` is a generic executor over `contracts/*.yaml`.
+Behaviour is data. `src/` is a generic executor over `contracts/*.yaml`. Sixteen registry files as of the
+Phase C close — thirteen at the day's start, plus `contracts/reason-codes.yaml`,
+`contracts/failure-classes.yaml`, and `contracts/visibility-profiles.yaml`.
 
 | Registry | Count |
 |---|---|
-| Operations | 128, of which 125 built |
-| Events | 132 |
-| Records | 42 |
-| State machines | 15 |
-| Authorization rules | 32 |
+| Operations | 132, of which 129 built |
+| Events | 136 |
+| Records | 43 |
+| State machines | 16 |
+| Authorization rules | 33 |
 | Assertion types | 26 |
 | Modules | 22 |
 | Caller types | 10 |
@@ -211,6 +244,9 @@ Behaviour is data. `src/` is a generic executor over `contracts/*.yaml`.
 | Run-close rules | 13 |
 | Receiving rules | 10 |
 | Supplier document types | 7 |
+| Reason codes (§8.3) | 26 |
+| Failure classes (§14) | 21 |
+| Visibility profiles (§9) | 8 |
 | Observability and compatibility profiles | 2 registries |
 
 ### Thirty-eight scenarios, 779 steps

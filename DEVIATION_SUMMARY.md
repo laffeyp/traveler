@@ -51,19 +51,37 @@ The same discipline the whole project runs on, applied to beyond-spec work:
 4. **Two review passes on the beyond-spec work found the same dominant defect shape both times — fail-open guards** (17 in the persona batch, 8 in the reconciliation build): a check written conditionally falls open on the input the author did not picture (absent actor, empty role, malformed control, unresolvable run, unverifiable timestamp). Every one was inverted to **fail closed** — require the input present and affirmatively good, refuse the rest. This recurred a third independent time and is now treated as a law, not a case-by-case catch.
 5. **The close-out found one more class:** two persona-gap operations and two record types were **handler-only** — real behavior the locked registries never named, invisible because the contract validator only checked the forward direction (every registered name resolves), never the reverse (every handler maps to a registered name). Registered the four items and added the missing **reverse-direction poka-yoke** (`tests/consolidation/handler-registration.test.ts`), with the asymmetry made explicit: a registered op with no handler is fine (it returns not_implemented), but a handler with no registered op is behavior outside the contract.
 
-## 4. Current status (measured 2026-07-01)
+## 4. Current status (measured 2026-08-25 after Phase C)
 
 | Gate | Result |
 |---|---|
-| `validate:contracts` | ok — 116 operations / 122 events / 39 records / 13 state machines / 26 assertion types; consistency ok; VF-003 references resolved |
-| `validate:schemas` | ok — 106 operation schemas, 70 event payload schemas, 14/14 fixtures discriminate |
-| bench (first_slice) | 14/14 = 1.00 on both drivers |
-| backend gate | all durability proofs PASS — VF-003/006/008/009/012/013/015 + write-boundary idempotency + record-id counter reload + VF-003D reconciliation reload + Phase A outbox delivery; whole-bench cross-driver diff-to-zero over 23 scenarios PASS (byte-identical) |
-| vitest | 121/121 across 24 test files |
-| Open ContractGaps | none; B-Q-22/27/28 RESOLVED (deferred items) + B-Q-29/30 RESOLVED (roadmap phases) |
+| `validate:contracts` | ok — 132 operations / 136 events / 43 records / 16 state machines / 33 authorization rules / 26 assertion types; consistency ok; VF-003 references resolved |
+| `validate:schemas` | ok — 154 operation schemas, 93 event payload schemas, 14/14 fixtures discriminate |
+| bench (all) | 29/29 on both drivers |
+| backend gate | all durability proofs PASS — VF-003/006/008/009/012/013/015 + VF-003D reconciliation + VF-025 receiving + VF-028 supplier-quality + write-boundary idempotency + record-id counter reload + outbound-certificate + attachment + Phase A outbox delivery; whole-bench cross-driver diff-to-zero over 37 scenarios PASS (both drivers equivalent — see the KIT_DIARY Entry 32 red-team caveat on baseline regression) |
+| vitest | 432/432 across 58 test files |
+| tsc | 0 errors across src and tests |
+| Open ContractGaps | none blocking; B-Q-22/27/28 RESOLVED (deferred items) + B-Q-29/30 RESOLVED (roadmap phases) + B-Q-74/75/76/77 RESOLVED (Phase C mapping) |
+| §16 access-and-visibility acceptance | 18 of 18 pass or pass-in-part (`ACCESS_AND_VISIBILITY_ACCEPTANCE.md`) |
 
-*Numbers updated after the two roadmap phases shipped following the initial close-of-line: Phase B (§18 evidence-invalidation auto-cascades, B-Q-29) and Phase A (outbox delivery leg, B-Q-30). See `ROADMAP.md` for the phase detail; the deviation analysis above is unchanged in kind — both phases completed spec'd behavior (§18, TAD §12) and added no new registry vocabulary.*
+## 5. Phase C — access and visibility boundary (2026-08-25)
 
-## 5. The through-line
+The third governing document to arrive after the first slice closed. Registered in `WORKING_AGREEMENT.md §Authority order` as item 9. Twenty-four sprints (029-052) opened and closed in one day; the narrative lives in `SESSION_2026-08-25.md`.
 
-The design's deepest claim — a factory that speaks a typed vocabulary, **refuses to blur distinct states, and never asserts false certainty** — is now executable, holds under adversity (idempotency, access control, unsupported input), and holds **beyond the original spec** (segregation of duties, export control, calibration, supplier certs, evidence reconciliation, report freshness). The deviations did not dilute the discipline; they were subjected to it. Across fourteen straight increments — feature, fix, hardening, refactor, audit, the persona additions, the deferred-items build, the close-out, and both roadmap phases (Phase B's §18 auto-cascades and Phase A's outbox delivery leg, where the skeptic caught an exactly-once mechanism masquerading as at-least-once) — the distrust-the-green review never once came back empty by inspection. The load-bearing thing was never the green; it was the discipline that refused to trust it.
+**Quantified delta from Phase C:**
+
+| Dimension | Pre-Phase-C | Post-Phase-C | Delta |
+|---|---|---|---|
+| Operations | 128 | 132 | +4 (`OpenSupportSession`, `CloseSupportSession`, `AccessAttachment`, `AmendAccessPolicy`) |
+| Events | 132 | 136 | +4 (`SUPPORT_SESSION_OPENED / CLOSED`, `ATTACHMENT_ACCESS_DECISION_RECORDED`, `ACCESS_POLICY_AMENDED`) |
+| Records | 42 | 43 | +1 (`SupportSession`) |
+| State machines | 15 | 16 | +1 (`SupportSession`) |
+| Authorization rules | 32 | 33 | +1 (`support_session_management`) |
+| Registry files | 13 | 16 | +3 (`reason-codes.yaml`, `failure-classes.yaml`, `visibility-profiles.yaml`) |
+| Vitest suite | 301 across 37 files | 432 across 58 files | +131 tests, +21 files |
+
+Only one new record because B-Q-74/75/77 candidate answers kept `access_group`, `customer`, `program`, `contract`, `factory_node`, and `service_account_scope` as fields rather than records. The receiving pack's 13→3 collapse happened again here: twelve `new-vocabulary` mapping proposals reduced to one new record because the same-word audit at authoring caught the duplicates.
+
+## 6. The through-line
+
+The design's deepest claim — a factory that speaks a typed vocabulary, **refuses to blur distinct states, and never asserts false certainty** — is now executable, holds under adversity (idempotency, access control, unsupported input), holds beyond the original spec (segregation of duties, export control, calibration, supplier certs, evidence reconciliation, report freshness), and holds through an entire new boundary (eleven access dimensions and eleven enforcement points, all opt-in on target-side scoping so existing traces preserve). The deviations did not dilute the discipline; they were subjected to it. Across fifteen straight increments — feature, fix, hardening, refactor, audit, the persona additions, the deferred-items build, the close-out, both roadmap phases, and now Phase C's whole 24-sprint arc plus its own red-team pass — the distrust-the-green review never once came back empty by inspection. The load-bearing thing was never the green; it was the discipline that refused to trust it.

@@ -80,6 +80,44 @@ The backend wrote outbox rows transactionally but nothing consumed them (TAD §1
 
 This phase is the clearest case of adversarial review earning its keep: the skeptic pass caught that the first cut was effectively *exactly-once* (apply+mark atomic), so the at-least-once idempotency defended an unreachable path. Splitting the two transactions is what made the claim true. It also found the ordering proof vacuous and a mark-without-apply orphan hole — both fixed. See `contracts/CONTRACT_GAPS.md` B-Q-30.
 
+## Phase C — access and visibility boundary (2026-08-25)
+
+The third boundary the build satisfies, after the receiving evidence boundary. Governed by `access-and-visibility-boundary-spec-v0.1.md` (WORKING_AGREEMENT §Authority order item 9). Twenty-four sprints (029-052) opened and closed in one day; the narrative and per-sprint detail live in `SESSION_2026-08-25.md`; the row-by-row §16 scoring lives in `ACCESS_AND_VISIBILITY_ACCEPTANCE.md` (18 of 18 pass or pass-in-part).
+
+The receiving-boundary discipline governed the sequence: mapping pass first, in-repo registry pack second, then dimension by dimension, then enforcement by enforcement, then cross-cutting (audit, freshness cascade, mutation battery), then the acceptance closeout. Every dimensional check is opt-in on target-side scoping fields; existing scenarios' assertions preserved.
+
+| # | Addition | New vocabulary introduced | Proven by |
+|---|---|---|---|
+| 10 | **§8 decision model — generalized EvaluateAccess** | Output shape widened to `{decision, visibility_level, reason?, audit_required, freshness_effect}`; `target_object` accepted as alias for `resource_alias`; new §14 codes `access_context_missing` and `access_context_malformed`. | `tests/access/decision-model.test.ts`; VF-029/VF-031 preserved via `event_payload_contains` subset match. |
+| 11 | **§5 visibility levels — first-class** | Four outcomes `full | summary | denied | hidden_existence` in `src/driver/visibility.ts`. Four §10 summary shapes (`machine_evidence_summary`, `supplier_document_summary`, `nonconformance_summary`, `report_summary`). `readRecordAsCaller` on both drivers and the harness interface. §14 code `no_summary_shape_registered`. | `tests/access/visibility-levels.test.ts`, including §5.4 byte-identical hidden-vs-not-found proof. |
+| 12 | **Reason codes + failure classes bidirectionally registered** | `contracts/reason-codes.yaml` (26 entries — 22 §8.3 + 4 first-slice) and `contracts/failure-classes.yaml` (21 §14 entries). | `tests/access/reason-codes-registered.test.ts` — forward + reverse + duplicate check. |
+| 13 | **§9 visibility profiles registered** | `contracts/visibility-profiles.yaml` with 8 profiles. `VISIBILITY_PROFILES` map exported from `src/driver/registry.ts`. | `tests/access/visibility-profiles.test.ts`. |
+| 14 | **§6.2 access group dimension** | Caller `access_groups: string[]`, target `required_access_group`. §14 code `access_group_missing`. B-Q-74 answered: fields on caller context, no record. | `tests/access/access-group.test.ts`. |
+| 15 | **§6.3 customer scope** | Caller `customer_context`, target `customer` (on Shipment, ShipmentLine, GeneratedReport). §14 code `customer_scope_mismatch`. B-Q-75 answered: no Order record. | `tests/access/customer-scope.test.ts`. |
+| 16 | **§6.4 program scope** | Caller `program_context`, target `program`. §14 code `program_scope_mismatch`. | `tests/access/program-scope.test.ts`. |
+| 17 | **§6.5 contract scope** | Caller `contract_context`, target `contract` (on Shipment, GeneratedReport). §14 code `contract_scope_mismatch`. B-Q-76 answered: not on Run. Same-customer-cross-contract test proves distinct-from-customer. | `tests/access/contract-scope.test.ts`. |
+| 18 | **§6.6 factory node** | Caller `factory_node_context`, target `originating_factory_node`. §14 code `factory_node_scope_mismatch`. | `tests/access/factory-node.test.ts`. |
+| 19 | **§6.7 + §6.9 record type + report type as profile whitelists** | Profile `allowed_record_types` and `allowed_report_types`. §14 codes `record_type_restricted`, `report_type_restricted`. Unregistered `visibility_profile` refuses `access_context_malformed`. | `tests/access/record-and-report-type.test.ts`. |
+| 20 | **§6.10 / §7.10 support/admin context** | New record `SupportSession` with `open/closed` state machine. New operations `OpenSupportSession`, `CloseSupportSession`. New events `SUPPORT_SESSION_OPENED`, `SUPPORT_SESSION_CLOSED`. New authorization rule `support_session_management`. §14 codes `support_context_missing`, `support_context_expired`. Time predicate on `expires_at` against `world.clock`. | `tests/access/support-session.test.ts`. |
+| 21 | **§6.11 service-account scope — processing != disclosure** | Caller `service_account_scope: { processing_actions?, disclosure_actions? }`. §14 code `service_scope_denied`. B-Q-77 answered: fields on caller context, no record. | `tests/access/service-account-scope.test.ts`. |
+| 22 | **§7.3 projection read enforcement** | New `readProjectionAsCaller(name, key, callerContext)` on both drivers and the harness interface. Root refusal owned; per-leaf enforcement deferred. | `tests/access/projection-read.test.ts`. |
+| 23 | **§7.5 report generation preservation** | Optional `audience_profile` and `generation_context` fields on GeneratedReport when the caller passes them. | `tests/access/report-generation.test.ts`; VF-012 preserved when omitted. |
+| 24 | **§7.6 report read as separate decision** | `GetReport` reads `caller_profile` against report `audience_profile`. §14 code `report_audience_mismatch`. | `tests/access/report-read.test.ts`. |
+| 25 | **§7.7 bounded drill-down per-hop** | `BoundedDrillDown` accepts `hop_target`; hop into a hidden field refuses `bounded_drilldown_denied`. VF-014 preserved. | `tests/access/bounded-drilldown.test.ts`. |
+| 26 | **§7.9 attachment access as its own enforcement point** | New operation `AccessAttachment` with six outcomes (`download / preview / metadata_summary / existence_only / denied / hidden_existence`). New event `ATTACHMENT_ACCESS_DECISION_RECORDED`. §14 code `attachment_access_denied`. Metadata and content are independent decisions. | `tests/access/attachment-access.test.ts`. |
+| 27 | **§7.8 event replay to user-visible views** | New `readEventTraceAsCaller(callerContext)` distinct from internal `readEventTrace`. External audiences hide events carrying `raw_payload` or `document_body` and strip nationality hints. | `tests/access/event-replay-user-visible.test.ts`. |
+| 28 | **§12 audit invariants** | Every access decision writes `ACCESS_DECISION_AUDITED`. Denied audit and DENIED event carry the target alias and refusal reason only — no field from the target's data. | `tests/access/audit.test.ts` (hardened after red-team pass on 2026-08-25 caught the vacuous version). |
+| 29 | **§13 access policy amendment + freshness cascade** | New operation `AmendAccessPolicy` writes to `world.accessPolicyChanges`. Existing controlled_export freshness mechanism from Phase B fires the cascade. New event `ACCESS_POLICY_AMENDED`. §14 code `policy_change_forbidden` (history-rewrite guard). | `tests/access/policy-change-cascade.test.ts`. |
+| 30 | **§16 criterion 16 fail-closed mutation battery** | 16 permanent regression arms in `tests/access/fail-closed-battery.test.ts`; not-enforceable list empty. Every arm asserts the specific §14 reason. | The test file itself. |
+
+**Deferred Phase C items** (recorded in `ROADMAP.md §Post-Phase-C deferred items`):
+
+- Golden-trace regression check — a stored per-scenario baseline diff. Diff-to-zero currently measures cross-driver fidelity, not against-baseline (the finding from the 2026-08-25 red-team pass).
+- Unify operation authorization with the §8 decision model. `role_not_authorized` and `controlled_data_denied` reason codes registered but marked `used_by_sprint: deferred`.
+- Per-leaf enforcement inside projections. Sprint 043 owns the root-refusal boundary only.
+- AccessDecision durable record write on top of the audit event stream.
+- AmendAccessPolicy retries + dead-letter (§13 does not name magnitudes).
+
 ## Notes on scope
 
 - These additions extend the locked contract vocabulary. They were authorized directly by the user (the sole authority) — the original doc stack does not define them.

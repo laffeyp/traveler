@@ -945,6 +945,8 @@ claims.** For TECHNIQUES.md.
 
 ## Entry 32 — Phase C: the access-and-visibility boundary, drafted and shipped in one day (2026-08-25)
 
+*A full-day session narrative with the commit ledger and gate-by-gate deltas lives in `SESSION_2026-08-25.md` at project root. This entry captures the phase-synthesis view — what worked, what got in the way, what the kit's next revision should carry.*
+
 **The arc.** The user placed the boundary spec at project root on 2026-08-24. Twenty-four sprint cards were drafted up front — cadence set to auto-within-phase so the plan could be amended in place rather than composed one card at a time. Housekeeping first (tsc drift fixed, mustReadRecord added, STATE.md re-measured, KIT_DIARY Entry 31 recorded the pattern). Then the arc: mapping pass, registry pack, decision model, visibility levels, reason codes, visibility profiles, eight dimensions, six enforcement points, three cross-cutting sprints, and the acceptance closeout. Every sprint held the ≤2-files / one-concept sweet spot except the ones whose one concept genuinely spanned more (031 the decision-model refactor, 041 the SupportSession lifecycle, 047 the AccessAttachment operation). Every sprint preserved the whole-bench cross-driver diff-to-zero over 37 scenarios: PASS (all identical) at every close.
 
 **What worked.**
