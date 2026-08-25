@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 051
-status: pending
+status: closed # [closed 2026-08-25 — 16 fail-closed arms; every arm names the specific §14 reason; not-enforceable list empty]
 phase: C.4-cross-cutting
 pass_kind: functional
 ---
