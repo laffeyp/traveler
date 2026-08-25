@@ -1754,6 +1754,76 @@ export const HANDLERS: Record<string, H> = {
     attachment.fields.reference_deleted_reason = input.reason;
     step(world, attachment, "DeleteAttachmentReference");
   },
+  AccessAttachment(world, input) {
+    // Sprint 047 (spec §7.9). Six outcomes: download / preview / metadata_summary / existence_only /
+    // denied / hidden_existence. Metadata visibility and content visibility are independent decisions —
+    // a caller may see that a document exists (metadata_summary) without being allowed to download it.
+    // Reads the attachment's state (restricted / deleted_reference / accepted / etc.) plus the caller's
+    // `requested_view`. Fail-closed on missing attachment (hidden_existence) or missing view.
+    const attachment = tryGet(world, input.attachment_alias);
+    const requestedView = input.requested_view;
+    const denyWith = (outcome: string, reason: string) => {
+      world.emit("ATTACHMENT_ACCESS_DECISION_RECORDED", "AccessAttachment", {
+        attachment_alias: input.attachment_alias,
+        outcome,
+        reason,
+      });
+      world.emit("ACCESS_DECISION_AUDITED", "AccessAttachment", {
+        resource_alias: input.attachment_alias,
+        decision: outcome,
+      });
+      return { outcome, reason, attachment: null };
+    };
+    if (!attachment || attachment.record_type !== "Attachment")
+      return denyWith("hidden_existence", "attachment_access_denied");
+    // Restricted attachments never yield content — a metadata_summary is still permissible.
+    if (attachment.state === "restricted" || attachment.state === "deleted_reference") {
+      if (requestedView === "download" || requestedView === "preview")
+        return denyWith("denied", "attachment_access_denied");
+      // Fall through to metadata_summary
+    }
+    const outcome =
+      requestedView === "download"
+        ? "download"
+        : requestedView === "preview"
+          ? "preview"
+          : requestedView === "existence_only"
+            ? "existence_only"
+            : "metadata_summary";
+    world.emit("ATTACHMENT_ACCESS_DECISION_RECORDED", "AccessAttachment", {
+      attachment_alias: input.attachment_alias,
+      outcome,
+    });
+    world.emit("ACCESS_DECISION_AUDITED", "AccessAttachment", {
+      resource_alias: input.attachment_alias,
+      decision: outcome,
+    });
+    // The response shape depends on the outcome. metadata_summary reveals metadata but no content;
+    // download/preview include the storage reference; existence_only reveals only that it exists.
+    if (outcome === "existence_only") {
+      return { outcome, attachment: { exists: true } };
+    }
+    if (outcome === "metadata_summary") {
+      return {
+        outcome,
+        attachment: {
+          filename: attachment.fields.filename,
+          media_type: attachment.fields.media_type,
+          state: attachment.state,
+        },
+      };
+    }
+    // download or preview
+    return {
+      outcome,
+      attachment: {
+        filename: attachment.fields.filename,
+        media_type: attachment.fields.media_type,
+        storage_ref: attachment.fields.storage_ref,
+        content_hash: attachment.fields.content_hash,
+      },
+    };
+  },
   GetAttachment(world, input) {
     // Fails CLOSED on a restricted or removed reference: a restricted attachment returns its metadata and an
     // explicit refusal rather than a storage reference, and one whose reference was deleted has nothing to

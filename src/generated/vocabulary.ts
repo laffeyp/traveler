@@ -2,7 +2,7 @@
 // Source: contracts/{events,operations,records}.yaml (the locked vocabulary).
 // Regenerate with `npm run generate:types`; CI fails on drift via `npm run verify:types`.
 
-/** Every registered FactoryEvent tag (134). */
+/** Every registered FactoryEvent tag (135). */
 export type EventType =
   | "ACCESS_DECISION_ALLOWED"
   | "ACCESS_DECISION_AUDITED"
@@ -14,6 +14,7 @@ export type EventType =
   | "APPROVAL_REJECTED"
   | "APPROVAL_REQUESTED"
   | "ATTACHMENT_ACCEPTED"
+  | "ATTACHMENT_ACCESS_DECISION_RECORDED"
   | "ATTACHMENT_CREATED"
   | "ATTACHMENT_LINKED"
   | "ATTACHMENT_REFERENCE_DELETED"
@@ -139,11 +140,12 @@ export type EventType =
   | "VERIFICATION_COMPLETED"
   | "VERIFICATION_PENDING";
 
-/** Every registered operation name (130). */
+/** Every registered operation name (131). */
 export type OperationName =
   | "AcceptAttachmentAsEvidence"
   | "AcceptCertificateAsEvidence"
   | "AcceptMachineEvidence"
+  | "AccessAttachment"
   | "ActivateQualityContainment"
   | "AddBOMLine"
   | "AddShipmentLine"

@@ -147,6 +147,10 @@ operations:
   # out-of-time. Not a hidden superuser path.
   - { name: OpenSupportSession, authorization_rule: support_session_management, owning_module: access, exposure: [internal], idempotency: required_idempotency_key, observability_ref: standard_mutating_operation_observability, compatibility_ref: standard_operation_v1_compatibility, vf003: false, events_emitted: [SUPPORT_SESSION_OPENED] }
   - { name: CloseSupportSession, authorization_rule: support_session_management, owning_module: access, exposure: [internal], idempotency: required_idempotency_key, observability_ref: standard_mutating_operation_observability, compatibility_ref: standard_operation_v1_compatibility, vf003: false, events_emitted: [SUPPORT_SESSION_CLOSED] }
+  # Sprint 047 (spec §7.9): AccessAttachment is a separate enforcement point. Six outcomes — download,
+  # preview, metadata_summary, existence_only, denied, hidden_existence — because metadata visibility and
+  # content visibility are independent decisions.
+  - { name: AccessAttachment, authorization_rule: access_administration, owning_module: access, exposure: [internal], idempotency: not_idempotent, observability_ref: standard_read_operation_observability, compatibility_ref: standard_operation_v1_compatibility, vf003: false, events_emitted: [ATTACHMENT_ACCESS_DECISION_RECORDED, ACCESS_DECISION_AUDITED] }
 
   # --- Beyond-spec additions (persona gap 8; AS9100 8.4.2; see ADDITIONS.md). Registered here so the vocabulary
   #     matches the handlers — these two were handler-only, invisible to the registry, until close-out (sprint 019).

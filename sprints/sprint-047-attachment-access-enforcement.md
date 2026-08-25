@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 047
-status: pending
+status: closed # [closed 2026-08-25 — AccessAttachment op with 6 outcomes; metadata and content independent]
 phase: C.3-enforcement
 pass_kind: functional
 ---
