@@ -2580,6 +2580,29 @@ export const HANDLERS: Record<string, H> = {
       }
     }
 
+    // Customer scope (sprint 036, spec §6.3): if the target names a customer and the caller's
+    // customer_context does not match, refuse with customer_scope_mismatch. A caller with null
+    // customer_context cannot read any customer-scoped record. B-Q-75 candidate answer applied: customer
+    // is a field on Shipment / ShipmentLine / GeneratedReport, no new Order record.
+    const targetCustomer = targetRecordForGroup?.fields?.customer;
+    if (targetCustomer && input.customer_context !== targetCustomer) {
+      world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+        resource_alias: targetAlias,
+        reason: "customer_scope_mismatch",
+      });
+      world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+        resource_alias: targetAlias,
+        decision: "denied",
+      });
+      return {
+        decision: "denied",
+        visibility_level: "denied",
+        reason: "customer_scope_mismatch",
+        audit_required: true,
+        freshness_effect: "none",
+      };
+    }
+
     // Requested summary (sprint 032): a caller who explicitly asks for a summary and whose target has a
     // registered §10 summary shape gets visibility_level: "summary". Sprint 032 lets tests exercise the
     // summary path without inventing dimensional refusals; sprints 035-042 add dimensions that produce

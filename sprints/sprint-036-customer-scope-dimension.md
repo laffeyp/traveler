@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 036
-status: pending
+status: closed # [closed 2026-08-25 — customer_scope_mismatch fires on target-side customer + caller-side context, byte-identical preserved, coupling test discriminates]
 phase: C.2-dimensions
 pass_kind: functional
 ---
