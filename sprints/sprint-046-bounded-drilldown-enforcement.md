@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 046
-status: pending
+status: closed # [closed 2026-08-25 — hop_target in the hidden list refuses with bounded_drilldown_denied; VF-014 preserved]
 phase: C.3-enforcement
 pass_kind: functional
 ---

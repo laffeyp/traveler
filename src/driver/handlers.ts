@@ -2974,6 +2974,29 @@ export const HANDLERS: Record<string, H> = {
     // Audit the drill-down request as a fact (Contract Spec §19: scoped, capped, access-filtered, AND
     // AUDITED; Harness §25). Registered op->event binding (events.yaml BOUNDED_DRILL_DOWN_REQUESTED) that
     // had no producer path until VF-014 — the audit half of the obligation.
+    // Sprint 046: per-hop enforcement (spec §7.7). If the caller names a hop_target and that target is
+    // in the policy's hidden list, refuse with the specific reason bounded_drilldown_denied. Sprint 046
+    // owns the "summary cannot promote to full" invariant; sprint 043 owns the root refusal. Existing
+    // VF-014 calls do not pass hop_target, so the check does not fire and the trace is unchanged.
+    const hidden: string[] = policy.hidden ?? [];
+    if (input.hop_target && hidden.includes(input.hop_target)) {
+      world.emit("BOUNDED_DRILL_DOWN_REQUESTED", "BoundedDrillDown", {
+        scope: input.scope,
+        access_profile: input.access_profile,
+        run_alias: input.run_alias,
+        report_alias: input.report_alias,
+        hop_target: input.hop_target,
+        outcome: "denied",
+      });
+      return {
+        access_filtered: true,
+        scope: input.scope,
+        access_profile: input.access_profile,
+        hop_target: input.hop_target,
+        denied: true,
+        reason: "bounded_drilldown_denied",
+      };
+    }
     world.emit("BOUNDED_DRILL_DOWN_REQUESTED", "BoundedDrillDown", {
       scope: input.scope,
       access_profile: input.access_profile,
