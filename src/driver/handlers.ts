@@ -2624,6 +2624,28 @@ export const HANDLERS: Record<string, H> = {
       };
     }
 
+    // Contract scope (sprint 038, spec §6.5). Same shape as customer and program. B-Q-76 candidate:
+    // contract lives on Shipment and GeneratedReport, not on Run. Same-customer cross-contract is a
+    // distinct refusal from cross-customer — the two dimensions are not proxies for each other.
+    const targetContract = targetRecordForGroup?.fields?.contract;
+    if (targetContract && input.contract_context !== targetContract) {
+      world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+        resource_alias: targetAlias,
+        reason: "contract_scope_mismatch",
+      });
+      world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+        resource_alias: targetAlias,
+        decision: "denied",
+      });
+      return {
+        decision: "denied",
+        visibility_level: "denied",
+        reason: "contract_scope_mismatch",
+        audit_required: true,
+        freshness_effect: "none",
+      };
+    }
+
     // Requested summary (sprint 032): a caller who explicitly asks for a summary and whose target has a
     // registered §10 summary shape gets visibility_level: "summary". Sprint 032 lets tests exercise the
     // summary path without inventing dimensional refusals; sprints 035-042 add dimensions that produce

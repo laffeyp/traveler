@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 038
-status: pending
+status: closed # [closed 2026-08-25 — contract_scope_mismatch fires, distinct from customer]
 phase: C.2-dimensions
 pass_kind: functional
 ---

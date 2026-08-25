@@ -218,6 +218,7 @@ export class InMemoryProductDriver {
         access_groups: callerContext.access_groups,
         customer_context: callerContext.customer_context,
         program_context: callerContext.program_context,
+        contract_context: callerContext.contract_context,
         subject_nationality: callerContext.subject_nationality,
         requested_visibility: callerContext.requested_visibility,
       },
