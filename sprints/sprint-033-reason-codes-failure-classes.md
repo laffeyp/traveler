@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 033
-status: pending
+status: closed # [closed 2026-08-25 — 22 reason codes + 21 failure classes registered; bidirectional check green; every gate preserved]
 phase: C.1-foundations
 pass_kind: architecture
 ---

@@ -1,0 +1,103 @@
+registry: reason-codes
+registry_version: contracts-0.4.1
+source: access-and-visibility-boundary-spec-v0.1.md §8.3
+note: >
+  Twenty-two reason codes an access decision can carry. Each is used at least once by an enforcement point
+  (§7) or by the fail-closed mutation battery (`access-and-visibility-registry-pack-v0.1/mutations/access-fail-closed-battery.yaml`).
+  Reason codes ride on the AccessDecision record's `reason` field and on the ACCESS_DECISION_* event
+  payloads. `allowed` is the code for a successful decision so audit records name their outcome uniformly.
+
+  A reason code is a stable string. Sprint 033 registers them; sprints 035-052 emit them from handlers and
+  assert on them from tests. A test in `tests/access/reason-codes-registered.test.ts` proves every §8.3
+  name resolves here and every name here traces back to the spec.
+
+reason_codes:
+  - name: allowed
+    spec_section: "§8.2"
+    note: "the successful-decision code; every audited allow carries it"
+  - name: role_not_authorized
+    spec_section: "§8.3"
+    used_by_sprint: 031
+  - name: access_group_missing
+    spec_section: "§8.3"
+    used_by_sprint: 035
+  - name: customer_scope_mismatch
+    spec_section: "§8.3"
+    used_by_sprint: 036
+  - name: program_scope_mismatch
+    spec_section: "§8.3"
+    used_by_sprint: 037
+  - name: contract_scope_mismatch
+    spec_section: "§8.3"
+    used_by_sprint: 038
+  - name: factory_node_scope_mismatch
+    spec_section: "§8.3"
+    used_by_sprint: 039
+  - name: record_type_restricted
+    spec_section: "§8.3"
+    used_by_sprint: 040
+  - name: report_type_restricted
+    spec_section: "§8.3"
+    used_by_sprint: 040
+  - name: controlled_data_denied
+    spec_section: "§8.3"
+    used_by_sprint: 031
+    note: "generalizes the export-by-nationality deemed_export_denied; both keep their names"
+  - name: deemed_export_denied
+    spec_section: "existing, ADDITIONS.md persona gap 5"
+    used_by_sprint: "already"
+    note: "shipped in the first slice; kept unchanged so VF-029/VF-031 continue byte-identical"
+  - name: support_context_missing
+    spec_section: "§8.3"
+    used_by_sprint: 041
+  - name: support_context_expired
+    spec_section: "§8.3"
+    used_by_sprint: 041
+  - name: service_scope_denied
+    spec_section: "§8.3"
+    used_by_sprint: 042
+  - name: attachment_access_denied
+    spec_section: "§8.3"
+    used_by_sprint: 047
+  - name: bounded_drilldown_denied
+    spec_section: "§8.3"
+    used_by_sprint: 046
+  - name: summary_only
+    spec_section: "§8.3"
+    used_by_sprint: 032
+    note: "an internal outcome name — produces a summary response, not a caller-visible failure"
+  - name: hidden_existence_required
+    spec_section: "§8.3"
+    used_by_sprint: 032
+    note: "an internal outcome name — produces a hidden_existence response"
+  - name: report_audience_mismatch
+    spec_section: "§8.3"
+    used_by_sprint: 045
+  - name: report_access_stale
+    spec_section: "§8.3"
+    used_by_sprint: 050
+    note: "cites the existing report freshness behavior (VF-012, VF-003D); sprint 050 generalizes"
+  - name: access_context_missing
+    spec_section: "§14"
+    used_by_sprint: 031
+    note: "sprint 031 fail-closed guard: no target at all"
+  - name: access_context_malformed
+    spec_section: "§14"
+    used_by_sprint: 031
+    note: "sprint 031 fail-closed guard: caller_type spelled a way no authorization rule spells"
+  - name: policy_change_forbidden
+    spec_section: "§14"
+    used_by_sprint: 050
+    note: "an amendment that would rewrite history is refused"
+  - name: no_summary_shape_registered
+    spec_section: "§10"
+    used_by_sprint: 032
+    note: "sprint 032 fail-closed guard: requested summary of a record type with no §10 shape denies"
+  - name: resource_not_found
+    spec_section: "existing"
+    used_by_sprint: "already"
+    note: "shipped in the first slice as an exportAccessDecision fail-closed case; kept for continuity"
+  - name: export_control_malformed
+    spec_section: "existing"
+    used_by_sprint: "already"
+    note: "shipped in the first slice; a resource with a present-but-malformed export_control fails closed"

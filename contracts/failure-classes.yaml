@@ -1,0 +1,36 @@
+registry: failure-classes
+registry_version: contracts-0.4.1
+source: access-and-visibility-boundary-spec-v0.1.md §14
+note: >
+  Twenty-one candidate failure classes an operation may return when an access decision refuses. Every entry
+  either maps_to a class the main registries already carry (`authorization_denied`, `validation_error`, ...)
+  or is `new: true`. A caller sees the specific class while tooling that filters by the generic parent still
+  reads it. maps_to is not deprecation — both names stand.
+
+  The naming discipline that governs this file: no second word for something already spoken. An
+  authorization_denied and a role_not_authorized are the same class from different altitudes; keeping both
+  lets a caller cite the specific reason while the driver's wrapper still catches every refusal under the
+  registered generic (matching how the operation-authorization wrapper already emits authorization_denied).
+
+failure_classes:
+  - { name: access_context_missing,       maps_to: validation_error,       new: false, spec_section: "§14", used_by_sprint: 031 }
+  - { name: access_context_malformed,     maps_to: validation_error,       new: false, spec_section: "§14", used_by_sprint: 031 }
+  - { name: role_not_authorized,          maps_to: authorization_denied,   new: false, spec_section: "§14", used_by_sprint: 031 }
+  - { name: access_group_missing,         maps_to: authorization_denied,   new: false, spec_section: "§14", used_by_sprint: 035 }
+  - { name: customer_scope_mismatch,      maps_to: authorization_denied,   new: false, spec_section: "§14", used_by_sprint: 036 }
+  - { name: program_scope_mismatch,       maps_to: authorization_denied,   new: false, spec_section: "§14", used_by_sprint: 037 }
+  - { name: contract_scope_mismatch,      maps_to: authorization_denied,   new: false, spec_section: "§14", used_by_sprint: 038 }
+  - { name: factory_node_scope_mismatch,  maps_to: authorization_denied,   new: false, spec_section: "§14", used_by_sprint: 039 }
+  - { name: record_type_restricted,       maps_to: authorization_denied,   new: false, spec_section: "§14", used_by_sprint: 040 }
+  - { name: report_type_restricted,       maps_to: authorization_denied,   new: false, spec_section: "§14", used_by_sprint: 040 }
+  - { name: controlled_data_denied,       maps_to: authorization_denied,   new: false, spec_section: "§14", used_by_sprint: 031, note: "generalizes deemed_export_denied" }
+  - { name: attachment_access_denied,     new: true,                                    spec_section: "§14", used_by_sprint: 047 }
+  - { name: bounded_drilldown_denied,     new: true,                                    spec_section: "§14", used_by_sprint: 046 }
+  - { name: support_context_missing,      new: true,                                    spec_section: "§14", used_by_sprint: 041 }
+  - { name: support_context_expired,      new: true,                                    spec_section: "§14", used_by_sprint: 041 }
+  - { name: service_scope_denied,         new: true,                                    spec_section: "§14", used_by_sprint: 042 }
+  - { name: hidden_existence_required,    new: true,                                    spec_section: "§14", used_by_sprint: 032, note: "internal outcome — produces a hidden_existence response, not a caller-visible failure" }
+  - { name: summary_only_access,          new: true,                                    spec_section: "§14", used_by_sprint: 032, note: "internal outcome — produces a summary response" }
+  - { name: report_audience_mismatch,     new: true,                                    spec_section: "§14", used_by_sprint: 045 }
+  - { name: report_access_stale,          maps_to: report_regeneration_required, new: false, spec_section: "§14", used_by_sprint: 050, note: "existing behavior; the new name lets scenarios cite the access reason" }
+  - { name: policy_change_forbidden,      new: true,                                    spec_section: "§14", used_by_sprint: 050 }
