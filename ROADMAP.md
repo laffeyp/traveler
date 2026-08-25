@@ -6,20 +6,23 @@
 
 ---
 
-## Where we are (measured 2026-07-01)
+## Where we are (measured 2026-08-24)
 
 | Gate | Result |
 |---|---|
-| `validate:contracts` | ok — 116 operations / 122 events / 39 records / 13 state machines / 26 assertion types |
-| `validate:schemas` | ok — 14/14 fixtures discriminate |
-| bench (first_slice) | 14/14 on both drivers |
-| whole-bench cross-driver diff-to-zero | 23 scenarios, byte-identical |
-| backend durability gate | exit 0 (all reload proofs) |
-| vitest | 121/121 across 24 files |
-| Open ContractGaps | none |
+| `validate:contracts` | ok — 128 operations / 132 events / 42 records / 15 state machines / 32 authorization rules / 26 assertion types |
+| `validate:schemas` | ok — 14/14 fixtures discriminate (154 op schemas, 93 event payload schemas, 1 report schema) |
+| `validate:demo-packs` | ok — 118 names across 2 packs |
+| bench first_slice / extended / receiving / all | 14/14 · 9/9 · 10/10 · 29/29 on both drivers |
+| whole-bench cross-driver diff-to-zero | 37 scenarios, byte-identical |
+| backend durability gate | exit 0 (VF-003, VF-006, VF-008, VF-009, VF-012, VF-003D, Phase A outbox, write-boundary idempotency, record-id counter reload) |
+| vitest | 301/301 across 37 files |
+| `tsc -p tsconfig.json --noEmit` | 0 errors across src and tests |
+| prettier | clean |
+| Open ContractGaps | none blocking (77 entries) |
 | Repo | `laffeyp/Manufacturing` (private), branch `main` |
 
-**The line is closed.** Everything the spec deferred is built, reviewed, hardened, and every handler is accounted for in the vocabulary.
+**The nine-document line is closed and the receiving boundary is closed.** 125 of 128 registered operations built (the three refused on record, each with a reason in the code). Phase C — the access and visibility boundary — is open and planned below.
 
 ---
 
@@ -49,6 +52,59 @@ Both idempotent, gated behind the fail-closed run-resolution guard. Covered by V
 An adversarial review drove three fixes: the first cut was effectively *exactly-once* (apply+mark atomic — the at-least-once idempotency defended an unreachable path), the ordering proof was vacuous, and an orphan outbox row could be marked delivered without applying. Details in `ADDITIONS.md` and `contracts/CONTRACT_GAPS.md` (B-Q-30). **Deferred:** retries-with-backoff + dead-letter-after-retry-limit (TAD §12 lists them but specifies no magnitudes — would be invention).
 
 **Both roadmap phases are now shipped.** Remaining work is in the backlog below.
+
+---
+
+## Phase C — Access and Visibility Boundary (opened 2026-08-24)
+
+Governed by `access-and-visibility-boundary-spec-v0.1.md` at project root (WORKING_AGREEMENT §Authority order item 9). The build has two of the spec's eleven access dimensions and two of eleven enforcement points; §16 lists 18 acceptance criteria; §15 sketches ten scenario families; §19 names the next artifact — the Access and Visibility Registry Pack v0.1.
+
+The receiving-boundary shape governs the sequence: mapping pass → registry pack → decision-model surface → dimension-by-dimension implementation → enforcement-by-enforcement implementation → cross-cutting (audit, freshness, mutation battery) → §16 acceptance closeout. Each sprint holds the sweet spot (≤2 files / one concept). The distinct spine to hold against (§18 of the spec): `summary is not denial; denial is not hidden existence; service processing is not human disclosure; support access is not superuser access; report generation is not report read; drill-down is not arbitrary event replay`.
+
+### C.1 Foundations (029-034) — plan-mode-per-sprint
+
+- **029 — Mapping pass.** Walk §6's eleven dimensions and §7's eleven enforcement points against existing vocabulary. Output: a mapping table under `sprints/`. No code change. Registers B-Q entries for the concept calls the mapping cannot decide alone. Entry 29's law applied ahead of authoring — take the outside spec as input, never as vocabulary.
+- **030 — Access and Visibility Registry Pack v0.1.** Author `access-and-visibility-registry-pack-v0.1/` in-repo per §19: module, records, operations, events, visibility levels, dimensions, enforcement points, failure classes, summary shapes, scenario family, fail-closed mutation battery. No handlers. Registered in the pack, not merged into the main registries yet.
+- **031 — Access decision model + module registration.** Register the `AccessAndVisibility` module (criterion 1). Generalize `EvaluateAccess` to the §8 shape: (caller, action, object, context, purpose) → (decision, visibility_level, reason, allowed_fields, redacted_fields, summary_shape, audit_required, freshness_effect). The existing export-by-nationality path becomes one branch. Existing scenarios (VF-009, VF-029, VF-031) pass byte-identical.
+- **032 — Visibility levels: summary and hidden_existence as first-class outcomes** (§5, criterion 5). Record read returns full | summary | denied | hidden_existence with allowed/redacted fields; the plain `readRecord` path is unchanged.
+- **033 — Reason codes and failure classes.** Register the 22 reason codes from §8.3 and 21 failure classes from §14 (many are new; several map onto existing failure classes and should not multiply).
+- **034 — Visibility profiles** (§9). Register the initial eight profiles the spec names; `customer_summary_access` and `customer_extended_access` already exist in VF-012 and get folded in.
+
+### C.2 Dimensions (035-042) — auto-within-phase after 034
+
+Eight new access dimensions, one per sprint. Each sprint adds the dimension to the actor and the object, wires it into the §8 decision model, and adds one scenario from §15 that proves the same actor gets a different visibility on the same record under different values of that dimension alone (the discrimination pair pattern that made VF-012's frozen snapshot honest).
+
+- **035 — Access group** (§6.2, family §15.2).
+- **036 — Customer scope** (§6.3, family §15.3).
+- **037 — Program scope** (§6.4, family §15.4).
+- **038 — Contract scope** (§6.5).
+- **039 — Factory node** (§6.6).
+- **040 — Record type and report type** (§6.7, §6.9).
+- **041 — Support/admin context** (§6.10, family §15.8) — scoped, time-bounded, audited session record.
+- **042 — Service-account scope** (§6.11, family §15.9) — processing permission ≠ disclosure permission.
+
+### C.3 Enforcement points (043-048) — plan-mode-per-sprint (each touches a surface with prior code)
+
+Seven new enforcement surfaces. Each sprint routes an existing product surface through the §8 decision.
+
+- **043 — Projection read** (§7.3). `serialHistory` and `asBuiltProjection` cannot bypass record-level access.
+- **044 — Report generation** (§7.5, criterion 7). Access applied BEFORE payload creation; the report record preserves audience/context/policy version.
+- **045 — Report read** (§7.6, criterion 8, family §15.5). Separate decision from generation.
+- **046 — Bounded drill-down** (§7.7, criterion 9, family §15.6). Cannot promote summary to full.
+- **047 — Attachment access** (§7.9, criterion 10, family §15.7). Own enforcement point. Metadata may be visible while content is denied.
+- **048 — Event replay to user-visible views** (§7.8). Distinguishes internal replay from user-visible replay; filters payloads for the latter.
+
+### C.4 Cross-cutting (049-051)
+
+- **049 — Audit** (§12). Every access decision writes an audit record naming actor, target, decision, visibility level, reason code, policy version, time. Audit itself must not leak hidden payloads.
+- **050 — Access policy changes and freshness cascade** (§13, family §15.10). Extends the controlled_export vs dynamic_view_filter contrast that already exists for `GetReport` to every report type. A policy change on a report's scope marks it regeneration_required.
+- **051 — Fail-closed mutation battery** (criterion 16). Every combination of missing/malformed access context fails closed. Battery converted to permanent tests, `NOT_ENFORCEABLE` list kept empty.
+
+### C.5 Closeout (052)
+
+- **052 — §16 acceptance closeout.** Author `ACCESS_AND_VISIBILITY_ACCEPTANCE.md` (analog of `RECEIVING_ACCEPTANCE.md`). Score each of the 18 criteria row by row against the artifact that settles it. `DEVIATION_SUMMARY.md` updated; `ADDITIONS.md` updated with the vocabulary this boundary added.
+
+**Estimated scope:** 24 sprints as sketched. The mapping pass in 029 will collapse some (dimensions with shared shapes) and split others (an enforcement point that turns out to touch more than 2 files). This is the plan the mapping pass will refine, not the plan the mapping pass proves.
 
 ---
 

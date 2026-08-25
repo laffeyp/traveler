@@ -126,6 +126,7 @@ None in the first slice. The project uses TypeScript, the Node standard library,
 ## Cadence
 
 - **Phase 1 (registry extraction — the founding act):** plan-mode-per-sprint. The Agent composes the card, presents it, waits for "go" or specific edits, then executes.
+- **Phase C (access and visibility boundary, sprints 029-052):** auto-within-phase. All 24 sprint cards were drafted up front and are amended in place if the Architect's read of the code changes what a subsequent card should hold. The Agent proceeds card-to-execution; halts surface to `## Surfaced for review` per AGENTS.md.
 - **Later phases:** cadence revisited at each phase boundary. Mechanical fan-out (per-operation schema generation, handler implementation across the seven operation groups) is a candidate for multi-agent orchestration once the registries and the no-invention guard are in place.
 
 ---
