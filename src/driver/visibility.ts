@@ -34,6 +34,7 @@ export interface CallerContext {
   factory_node_context?: string | null;
   support_admin_context?: string | null;
   requested_visibility?: VisibilityLevel;
+  visibility_profile?: string;
   purpose?: string;
   subject_nationality?: string;
 }

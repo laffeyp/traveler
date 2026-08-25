@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 040
-status: pending
+status: closed # [closed 2026-08-25 — profile whitelists for record and report type; unregistered profile refuses with access_context_malformed]
 phase: C.2-dimensions
 pass_kind: functional
 ---

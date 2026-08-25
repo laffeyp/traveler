@@ -17,6 +17,7 @@ import {
   registeredCallerTypes,
 } from "./registry.ts";
 import { SUMMARY_SHAPES } from "./visibility.ts";
+import { VISIBILITY_PROFILES } from "./registry.ts";
 import {
   assembleRunCloseReport,
   asBuiltProjection,
@@ -2665,6 +2666,81 @@ export const HANDLERS: Record<string, H> = {
         audit_required: true,
         freshness_effect: "none",
       };
+    }
+
+    // Record type + report type (sprint 040, spec §6.7 and §6.9). Both are read-side filters on the
+    // visibility profile: a profile's `allowed_record_types` whitelists what the profile may read; a
+    // profile's `allowed_report_types` does the same for GeneratedReport report_type. The check runs only
+    // when the caller opts into a profile (via `visibility_profile` on the input); an absent profile
+    // proceeds under the caller_type's baseline (no whitelist), so byte-identical scenarios stay
+    // untouched. `all_internal` is the wildcard the profile registry uses for full-read audiences.
+    if (input.visibility_profile) {
+      const profile = VISIBILITY_PROFILES.get(input.visibility_profile);
+      if (!profile) {
+        world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+          resource_alias: targetAlias,
+          reason: "access_context_malformed",
+        });
+        world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+          resource_alias: targetAlias,
+          decision: "denied",
+        });
+        return {
+          decision: "denied",
+          visibility_level: "denied",
+          reason: "access_context_malformed",
+          audit_required: true,
+          freshness_effect: "none",
+        };
+      }
+      const targetRecord = targetRecordForGroup ?? tryGet(world, targetAlias);
+      const allowedRecords: string[] = profile.allowed_record_types ?? [];
+      const wildcards = new Set(["all_internal", "scoped_by_session"]);
+      const recordAllowed =
+        allowedRecords.some((t) => wildcards.has(t)) ||
+        (targetRecord && allowedRecords.includes(targetRecord.record_type));
+      if (!recordAllowed) {
+        world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+          resource_alias: targetAlias,
+          visibility_profile: input.visibility_profile,
+          reason: "record_type_restricted",
+        });
+        world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+          resource_alias: targetAlias,
+          decision: "denied",
+        });
+        return {
+          decision: "denied",
+          visibility_level: "denied",
+          reason: "record_type_restricted",
+          audit_required: true,
+          freshness_effect: "none",
+        };
+      }
+      // Report-type whitelist: only applies when the target IS a GeneratedReport.
+      if (targetRecord?.record_type === "GeneratedReport") {
+        const allowedReports: string[] = profile.allowed_report_types ?? [];
+        const reportType = targetRecord.fields?.report_type;
+        if (reportType && !allowedReports.includes(reportType)) {
+          world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+            resource_alias: targetAlias,
+            visibility_profile: input.visibility_profile,
+            report_type: reportType,
+            reason: "report_type_restricted",
+          });
+          world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+            resource_alias: targetAlias,
+            decision: "denied",
+          });
+          return {
+            decision: "denied",
+            visibility_level: "denied",
+            reason: "report_type_restricted",
+            audit_required: true,
+            freshness_effect: "none",
+          };
+        }
+      }
     }
 
     // Requested summary (sprint 032): a caller who explicitly asks for a summary and whose target has a
