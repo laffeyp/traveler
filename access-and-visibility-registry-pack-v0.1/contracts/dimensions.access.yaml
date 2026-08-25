@@ -1,0 +1,80 @@
+registry: access-dimensions
+registry_version: access-and-visibility-pack-v0.1
+source: access-and-visibility-boundary-spec-v0.1.md §6
+
+access_dimensions:
+  - name: caller_role
+    source: caller
+    type: enum
+    values: [manufacturing_engineer, operator, planner, quality_engineer, quality_inspector, system_worker, adapter, machine_integration_owner, access_admin, service_account, support_user, external_viewer]
+    default_posture: from_authorization_rule
+    sprint_delivered: already
+    note: "ten types registered; external_viewer added in sprint 034 for customer profiles; quality_inspector added if the mapping demands it (currently absorbed into quality_engineer)"
+
+  - name: access_group
+    source: caller
+    type: string_list
+    default_posture: empty
+    sprint_delivered: 035
+    note: "B-Q-74 candidate: caller-context field, not a record"
+
+  - name: customer
+    source: caller_and_record
+    type: string
+    default_posture: null_matches_default_profile
+    sprint_delivered: 036
+    note: "B-Q-75 candidate: on Shipment, ShipmentLine, GeneratedReport (no Order record)"
+
+  - name: program
+    source: caller_and_record
+    type: string
+    default_posture: null_matches_default_profile
+    sprint_delivered: 037
+
+  - name: contract
+    source: caller_and_record
+    type: string
+    default_posture: null_matches_default_profile
+    sprint_delivered: 038
+    note: "B-Q-76 candidate: on Shipment, GeneratedReport, not on Run"
+
+  - name: factory_node
+    source: caller_and_record
+    type: string
+    default_posture: null_matches_default_profile
+    sprint_delivered: 039
+
+  - name: record_type
+    source: target
+    type: enum_from_records_registry
+    default_posture: profile_whitelist
+    sprint_delivered: 040
+
+  - name: controlled_data_classification
+    source: target
+    type: enum
+    values: [export_controlled, customer_confidential, supplier_confidential, internal_quality, controlled_technical_data, public_summary, none]
+    default_posture: none
+    sprint_delivered: 031
+    note: "extends the existing export_control.allowed_nationalities on Certificate; sprint 031 keeps the export path intact"
+
+  - name: report_type
+    source: target
+    type: enum_from_reports_registry
+    default_posture: profile_whitelist
+    sprint_delivered: 040
+
+  - name: support_admin_context
+    source: caller
+    type: support_session_reference
+    default_posture: null
+    sprint_delivered: 041
+    note: "resolves to a SupportSession record whose state, scope, and time_window are evaluated"
+
+  - name: service_account_scope
+    source: caller_type_declaration
+    type: struct
+    fields: [processing_actions, disclosure_actions]
+    default_posture: empty
+    sprint_delivered: 042
+    note: "B-Q-77 candidate: fields on caller_type declaration, not a record"

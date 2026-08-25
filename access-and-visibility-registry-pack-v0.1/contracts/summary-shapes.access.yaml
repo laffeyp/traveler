@@ -1,0 +1,30 @@
+registry: summary-shapes
+registry_version: access-and-visibility-pack-v0.1
+source: access-and-visibility-boundary-spec-v0.1.md §10
+
+summary_shapes:
+  - name: machine_evidence_summary
+    target_record_type: MachineEvidenceRecord
+    revealed_fields: [exists, machine_registered, adapter_registered, state]
+    hidden_fields: [raw_payload]
+    reason_field: reason_code
+    example_reason: controlled_data_denied
+
+  - name: supplier_document_summary
+    target_record_type: Certificate
+    revealed_fields: [exists, cert_type, verification_status, receiving_requirement_status]
+    hidden_fields: [document_body, serial_or_lot, cage_code, expires_at]
+    reason_field: reason_code
+    example_reason: supplier_confidential
+
+  - name: nonconformance_summary
+    target_record_type: Nonconformance
+    revealed_fields: [exists, status, disposition_kind, verification_status]
+    hidden_fields: [internal_notes, root_cause_analysis]
+    reason_field: reason_code
+
+  - name: report_summary
+    target_record_type: GeneratedReport
+    revealed_fields: [exists, report_type, generated_at, freshness_status, sections_available]
+    hidden_fields: [sections_hidden_content]
+    reason_field: reason_code

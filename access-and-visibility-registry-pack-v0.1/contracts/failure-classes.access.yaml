@@ -1,0 +1,30 @@
+registry: failure-classes
+registry_version: access-and-visibility-pack-v0.1
+source: access-and-visibility-boundary-spec-v0.1.md §14
+note: >
+  Twenty-one candidate failure classes. Each names either maps_to (a class in
+  the main registry it specializes) or new: true. maps_to is not deprecation —
+  a caller sees the specific class while tooling can filter by the generic one.
+
+failure_classes:
+  - { name: access_context_missing,       maps_to: validation_error,       new: false }
+  - { name: access_context_malformed,     maps_to: validation_error,       new: false }
+  - { name: role_not_authorized,          maps_to: authorization_denied,   new: false }
+  - { name: access_group_missing,         maps_to: authorization_denied,   new: false }
+  - { name: customer_scope_mismatch,      maps_to: authorization_denied,   new: false }
+  - { name: program_scope_mismatch,       maps_to: authorization_denied,   new: false }
+  - { name: contract_scope_mismatch,      maps_to: authorization_denied,   new: false }
+  - { name: factory_node_scope_mismatch,  maps_to: authorization_denied,   new: false }
+  - { name: record_type_restricted,       maps_to: authorization_denied,   new: false }
+  - { name: report_type_restricted,       maps_to: authorization_denied,   new: false }
+  - { name: controlled_data_denied,       maps_to: authorization_denied,   new: false, note: "generalizes deemed_export_denied; both keep their names" }
+  - { name: attachment_access_denied,     new: true, note: "attachment-specific reason; sits alongside authorization_denied" }
+  - { name: bounded_drilldown_denied,     new: true, note: "drill-down-specific" }
+  - { name: support_context_missing,      new: true }
+  - { name: support_context_expired,      new: true }
+  - { name: service_scope_denied,         new: true }
+  - { name: hidden_existence_required,    new: true, note: "not a failure the caller sees — an internal outcome that produces a hidden_existence response" }
+  - { name: summary_only_access,          new: true, note: "same — internal outcome producing a summary response" }
+  - { name: report_audience_mismatch,     new: true }
+  - { name: report_access_stale,          maps_to: report_regeneration_required, new: false, note: "existing behavior; the new name lets scenarios cite the access reason" }
+  - { name: policy_change_forbidden,      new: true, note: "an amendment that would rewrite history is refused (§13)" }

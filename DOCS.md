@@ -37,6 +37,8 @@ The nine-document stack in group 5 governs the first executable slice and stops 
 |---|---|
 | [receiving-evidence-boundary-spec-v0.1.md](receiving-evidence-boundary-spec-v0.1.md) | The receiving evidence boundary: how material becomes eligible to enter production. Its §9 invariants, §13 scenario ids, §22 fail-closed mutation battery and §26 product decisions govern that boundary. |
 | [receiving-evidence-registry-pack-v0.1/](receiving-evidence-registry-pack-v0.1/) | The follow-on registry-ready definitions for the same boundary. Subordinate to the spec above. |
+| [access-and-visibility-boundary-spec-v0.1.md](access-and-visibility-boundary-spec-v0.1.md) | The access and visibility boundary: who may act, who may see, at what level of detail, in what context. Its §6 dimensions (11), §7 enforcement points (11), §8 access decision model, §15 scenario families (10) and §16 acceptance criteria (18) govern that boundary. |
+| [access-and-visibility-registry-pack-v0.1/](access-and-visibility-registry-pack-v0.1/) | The follow-on registry-ready definitions for the same boundary. Subordinate to the spec above. Nothing merged into the main registries yet; sprints 031-050 pull items in as each surface lands. |
 
 ## 2b. Demo packs — the domain written out as plain data
 

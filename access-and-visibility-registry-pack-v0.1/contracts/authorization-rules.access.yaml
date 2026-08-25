@@ -1,0 +1,21 @@
+registry: authorization-rules
+registry_version: access-and-visibility-pack-v0.1
+source: access-and-visibility-boundary-spec-v0.1.md §7 (all points)
+note: >
+  Two new rules. Existing `access_administration` (in the main
+  authorization-rules.yaml) covers EvaluateAccess and now covers AmendAccessPolicy
+  and AccessAttachment — the same rule can name multiple caller types across
+  operations, so no rule proliferation.
+
+authorization_rules:
+  - name: support_session_management
+    caller_types: [support_user, access_admin]
+    note: >
+      Opens and closes SupportSession. Both operations require an identified
+      actor (persona gap 1 discipline). A support_user without an approved_authority
+      may open a session; only access_admin may approve elevated scope.
+
+  # access_administration already exists in the main registry (EvaluateAccess).
+  # Sprint 030 does not duplicate it here; the operations.access.yaml entries
+  # cite it by name and the main registry receives an amended caller_types list
+  # in sprint 030's close-time merge.

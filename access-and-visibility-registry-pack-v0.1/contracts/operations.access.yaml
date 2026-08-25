@@ -1,0 +1,55 @@
+registry: operations
+registry_version: access-and-visibility-pack-v0.1
+source: access-and-visibility-boundary-spec-v0.1.md §6.10, §7.9, §13
+note: >
+  Four new operations. EvaluateAccess is not listed here — it stays in the main
+  operations.yaml and is generalized in sprint 031 (widened output schema per §8,
+  same registered events).
+
+operations:
+  - name: OpenSupportSession
+    authorization_rule: support_session_management
+    owning_module: access
+    exposure: [internal, support_user]
+    idempotency: required_idempotency_key
+    events_emitted: [SUPPORT_SESSION_OPENED]
+    note: >
+      Opens a SupportSession per §6.10. Input names session_reason, scope,
+      time_window, actor, approved_authority. Refuses fail-closed on missing
+      reason, empty scope, or a time_window with expires_at <= opened_at.
+
+  - name: CloseSupportSession
+    authorization_rule: support_session_management
+    owning_module: access
+    exposure: [internal, support_user]
+    idempotency: required_idempotency_key
+    events_emitted: [SUPPORT_SESSION_CLOSED]
+    note: >
+      Closes an open SupportSession. Emits the close event. If sprint 041
+      decides expiry is a state transition, this operation is joined by a
+      time-driven ExpireSupportSession — recorded then, not here.
+
+  - name: AccessAttachment
+    authorization_rule: access_administration
+    owning_module: access
+    exposure: [internal, external_viewer, support_user]
+    idempotency: not_idempotent
+    events_emitted: [ATTACHMENT_ACCESS_DECISION_RECORDED, ACCESS_DECISION_AUDITED]
+    note: >
+      Reads an Attachment under access per §7.9. Returns one of six outcomes:
+      download / preview / metadata_summary / existence_only / denied /
+      hidden_existence. Metadata visibility and content visibility are
+      independent decisions.
+
+  - name: AmendAccessPolicy
+    authorization_rule: access_administration
+    owning_module: access
+    exposure: [internal, access_admin]
+    idempotency: required_idempotency_key
+    events_emitted: [ACCESS_POLICY_AMENDED, REPORT_REGENERATION_REQUIRED]
+    note: >
+      Amends an access policy at a named effective_at (spec §13). Cascade walks
+      GeneratedReport records whose scope overlaps the amended policy and marks
+      them regeneration_required. Dynamic views are untouched. The existing
+      AccessPolicy shape lives in world.access_policy_changes (from Phase A);
+      this operation is the write path.

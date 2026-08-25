@@ -1,0 +1,76 @@
+registry: enforcement-points
+registry_version: access-and-visibility-pack-v0.1
+source: access-and-visibility-boundary-spec-v0.1.md §7
+
+enforcement_points:
+  - name: operation_authorization
+    target_surface: every mutating operation
+    called_from: driver.ts:callerMayInvoke
+    required_inputs: [caller_type, requested_action]
+    outcomes: [allowed, denied, requires_different_actor, requires_quality_authority, requires_access_group, requires_service_scope]
+    sprint_delivered: already
+    note: "already fails closed on unregistered operation, missing rule, unresolvable rule, absent caller type"
+
+  - name: record_read
+    target_surface: readRecord, mustReadRecord
+    called_from: readRecordAsCaller (added in sprint 032)
+    required_inputs: [caller_context, target_alias]
+    outcomes: [full, summary, denied, hidden_existence]
+    sprint_delivered: 032
+
+  - name: projection_read
+    target_surface: serialHistory, asBuiltProjection, assembleRunCloseReport, assembleSupplierEvidencePacket
+    required_inputs: [caller_context, projection_key]
+    outcomes: [full, summary, denied, hidden_existence]
+    sprint_delivered: 043
+    note: "serialHistory already applies access; sprint 043 extends to the other three"
+
+  - name: serial_history_generation
+    target_surface: serialHistory
+    sprint_delivered: already
+    note: "reads under actorContext from the start (projections.ts)"
+
+  - name: report_generation
+    target_surface: GenerateRunCloseReport, GenerateCertificateOfConformance, GenerateSupplierEvidencePacket
+    required_inputs: [caller_context, audience_profile, source_records]
+    outcomes: [generated_full, generated_summary, denied]
+    preserved_on_report_record: [generation_context, audience_profile, source_access_policy, generated_sections, redacted_sections, summary_sections, freshness_status]
+    sprint_delivered: 044
+
+  - name: report_read
+    target_surface: GetReport
+    required_inputs: [caller_context, report_alias]
+    outcomes: [full, summary, denied, hidden_existence]
+    sprint_delivered: 045
+
+  - name: bounded_drill_down
+    target_surface: existing bounded drill-down operation (VF-014)
+    required_inputs: [caller_context, parent_summary, hop_target]
+    outcomes: [allowed, denied_summary_ceiling, bounded_drilldown_denied]
+    sprint_delivered: 046
+    note: "extends existing cap/audit with per-hop re-evaluation"
+
+  - name: event_replay_user_visible
+    target_surface: readEventTraceAsCaller (added in sprint 048)
+    required_inputs: [caller_context, event_query]
+    outcomes: [full_trace, filtered_trace, denied]
+    sprint_delivered: 048
+    note: "internal replay (readEventTrace) untouched; harness needs the full trace"
+
+  - name: attachment_access
+    target_surface: AccessAttachment
+    required_inputs: [caller_context, attachment_alias, requested_view]
+    outcomes: [download, preview, metadata_summary, existence_only, denied, hidden_existence]
+    sprint_delivered: 047
+
+  - name: support_admin_access
+    target_surface: EvaluateAccess (when support_admin_context is non-null)
+    required_inputs: [caller_context, support_session, target]
+    outcomes: [allowed_within_scope, denied, support_context_missing, support_context_expired]
+    sprint_delivered: 041
+
+  - name: service_account_access
+    target_surface: EvaluateAccess (when caller_type is service_account)
+    required_inputs: [service_account_scope, requested_action]
+    outcomes: [processing_allowed, disclosure_allowed, denied, service_scope_denied]
+    sprint_delivered: 042

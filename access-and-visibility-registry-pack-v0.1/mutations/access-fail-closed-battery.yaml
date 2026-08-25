@@ -1,0 +1,186 @@
+registry: mutation-battery
+registry_version: access-and-visibility-pack-v0.1
+source: access-and-visibility-boundary-spec-v0.1.md §16 criterion 16, §14
+
+# Every arm proves an access-decision surface FAILS CLOSED on missing / empty /
+# malformed context. Each arm names the specific reason_code from
+# reason-codes.access.yaml the refusal must carry — not a generic
+# authorization_denied. Sprint 051 converts every arm into a permanent test in
+# tests/access/fail-closed-battery.test.ts. The receiving battery's shape
+# (tests/receiving/fail-closed-battery.test.ts) governs.
+
+mutation_arms:
+
+  # --- caller context ---
+  - id: caller_absent
+    surface: EvaluateAccess
+    mutation: call with caller = null
+    expected_reason: access_context_missing
+    enforceable_from_sprint: 031
+
+  - id: caller_type_unregistered
+    surface: EvaluateAccess
+    mutation: caller_type = "not_a_real_type"
+    expected_reason: access_context_malformed
+    enforceable_from_sprint: 031
+
+  - id: caller_roles_empty
+    surface: EvaluateAccess (on a role-required rule)
+    mutation: roles = []
+    expected_reason: role_not_authorized
+    enforceable_from_sprint: 031
+
+  # --- access group ---
+  - id: access_group_empty
+    surface: EvaluateAccess (on a group-required rule)
+    mutation: access_groups = []
+    expected_reason: access_group_missing
+    enforceable_from_sprint: 035
+
+  - id: access_group_wrong
+    surface: EvaluateAccess (on a group-required rule)
+    mutation: access_groups = ["not_the_required_group"]
+    expected_reason: access_group_missing
+    enforceable_from_sprint: 035
+
+  # --- customer / program / contract / factory node ---
+  - id: customer_context_absent
+    surface: EvaluateAccess (customer-scoped target)
+    mutation: customer_context = null
+    expected_reason: customer_scope_mismatch
+    enforceable_from_sprint: 036
+
+  - id: customer_context_wrong
+    surface: EvaluateAccess (customer-scoped target)
+    mutation: customer_context = "customer_wrong"
+    expected_reason: customer_scope_mismatch
+    enforceable_from_sprint: 036
+
+  - id: program_context_wrong
+    surface: EvaluateAccess (program-scoped target)
+    mutation: program_context = "program_wrong"
+    expected_reason: program_scope_mismatch
+    enforceable_from_sprint: 037
+
+  - id: contract_context_wrong
+    surface: EvaluateAccess (contract-scoped target)
+    mutation: contract_context = "subcontract_wrong"
+    expected_reason: contract_scope_mismatch
+    enforceable_from_sprint: 038
+
+  - id: factory_node_wrong
+    surface: EvaluateAccess (node-scoped target)
+    mutation: factory_node_context = "wrong_node"
+    expected_reason: factory_node_scope_mismatch
+    enforceable_from_sprint: 039
+
+  # --- controlled data ---
+  - id: controlled_data_no_classification
+    surface: EvaluateAccess (target has controlled_data_classification)
+    mutation: caller has no permission for the classification
+    expected_reason: controlled_data_denied
+    enforceable_from_sprint: 031
+
+  - id: controlled_data_malformed_classification
+    surface: EvaluateAccess
+    mutation: target.controlled_data_classification = "not_a_real_class"
+    expected_reason: access_context_malformed
+    enforceable_from_sprint: 031
+
+  # --- record / report type ---
+  - id: record_type_not_in_profile_whitelist
+    surface: EvaluateAccess
+    mutation: target record type not in profile's allowed_record_types
+    expected_reason: record_type_restricted
+    enforceable_from_sprint: 040
+
+  - id: report_type_not_in_profile_whitelist
+    surface: EvaluateAccess
+    mutation: target report type not in profile's allowed_report_types
+    expected_reason: report_type_restricted
+    enforceable_from_sprint: 040
+
+  # --- support/admin context ---
+  - id: support_session_missing
+    surface: EvaluateAccess (support_user calling elevated action)
+    mutation: no open SupportSession
+    expected_reason: support_context_missing
+    enforceable_from_sprint: 041
+
+  - id: support_session_expired
+    surface: EvaluateAccess
+    mutation: SupportSession.time_window elapsed
+    expected_reason: support_context_expired
+    enforceable_from_sprint: 041
+
+  - id: support_session_out_of_scope
+    surface: EvaluateAccess
+    mutation: request target not in SupportSession.scope
+    expected_reason: support_context_missing
+    enforceable_from_sprint: 041
+
+  # --- service account ---
+  - id: service_account_processing_only_attempts_disclosure
+    surface: EvaluateAccess
+    mutation: service account with processing_actions but no disclosure_actions requests human-visible read
+    expected_reason: service_scope_denied
+    enforceable_from_sprint: 042
+
+  - id: service_account_scope_empty
+    surface: EvaluateAccess
+    mutation: service_account_scope has empty processing_actions and empty disclosure_actions
+    expected_reason: service_scope_denied
+    enforceable_from_sprint: 042
+
+  # --- attachment ---
+  - id: attachment_denied_but_metadata_leaked
+    surface: AccessAttachment
+    mutation: return metadata bytes on a denied outcome
+    expected_reason: attachment_access_denied
+    enforceable_from_sprint: 047
+
+  # --- bounded drill-down ---
+  - id: drill_promotes_summary_to_full
+    surface: bounded drill-down
+    mutation: hop into a full payload from a summary parent
+    expected_reason: bounded_drilldown_denied
+    enforceable_from_sprint: 046
+
+  # --- report read ---
+  - id: report_read_audience_mismatch
+    surface: GetReport
+    mutation: caller profile does not match report.audience_profile
+    expected_reason: report_audience_mismatch
+    enforceable_from_sprint: 045
+
+  # --- policy change ---
+  - id: policy_amendment_rewrites_history
+    surface: AmendAccessPolicy
+    mutation: an amendment that would modify a prior AccessDecision record
+    expected_reason: policy_change_forbidden
+    enforceable_from_sprint: 050
+
+  - id: report_stale_but_returned_as_fresh
+    surface: GetReport (after policy amendment)
+    mutation: return report without freshness flag
+    expected_reason: report_access_stale
+    enforceable_from_sprint: 050
+
+  # --- audit ---
+  - id: audit_leaks_hidden_payload
+    surface: EvaluateAccess (denied on controlled record)
+    mutation: AccessDecision record contains a field from the target's payload
+    expected_reason: hidden_existence_required
+    enforceable_from_sprint: 049
+
+  # --- hidden existence integrity ---
+  - id: hidden_existence_reveals_via_response_shape
+    surface: readRecordAsCaller
+    mutation: hidden_existence response differs in bytes from no-such-alias
+    expected_reason: hidden_existence_required
+    enforceable_from_sprint: 032
+
+not_enforceable:
+  # Empty on close, per Entry 30 practice #29. Any arm here names a reason and
+  # a re-visit condition; sprints 031-052 keep this empty by construction.
+  []

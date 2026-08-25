@@ -1,0 +1,101 @@
+registry: visibility-profiles
+registry_version: access-and-visibility-pack-v0.1
+source: access-and-visibility-boundary-spec-v0.1.md §9
+note: >
+  Eight profiles. customer_summary_access and customer_extended_access already
+  exist inline in contracts/reports.yaml as report scopes; sprint 034's fold
+  moves them here as the canonical home and reports.yaml cites them by name.
+
+visibility_profiles:
+  - name: internal_full_quality
+    audience: [quality_engineer, manufacturing_engineer]
+    default_visibility: full
+    allowed_record_types: [all_internal]
+    allowed_report_types: [RunCloseReport, CertificateOfConformance, SupplierEvidencePacket]
+    allowed_actions: [read, verify, disposition, close]
+    controlled_data_behavior: full_within_program_and_contract
+    denial_behavior: denied
+    audit_required: true
+
+  - name: operator_station_view
+    audience: [operator]
+    default_visibility: full
+    allowed_record_types: [Run, RunStep, Measurement, InventoryItem]
+    allowed_report_types: []
+    allowed_actions: [read, capture_measurement, install_inventory, complete_step]
+    controlled_data_behavior: denied
+    denial_behavior: denied
+    audit_required: true
+
+  - name: receiving_inspector_view
+    audience: [receiving_inspector]
+    default_visibility: full
+    allowed_record_types: [Shipment, ShipmentLine, Certificate, ReceivingCheck, Attachment]
+    allowed_report_types: [SupplierEvidencePacket]
+    allowed_actions: [read, verify, run_receiving_check, quarantine, release]
+    controlled_data_behavior: full_within_document_export_control
+    denial_behavior: denied
+    audit_required: true
+
+  - name: customer_summary_access
+    audience: [external_viewer]
+    default_visibility: summary
+    allowed_record_types: [GeneratedReport, SerialHistory]
+    allowed_report_types: [RunCloseReport, CertificateOfConformance]
+    allowed_actions: [read]
+    controlled_data_behavior: denied
+    denial_behavior: hidden_existence
+    audit_required: true
+    note: "already used inline in contracts/reports.yaml; sprint 034 folds"
+
+  - name: customer_extended_access
+    audience: [external_viewer]
+    default_visibility: full_within_customer_scope
+    allowed_record_types: [GeneratedReport, SerialHistory, Attachment]
+    allowed_report_types: [RunCloseReport, CertificateOfConformance]
+    allowed_actions: [read, preview_attachment]
+    controlled_data_behavior: summary
+    denial_behavior: hidden_existence
+    audit_required: true
+    note: "already used inline in contracts/reports.yaml; sprint 034 folds"
+
+  - name: supplier_evidence_reviewer
+    audience: [quality_engineer]
+    default_visibility: full
+    allowed_record_types: [Certificate, Verification, Issue, Shipment, ShipmentLine]
+    allowed_report_types: [SupplierEvidencePacket]
+    allowed_actions: [read, verify, open_issue, resolve_issue]
+    controlled_data_behavior: full_within_program_and_contract
+    denial_behavior: denied
+    audit_required: true
+
+  - name: support_diagnostics_summary
+    audience: [support_user]
+    default_visibility: summary
+    allowed_record_types: [scoped_by_session]
+    allowed_report_types: [scoped_by_session]
+    allowed_actions: [read]
+    controlled_data_behavior: denied
+    denial_behavior: denied
+    audit_required: true
+    note: "requires an open, in-scope, in-time SupportSession; full payload access requires explicit session policy"
+
+  - name: service_projection_scope
+    audience: [service_account:projection_worker]
+    default_visibility: full_processing_only
+    allowed_record_types: [all_internal]
+    allowed_report_types: []
+    allowed_actions: [read_for_processing]
+    controlled_data_behavior: full_for_processing_denied_for_disclosure
+    denial_behavior: denied
+    audit_required: true
+
+  - name: report_worker_scope
+    audience: [service_account:report_worker]
+    default_visibility: full_processing_only
+    allowed_record_types: [all_internal]
+    allowed_report_types: [RunCloseReport, CertificateOfConformance, SupplierEvidencePacket]
+    allowed_actions: [read_for_processing, generate_report]
+    controlled_data_behavior: full_for_processing_denied_for_disclosure
+    denial_behavior: denied
+    audit_required: true

@@ -1,0 +1,50 @@
+registry: events
+registry_version: access-and-visibility-pack-v0.1
+source: access-and-visibility-boundary-spec-v0.1.md §6.10, §7.9, §12, §13
+note: >
+  Five new events. The four already-registered ACCESS_DECISION_* events
+  (ALLOWED / SUMMARY / DENIED / AUDITED) in the main events.yaml are unchanged;
+  sprint 031 widens their payloads to include the §8 output fields.
+
+events:
+  - name: SUPPORT_SESSION_OPENED
+    producer_operations: [OpenSupportSession]
+    payload_required: [support_session_id, actor, session_reason, scope, opened_at, expires_at]
+    note: >
+      Emitted on OpenSupportSession success. Session records the elevated
+      context that gates subsequent access decisions for the actor.
+
+  - name: SUPPORT_SESSION_CLOSED
+    producer_operations: [CloseSupportSession]
+    payload_required: [support_session_id, closed_at]
+    payload_optional: [close_reason]
+    note: >
+      Emitted on CloseSupportSession. If a time-driven ExpireSupportSession
+      lands (see records.access.yaml note), a paired SUPPORT_SESSION_EXPIRED
+      event joins this file.
+
+  - name: ATTACHMENT_ACCESS_DECISION_RECORDED
+    producer_operations: [AccessAttachment]
+    payload_required: [attachment_id, actor, outcome, reason_code]
+    payload_optional: [scope_cited, support_session]
+    note: >
+      Emitted on every AccessAttachment call. Outcome enum:
+      download / preview / metadata_summary / existence_only / denied /
+      hidden_existence. The reason_code cites the specific §8.3 name.
+
+  - name: ACCESS_POLICY_AMENDED
+    producer_operations: [AmendAccessPolicy]
+    payload_required: [access_policy_alias, effective_at, amended_by, prior_version, new_version]
+    note: >
+      Emitted on policy amendment. Downstream cascade emits REPORT_REGENERATION_REQUIRED
+      per affected report.
+
+  - name: REPORT_REGENERATION_REQUIRED
+    producer_operations: [AmendAccessPolicy, InvalidateAcceptedEvidence]
+    payload_required: [report_id, trigger, marked_at]
+    note: >
+      Emitted when a generated report's scope is invalidated by a policy amendment
+      or an evidence invalidation. Existing behavior (VF-003D, VF-012) reads
+      report.regeneration_required inline; this event makes the transition
+      auditable. Sprint 050 wires the emit; sprint 044 may add InvalidateAcceptedEvidence
+      as co-producer if the reconciliation cascade should also emit here.

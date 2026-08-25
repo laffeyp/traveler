@@ -1,0 +1,31 @@
+registry: reason-codes
+registry_version: access-and-visibility-pack-v0.1
+source: access-and-visibility-boundary-spec-v0.1.md §8.3
+note: >
+  Twenty-two reason codes. Each is used by at least one enforcement point.
+  Reason codes ride on the AccessDecision record's reason field and on the
+  ACCESS_DECISION_* event payloads.
+
+reason_codes:
+  - role_not_authorized
+  - access_group_missing
+  - customer_scope_mismatch
+  - program_scope_mismatch
+  - contract_scope_mismatch
+  - factory_node_scope_mismatch
+  - record_type_restricted
+  - report_type_restricted
+  - controlled_data_denied
+  - support_context_missing
+  - support_context_expired
+  - service_scope_denied
+  - attachment_access_denied
+  - bounded_drilldown_denied
+  - summary_only
+  - hidden_existence_required
+  - report_audience_mismatch
+  - report_access_stale
+  - access_context_missing
+  - access_context_malformed
+  - policy_change_forbidden
+  - allowed

@@ -1,0 +1,21 @@
+registry: state-machines
+registry_version: access-and-visibility-pack-v0.1
+source: access-and-visibility-boundary-spec-v0.1.md §6.10
+
+state_machines:
+  - name: SupportSession
+    states: [open, closed]
+    optional_states: [expired]
+    initial_state: open
+    terminal_states: [closed, expired]
+    transitions:
+      - { from: open, to: closed, via: CloseSupportSession }
+      - { from: open, to: expired, via: ExpireSupportSession, optional: true, note: "if sprint 041 decides expiry is a state transition rather than a time predicate; else this row drops" }
+    note: >
+      Simple two-state lifecycle by default. The optional third state and its
+      operation are held open by sprint 041 — either the SupportSession's
+      expires_at is evaluated at every access decision (no state transition),
+      or the runtime writes a state transition when the clock crosses expires_at.
+      The current runtime has no clock-driven state transitions (the receiving
+      Verification lifecycle is event-driven), so the default is time predicate;
+      expired is listed here to keep the option open.

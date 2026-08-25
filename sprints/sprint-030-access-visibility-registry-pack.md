@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 030
-status: pending
+status: closed # [closed 2026-08-25 — pack authored in-repo; 14 files; every gate preserved; scenario ids VF-038..052 assigned]
 phase: C.1-foundations
 pass_kind: architecture
 ---

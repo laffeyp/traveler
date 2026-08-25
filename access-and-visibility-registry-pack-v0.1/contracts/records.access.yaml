@@ -1,0 +1,22 @@
+registry: records
+registry_version: access-and-visibility-pack-v0.1
+source: access-and-visibility-boundary-spec-v0.1.md §6.10, §7.10
+note: >
+  New record proposed by this pack: SupportSession. AccessGroupMembership and
+  ServiceAccountScope are NOT records — the sprint 029 mapping's candidate
+  answers to B-Q-74 and B-Q-77 keep those as caller-context fields, lightweight
+  first version. Promote either to a record when a scenario demands durable
+  membership audit or per-instance scope, not before.
+
+records:
+  - name: SupportSession
+    owning_module: access
+    state_machine: SupportSession
+    note: >
+      Elevated, scoped, time-bounded, audited support context (spec §6.10 + §7.10).
+      Fields (candidates): session_reason, scope (list of aliases or scope tokens),
+      time_window (opened_at + expires_at), actor, approved_authority (optional).
+      Lifecycle: open -> closed (voluntary) or open -> expired (time). The mapping
+      leaves open whether expired is a state (state machine transition) or a
+      predicate on time_window; sprint 041 decides based on how the SupportSession
+      is queried at access-decision time.
