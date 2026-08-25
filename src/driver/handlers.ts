@@ -2646,6 +2646,27 @@ export const HANDLERS: Record<string, H> = {
       };
     }
 
+    // Factory node (sprint 039, spec §6.6). The site / cell / supplier node where the truth was
+    // produced, received, or governed. A node-scoped record refuses a caller from a different node.
+    const targetNode = targetRecordForGroup?.fields?.originating_factory_node;
+    if (targetNode && input.factory_node_context !== targetNode) {
+      world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+        resource_alias: targetAlias,
+        reason: "factory_node_scope_mismatch",
+      });
+      world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+        resource_alias: targetAlias,
+        decision: "denied",
+      });
+      return {
+        decision: "denied",
+        visibility_level: "denied",
+        reason: "factory_node_scope_mismatch",
+        audit_required: true,
+        freshness_effect: "none",
+      };
+    }
+
     // Requested summary (sprint 032): a caller who explicitly asks for a summary and whose target has a
     // registered §10 summary shape gets visibility_level: "summary". Sprint 032 lets tests exercise the
     // summary path without inventing dimensional refusals; sprints 035-042 add dimensions that produce

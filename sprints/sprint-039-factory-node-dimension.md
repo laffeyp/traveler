@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 039
-status: pending
+status: closed # [closed 2026-08-25 — factory_node_scope_mismatch on originating_factory_node]
 phase: C.2-dimensions
 pass_kind: functional
 ---
