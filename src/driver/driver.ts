@@ -253,6 +253,30 @@ export class InMemoryProductDriver {
     if (name === "SerialHistory") return serialHistory(this.world, key, actorContext); // Harness §11: access-aware read
     return null;
   }
+  /**
+   * Access-aware projection read (sprint 043, boundary spec §7.3). Wraps readProjection with an
+   * EvaluateAccess call on the root key: if the caller cannot read the record the projection is keyed on,
+   * the projection response is refused with the specific reason. Existing readProjection is unchanged;
+   * every existing caller keeps its behavior. A projection that spans records the caller cannot see at
+   * the leaf level is enforced record-by-record by sprint 044 (report generation) — this sprint owns the
+   * root refusal, which is the outer boundary a caller reaches first.
+   */
+  readProjectionAsCaller(
+    name: string,
+    key: string,
+    callerContext: CallerContext,
+  ): { level: VisibilityLevel; projection: any; reason?: string } {
+    const rootDecision = this.readRecordAsCaller(key, callerContext);
+    if (rootDecision.level === "denied" || rootDecision.level === "hidden_existence") {
+      return {
+        level: rootDecision.level,
+        projection: null,
+        reason: rootDecision.reason,
+      };
+    }
+    const projection = this.readProjection(name, key, callerContext.visibility_profile);
+    return { level: "full", projection };
+  }
   readReport(alias: string): FactoryRecord | null {
     return this.readRecord(alias);
   }

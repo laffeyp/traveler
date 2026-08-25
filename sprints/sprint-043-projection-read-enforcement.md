@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 043
-status: pending
+status: closed # [closed 2026-08-25 — readProjectionAsCaller wraps readProjection with EvaluateAccess on the root; refuses fail-closed with the specific reason]
 phase: C.3-enforcement
 pass_kind: functional
 ---

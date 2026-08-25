@@ -24,6 +24,7 @@ export interface Driver {
   readRecord(alias: string): any;
   mustReadRecord(alias: string): any;
   readRecordAsCaller(alias: string, callerContext: any): any;
+  readProjectionAsCaller(name: string, key: string, callerContext: any): any;
   readProjection(name: string, key: string, actorContext?: string): any;
   readReport(alias: string): any;
   readEventTrace(): any[];
