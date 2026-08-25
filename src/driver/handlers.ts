@@ -2820,6 +2820,44 @@ export const HANDLERS: Record<string, H> = {
         return denyWith("support_context_expired");
     }
 
+    // Service-account scope (sprint 042, spec §6.11 / §7.11). When the caller passes
+    // `service_account_scope: { processing_actions?, disclosure_actions? }`, a request for
+    // human-visible read (any read with a `visibility_profile` whose audience is external, or an
+    // explicit `requested_action: "disclosure"`) must be permitted by disclosure_actions; processing
+    // reads must be permitted by processing_actions. Processing permission does NOT imply disclosure
+    // permission — §18's spine (service processing is not human disclosure). Refuses with
+    // service_scope_denied. B-Q-77 candidate applied: fields on the caller-context object.
+    const scope = input.service_account_scope;
+    if (scope) {
+      const isDisclosure =
+        input.requested_action === "disclosure" ||
+        (input.visibility_profile &&
+          VISIBILITY_PROFILES.get(input.visibility_profile)?.audience?.includes("external_viewer"));
+      const allowedList: string[] = isDisclosure
+        ? (scope.disclosure_actions ?? [])
+        : (scope.processing_actions ?? []);
+      // The specific action we require. For a plain read, we require the corresponding role in the list;
+      // for a disclosure, disclosure_actions must be non-empty AND include "read". Absence is refusal.
+      const requiredAction = isDisclosure ? "disclosure" : "processing";
+      if (!allowedList.includes(requiredAction) && !allowedList.includes("read")) {
+        world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+          resource_alias: targetAlias,
+          reason: "service_scope_denied",
+        });
+        world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+          resource_alias: targetAlias,
+          decision: "denied",
+        });
+        return {
+          decision: "denied",
+          visibility_level: "denied",
+          reason: "service_scope_denied",
+          audit_required: true,
+          freshness_effect: "none",
+        };
+      }
+    }
+
     // Requested summary (sprint 032): a caller who explicitly asks for a summary and whose target has a
     // registered §10 summary shape gets visibility_level: "summary". Sprint 032 lets tests exercise the
     // summary path without inventing dimensional refusals; sprints 035-042 add dimensions that produce

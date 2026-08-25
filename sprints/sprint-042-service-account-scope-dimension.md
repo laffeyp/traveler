@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 042
-status: pending
+status: closed # [closed 2026-08-25 — processing_actions and disclosure_actions on caller context; service_scope_denied on either shortfall]
 phase: C.2-dimensions
 pass_kind: functional
 ---

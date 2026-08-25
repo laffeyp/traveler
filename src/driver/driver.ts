@@ -222,6 +222,7 @@ export class InMemoryProductDriver {
         factory_node_context: callerContext.factory_node_context,
         visibility_profile: callerContext.visibility_profile,
         support_admin_context: callerContext.support_admin_context,
+        service_account_scope: callerContext.service_account_scope,
         subject_nationality: callerContext.subject_nationality,
         requested_visibility: callerContext.requested_visibility,
       },
