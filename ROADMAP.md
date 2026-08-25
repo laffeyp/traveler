@@ -6,23 +6,23 @@
 
 ---
 
-## Where we are (measured 2026-08-24)
+## Where we are (measured 2026-08-25 — Phase C shipped)
 
 | Gate | Result |
 |---|---|
-| `validate:contracts` | ok — 128 operations / 132 events / 42 records / 15 state machines / 32 authorization rules / 26 assertion types |
+| `validate:contracts` | ok — 132 operations / 136 events / 43 records / 16 state machines / 33 authorization rules / 26 assertion types |
 | `validate:schemas` | ok — 14/14 fixtures discriminate (154 op schemas, 93 event payload schemas, 1 report schema) |
 | `validate:demo-packs` | ok — 118 names across 2 packs |
 | bench first_slice / extended / receiving / all | 14/14 · 9/9 · 10/10 · 29/29 on both drivers |
 | whole-bench cross-driver diff-to-zero | 37 scenarios, byte-identical |
 | backend durability gate | exit 0 (VF-003, VF-006, VF-008, VF-009, VF-012, VF-003D, Phase A outbox, write-boundary idempotency, record-id counter reload) |
-| vitest | 301/301 across 37 files |
+| vitest | 432/432 across 58 files |
 | `tsc -p tsconfig.json --noEmit` | 0 errors across src and tests |
 | prettier | clean |
 | Open ContractGaps | none blocking (77 entries) |
 | Repo | `laffeyp/Manufacturing` (private), branch `main` |
 
-**The nine-document line is closed and the receiving boundary is closed.** 125 of 128 registered operations built (the three refused on record, each with a reason in the code). Phase C — the access and visibility boundary — is open and planned below.
+**The nine-document line, the receiving boundary, and the access-and-visibility boundary are all closed.** 129 of 132 registered operations built (the three refused on record from the first slice — `EvaluateMeasurement`, `GenerateRunCloseNarration`, `EscalateGrammarGap` — each with a reason in the code). Phase C shipped in a single day on 2026-08-25; `ACCESS_AND_VISIBILITY_ACCEPTANCE.md` scores 18/18.
 
 ---
 

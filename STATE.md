@@ -1,6 +1,6 @@
 # State of the build
 
-Measured 2026-08-24. Read off the code and the gates. Where a claim came from a source file, the file and line
+Measured 2026-08-25 after Phase C close. Read off the code and the gates. Where a claim came from a source file, the file and line
 are given so it can be checked.
 
 ---
@@ -354,7 +354,7 @@ Every one runs clean as of this measurement.
 | Extended bench | `node src/harness/bench.ts extended` | 9/9, both drivers |
 | Receiving bench | `node src/harness/bench.ts receiving` | 10/10, both drivers |
 | Backend end-to-end | `npm run test:vf003:backend` | exit 0 |
-| Unit and regression | `npx vitest run` | 301 of 301, across 37 files |
+| Unit and regression | `npx vitest run` | 432 of 432, across 58 files |
 | Types | `npx tsc -p tsconfig.json --noEmit` | 0 errors across `src` and `tests` |
 | Format | `npm run format:check` | clean |
 
@@ -410,10 +410,16 @@ refuses a verifier who cannot read the document, which VF-029 drives end to end.
 
 ## 10. Open
 
-The largest specified surface not built is the rest of TAD §18. The Access and Visibility Boundary Specification
-v0.1 (2026-08-24, at project root) now governs it. Its §6 names eleven access dimensions; the build has two
-(caller role, controlled-data classification by nationality). Its §7 names eleven enforcement points; the build
-has two (operation authorization in `driver.ts`, record read in `serialHistory`). §15 sketches ten scenario
-families and §16 lists eighteen acceptance criteria. The registry pack it names in §19 has not been authored.
+**Phase C — the Access and Visibility Boundary — is closed.** All 24 sprints (029-052) landed in one day.
+The 18 §16 acceptance criteria score 18/18 pass or pass-in-part (`ACCESS_AND_VISIBILITY_ACCEPTANCE.md`).
+Every §6 dimension has a first-class check in `EvaluateAccess`. Every §7 enforcement point is covered.
+Reason codes and failure classes are registered bidirectionally. The mutation battery has 16 permanent
+arms, each naming the specific §14 reason it refuses under.
 
-77 ledger entries. None blocking. None pending a decision.
+One pass-in-part: unifying the driver's operation-authorization wrapper with the §8 decision model was
+deferred to protect the byte-identical trace of the first slice. Every existing scenario (VF-001..016 +
+variants + VF-024..034 + IDEM-001 + NEG-001) traces byte-identical after every access change; whole-bench
+cross-driver diff-to-zero over 37 scenarios reads PASS (all identical) at every sprint close.
+
+77 ledger entries, plus four Phase-C entries (B-Q-74/75/76/77) each with a candidate answer applied in
+its owning sprint. None blocking.

@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 052
-status: pending
+status: closed # [closed 2026-08-25 — §16 18/18 pass or pass-in-part; STATE, ROADMAP, DOCS, KIT_DIARY refreshed; Phase C shipped]
 phase: C.5-closeout
 pass_kind: docs
 ---
