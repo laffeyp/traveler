@@ -113,6 +113,16 @@ export function guardRuleCallerTypes(ruleId: string): Set<string> {
   return new Set<string>(rule.caller_types ?? []);
 }
 
+/**
+ * The set of caller types the registries declare (`contracts/modules.yaml`). Used at runtime by
+ * EvaluateAccess to refuse fail-closed on a caller_type provided but not spelled the way any authorization
+ * rule spells it — the `access_context_malformed` case in the §8 decision model. Reading here rather than
+ * re-parsing the yaml on every call.
+ */
+export const registeredCallerTypes: Set<string> = new Set<string>(
+  readYaml("contracts/modules.yaml").caller_types ?? [],
+);
+
 /** operation name -> its cited authorization rule id. */
 export const opAuthorizationRule = new Map<string, string>(
   (readYaml("contracts/operations.yaml").operations ?? []).map((operation: any) => [

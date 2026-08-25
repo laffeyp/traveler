@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 031
-status: pending
+status: closed # [closed 2026-08-25 — §8 shape returned, two fail-closed guards land with named reasons, export path byte-identical across 37 scenarios, coupling mutation proven red-capable]
 phase: C.1-foundations
 pass_kind: architecture
 ---

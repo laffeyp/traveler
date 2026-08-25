@@ -10,7 +10,12 @@
 import type { World, FactoryRecord } from "./world.ts";
 import { moveState, moveStateTo, tryGet, step, createGrammarGap } from "./world.ts";
 import { NORMALIZE_GRAMMAR, keyPresentAndValid } from "./registry.ts";
-import { RECEIVING_RULES, DOCUMENT_TYPES, guardRuleCallerTypes } from "./registry.ts";
+import {
+  RECEIVING_RULES,
+  DOCUMENT_TYPES,
+  guardRuleCallerTypes,
+  registeredCallerTypes,
+} from "./registry.ts";
 import {
   assembleRunCloseReport,
   asBuiltProjection,
@@ -2490,39 +2495,99 @@ export const HANDLERS: Record<string, H> = {
     });
   },
   EvaluateAccess(world, input) {
-    // Deemed-export access decision by PERSON NATIONALITY (persona gap 5; ITAR 22 CFR 120.50: releasing
-    // controlled technical data to a foreign person is an export to their country). A resource marked
-    // export-controlled to a set of nationalities is DENIED to a subject whose nationality is not in the set.
-    // Fills the registered-but-unimplemented EvaluateAccess op; the nationality axis + the resource's
-    // export_control are additions beyond the spec. Every decision is audited.
-    // Fail CLOSED (persona-gap review): only ALLOW when access can be affirmatively confirmed. An unresolvable
-    // resource, or a present-but-malformed export_control (not a non-empty nationality array), is DENIED — for
-    // an export control the safe default is deny, since a fail-open leaks controlled technical data. The
-    // decision itself lives in `exportAccessDecision` so the certificate verification path (§9.6) applies the
-    // same policy rather than a second copy of it.
+    // Generalized to the boundary spec's §8 shape: (caller, action, object, context, purpose) ->
+    // (decision, visibility_level, reason, allowed_fields, redacted_fields, summary_shape, audit_required,
+    // freshness_effect). The first slice's export-by-nationality path (VF-029, VF-031, deemed-export unit
+    // suite) traces through unchanged — the emitted event payloads for that path are the same bytes the
+    // export path emitted before generalization. Sprints 035-042 add each of the remaining nine dimensions
+    // (access_group / customer / program / contract / factory_node / record_type / report_type /
+    // support_admin_context / service_account_scope); sprint 032 promotes summary and hidden_existence to
+    // first-class outcomes. This sprint sets up the SHAPE and the two fail-closed guards §8 requires up
+    // front — no target, and an unregistered caller_type — leaving the substantive dimensional checks for
+    // the sprints that own each dimension.
+    //
+    // Fail-closed law (Addendum A2, third recurrence): every new REQUIRED input either passes or refuses;
+    // undefined is refusal. The export path's own fail-closed cases (unresolvable resource, malformed
+    // export_control) live in exportAccessDecision unchanged.
+    const targetAlias = input.target_object ?? input.resource_alias;
+
+    // No target at all. §14 access_context_missing.
+    if (!targetAlias) {
+      world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+        reason: "access_context_missing",
+      });
+      world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", { decision: "denied" });
+      return {
+        decision: "denied",
+        visibility_level: "denied",
+        reason: "access_context_missing",
+        audit_required: true,
+        freshness_effect: "none",
+      };
+    }
+
+    // caller_type provided but spelled a way no authorization rule spells. §14 access_context_malformed.
+    // Only fires when a caller actively passes caller_type; the export path (VF-029/VF-031) does not, and
+    // is therefore untouched.
+    if (
+      input.caller_type !== undefined &&
+      input.caller_type !== null &&
+      !registeredCallerTypes.has(input.caller_type)
+    ) {
+      world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+        resource_alias: targetAlias,
+        reason: "access_context_malformed",
+      });
+      world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+        resource_alias: targetAlias,
+        decision: "denied",
+      });
+      return {
+        decision: "denied",
+        visibility_level: "denied",
+        reason: "access_context_malformed",
+        audit_required: true,
+        freshness_effect: "none",
+      };
+    }
+
+    // Export path — byte-identical for VF-029, VF-031, deemed-export unit suite. Every emit below carries
+    // exactly the same payload keys and values as before generalization; the widening lives in the RETURN
+    // value (the §8 output shape), not in the event trace.
     const nationality = input.subject_nationality;
-    const { decision, reason } = exportAccessDecision(world, input.resource_alias, nationality);
+    const { decision, reason } = exportAccessDecision(world, targetAlias, nationality);
     if (decision === "denied") {
       world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
-        resource_alias: input.resource_alias,
+        resource_alias: targetAlias,
         subject_nationality: nationality,
         reason,
       });
       world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
-        resource_alias: input.resource_alias,
+        resource_alias: targetAlias,
         decision: "denied",
       });
-      return { decision, reason };
+      return {
+        decision,
+        visibility_level: "denied",
+        reason,
+        audit_required: true,
+        freshness_effect: "none",
+      };
     }
     world.emit("ACCESS_DECISION_ALLOWED", "EvaluateAccess", {
-      resource_alias: input.resource_alias,
+      resource_alias: targetAlias,
       subject_nationality: nationality,
     });
     world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
-      resource_alias: input.resource_alias,
+      resource_alias: targetAlias,
       decision: "allowed",
     });
-    return { decision: "allowed" };
+    return {
+      decision: "allowed",
+      visibility_level: "full",
+      audit_required: true,
+      freshness_effect: "none",
+    };
   },
   BoundedDrillDown(world, input) {
     // Access-filter from the resolved policy (not a hardcoded list). Harness §17 / Build Readiness §11.
