@@ -53,24 +53,84 @@ describe("audit (§12)", () => {
     expect(payloadStr).not.toContain("customer_a");
   });
 
-  it("the denied event itself carries the specific reason but not payload contents", () => {
-    // Same rule for the DENIED event (which the AUDITED event mirrors). The reason is public; the
-    // controlled fields are not.
-    const d = new InMemoryProductDriver();
-    d.world.create("Certificate", "cert_ctrl", "captured", {
-      cert_type: "certificate_of_conformance",
-      document_body: "CONTROLLED_TECHNICAL_DATA",
-      program: "program_red",
-    });
-    d.readRecordAsCaller("cert_ctrl", {
-      caller_type: "quality_engineer",
-      program_context: "program_blue",
-    });
-    const denied = d.readEventTrace().find((e: any) => e.type === "ACCESS_DECISION_DENIED");
-    expect(denied).toBeTruthy();
-    expect((denied!.payload as any).reason).toBe("program_scope_mismatch");
-    const payloadStr = JSON.stringify(denied!.payload);
-    expect(payloadStr).not.toContain("CONTROLLED_TECHNICAL_DATA");
+  it("the denied event itself carries the specific reason but not payload contents — every dimension", () => {
+    // Sprint 049's original coverage only checked the program-scope denied event. A red-team probe
+    // on 2026-08-25 injected a document_body / customer leak into the customer-scope DENIED payload
+    // and this test suite still passed 4/4 — the audit-does-not-leak claim was covering the AUDITED
+    // event and one path of DENIED, not every path of DENIED. Extended here to drive every dimension
+    // that can produce a DENIED event and assert no target-payload fields appear on any of them.
+    const forbidden = ["CONTROLLED_TECHNICAL_DATA", "SECRET_SUPPLIER_DATA", "CLASSIFIED_CAGE_XYZ"];
+    const drive = (
+      recordType: string,
+      recordFields: any,
+      caller: any,
+    ): { reason: string; payload: string } => {
+      const d = new InMemoryProductDriver();
+      d.setClock("2026-08-25T10:00:00Z");
+      d.world.create(recordType, "target", "captured", {
+        // Every record carries the same three forbidden fields; each denial path must strip them all.
+        document_body: forbidden[0],
+        raw_payload: { sensor: forbidden[1] },
+        cage_code: forbidden[2],
+        ...recordFields,
+      });
+      d.readRecordAsCaller("target", caller);
+      const denied = d.readEventTrace().find((e: any) => e.type === "ACCESS_DECISION_DENIED");
+      if (!denied) throw new Error("no DENIED event fired");
+      return {
+        reason: (denied.payload as any).reason,
+        payload: JSON.stringify(denied.payload),
+      };
+    };
+    const paths = [
+      {
+        name: "customer",
+        rt: "Certificate",
+        fields: { cert_type: "certificate_of_conformance", customer: "customer_a" },
+        caller: { caller_type: "quality_engineer", customer_context: "customer_b" },
+        expected: "customer_scope_mismatch",
+      },
+      {
+        name: "program",
+        rt: "Certificate",
+        fields: { cert_type: "certificate_of_conformance", program: "program_red" },
+        caller: { caller_type: "quality_engineer", program_context: "program_blue" },
+        expected: "program_scope_mismatch",
+      },
+      {
+        name: "contract",
+        rt: "Certificate",
+        fields: { cert_type: "certificate_of_conformance", contract: "contract_001" },
+        caller: { caller_type: "quality_engineer", contract_context: "subcontract_047" },
+        expected: "contract_scope_mismatch",
+      },
+      {
+        name: "factory_node",
+        rt: "Certificate",
+        fields: {
+          cert_type: "certificate_of_conformance",
+          originating_factory_node: "factory_node_main",
+        },
+        caller: { caller_type: "quality_engineer", factory_node_context: "factory_node_other" },
+        expected: "factory_node_scope_mismatch",
+      },
+      {
+        name: "access_group",
+        rt: "Certificate",
+        fields: {
+          cert_type: "certificate_of_conformance",
+          required_access_group: "quality_review",
+        },
+        caller: { caller_type: "quality_engineer", access_groups: ["some_other_group"] },
+        expected: "access_group_missing",
+      },
+    ];
+    for (const p of paths) {
+      const { reason, payload } = drive(p.rt, p.fields, p.caller);
+      expect(reason, p.name).toBe(p.expected);
+      for (const secret of forbidden)
+        expect(payload.includes(secret), `${p.name} leaked ${secret}`).toBe(false);
+    }
   });
 
   it("audit count equals decision count under the fail-closed guards", () => {

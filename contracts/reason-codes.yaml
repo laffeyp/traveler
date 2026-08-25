@@ -17,7 +17,13 @@ reason_codes:
     note: "the successful-decision code; every audited allow carries it"
   - name: role_not_authorized
     spec_section: "§8.3"
-    used_by_sprint: 031
+    used_by_sprint: deferred
+    note: >
+      Registered as the specific §14 name for the case the driver's operation-authorization wrapper
+      currently emits generically as `authorization_denied`. Not yet a code path: unifying operation
+      authorization with the §8 decision model is the deferred pass-in-part row 4 of
+      `ACCESS_AND_VISIBILITY_ACCEPTANCE.md`. Kept in the registry so a future sprint that closes that row
+      has the name to emit against; the ledger says "deferred" so the citation resolves honestly.
   - name: access_group_missing
     spec_section: "§8.3"
     used_by_sprint: 035
@@ -41,8 +47,13 @@ reason_codes:
     used_by_sprint: 040
   - name: controlled_data_denied
     spec_section: "§8.3"
-    used_by_sprint: 031
-    note: "generalizes the export-by-nationality deemed_export_denied; both keep their names"
+    used_by_sprint: deferred
+    note: >
+      Registered as the generalized §14 name for the case the export path currently emits as
+      deemed_export_denied. The export path was preserved byte-identical in sprint 031 so its emit stayed
+      unchanged; controlled_data_denied waits for a sprint that generalizes controlled-data classification
+      beyond the export-by-nationality path. Kept in the registry so a future sprint has the name to emit;
+      the ledger says "deferred" so the citation resolves honestly.
   - name: deemed_export_denied
     spec_section: "existing, ADDITIONS.md persona gap 5"
     used_by_sprint: "already"

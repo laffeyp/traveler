@@ -108,6 +108,18 @@ Seven new enforcement surfaces. Each sprint routes an existing product surface t
 
 ---
 
+## Post-Phase-C deferred items
+
+Recorded by the 2026-08-25 red-team probe on Phase C (KIT_DIARY Entry 32):
+
+- **Golden-trace regression check.** Cross-driver diff-to-zero measures TWO drivers running the same code path against each other — a change that affects both drivers identically passes it. A true regression check against a baseline would store a golden trace per scenario and diff against it on every run. A probe added `MUTATION_TEST: true` to an event payload and both drivers happily produced the same mutated trace; the test still passed. Recorded as a follow-up; not built yet because it needs a golden-trace store and per-scenario diff. Existing `event_payload_contains` subset assertions catch changes to named fields but do not catch new fields silently added to existing event payloads.
+- **Unify operation authorization with the §8 decision model.** `callerMayInvoke` in `driver.ts` still emits `authorization_denied` rather than the specific `role_not_authorized` from the §14 registry. `contracts/reason-codes.yaml` marks `role_not_authorized` as `used_by_sprint: deferred` with the reason. Same story for `controlled_data_denied` — reserved for a sprint that generalizes controlled-data classification beyond the export-by-nationality path.
+- **Per-leaf enforcement inside projections.** Sprint 043 owns the root-refusal boundary; a projection may still traverse leaf records the caller cannot fully read at content level. Sprint 044 preserves audience_profile on the report record; audience-aware assembly is not yet wired.
+- **AmendAccessPolicy retries + dead-letter.** §13 does not name magnitudes; recorded, unbuilt.
+- **Durable AccessDecision record write.** The audit sits in the append-only event stream today. A record on top would give per-decision filtering; deferred until a scenario needs it.
+
+---
+
 ## Backlog (identified, not scheduled)
 
 *From `contracts/CONTRACT_GAPS.md` — each deferred with a reason, nothing hidden.*
