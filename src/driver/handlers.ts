@@ -2552,6 +2552,34 @@ export const HANDLERS: Record<string, H> = {
       };
     }
 
+    // Access group (sprint 035, spec §6.2): if the target names a required_access_group and the caller's
+    // access_groups list does not contain it, refuse with access_group_missing. Runs BEFORE the requested-
+    // summary branch so a caller who lacks the group cannot bypass the check by asking for summary.
+    // B-Q-74 candidate answer: access_groups live on the caller-context object, no first-class record.
+    const targetRecordForGroup = tryGet(world, targetAlias);
+    const requiredGroup = targetRecordForGroup?.fields?.required_access_group;
+    if (requiredGroup) {
+      const heldGroups: string[] = Array.isArray(input.access_groups) ? input.access_groups : [];
+      if (!heldGroups.includes(requiredGroup)) {
+        world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+          resource_alias: targetAlias,
+          required_access_group: requiredGroup,
+          reason: "access_group_missing",
+        });
+        world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+          resource_alias: targetAlias,
+          decision: "denied",
+        });
+        return {
+          decision: "denied",
+          visibility_level: "denied",
+          reason: "access_group_missing",
+          audit_required: true,
+          freshness_effect: "none",
+        };
+      }
+    }
+
     // Requested summary (sprint 032): a caller who explicitly asks for a summary and whose target has a
     // registered §10 summary shape gets visibility_level: "summary". Sprint 032 lets tests exercise the
     // summary path without inventing dimensional refusals; sprints 035-042 add dimensions that produce

@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 035
-status: pending
+status: closed # [closed 2026-08-25 — access_group as first-class dimension, fail-closed on absent/wrong/empty, coupling proven red-capable, scenario VF-038 deferred to a batched dimensions scenario later]
 phase: C.2-dimensions
 pass_kind: functional
 ---
