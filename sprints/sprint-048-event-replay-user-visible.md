@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 048
-status: pending
+status: closed # [closed 2026-08-25 — readEventTraceAsCaller filters raw_payload and strips nationality for external audiences; internal readEventTrace unchanged]
 phase: C.3-enforcement
 pass_kind: functional
 ---

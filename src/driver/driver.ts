@@ -283,4 +283,39 @@ export class InMemoryProductDriver {
   readEventTrace(): FactoryEvent[] {
     return this.world.events;
   }
+  /**
+   * User-visible event replay (sprint 048, boundary spec §7.8). Distinct from the internal replay the
+   * harness uses — the harness reads the full trace via readEventTrace to check assertions. A user
+   * viewer sees a filtered trace: events whose payload_field lists intersect the caller's audience get
+   * only their safe fields; the rest are hidden entirely.
+   *
+   * Sprint 048's minimum: hide events that carry a `raw_payload` or `document_body` field, and strip
+   * `subject_nationality` and `verifier_nationality` from access-decision payloads for external
+   * audiences. Sprints that own each dimension (035-042) may refine which fields belong to which
+   * profile; here the invariant is that the user-visible path is NOT the plain path — a caller cannot
+   * read raw event payloads by reading the trace.
+   */
+  readEventTraceAsCaller(callerContext: CallerContext): FactoryEvent[] {
+    const external =
+      callerContext.visibility_profile === "customer_summary_access" ||
+      callerContext.visibility_profile === "customer_extended_access" ||
+      callerContext.caller_type === "external_viewer";
+    return this.world.events
+      .filter((event) => {
+        // Hide raw supplier/machine payloads from external audiences entirely.
+        if (external && (event.payload as any)?.raw_payload !== undefined) return false;
+        if (external && (event.payload as any)?.document_body !== undefined) return false;
+        return true;
+      })
+      .map((event) => {
+        if (!external) return event;
+        // Strip controlled-classification hints from the payload.
+        const safe: any = { ...(event.payload as any) };
+        delete safe.subject_nationality;
+        delete safe.verifier_nationality;
+        delete safe.raw_payload;
+        delete safe.document_body;
+        return { ...event, payload: safe };
+      });
+  }
 }
