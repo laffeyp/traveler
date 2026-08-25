@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 032
-status: pending
+status: closed # [closed 2026-08-25 — four §5 outcomes first-class, four §10 shapes wired, hidden_existence byte-identical to not-found, coupling mutation proven red-capable, byte-identical diff-to-zero preserved]
 phase: C.1-foundations
 pass_kind: architecture
 ---

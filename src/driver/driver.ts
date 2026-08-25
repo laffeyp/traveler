@@ -10,6 +10,8 @@ import type { FactoryRecord, FactoryEvent } from "./world.ts";
 import { HANDLERS } from "./handlers.ts";
 import { opIdempotency, callerMayInvoke, opAuthorizationRule } from "./registry.ts";
 import { asBuiltProjection, serialHistory } from "./projections.ts";
+import type { CallerContext, VisibilityDecision } from "./visibility.ts";
+import { summarizeRecord, notFoundResponse } from "./visibility.ts";
 
 /** The Harness §11 OperationResult: the outcome envelope every operation returns. */
 export interface OperationResult {
@@ -182,6 +184,61 @@ export class InMemoryProductDriver {
     const record = this.readRecord(alias);
     if (record == null) throw new Error(`mustReadRecord: alias '${alias}' resolves to no record`);
     return record;
+  }
+  /**
+   * Access-aware read (sprint 032, boundary spec §7.2 / §5). Returns one of four visibility outcomes —
+   * `full`, `summary`, `denied`, `hidden_existence` — driven by an `EvaluateAccess` decision. The plain
+   * `readRecord` and `mustReadRecord` are unchanged; the harness's internal reads and every caller that
+   * legitimately tests for absence keep the two-outcome shape (record or null).
+   *
+   * Load-bearing invariant (§5.4): the `hidden_existence` response is BYTE-IDENTICAL to the not-found
+   * response. Both return `{ level: "hidden_existence", record: null }`. A viewer cannot tell one from the
+   * other. Audit captures the difference; the caller does not.
+   *
+   * Sprint 032 wires `requested_visibility` from the caller context through EvaluateAccess so tests can
+   * exercise the summary path against the four §10 shapes. Sprints 035-042 route each dimension into the
+   * decision; sprint 043 makes projections call this method instead of the plain read.
+   */
+  readRecordAsCaller(alias: string, callerContext: CallerContext): VisibilityDecision {
+    const record = this.readRecord(alias);
+    if (!record) return notFoundResponse();
+    // Ask the decision model. EvaluateAccess audits under the caller's identity, so the audit trail
+    // captures the access decision for this read alongside the read itself. `subject_nationality` from
+    // the context flows through so the export path decides consistently with a direct EvaluateAccess call.
+    // The DECISION invocation runs as an infrastructure caller (`access_admin`, per the
+    // `access_administration` authorization rule that governs EvaluateAccess). The product caller's
+    // identity flows through as the input's caller_type; the decision model reads that to run its own
+    // dimensional checks. This mirrors the pattern serialHistory used from the first slice: the reader
+    // acts on behalf of an actor without needing the actor's caller_type to have EvaluateAccess authority.
+    const decision = this.executeOperation(
+      "EvaluateAccess",
+      {
+        target_object: alias,
+        caller_type: callerContext.caller_type,
+        subject_nationality: callerContext.subject_nationality,
+        requested_visibility: callerContext.requested_visibility,
+      },
+      "access_admin",
+      "s-readRecordAsCaller-" + alias + "-" + this.world.events.length,
+    );
+    if (decision.output?.decision === "denied") {
+      return { level: "denied", record: null, reason: decision.output.reason };
+    }
+    if (decision.output?.visibility_level === "summary") {
+      const summarized = summarizeRecord(record);
+      // No registered §10 shape for this record type -> a summary cannot be safely produced -> deny.
+      // Ad-hoc summaries would violate the spec's §10 registered-or-specified rule.
+      if (!summarized)
+        return { level: "denied", record: null, reason: "no_summary_shape_registered" };
+      return {
+        level: "summary",
+        record: summarized.payload,
+        allowed_fields: summarized.revealed,
+        redacted_fields: summarized.hidden,
+        summary_shape: summarized.name,
+      };
+    }
+    return { level: "full", record };
   }
   readProjection(name: string, key: string, actorContext?: string): any {
     if (name === "AsBuiltProjection") return asBuiltProjection(this.world, key);

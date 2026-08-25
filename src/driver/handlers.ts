@@ -16,6 +16,7 @@ import {
   guardRuleCallerTypes,
   registeredCallerTypes,
 } from "./registry.ts";
+import { SUMMARY_SHAPES } from "./visibility.ts";
 import {
   assembleRunCloseReport,
   asBuiltProjection,
@@ -2549,6 +2550,52 @@ export const HANDLERS: Record<string, H> = {
         audit_required: true,
         freshness_effect: "none",
       };
+    }
+
+    // Requested summary (sprint 032): a caller who explicitly asks for a summary and whose target has a
+    // registered §10 summary shape gets visibility_level: "summary". Sprint 032 lets tests exercise the
+    // summary path without inventing dimensional refusals; sprints 035-042 add dimensions that produce
+    // summary as a policy outcome, not an explicit request. The check runs BEFORE the export path so a
+    // requested summary of an uncontrolled record returns summary rather than full.
+    if (input.requested_visibility === "summary") {
+      const targetRecord = tryGet(world, targetAlias);
+      if (targetRecord && SUMMARY_SHAPES[targetRecord.record_type]) {
+        world.emit("ACCESS_DECISION_SUMMARY", "EvaluateAccess", {
+          resource_alias: targetAlias,
+          summary_shape: SUMMARY_SHAPES[targetRecord.record_type].name,
+        });
+        world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+          resource_alias: targetAlias,
+          decision: "summary",
+        });
+        return {
+          decision: "summary",
+          visibility_level: "summary",
+          summary_shape: SUMMARY_SHAPES[targetRecord.record_type].name,
+          audit_required: true,
+          freshness_effect: "none",
+        };
+      }
+      // Summary requested but no §10 shape exists for the target's record type. Refuse fail-closed: a
+      // requested summary cannot be silently promoted to full disclosure, and ad-hoc summaries would
+      // violate §10's registered-or-specified rule. Deny with the specific reason.
+      if (targetRecord) {
+        world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+          resource_alias: targetAlias,
+          reason: "no_summary_shape_registered",
+        });
+        world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+          resource_alias: targetAlias,
+          decision: "denied",
+        });
+        return {
+          decision: "denied",
+          visibility_level: "denied",
+          reason: "no_summary_shape_registered",
+          audit_required: true,
+          freshness_effect: "none",
+        };
+      }
     }
 
     // Export path — byte-identical for VF-029, VF-031, deemed-export unit suite. Every emit below carries
