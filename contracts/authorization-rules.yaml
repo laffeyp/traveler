@@ -189,6 +189,11 @@ rules:
   - id: access_administration
     caller_types: [access_admin]
     description: Evaluate an access decision. Observed on EvaluateAccess.
+  - id: support_session_management
+    caller_types: [support_user, access_admin]
+    description: >
+      Open or close a SupportSession (boundary spec §6.10). A support_user may open a session; access_admin
+      may also open one (typically to approve elevated scope). Observed on OpenSupportSession, CloseSupportSession.
   - id: system_lifecycle
     caller_types: [system_worker]
     description: >

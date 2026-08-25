@@ -44,6 +44,7 @@ records:
   - { name: Attachment,                  owning_module: attachment,             state_machine: Attachment }
   - { name: AccessDecision,              owning_module: access,                 state_machine: false }
   - { name: AuditEntry,                  owning_module: access,                 state_machine: false, note: "cross-cutting audit record; homed under access for the first slice" }
+  - { name: SupportSession,              owning_module: access,                 state_machine: SupportSession, note: "boundary spec §6.10 / §7.10: elevated, scoped, time-bounded, audited support access. Fields: session_reason, scope (list of aliases), opened_at, expires_at, actor, approved_authority. Time predicate on expires_at rather than a state transition (the runtime has no clock-driven transitions)." }
   - { name: GrammarGap,                  owning_module: grammar_gap,            state_machine: false, note: "GrammarGap lifecycle deferred beyond first slice; create+escalate only" }
   # --- Beyond-spec additions (persona gaps 7-8; see ADDITIONS.md). Registered here so the vocabulary matches the
   #     handlers — a handler was governing a record the registry did not name (surfaced at close-out, sprint 019). ---

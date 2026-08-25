@@ -312,3 +312,16 @@ state_machines:
       - { from: null,     to: created,  via: CreateShipment,  emits: SHIPMENT_CREATED }
       - { from: created,  to: received, via: ReceiveShipment, emits: SHIPMENT_RECEIVED }
 
+  # Sprint 041: SupportSession lifecycle (boundary spec §6.10). Two states — expiry is a time predicate on
+  # the record's expires_at, not a clock-driven state transition (the runtime has none).
+  - record_type: SupportSession
+    owning_module: access
+    state_field: status
+    initial_state: open
+    terminal_states: [closed]
+    creation_transition: explicit
+    states: [open, closed]
+    transitions:
+      - { from: null,  to: open,   via: OpenSupportSession,  emits: SUPPORT_SESSION_OPENED }
+      - { from: open,  to: closed, via: CloseSupportSession, emits: SUPPORT_SESSION_CLOSED }
+

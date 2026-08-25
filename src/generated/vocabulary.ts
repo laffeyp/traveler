@@ -2,7 +2,7 @@
 // Source: contracts/{events,operations,records}.yaml (the locked vocabulary).
 // Regenerate with `npm run generate:types`; CI fails on drift via `npm run verify:types`.
 
-/** Every registered FactoryEvent tag (132). */
+/** Every registered FactoryEvent tag (134). */
 export type EventType =
   | "ACCESS_DECISION_ALLOWED"
   | "ACCESS_DECISION_AUDITED"
@@ -134,10 +134,12 @@ export type EventType =
   | "SHIPMENT_CREATED"
   | "SHIPMENT_LINE_CREATED"
   | "SHIPMENT_RECEIVED"
+  | "SUPPORT_SESSION_CLOSED"
+  | "SUPPORT_SESSION_OPENED"
   | "VERIFICATION_COMPLETED"
   | "VERIFICATION_PENDING";
 
-/** Every registered operation name (127). */
+/** Every registered operation name (130). */
 export type OperationName =
   | "AcceptAttachmentAsEvidence"
   | "AcceptCertificateAsEvidence"
@@ -165,6 +167,7 @@ export type OperationName =
   | "CloseIssue"
   | "CloseNonconformance"
   | "CloseRedline"
+  | "CloseSupportSession"
   | "CompleteReportGeneration"
   | "CompleteRework"
   | "CompleteRunStep"
@@ -189,6 +192,7 @@ export type OperationName =
   | "GenerateCertificateOfConformance"
   | "GenerateRunCloseNarration"
   | "GenerateRunCloseReport"
+  | "GenerateSupplierEvidencePacket"
   | "GetAsBuiltView"
   | "GetAttachment"
   | "GetReport"
@@ -204,6 +208,7 @@ export type OperationName =
   | "OpenNonconformance"
   | "OpenReceivingNonconformance"
   | "OpenSupplierCorrectiveAction"
+  | "OpenSupportSession"
   | "PauseRun"
   | "QuarantineInventory"
   | "QuarantineMachineEvidence"
@@ -267,7 +272,7 @@ export type OperationName =
   | "VerifyCertificate"
   | "VerifyRework";
 
-/** Every registered record type (42). */
+/** Every registered record type (43). */
 export type RecordType =
   | "AccessDecision"
   | "AffectedPopulation"
@@ -310,4 +315,5 @@ export type RecordType =
   | "RunStep"
   | "Shipment"
   | "ShipmentLine"
+  | "SupportSession"
   | "Verification";

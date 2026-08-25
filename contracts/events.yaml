@@ -155,6 +155,9 @@ events:
   - { type: ACCESS_DECISION_SUMMARY, owning_module: access, event_category: access_event, event_stratum: event, producer_operations: [EvaluateAccess], payload_schema_ref: schemas/events/ACCESS_DECISION_SUMMARY.payload.schema.json }
   - { type: ACCESS_DECISION_DENIED,  owning_module: access, event_category: access_event, event_stratum: incident, producer_operations: [EvaluateAccess], payload_schema_ref: schemas/events/ACCESS_DECISION_DENIED.payload.schema.json }
   - { type: ACCESS_DECISION_AUDITED, owning_module: access, event_category: audit_event,  event_stratum: event, producer_operations: [EvaluateAccess], payload_schema_ref: schemas/events/ACCESS_DECISION_AUDITED.payload.schema.json }
+  # Sprint 041 SupportSession lifecycle events.
+  - { type: SUPPORT_SESSION_OPENED,  owning_module: access, event_category: access_event, event_stratum: event, producer_operations: [OpenSupportSession],  payload_schema_ref: schemas/events/SUPPORT_SESSION_OPENED.payload.schema.json }
+  - { type: SUPPORT_SESSION_CLOSED,  owning_module: access, event_category: access_event, event_stratum: event, producer_operations: [CloseSupportSession], payload_schema_ref: schemas/events/SUPPORT_SESSION_CLOSED.payload.schema.json }
 
   # --- Grammar Gap (grammar_event) ---
   - { type: GRAMMAR_GAP_CREATED,   owning_module: grammar_gap, event_category: grammar_event, event_stratum: incident, producer_operations: [CreateGrammarGap, NormalizeMachineEvidence], payload_schema_ref: schemas/events/GRAMMAR_GAP_CREATED.payload.schema.json }

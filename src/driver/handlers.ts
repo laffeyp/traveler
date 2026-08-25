@@ -2496,6 +2496,43 @@ export const HANDLERS: Record<string, H> = {
       trigger: input.trigger,
     });
   },
+  OpenSupportSession(world, input) {
+    // Boundary spec §6.10. Opens a scoped, time-bounded, audited support session. Fail-closed on missing
+    // reason (a session without a reason is a hidden superuser path — §7.10 forbids), empty scope (an
+    // unbounded session is not scoped), or an expiry earlier than the open (a session that can never be
+    // used).
+    if (!input.session_reason) throw new Error("validation_error: session_reason required");
+    const scope: string[] = Array.isArray(input.scope) ? input.scope : [];
+    if (scope.length === 0) throw new Error("validation_error: scope must be a non-empty list");
+    const openedAt = world.clock;
+    if (!input.expires_at) throw new Error("validation_error: expires_at required");
+    if (new Date(input.expires_at).getTime() <= new Date(openedAt || 0).getTime())
+      throw new Error("validation_error: expires_at must be after opened_at");
+    const session = world.create("SupportSession", input.support_session_alias, "open", {
+      session_reason: input.session_reason,
+      scope,
+      opened_at: openedAt,
+      expires_at: input.expires_at,
+      approved_authority: input.approved_authority ?? null,
+    });
+    world.emit("SUPPORT_SESSION_OPENED", "OpenSupportSession", {
+      support_session_id: session.id,
+      session_reason: input.session_reason,
+      scope,
+      opened_at: openedAt,
+      expires_at: input.expires_at,
+    });
+  },
+  CloseSupportSession(world, input) {
+    const session = world.get(input.support_session_alias);
+    moveState(session, "CloseSupportSession");
+    session.fields.closed_at = world.clock;
+    if (input.close_reason) session.fields.close_reason = input.close_reason;
+    world.emit("SUPPORT_SESSION_CLOSED", "CloseSupportSession", {
+      support_session_id: session.id,
+      closed_at: session.fields.closed_at,
+    });
+  },
   EvaluateAccess(world, input) {
     // Generalized to the boundary spec's §8 shape: (caller, action, object, context, purpose) ->
     // (decision, visibility_level, reason, allowed_fields, redacted_fields, summary_shape, audit_required,
@@ -2741,6 +2778,46 @@ export const HANDLERS: Record<string, H> = {
           };
         }
       }
+    }
+
+    // Support/admin context (sprint 041, spec §6.10 / §7.10). When a caller opts into elevated access by
+    // passing `support_admin_context: <session_alias>`, the session must exist, be open, cover the target
+    // in its scope, and its time window must not have elapsed. Anything else refuses fail-closed with the
+    // specific reason (support_context_missing or support_context_expired). Elevated access is not a
+    // hidden superuser path; it is explicit, scoped, time-bounded, and audited.
+    if (input.support_admin_context) {
+      const session = tryGet(world, input.support_admin_context);
+      const denyWith = (reason: string) => {
+        world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+          resource_alias: targetAlias,
+          support_admin_context: input.support_admin_context,
+          reason,
+        });
+        world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+          resource_alias: targetAlias,
+          decision: "denied",
+        });
+        return {
+          decision: "denied",
+          visibility_level: "denied",
+          reason,
+          audit_required: true,
+          freshness_effect: "none",
+        };
+      };
+      if (!session || session.record_type !== "SupportSession")
+        return denyWith("support_context_missing");
+      if (session.state !== "open") return denyWith("support_context_missing");
+      const scope: string[] = Array.isArray(session.fields.scope) ? session.fields.scope : [];
+      if (!scope.includes(targetAlias)) return denyWith("support_context_missing");
+      // Time predicate: expires_at compared chronologically to the world's clock. World has a monotonic
+      // clock the tests seed via setClock (persona-gap discipline); a missing clock means we cannot
+      // verify the session is still in time, and per fail-closed law we refuse.
+      const now = world.clock;
+      const expiresAt = session.fields.expires_at;
+      if (!now || !expiresAt) return denyWith("support_context_expired");
+      if (new Date(now).getTime() >= new Date(expiresAt).getTime())
+        return denyWith("support_context_expired");
     }
 
     // Requested summary (sprint 032): a caller who explicitly asks for a summary and whose target has a

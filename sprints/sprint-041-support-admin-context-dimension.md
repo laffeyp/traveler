@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 041
-status: pending
+status: closed # [closed 2026-08-25 — SupportSession record + open/close ops + open/closed lifecycle; §7.10 support_context_missing and support_context_expired enforced, out-of-scope and post-expiry both refuse]
 phase: C.2-dimensions
 pass_kind: functional
 ---
