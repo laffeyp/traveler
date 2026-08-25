@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 050
-status: pending
+status: closed # [closed 2026-08-25 — AmendAccessPolicy op + freshness cascade + history-rewrite guard]
 phase: C.4-cross-cutting
 pass_kind: functional
 ---

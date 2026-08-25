@@ -151,6 +151,10 @@ operations:
   # preview, metadata_summary, existence_only, denied, hidden_existence — because metadata visibility and
   # content visibility are independent decisions.
   - { name: AccessAttachment, authorization_rule: access_administration, owning_module: access, exposure: [internal], idempotency: not_idempotent, observability_ref: standard_read_operation_observability, compatibility_ref: standard_operation_v1_compatibility, vf003: false, events_emitted: [ATTACHMENT_ACCESS_DECISION_RECORDED, ACCESS_DECISION_AUDITED] }
+  # Sprint 050 (spec §13): AmendAccessPolicy writes a policy change that goes into effect at effective_at.
+  # A change whose effective_at falls before an existing generated report's generated_at would rewrite
+  # history and is refused with policy_change_forbidden.
+  - { name: AmendAccessPolicy, authorization_rule: access_administration, owning_module: access, exposure: [internal], idempotency: required_idempotency_key, observability_ref: standard_mutating_operation_observability, compatibility_ref: standard_operation_v1_compatibility, vf003: false, events_emitted: [ACCESS_POLICY_AMENDED] }
 
   # --- Beyond-spec additions (persona gap 8; AS9100 8.4.2; see ADDITIONS.md). Registered here so the vocabulary
   #     matches the handlers — these two were handler-only, invisible to the registry, until close-out (sprint 019).

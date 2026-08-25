@@ -2589,6 +2589,39 @@ export const HANDLERS: Record<string, H> = {
       trigger: input.trigger,
     });
   },
+  AmendAccessPolicy(world, input) {
+    // Sprint 050 (spec §13). Amend an access policy at a named effective_at. The change goes into
+    // world.accessPolicyChanges, and downstream GetReport reads for controlled_export reports whose
+    // scope matches will surface regeneration_required at read time (the existing mechanism from the
+    // deferred-items build). A change whose effective_at falls at or before an existing generated
+    // report's generated_at would rewrite history — refuse with policy_change_forbidden.
+    if (!input.policy_alias) throw new Error("validation_error: policy_alias required");
+    if (!input.effective_at) throw new Error("validation_error: effective_at required");
+    const effT = new Date(input.effective_at).getTime();
+    if (!Number.isFinite(effT)) throw new Error("validation_error: effective_at unparseable");
+    // History-rewrite guard: reject an amendment whose effective_at is before any existing
+    // controlled_export report on this policy that is already generated.
+    for (const record of world.records.values()) {
+      if (record.record_type !== "GeneratedReport") continue;
+      if (record.fields.access_scope !== input.policy_alias) continue;
+      if (record.fields.filtering_mode !== "controlled_export") continue;
+      const genT = new Date(record.fields.generated_at ?? 0).getTime();
+      if (Number.isFinite(genT) && effT <= genT)
+        throw new Error(
+          "policy_change_forbidden: effective_at rewrites an existing report's history",
+        );
+    }
+    world.accessPolicyChanges.push({
+      policy_alias: input.policy_alias,
+      effective_at: input.effective_at,
+      amended_by: input.amended_by ?? null,
+    });
+    world.emit("ACCESS_POLICY_AMENDED", "AmendAccessPolicy", {
+      policy_alias: input.policy_alias,
+      effective_at: input.effective_at,
+      amended_by: input.amended_by ?? null,
+    });
+  },
   OpenSupportSession(world, input) {
     // Boundary spec §6.10. Opens a scoped, time-bounded, audited support session. Fail-closed on missing
     // reason (a session without a reason is a hidden superuser path — §7.10 forbids), empty scope (an

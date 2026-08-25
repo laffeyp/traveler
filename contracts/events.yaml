@@ -160,6 +160,8 @@ events:
   - { type: SUPPORT_SESSION_CLOSED,  owning_module: access, event_category: access_event, event_stratum: event, producer_operations: [CloseSupportSession], payload_schema_ref: schemas/events/SUPPORT_SESSION_CLOSED.payload.schema.json }
   # Sprint 047 attachment access decision event.
   - { type: ATTACHMENT_ACCESS_DECISION_RECORDED, owning_module: access, event_category: access_event, event_stratum: event, producer_operations: [AccessAttachment], payload_schema_ref: schemas/events/ATTACHMENT_ACCESS_DECISION_RECORDED.payload.schema.json }
+  # Sprint 050 policy amendment.
+  - { type: ACCESS_POLICY_AMENDED, owning_module: access, event_category: access_event, event_stratum: event, producer_operations: [AmendAccessPolicy], payload_schema_ref: schemas/events/ACCESS_POLICY_AMENDED.payload.schema.json }
 
   # --- Grammar Gap (grammar_event) ---
   - { type: GRAMMAR_GAP_CREATED,   owning_module: grammar_gap, event_category: grammar_event, event_stratum: incident, producer_operations: [CreateGrammarGap, NormalizeMachineEvidence], payload_schema_ref: schemas/events/GRAMMAR_GAP_CREATED.payload.schema.json }
