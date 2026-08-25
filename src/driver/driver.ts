@@ -217,6 +217,7 @@ export class InMemoryProductDriver {
         caller_type: callerContext.caller_type,
         access_groups: callerContext.access_groups,
         customer_context: callerContext.customer_context,
+        program_context: callerContext.program_context,
         subject_nationality: callerContext.subject_nationality,
         requested_visibility: callerContext.requested_visibility,
       },

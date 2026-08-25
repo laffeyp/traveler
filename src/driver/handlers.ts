@@ -2603,6 +2603,27 @@ export const HANDLERS: Record<string, H> = {
       };
     }
 
+    // Program scope (sprint 037, spec §6.4): same shape as customer. Target names a program; caller's
+    // program_context must match; null program_context on a program-scoped record refuses.
+    const targetProgram = targetRecordForGroup?.fields?.program;
+    if (targetProgram && input.program_context !== targetProgram) {
+      world.emit("ACCESS_DECISION_DENIED", "EvaluateAccess", {
+        resource_alias: targetAlias,
+        reason: "program_scope_mismatch",
+      });
+      world.emit("ACCESS_DECISION_AUDITED", "EvaluateAccess", {
+        resource_alias: targetAlias,
+        decision: "denied",
+      });
+      return {
+        decision: "denied",
+        visibility_level: "denied",
+        reason: "program_scope_mismatch",
+        audit_required: true,
+        freshness_effect: "none",
+      };
+    }
+
     // Requested summary (sprint 032): a caller who explicitly asks for a summary and whose target has a
     // registered §10 summary shape gets visibility_level: "summary". Sprint 032 lets tests exercise the
     // summary path without inventing dimensional refusals; sprints 035-042 add dimensions that produce

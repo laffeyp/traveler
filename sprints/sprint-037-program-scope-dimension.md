@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 037
-status: pending
+status: closed # [closed 2026-08-25 — program_scope_mismatch fires on target program + caller program_context]
 phase: C.2-dimensions
 pass_kind: functional
 ---
