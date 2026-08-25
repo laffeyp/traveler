@@ -1,0 +1,99 @@
+registry: visibility-profiles
+registry_version: contracts-0.4.1
+source: access-and-visibility-boundary-spec-v0.1.md §9
+note: >
+  Eight visibility profiles registered as first-class policy shapes. `customer_summary_access` and
+  `customer_extended_access` already live inline in `contracts/reports.yaml` and in `src/driver/handlers.ts`
+  as scope names; sprint 034 registers them here as the canonical home. Sprint 044 rewires report
+  generation to read `audience_profile` from this registry rather than inline strings — until then, the two
+  inline uses continue to work byte-identical (they are the same strings). No behavior change this sprint.
+
+  Each profile declares intended audience, default visibility level, whitelists over record and report
+  types, allowed actions, controlled-data posture, denial behavior, and audit requirement.
+
+visibility_profiles:
+  - name: internal_full_quality
+    audience: [quality_engineer, manufacturing_engineer]
+    default_visibility: full
+    allowed_record_types: [all_internal]
+    allowed_report_types: [RunCloseReport, CertificateOfConformance, SupplierEvidencePacket]
+    allowed_actions: [read, verify, disposition, close]
+    controlled_data_behavior: full_within_program_and_contract
+    denial_behavior: denied
+    audit_required: true
+
+  - name: operator_station_view
+    audience: [operator]
+    default_visibility: full
+    allowed_record_types: [Run, RunStep, Measurement, InventoryItem]
+    allowed_report_types: []
+    allowed_actions: [read, capture_measurement, install_inventory, complete_step]
+    controlled_data_behavior: denied
+    denial_behavior: denied
+    audit_required: true
+
+  - name: receiving_inspector_view
+    audience: [quality_engineer]
+    default_visibility: full
+    allowed_record_types: [Shipment, ShipmentLine, Certificate, ReceivingCheck, Attachment]
+    allowed_report_types: [SupplierEvidencePacket]
+    allowed_actions: [read, verify, run_receiving_check, quarantine, release]
+    controlled_data_behavior: full_within_document_export_control
+    denial_behavior: denied
+    audit_required: true
+    note: "audience is quality_engineer for now — receiving_inspector is not a registered caller type; a sprint that registers new caller types decides whether to add one"
+
+  - name: customer_summary_access
+    audience: [external_viewer]
+    default_visibility: summary
+    allowed_record_types: [GeneratedReport, SerialHistory]
+    allowed_report_types: [RunCloseReport, CertificateOfConformance]
+    allowed_actions: [read]
+    controlled_data_behavior: denied
+    denial_behavior: hidden_existence
+    audit_required: true
+    used_inline_by: [contracts/reports.yaml, src/driver/handlers.ts]
+    note: "already used inline as a scope name; sprint 044 folds report generation to read this registry"
+
+  - name: customer_extended_access
+    audience: [external_viewer]
+    default_visibility: full_within_customer_scope
+    allowed_record_types: [GeneratedReport, SerialHistory, Attachment]
+    allowed_report_types: [RunCloseReport, CertificateOfConformance]
+    allowed_actions: [read, preview_attachment]
+    controlled_data_behavior: summary
+    denial_behavior: hidden_existence
+    audit_required: true
+    used_inline_by: [contracts/reports.yaml, src/driver/handlers.ts]
+    note: "already used inline as a scope name; sprint 044 folds"
+
+  - name: supplier_evidence_reviewer
+    audience: [quality_engineer]
+    default_visibility: full
+    allowed_record_types: [Certificate, Verification, Issue, Shipment, ShipmentLine]
+    allowed_report_types: [SupplierEvidencePacket]
+    allowed_actions: [read, verify, open_issue, resolve_issue]
+    controlled_data_behavior: full_within_program_and_contract
+    denial_behavior: denied
+    audit_required: true
+
+  - name: support_diagnostics_summary
+    audience: [support_user]
+    default_visibility: summary
+    allowed_record_types: [scoped_by_session]
+    allowed_report_types: [scoped_by_session]
+    allowed_actions: [read]
+    controlled_data_behavior: denied
+    denial_behavior: denied
+    audit_required: true
+    note: "requires an open, in-scope, in-time SupportSession — sprint 041 wires the session check"
+
+  - name: service_projection_scope
+    audience: [service_account]
+    default_visibility: full_processing_only
+    allowed_record_types: [all_internal]
+    allowed_report_types: []
+    allowed_actions: [read_for_processing]
+    controlled_data_behavior: full_for_processing_denied_for_disclosure
+    denial_behavior: denied
+    audit_required: true

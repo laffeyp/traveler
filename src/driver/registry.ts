@@ -123,6 +123,20 @@ export const registeredCallerTypes: Set<string> = new Set<string>(
   readYaml("contracts/modules.yaml").caller_types ?? [],
 );
 
+/**
+ * The registered visibility profiles (`contracts/visibility-profiles.yaml`, spec §9). Loaded once at
+ * runtime start so a handler that resolves a profile by name has an O(1) lookup. Sprint 034 registers the
+ * eight profiles; sprint 044 rewires report generation to read `audience_profile` from here rather than
+ * from inline scope strings. `customer_summary_access` and `customer_extended_access` are the two profiles
+ * already used inline in `contracts/reports.yaml` and `handlers.ts`; the fold does not change their names.
+ */
+export const VISIBILITY_PROFILES: Map<string, any> = new Map<string, any>(
+  (readYaml("contracts/visibility-profiles.yaml").visibility_profiles ?? []).map((p: any) => [
+    p.name,
+    p,
+  ]),
+);
+
 /** operation name -> its cited authorization rule id. */
 export const opAuthorizationRule = new Map<string, string>(
   (readYaml("contracts/operations.yaml").operations ?? []).map((operation: any) => [

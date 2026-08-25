@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 034
-status: pending
+status: closed # [closed 2026-08-25 — 8 visibility profiles registered, VF-012 byte-identical, sprint 044 rewires reports to read the registry]
 phase: C.1-foundations
 pass_kind: architecture
 ---
