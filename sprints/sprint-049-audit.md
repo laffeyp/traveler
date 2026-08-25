@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 049
-status: pending
+status: closed # [closed 2026-08-25 — audit-does-not-leak invariant proved, per-decision audit count enforced]
 phase: C.4-cross-cutting
 pass_kind: functional
 ---
