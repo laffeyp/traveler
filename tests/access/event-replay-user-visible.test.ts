@@ -28,7 +28,8 @@ function primed() {
     producer_operation: "AcceptMachineEvidence" as any,
     payload: { evidence_id: 1, raw_payload: { sensor: "SECRET_CHEMISTRY" } },
     occurred_at: "2026-08-25T12:00:00Z",
-  });
+    correlation_id: "test-corr",
+  } as any);
   return d;
 }
 
