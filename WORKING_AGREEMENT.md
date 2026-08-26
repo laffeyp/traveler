@@ -52,7 +52,7 @@ The executor must not invent product behavior. If a required behavior is not def
 
 ## Repository layout
 
-The project root (`/Users/peterlaffey/Manufacturing`) is the repo root. Build artifacts sit alongside the read-only kit and source docs:
+The repository root is the project root. Build artifacts sit alongside the read-only kit and source docs:
 
 ```text
 contracts/        the locked vocabulary (13 registries) — this project's signals/0.1.json
