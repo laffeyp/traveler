@@ -1,6 +1,6 @@
 # Distributed Factory Execution & Record System
 
-A factory-execution system for building complex hardware, written in TypeScript. One person with no manufacturing experience wrote it, working from the public record alone: standards, published architectures, job postings, open-source projects, regulatory guidance, vendor talks, conference material. No source was under NDA. The tools were a language model and a method called Signal-Driven Development.
+A factory-execution system for complex hardware, written in TypeScript. Reverse-engineered from the public record — standards, published architectures, job postings, open-source projects, regulatory guidance, vendor talks, conference material — with a language model against a method called Signal-Driven Development.
 
 The research dossier names its sources in §9. First Resonance ION for manufacturing execution vocabulary. Hadrian for distributed-factory ambition. SpaceX for the argument that at enough complexity factory software becomes part of the production system. ISA-95 and B2MML for operations vocabulary. MTConnect and OPC UA for machine data. ERP and MRP vocabulary. AS9100, AS13100, and NAS412 for aerospace quality. FAA production guidance. ITAR and EAR for export control. Each source was rated on domain relevance, interface quality, scale posture, adapter burden, and architectural trust. The lens sits in §10 of [`specs/founding-stack/01-research-dossier-v0.12.md`](specs/founding-stack/01-research-dossier-v0.12.md).
 
