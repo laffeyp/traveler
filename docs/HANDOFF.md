@@ -88,7 +88,7 @@ No bundler. The runtime reads `.ts` directly via Node's type-stripping. Every ga
 - `DEVIATION_SUMMARY.md` — quantified delta from the initial design, and where it stands.
 - `ADDITIONS.md` — 30 entries: every capability built on top of the original doc stack, each with its new vocabulary and its test.
 - `dev/BLACKBOARD.md` — the SDD project state board. Single-writer per section. The Architect owns `## Decisions`; the Agent owns the other six.
-- `dev/KIT_DIARY.md` — 32 entries plus phase syntheses recording what worked, what got in the way, what the next kit revision should carry. Practices 0-34 accreted here; the top-level catalog lives in `dev/sdd-kit-2/TECHNIQUES.md`.
+- `dev/KIT_DIARY.md` — 33 entries plus phase syntheses recording what worked, what got in the way, what the next kit revision should carry. Practices 0-37 accreted here; the top-level catalog lives in `dev/sdd-kit-2/TECHNIQUES.md`.
 - `dev/ADDENDUMS.md` — dated project-stamped technique captures held here until they stabilize across a second project and fold into TECHNIQUES.md.
 - `dev/WORKING_AGREEMENT.md` — per-project overrides on top of `dev/sdd-kit-2/AGENTS.md`: authority order, canonical home registry, cadence, non-inference rule.
 - `SESSION_2026-08-25.md` — Phase C narrative, commit ledger, gate deltas.

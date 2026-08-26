@@ -993,6 +993,39 @@ claims.** For TECHNIQUES.md.
 
 ---
 
+## Entry 33 — Repo grooming for public release: register stripping and folder discipline (2026-08-26)
+
+*Not a build sprint. A day of pre-public-release housekeeping across the process ledgers and the repo layout. Grouped here rather than split into sprint files because none of it changes product behaviour or the contract stack; every gate stayed green through the whole session.*
+
+**Three moves.**
+
+*The dellm pass on every project-authored doc.* Every doc under `docs/`, plus `WORKING_AGREEMENT.md`, `specs/README.md`, the two demo-pack READMEs, and the access registry-pack rationale went through the `dellm` skill. The pass strips the measured LLM register — verb inflation ("delve", "underscore", "leverage"), promotional puffery ("robust", "seamless", "comprehensive"), formulaic scaffolding (present-participle tails, "in summary" closers, bold-lead item openers on every bullet), and the structural regularity that reads as a machine-metronome. Every sentence had to carry a fact. Where a passage went limp under stripping, the missing fact was found and stated, not decorated back. ROADMAP dropped 2,705 → 1,666 words. DOCS 1,731 → 1,396. STATE, HANDOFF, and the two acceptance docs already carried dense fact and needed only rhythm work. `docs/ADDITIONS.md` traded its bold-title table entries for plain ones and lost the ceremony without losing a row of the 30-row ledger.
+
+*BLACKBOARD backfill for sprints 024-028.* The 7-August directive arc (run lifecycle, controlled-document lifecycle, inventory and quality, report generation and registration, supplier evidence packet) had no per-sprint entries in `## Built`. The five were readable only through the sprint files themselves and a couple of rollup paragraphs elsewhere. Five per-sprint entries added, each naming the scope, the observed behaviour, the files, and the measured gates at close. Every sprint from 001 to 052 now has either a per-sprint entry or a rollup covering it. A separate Phase C entry at the head of `## Sprint tail` summarizes sprints 029-052.
+
+*Folder reorganization.* Every process artifact moved under `dev/`. That includes `sprints/`, `signal-reports/`, `sdd-kit-2/` (the vendored kit), `persona-review-kit/` (renamed to `persona-reviews/` and joined by its own review-pass output), `reviews/` (a one-file folder for the receiving-boundary adversarial review), and the four SDD process files at project root: `BLACKBOARD.md`, `KIT_DIARY.md`, `WORKING_AGREEMENT.md`, `ADDENDUMS.md`. Root now reads as a normal Node/TS repo: `src/`, `tests/`, `contracts/`, `scenarios/`, `schemas/`, `specs/`, `demo-packs/`, `docs/`, plus `package.json` and config files. Zero code references broke — every scan across `.ts`, `.js`, `.mjs`, `.json`, `.yaml`, `.yml` came back empty for the moved paths — so the move ran on the doc and config surface only. Two config lines updated (`.prettierignore`, `eslint.config.js`), plus a sweep across the doc set to prefix every internal path reference with `dev/`.
+
+**What worked.**
+
+- *`git mv` preserved the audit trail.* Every folder move landed as a git rename, not a delete-plus-add. `git log --follow` on any moved file still walks its full history. The no-deletions hard rule composes cleanly with directory reorganization when the reorganization goes through `git mv`.
+- *The code-reference sweep before the move made it safe.* A `grep -rIn --include='*.ts' --include='*.yaml'` for every folder name I planned to move came back empty — no source, scenario, contract, or test read the folders as data. The moves were pure layout. Every gate stayed green from the first check through the last.
+- *The kit-convention override was a two-line addition, not a rewrite.* `dev/sdd-kit-2/AGENTS.md` (vendored, read-only per hard rule 1) still says "read `BLACKBOARD.md` from project root." `dev/WORKING_AGREEMENT.md` now carries an explicit override saying the file lives at `dev/BLACKBOARD.md` here. Overriding rather than editing the kit is what the working-agreement layer is for; using it kept hard rule 1 intact.
+
+**What got in the way.**
+
+- *A stale wrong path surfaced during the sweep.* `docs/ADDITIONS.md` and `dev/BLACKBOARD.md` referenced `reviews/PERSONA_REVIEWS.md`, but `PERSONA_REVIEWS.md` lives in the persona kit folder, not the reviews folder. The first sed pass faithfully transformed the wrong path to `dev/reviews/PERSONA_REVIEWS.md`, still wrong. Caught on the diff read and corrected to `dev/persona-reviews/PERSONA_REVIEWS.md`. Practice #25 pointed inward again: a citation resolving to the wrong existing file is harder to catch than a broken one, because nothing complains.
+- *Two content corrections landed during the dellm pass.* HANDOFF.md, STATE.md, and ROADMAP.md had all claimed "fifteen durability proofs" for the backend gate. `grep 'proof.*PASS' src/harness/run-backend.ts` counts fourteen; the fifteenth was invented in an earlier session when I extended the phrasing without checking. Fixed in three places. The receiving demo README also carried a stale "22 of 26 mutation arms" against `RECEIVING_ACCEPTANCE.md`'s current 26 of 26 (§27 criterion 13 closed 2026-08-07). Fixed in one place.
+
+**What this arc says for the next kit version.**
+
+- *The dellm pass is a distinct discipline from the SDD grading discipline.* SDD's dual and observation contracts grade "did the artifact land". They do not grade "does the artifact read as written by hand". A doc that passes every SDD gate can still read as measured LLM output. The `dellm` skill is the check surface for the second question, and it belongs alongside the SDD ledger, not as a substitute. Every project-authored doc should get the pass before public release, and every doc it produces should carry the fact per sentence rule going forward.
+- *Folder reorganization for public legibility is worth doing even without a code payoff.* The reorg cost was one session and zero broken gates. The gain is a repo whose top-level `ls` reads like a Node/TS project rather than a mixed process/product tree. A reader browsing on GitHub now sees `src/`, `tests/`, `contracts/`, and `docs/` at the top and only reaches process-narrative if they open `dev/`. The kit-convention override in `WORKING_AGREEMENT.md` is the only surface where the override needed to be recorded; the kit itself stayed untouched.
+- *Two SDD process surfaces caught the same drift.* `## Built` had per-sprint entries for 001-023 and 029-035 but nothing for 024-028. `## Sprint tail` had entries through the 2026-08-07 close but nothing for the 24-sprint Phase C. The drift on both surfaces was invisible until somebody counted — the same pattern Entry 30 named for the deferral ledger drift. Practice worth adding: **at every phase close, run a coverage grep against `dev/sprints/` and confirm every closed sprint number appears in `## Built` or a rollup**. A five-second grep. Would have caught this at the close of Phase C, not two weeks later.
+
+**Kit observations (three new practices).** (35) **Register-strip every project-authored doc before public release; the SDD dual contract does not grade prose quality.** For TECHNIQUES.md, Documentation subsection. (36) **`git mv` (not `mv` + `git add`) for every folder reorganization; the rename metadata is what makes `git log --follow` walk the history through the move.** For TECHNIQUES.md. (37) **At phase close, grep sprint file numbers against BLACKBOARD's `## Built` and `## Sprint tail` to catch the sprints that landed without a ledger entry. A five-second check that closes the invisible-drift failure mode.** For TECHNIQUES.md.
+
+---
+
 ## Hypothesis tracking
 
 *Updated 2026-07-31 against the full entry record (0–29); the first three had been left at their sprint-001/002 verdicts long after the evidence moved.*
