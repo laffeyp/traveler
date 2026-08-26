@@ -1,131 +1,125 @@
 # Signal-Driven Development as a General Process
-## What it does, how far it reaches, and where it stops
 
-*A theory note. It sets SDD against the fields that already do what it does, so you can tell the new parts from the old.*
+Signal-Driven Development locks a small typed grammar that both builds a domain and checks it, over a body of text that is an imperfect, repeated copy of that grammar. The method reaches a domain as far as the domain's worth fits inside the grammar. Most of the core is old work under a new name. The new parts are few and named in §7.
 
----
-
-## How to read this
-
-This note makes a strong claim and does not overstate it. SDD names one general operation, and that operation reaches into law, medicine, and government decisions. But most of its core is old work under a new name, and the new parts are few. I say both plainly, because that is the only way the new parts survive a reader who knows the old work. A note that called all of this new would be easy to dismiss in a sentence.
-
-The claim in one sentence: **SDD locks a small typed grammar that both builds a domain and checks it, over a body of text that is an imperfect, repeated copy of that grammar — and the method reaches a domain as far as the domain's worth fits inside the grammar.** The rest of this note works out that sentence and asks where "as far" ends.
+This note sets SDD against the fields that already do what it does, so the new parts are legible against the old.
 
 ---
 
-## 1. One operation, two directions, one boundary
+## 1. One operation, two directions
 
 A domain's real knowledge sits in scattered, repeated, loose text: specs, standards, guidelines, statutes, rulings, manuals. Under that text sits a grammar — a small, fixed set of named things, events, states, allowed moves, and rules. Every document is a rough copy of it. SDD writes the grammar down, locks it, and uses it in two ways that turn out to be one.
 
-A grammar is a boundary, and a boundary makes and forbids at once. It fixes the set of things that count. From that set you get two acts at no extra cost: you can build members, by following the rules to produce instances, and you can test members, by asking which side of the line a thing falls on. Building and testing are the same line, read two ways. This is why the grammar can check its own output. You are not adding a separate checker to the builder; the builder can make only things that already pass the check. That one fact — one line, used both ways — turns "invent nothing" from a wish into a rule you can enforce. It is the same reason a type both makes values and checks them. The grammar is a type for how a domain behaves.
+A grammar is a boundary. It fixes the set of things that count. From that set you get two acts at no extra cost: build members by following the rules, and test members by asking which side of the line a thing falls on. Building and testing are the same line read two ways. That is why the grammar can check its own output — the builder can make only things that already pass the check. It is the same reason a type both makes values and checks them. The grammar is a type for how a domain behaves.
 
-Two directions, one bet:
-
-- **Forward** — a person writes the grammar from what they know, builds a system that obeys it, and checks the system against it.
-- **Reverse** — you read the grammar out of a body of text, then build a clean system from it.
-
-Forward and reverse are the same operation, run each way across the same line. The two reaches this note follows — further into rule-bound domains, and out until the method breaks — are the same line, approached from each side.
+Two directions, one bet. Forward: a person writes the grammar from what they know, builds a system that obeys it, checks the system against it. Reverse: read the grammar out of a body of text, then build a clean system from it. The two reaches this note follows are the same operation from each side — further into rule-bound domains in §4, and out until the method breaks in §5.
 
 ---
 
-## 2. The borrowed loop, said plainly
+## 2. The borrowed loop
 
-The reverse loop — read a model out of the text, check the text against it, build a cleaner system — is not new. It is the shared core of five settled fields.
+The reverse loop — read a model out of the text, check the text against it, build a cleaner system — is the shared core of five settled fields.
 
-- **Process mining** (van der Aalst) reads a process model out of event logs, checks the logs against it, and repairs it. That is SDD's read-check-clean loop, nearly identical. The differences: it starts from structured logs, not prose, and it stops at a model instead of building a running system.
-- **Specification mining** (Ammons, Bodík and Larus, 2002; Daikon) learns a state machine or a set of rules from program runs and uses it to flag code that breaks them. SDD's "gaps show up as typed proposals, not noise" is this idea, moved from program runs to prose.
-- **Grammatical inference** (Gold, 1967; Angluin's L\*, 1987) learns a formal language from examples.
-- **Model extraction** (Tramèr and others, 2016) rebuilds a working copy of a black-box model from its answers — SDD's exact promise, with one thing SDD lacks: a live oracle, the real system you can keep asking, which is what makes "a working copy" testable.
-- **Model-driven reverse engineering** (OMG ADM and KDM) recovers a model from old code and builds a cleaner system from it — the field whose goal matches SDD's most closely.
+- Process mining (van der Aalst) reads a process model out of event logs, checks the logs against it, repairs it. Same loop; it starts from structured logs, not prose, and stops at a model instead of a running system.
+- Specification mining (Ammons, Bodík and Larus 2002; Daikon) learns a state machine or a set of rules from program runs and flags code that breaks them. SDD's "gaps show up as typed proposals, not noise" is this idea, moved from program runs to prose.
+- Grammatical inference (Gold 1967; Angluin's L\*, 1987) learns a formal language from examples.
+- Model extraction (Tramèr and others, 2016) rebuilds a working copy of a black-box model from its answers. SDD's exact promise, missing one thing SDD lacks: a live oracle you can keep asking.
+- Model-driven reverse engineering (OMG ADM and KDM) recovers a model from old code and builds a cleaner system from it. The field whose goal matches SDD's most closely.
 
-The forward direction is just as old: model-driven engineering plus program synthesis. Its one odd move — that the spec is locked and also serves as the check — the metamodels of model-driven engineering already make.
+The forward direction is also old: model-driven engineering plus program synthesis. The one odd move — that the spec is locked and also serves as the check — model-driven engineering's metamodels already make.
 
-So the new part is small, and worth naming: running this loop over plain text with a language model as the reader; using the repetition across the text to correct errors; the two-source move in section 4; and the reach test in section 3. None of it is new theory of learning, and none of it escapes two old limits.
+The new parts are worth naming: running this loop over plain text with a language model as the reader; using repetition across the text to correct errors; the two-source move in §4; and the reach test in §3. None escapes two old limits.
 
-- **Gold (1967):** you cannot pin down a rich language from positive examples alone. Public text is almost all positive examples — things that were done and written down. The rules and the forbidden moves, the part of a grammar worth locking, are just what positive text cannot fix.
-- **Angluin (1987):** to learn a machine fast you need a teacher who answers both "is this in the language?" and "is my whole guess right?" A body of text answers neither. SDD does not escape this; it supplies the teacher through its tests, its human review, and, in law, the judge. The bet that "the text pins down the grammar" depends on that teacher. Name the teacher, or the bet looks stronger than it is.
-
----
-
-## 3. The reach test, made exact, then made honest
-
-The test that tells you where to spend effort: SDD reaches where the worth sits inside the grammar, and fails where the worth sits in what the grammar throws away.
-
-You can make this exact. By minimum description length, the best grammar is the one that makes "the grammar, plus the text given the grammar," shortest to write down; whatever will not shrink is the cruft. By rate-distortion theory (Shannon; Tishby, Pereira and Bialek, 1999), the grammar is a small code that keeps the useful part of the text, and what it drops is, by definition, the loss. That turns "worth in the structure, or worth in the leftover" from a figure of speech into a plain statement.
-
-Now un-make it a little, to stay honest. Rate-distortion assumes you already know which losses count, and there is no fixed way to choose that. Picking a grammar is picking what counts as loss. It declares what is cruft, and it cannot prove, from inside itself, that the cruft was worthless. Two more limits say the same. Kolmogorov's work says a short grammar need not exist at all, and no method can tell you in advance whether one does. The No-Free-Lunch theorem (Wolpert and Macready, 1997) says any method that does well on rule-shaped domains does exactly as badly on the others.
-
-So the reach test is a strong bet and a question you can test — does a locked grammar reproduce the behavior we care about? — not a proof. As it stands it explains results better than it predicts them, because you often learn which case you were in only after you build. Even so it is worth having: it tells you what to try before you commit, and it names the four ways it can fail (section 5).
+- Gold (1967): you cannot pin down a rich language from positive examples alone. Public text is almost all positive examples. The rules and the forbidden moves — the part of a grammar worth locking — are what positive text cannot fix.
+- Angluin (1987): learning a machine fast needs a teacher who answers both "is this in the language?" and "is my whole guess right?" A body of text answers neither. SDD supplies the teacher through its tests, its human review, and in law the judge. The bet depends on that teacher; name the teacher or the bet looks stronger than it is.
 
 ---
 
-## 4. Reach one: into rule-bound domains
+## 3. The reach test
 
-These are the domains where the bet holds best, and so where SDD renames the most and invents the least. That is a strength, not a fault. Forty years of separate proof is the best sign the operation is real.
+SDD reaches where the worth sits inside the grammar, and fails where the worth sits in what the grammar throws away.
 
-**Law.** The claim that a small typed grammar — allowed, required, forbidden, plus moves and ranked exceptions — sits under the words of a statute is not a guess in law. It is the field's founding result. Sergot, Kowalski and others showed it in 1986, writing the British Nationality Act as a logic program. Bench-Capon and Coenen made it a design rule in 1992: one provision, one rule, so the code stays tied to the text as the law changes. That is SDD's "grammar as a locked, checkable copy of the text," named thirty-three years ago. Forward SDD already runs inside government as the Rules as Code movement (the OECD; New Zealand; France; New South Wales): a team of drafters and coders ships a machine-readable version next to the enacted text. And the check works. Writing French family-benefit law in Catala (Merigoux and others) turned up a real bug in the government's own code.
+Made exact: by minimum description length, the best grammar makes "the grammar plus the text given the grammar" shortest to write down; whatever will not shrink is the cruft. By rate-distortion theory (Shannon; Tishby, Pereira and Bialek 1999), the grammar is a small code that keeps the useful part of the text; what it drops is, by definition, the loss.
 
-The new move here is narrow. Today's language-model formalizers still take one statute at a time, with a person checking each. They do not yet do the reverse move that matters: reading one shared grammar out of the repetition across a whole body of law. That, and judging success as "same behavior, minus the cruft" rather than line-by-line copying, is what SDD adds.
+Made honest: rate-distortion assumes you already know which losses count, and there is no fixed way to choose that. Picking a grammar is picking what counts as loss. It declares what is cruft and cannot prove, from inside itself, that the cruft was worthless. Two more limits agree. Kolmogorov says a short grammar need not exist at all, and no method can tell you in advance whether one does. No-Free-Lunch (Wolpert and Macready 1997) says any method that does well on rule-shaped domains does exactly as badly on the others.
 
-Two limits keep the claim honest. First, the wins cluster in tax, benefits, and nationality — the most clear-cut, least discretionary corners. Do not extend them to contract, tort, or family law. Second, code is not law. Only the enacted words carry force, so a clean rebuilt version cannot replace the statute; at best it advises, and must defer to the text. And much of what looks like the statute's cruft, its vagueness, is put there on purpose, to win agreement and leave hard cases to the courts. Clean it out and you break what the text is for.
+So the reach test is a strong bet, a question you can test — does a locked grammar reproduce the behavior we care about? — not a proof. It explains results better than it predicts them, because you often learn which case you were in only after you build. Even so, it names the four ways it can fail (§5).
 
-**Clinical guidelines.** Medicine has done forward SDD for thirty years under another name: computer-interpretable guidelines. GLIF and HL7's CPG-on-FHIR already run "plain guideline, then a checked formal version, then a system that acts on it," in production. The field even named SDD's own premise — that written guidelines carry hidden assumptions, gaps, and contradictions because people wrote them for people — and answered it by writing the plain and the formal versions side by side. SDD renames this. What it adds is tidier, not new.
+---
 
-**Government decisions: the one genuinely new move.** Here the shape differs: there are two bodies of text, not one. One is the published policy — statute, rule, guidance. The other is the published decisions — rulings and outcomes. The existing fields each use only one. Rules as Code takes the policy and assumes the statute is the real rule, so it is blind to discretion and to practice that has drifted from the written guidance. Judgment prediction (Aletras on the European Court; Katz on the US Supreme Court) takes the decisions but returns a black box, not a rule you can read, and its own field warns that the accuracy often rides on surface cues, like which judge sat.
+## 4. Reach one: rule-bound domains
 
-No existing field reads the real working rule out of both at once, or shows where policy and practice differ as one plain, checkable grammar you can compare against the statute. It is a new move, though built from known parts, and so far proposed, not shown. It carries two dangers. A rule read out of an agency's decisions can make that agency's wrongdoing look like the law. And a rule read from outcomes is, by build, not tied to the statute's text, so lawyers may reject it however well it predicts.
+Where the bet holds best, SDD renames the most and invents the least. Forty years of separate proof is the best sign the operation is real.
+
+### Law
+
+The claim that a small typed grammar — allowed, required, forbidden, plus moves and ranked exceptions — sits under the words of a statute is the field's founding result. Sergot, Kowalski and others showed it in 1986, writing the British Nationality Act as a logic program. Bench-Capon and Coenen made it a design rule in 1992: one provision, one rule, so the code stays tied to the text as the law changes. Forward SDD runs inside government as Rules as Code (OECD, New Zealand, France, New South Wales) — drafters and coders ship a machine-readable version next to the enacted text. The check works: writing French family-benefit law in Catala (Merigoux and others) turned up a real bug in the government's own code.
+
+The new move is narrow. Today's language-model formalizers take one statute at a time, with a person checking each. They do not yet do the reverse move that matters — reading one shared grammar out of the repetition across a whole body of law, and judging success as "same behavior minus the cruft" rather than line-by-line copying.
+
+Two limits. The wins cluster in tax, benefits, and nationality — the clear-cut, low-discretion corners. Do not extend them to contract, tort, or family law. And code is not law: only the enacted words carry force, so a clean rebuild cannot replace the statute; at best it advises. Much of what looks like the statute's cruft is vagueness put there on purpose, to win agreement and leave hard cases to the courts. Clean it out and you break what the text is for.
+
+### Clinical guidelines
+
+Medicine has done forward SDD for thirty years under another name — computer-interpretable guidelines. GLIF and HL7's CPG-on-FHIR run "plain guideline, then a checked formal version, then a system that acts on it" in production. The field even named SDD's premise (written guidelines carry hidden assumptions, gaps, and contradictions because people wrote them for people) and answered it by writing the plain and formal versions side by side. SDD renames this.
+
+### Government decisions
+
+Two bodies of text, not one. Policy — statute, rule, guidance. Decisions — rulings and outcomes. Existing fields use one or the other. Rules as Code takes the policy and assumes the statute is the real rule, so it is blind to discretion and to practice that has drifted from the written guidance. Judgment prediction (Aletras on the European Court; Katz on the US Supreme Court) takes the decisions but returns a black box, not a rule you can read, and its own field warns that the accuracy often rides on surface cues like which judge sat.
+
+No existing field reads the real working rule out of both at once, or shows where policy and practice differ as one plain, checkable grammar comparable against the statute. That is new, built from known parts, and so far proposed rather than shown. Two dangers: a rule read out of an agency's decisions can make that agency's wrongdoing look like the law; a rule read from outcomes is not tied to the statute's text, so lawyers may reject it however well it predicts.
 
 ---
 
 ## 5. Reach two: the limit
 
-Push the method out until the bet fails. The failure is not a slope that gets steeper. It is a hard limit, and four separate lines of work put it in the same place.
+Push the method until the bet fails. Four separate lines of work put the failure in the same place.
 
-- **Polanyi (1966):** we know more than we can tell. Some skill was never put into words, so it never entered the text. Repetition across the text has nothing to correct against; the text falls short of the skill, rather than pinning down a grammar.
-- **Moravec (1988):** the hardest skills to copy are the oldest bodily ones — walking, catching, picking an odd object off a cluttered shelf. This is a different leftover from Polanyi's: not unsaid but sayable, and not the kind of thing a typed grammar can hold at all.
-- **Dreyfus (1972):** a beginner follows rules; an expert has left them behind. So the rules you can pull out are the beginner's rules, and the expert's skill is just what is left after you subtract them. Rule-reading captures the beginner's part and misses the expert's.
-- The formal version — rate-distortion, Kolmogorov, No-Free-Lunch — says the same. "The leftover is cruft" is a choice built into the grammar, not a fact the grammar can prove; short grammars need not exist; and any method that does well on rule-shaped domains does exactly as badly on the rest.
+- Polanyi (1966): we know more than we can tell. Some skill was never put into words, so it never entered the text. Repetition across the text has nothing to correct against.
+- Moravec (1988): the hardest skills to copy are the oldest bodily ones — walking, catching, picking an odd object off a cluttered shelf. Not the kind of thing a typed grammar can hold at all.
+- Dreyfus (1972): a beginner follows rules, an expert has left them behind. The rules you can pull out are the beginner's; the expert's skill is what remains after you subtract them.
+- The formal version — rate-distortion, Kolmogorov, No-Free-Lunch — agrees. "The leftover is cruft" is a choice built into the grammar, not a fact the grammar can prove.
 
-The clearest evidence is the collapse of expert systems in the 1980s. That was forward SDD: pull an expert's rules out, build a system that obeys them. Feigenbaum named the pulling-out the bottleneck. It took seventy to eighty percent of project time, and about sixty percent of projects failed. It worked where real rules existed (MYCIN, XCON) and failed on open judgment. The same reach test, found by failing.
+The clearest evidence is the collapse of expert systems in the 1980s. Forward SDD, tried at scale: pull an expert's rules out, build a system that obeys them. Feigenbaum named the pulling-out the bottleneck. It took seventy to eighty percent of project time, and about sixty percent of projects failed. Worked where real rules existed (MYCIN, XCON); failed on open judgment.
 
-Every rich domain has two layers: a **teachable** layer you can write in a manual and check for compliance, and an **apprentice** layer you learn by doing under a master and cannot be told. So, plainly: **SDD reaches as far as teaching reaches, and stops where apprenticeship begins.** The same split runs through medicine (protocol against bedside read), law (Hart's settled core against the open edge), and cooking (technique against taste), at different depths. The split moves — writing things down can push it outward by catching patterns experts never named — but it never closes, because there is always more that cannot be said, and always something genuinely new.
+Every rich domain has two layers: a teachable layer written in a manual and checked for compliance, and an apprentice layer learned by doing under a master and never told. SDD reaches as far as teaching reaches and stops where apprenticeship begins. The same split runs through medicine (protocol against bedside read), law (Hart's settled core against the open edge), and cooking (technique against taste), at different depths. Writing things down can push the split outward by catching patterns experts never named; it never closes.
 
-Four questions tell you where the limit stands for a new domain, before you spend a thing:
+Four questions for a new domain, before spending anything:
 
 1. Was the valued skill ever put into words at all? If not, there is nothing to read.
-2. Is it the kind of thing a typed grammar can hold, or is it a smooth, bodily knack?
+2. Is it the kind of thing a typed grammar can hold, or is it a smooth bodily knack?
 3. Is being an expert here a matter of leaving the rules behind? Then reading the rules takes the wrong layer.
 4. Does writing the grammar quietly rule the valued part out as noise, on a call the grammar cannot check?
 
-The answer is a thing to test, not a stamp of approval, because you cannot compute the limit's place ahead of time. Honest, and still the most useful thing the theory gives you.
+The answers are things to test. You cannot compute the limit's place ahead of time.
 
 ---
 
 ## 6. The real danger: quiet success
 
-SDD does not fail in a mixed domain in an obvious way. It fails when success on the teachable layer gets mistaken for covering the whole domain. The rule "nothing counts unless the grammar can say it" is right for a compliance floor and wrong as a picture of what a domain is worth. In plain cases:
+SDD fails when success on the teachable layer gets mistaken for covering the whole domain. The rule "nothing counts unless the grammar can say it" is right for a compliance floor and wrong as a picture of what the domain is worth.
 
-- **Some cruft matters.** In law the vague wording is often on purpose; clean it out and you break the text's work. In medicine the part it drops holds the rare, dangerous case. The same behavior on the common path is not the same behavior on the edge, and "cleaner" can mean "quietly dropped a warning that kills once a year."
-- **The measure replaces the judgment.** Lock the grammar as the only check and the part it cannot say drops out of view — cookbook medicine, judgment left out because no one typed it.
-- **A rule read from an agency's decisions can make a wrong practice look lawful.**
-- **The repetition that corrects errors corrects only independent errors.** One press release copied a thousand times, or many models trained on the same text, agree for reasons that have nothing to do with truth. A high count of sources means little. And models that agree measure faithfulness to the record, not to the world; checking a rebuild with the same models that built it proves nothing. To test truth you need a source outside the text — the oracle problem (Barr, Harman and others, 2015). You can always check that a system matches the record. You cannot, from the record alone, check that it matches the world.
+- Some cruft matters. In law the vague wording is often on purpose; clean it out and you break the text's work. In medicine the part it drops holds the rare, dangerous case. "Cleaner" can mean "quietly dropped a warning that kills once a year."
+- The measure replaces the judgment. Lock the grammar as the only check and the part it cannot say drops out of view: cookbook medicine, judgment left out because no one typed it.
+- A rule read from an agency's decisions can make a wrong practice look lawful.
+- The repetition that corrects errors corrects only independent errors. One press release copied a thousand times, or many models trained on the same text, agree for reasons that have nothing to do with truth. Models that agree measure faithfulness to the record, not to the world; checking a rebuild with the same models that built it proves nothing. To test truth you need a source outside the text — the oracle problem (Barr, Harman and others, 2015). You can always check that a system matches the record. You cannot, from the record alone, check that it matches the world.
 
 ---
 
 ## 7. Honest scope
 
-**What SDD is.** One operation: lock a small typed grammar that both builds and checks a domain, over a body of text that is a repeated, imperfect copy of it — with real, proven reach into rule-bound domains, run either way.
+What SDD is: one operation — lock a small typed grammar that both builds and checks a domain, over a body of text that is a repeated, imperfect copy of it. Proven reach into rule-bound domains, run either way.
 
-**What is new in it, in full:**
+What is new, in full:
 
-1. Running the read-check-build loop over plain text, with a language model as the reader.
-2. The two-source move — a readable rule pulled from policy and decisions together, that you can compare against the statute. Proposed, not yet shown.
-3. The reach test, as an explicit, portable, provision-by-provision yes or no.
+1. Running the read-check-build loop over plain text with a language model as the reader.
+2. The two-source move — a readable rule pulled from policy and decisions together, comparable against the statute. Proposed, not shown.
+3. The reach test as an explicit, portable, provision-by-provision yes-or-no.
 4. Treating the choice of grammar as an explicit, versioned choice of what counts as loss — worth doing only alongside the admission that the choice can be wrong.
 
-**What it is not:** a new theory of learning, an escape from Gold and Angluin, a solved join of ontology-learning and process-mining (that join is an open problem, not a part you can import), or the discovery of the limit. The limit is Polanyi, Dreyfus, Moravec, and the expert-systems collapse; SDD gives it a clean, shared name, not a finding.
+What it is not: a new theory of learning, an escape from Gold and Angluin, a solved join of ontology-learning and process-mining (that join is an open problem, not a part importable off the shelf), or the discovery of the limit. The limit is Polanyi, Dreyfus, Moravec, and the expert-systems collapse; SDD gives it a shared name, not a finding.
 
-What you get is a plan for where to point the method, whose output is a thing to test — not a proof, and not a promise of correctness. Point it where the worth sits in the rules and the withheld part is cruft — compliance, regulated process, behavior firms already publish — and it is sound and strong. Point it where the worth sits in the leftover — bedside judgment, hard cases, taste, choice under true novelty — and it will reproduce the outline and miss the substance. Quietly, unless you watch for it.
+Point SDD where the worth sits in the rules and the withheld part is cruft — compliance, regulated process, behavior firms already publish — and it is sound. Point it where the worth sits in the leftover — bedside judgment, hard cases, taste, choice under true novelty — and it will reproduce the outline and miss the substance, quietly unless you watch for it.
 
 ---
 
@@ -184,6 +178,3 @@ Every central claim, checked. *Rename* means it renames an existing field. *New 
 - Knight, *Risk, Uncertainty and Profit* (1921) — https://en.wikipedia.org/wiki/Knightian_uncertainty
 - Sackett and others, *Evidence-Based Medicine* (1996) — https://pmc.ncbi.nlm.nih.gov/articles/PMC1475611/
 
----
-
-*First pass. The core is borrowed, and this note says so. The four new moves in section 7 are the part worth building and testing. The one that matters most is the two-source move in section 4; either it can be shown or it cannot, and the only honest way to find out is to build it.*
