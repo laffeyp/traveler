@@ -2,7 +2,7 @@
 //
 // Scope note: this project is a spec-governed SDD build. The linter covers the
 // project's own TypeScript (src/, tests/) only. Generated schema JSON, the YAML
-// contract registries (the locked vocabulary), the read-only sdd-kit-2/, and the
+// contract registries (the locked vocabulary), the read-only dev/sdd-kit-2/, and the
 // process/spec documents are NOT linted — they are contract or generated
 // artifacts, not hand-authored code (KIT_DIARY Entry 23).
 //
@@ -23,9 +23,9 @@ export default tseslint.config(
       "node_modules/**",
       "schemas/**",
       "src/generated/**",
-      "sdd-kit-2/**",
-      "persona-review-kit/**",
-      "manufacturing-software-doc-stack-build-ready/**",
+      "dev/sdd-kit-2/**",
+      "dev/persona-reviews/**",
+      "dev/reviews/**",
       "artifacts/**",
     ],
   },

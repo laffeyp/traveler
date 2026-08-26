@@ -27,7 +27,7 @@ Measured 2026-08-25 against `specs/access-and-visibility/boundary-spec-v0.1.md �
 
 ## Score
 
-**18 of 18** pass or pass-in-part. Row 4 is the only pass-in-part: unifying operation authorization with the §8 decision model was deferred to protect what the first-slice scenarios' assertions read. Recorded as a follow-up.
+18 of 18 pass or pass-in-part. Row 4 is the only pass-in-part: unifying operation authorization with the §8 decision model was deferred to protect what the first-slice scenarios' assertions read. Recorded as a follow-up.
 
 ## What §7 asked for and did not get
 

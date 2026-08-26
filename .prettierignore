@@ -14,12 +14,12 @@
 /src/generated
 /contracts
 /scenarios
-/signal-reports
-/sprints
-/reviews
+/dev/signal-reports
+/dev/sprints
+/dev/reviews
+/dev/persona-reviews
+/dev/sdd-kit-2
 /artifacts
-/sdd-kit-2
-/persona-review-kit
 /specs/founding-stack
 *.json
 *.yaml

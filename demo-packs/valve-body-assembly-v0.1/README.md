@@ -36,13 +36,9 @@ that is not registered fails the check.
 Writing the part out plainly turned up three things the system has no word for. None are
 invented here. They are written down, and left for later:
 
-1. **A part has no home for its drawing, material, or revision authority.** The system knows
-   a part only as a part number and a revision, carried on other records. There is no Part record.
-2. **The inspection requirement has no record of its own.** The torque band lives in two places
-   — the procedure field and the scenario's world data — and nowhere as a single thing a
-   measurement points to.
-3. **There is no way to scan a serial to say "this is the physical part."** Serials arrive as
-   inputs to other operations. A scanner on the floor would need a scan step the system does not have.
+1. A part has no home for its drawing, material, or revision authority. The system knows a part only as a part number and a revision, carried on other records. There is no Part record.
+2. The inspection requirement has no record of its own. The torque band lives in two places — the procedure field and the scenario's world data — and nowhere as a single thing a measurement points to.
+3. There is no way to scan a serial to say "this is the physical part." Serials arrive as inputs to other operations. A scanner on the floor would need a scan step the system does not have.
 
 ## Not in this step
 

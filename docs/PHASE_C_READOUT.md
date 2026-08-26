@@ -4,7 +4,7 @@
 
 ## Gates at close
 
-`validate:contracts` ok — 132 operations, 136 events, 43 records, 16 state machines, 33 authorization rules, 26 assertion types. `validate:schemas` ok — 154 op schemas, 93 event payload schemas, 14/14 fixtures discriminate. `validate:demo-packs` ok — 118 names across 2 packs. Bench smoke 2/2, first-slice 14/14, extended 9/9, receiving 10/10, all 29/29 on both drivers. Backend gate exit 0 with fifteen durability proofs. Whole-bench cross-driver check over 37 scenarios PASS. Vitest 432/432 across 58 files. Tsc 0 across `src` and `tests`. Prettier clean. `ACCESS_AND_VISIBILITY_ACCEPTANCE.md` scores §16 at 18 of 18 pass or pass-in-part.
+`validate:contracts` ok — 132 operations, 136 events, 43 records, 16 state machines, 33 authorization rules, 26 assertion types. `validate:schemas` ok — 154 op schemas, 93 event payload schemas, 14/14 fixtures discriminate. `validate:demo-packs` ok — 118 names across 2 packs. Bench smoke 2/2, first-slice 14/14, extended 9/9, receiving 10/10, all 29/29 on both drivers. Backend gate exit 0 with fourteen durability proofs. Whole-bench cross-driver check over 37 scenarios PASS. Vitest 432/432 across 58 files. Tsc 0 across `src` and `tests`. Prettier clean. `ACCESS_AND_VISIBILITY_ACCEPTANCE.md` scores §16 at 18 of 18 pass or pass-in-part.
 
 ## The mapping pass
 
@@ -59,10 +59,10 @@ The pack proposed twelve new-vocabulary items in the mapping. One became a recor
 
 Four calls landed as B-Q entries with candidate answers applied:
 
-- **B-Q-74** access group storage. Candidate applied: field on the caller-context object, not a first-class `AccessGroupMembership` record. Sprint 035.
-- **B-Q-75** customer identity home. Candidate applied: `customer` field on Shipment / ShipmentLine / GeneratedReport, no new Order record. Sprint 036. Same shape carried program (037), contract (038), and factory_node (039).
-- **B-Q-76** contract cascade. Candidate applied: contract lives on Shipment and GeneratedReport, not on Run — a run may execute internal work later delivered against different contracts.
-- **B-Q-77** service-account scope. Candidate applied: fields on the caller-context object. Sprint 042.
+- B-Q-74 access group storage. Candidate applied: field on the caller-context object, not a first-class `AccessGroupMembership` record. Sprint 035.
+- B-Q-75 customer identity home. Candidate applied: `customer` field on Shipment / ShipmentLine / GeneratedReport, no new Order record. Sprint 036. Same shape carried program (037), contract (038), and factory_node (039).
+- B-Q-76 contract cascade. Candidate applied: contract lives on Shipment and GeneratedReport, not on Run — a run may execute internal work later delivered against different contracts.
+- B-Q-77 service-account scope. Candidate applied: fields on the caller-context object. Sprint 042.
 
 The one new record: `SupportSession`. §6.10 needed both a `time_window` and a lifecycle, and a field cannot carry a lifecycle.
 

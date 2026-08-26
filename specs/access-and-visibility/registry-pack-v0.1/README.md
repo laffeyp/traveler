@@ -5,13 +5,13 @@ Registry-ready follow-on to `specs/access-and-visibility/boundary-spec-v0.1.md`.
 ## Reading order
 
 1. `access-and-visibility-registry-pack-v0.1.md` — the main pack document, readable end to end: what the pack proposes and why, per-layer decisions, and the scenario-id assignment for the ten §15 families.
-2. `rationale.md` — the eleven-layer grammar rationale (`sdd-kit-2/grammar/PRINCIPLES.md`): what was considered, what was rejected, what remains open.
+2. `rationale.md` — the eleven-layer grammar rationale (`dev/sdd-kit-2/grammar/PRINCIPLES.md`): what was considered, what was rejected, what remains open.
 3. `contracts/*.access.yaml` — registry fragments that subsequent sprints pull into the main registries.
 4. `mutations/access-fail-closed-battery.yaml` — the sprint 051 battery in skeleton form.
 
 ## Authority
 
-Subordinate to `specs/access-and-visibility/boundary-spec-v0.1.md` (WORKING_AGREEMENT.md §Authority order item 9). Where this pack differs from the spec, the spec governs. Registered in §Authority order as item 10 in sprint 030's close.
+Subordinate to `specs/access-and-visibility/boundary-spec-v0.1.md` (dev/WORKING_AGREEMENT.md §Authority order item 9). Where this pack differs from the spec, the spec governs. Registered in §Authority order as item 10 in sprint 030's close.
 
 ## Registry fragments
 

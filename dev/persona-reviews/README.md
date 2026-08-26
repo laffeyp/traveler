@@ -1,4 +1,4 @@
-# persona-review-kit
+# dev/persona-reviews
 
 Grounded persona research + multi-persona review of the distributed-factory execution-record system. Two artifacts:
 

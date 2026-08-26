@@ -1,6 +1,6 @@
 # Persona Reviews — what to fix, and in what order
 
-*Plain-language to-do list built from `reviews/PERSONA_REVIEWS.md` (the study of the 14 factory roles who use and buy this software). I checked each of the 11 gaps it found against the actual code — every one is real. Below: what each gap is, who it matters to, and what fixing it involves — ranked by how much it moves the people who decide to buy and trust the system. Two are things we're deliberately NOT building; they're marked so they don't look like accidents.*
+*Plain-language to-do list built from `dev/persona-reviews/PERSONA_REVIEWS.md` (the study of the 14 factory roles who use and buy this software). I checked each of the 11 gaps it found against the actual code — every one is real. Below: what each gap is, who it matters to, and what fixing it involves — ranked by how much it moves the people who decide to buy and trust the system. Two are things we're deliberately NOT building; they're marked so they don't look like accidents.*
 
 *This is a new file; the original `PERSONA_REVIEWS.md` is left as-is.*
 

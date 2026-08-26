@@ -60,10 +60,10 @@ Documentation:
 |---|---|
 | [`docs/`](docs/) | Project state ledgers. [`docs/DOCS.md`](docs/DOCS.md) catalogs every file. |
 | [`specs/`](specs/) | Ingested governing specifications: `founding-stack/`, `receiving-evidence/`, `access-and-visibility/` |
-| [`BLACKBOARD.md`](BLACKBOARD.md), [`KIT_DIARY.md`](KIT_DIARY.md), [`WORKING_AGREEMENT.md`](WORKING_AGREEMENT.md), [`ADDENDUMS.md`](ADDENDUMS.md) | SDD process state — at project root by kit convention |
-| [`sprints/`](sprints/), [`signal-reports/`](signal-reports/) | Per-sprint history, 001-052 |
-| [`reviews/`](reviews/), [`persona-review-kit/`](persona-review-kit/) | 14-persona aerospace stakeholder review kit and this project's own pass |
+| [`dev/BLACKBOARD.md`](dev/BLACKBOARD.md), [`dev/KIT_DIARY.md`](dev/KIT_DIARY.md), [`dev/WORKING_AGREEMENT.md`](dev/WORKING_AGREEMENT.md), [`dev/ADDENDUMS.md`](dev/ADDENDUMS.md) | SDD process state — at project root by kit convention |
+| [`dev/sprints/`](dev/sprints/), [`dev/signal-reports/`](dev/signal-reports/) | Per-sprint history, 001-052 |
+| [`dev/reviews/`](dev/reviews/), [`dev/persona-reviews/`](dev/persona-reviews/) | 14-persona aerospace stakeholder review kit and this project's own pass |
 | [`demo-packs/`](demo-packs/) | Two demo packs, data only |
-| [`sdd-kit-2/`](sdd-kit-2/) | Vendored SDD methodology kit, read-only |
+| [`dev/sdd-kit-2/`](dev/sdd-kit-2/) | Vendored SDD methodology kit, read-only |
 
 `artifacts/traces/` and `node_modules/` are git-ignored.

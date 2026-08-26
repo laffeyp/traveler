@@ -347,7 +347,7 @@ it were left alone.
 stack ... the new vocabulary it introduced, and the test that proves it" — contains zero occurrences of receiving,
 shipment, attachment, certificate of conformance, or VF-025..030.
 
-**F21.** `KIT_DIARY.md` stops at Entry 29. Four increments since have no entry. `sprints/` and `signal-reports/` stop
+**F21.** `KIT_DIARY.md` stops at Entry 29. Four increments since have no entry. `dev/sprints/` and `dev/signal-reports/` stop
 at 018.
 
 **F22.** The newest `## Built` entry claims "8 durability proofs"; the backend gate prints 13.

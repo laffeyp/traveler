@@ -1,6 +1,6 @@
 # KIT_DIARY.md — Distributed Factory Execution Record System
 
-*Per-sprint or per-phase: what worked, what got in the way, what this says about the next kit version. The diary is this project's accumulating memory about how sdd-kit-2 serves the work.*
+*Per-sprint or per-phase: what worked, what got in the way, what this says about the next kit version. The diary is this project's accumulating memory about how dev/sdd-kit-2 serves the work.*
 
 ---
 
@@ -16,7 +16,7 @@ The close read paid off *before any code*. Reading all eight docs in full (not s
 
 **Hypothesis.** *The no-invention rule plus strict registry validation will make sprint failures legible rather than silent* — an unregistered name fails compilation loudly instead of shipping a subtly wrong behavior. Status: tentative; testable the first time an executor reaches for an unregistered operation.
 
-**Kit observation.** sdd-kit-2 has no project-class subsection for "contract-first / spec-executor" builds in `TECHNIQUES.md` Section 2. The closest is Backend / data-pipeline. If this project's contract-registry + assertion-oracle pattern stabilizes, it may be worth a back-propagated subsection (registry-as-vocabulary; static validation as poka-yoke; the harness as external check surface for the Rubber Duck Pass). Logged, not yet acted on.
+**Kit observation.** dev/sdd-kit-2 has no project-class subsection for "contract-first / spec-executor" builds in `TECHNIQUES.md` Section 2. The closest is Backend / data-pipeline. If this project's contract-registry + assertion-oracle pattern stabilizes, it may be worth a back-propagated subsection (registry-as-vocabulary; static validation as poka-yoke; the harness as external check surface for the Rubber Duck Pass). Logged, not yet acted on.
 
 ---
 
@@ -30,7 +30,7 @@ The biggest payoff was separating *structural* verification (the validator: does
 
 **Hypothesis update.** *No-invention + strict registry validation make failures loud, not silent* — supported but not yet stress-tested: nothing reached for an unregistered name this sprint because the registries were authored to be complete. The real test is the first scenario that references something missing; the compiler must emit a ContractGap there. *Registry-as-vocabulary / Rubber-Duck-as-run-close-narration* — still on paper; firms up when VF-003 runs and the product emits its own trace.
 
-**Kit observation (carried forward).** sdd-kit-2 still lacks a "contract-first / spec-executor" project-class subsection. This sprint is concrete evidence for one: registry-as-vocabulary, static validation as poka-yoke, a separate adversarial faithfulness pass as the external check surface for the Rubber Duck Pass. Worth back-propagating if the pattern holds across sprints 002+.
+**Kit observation (carried forward).** dev/sdd-kit-2 still lacks a "contract-first / spec-executor" project-class subsection. This sprint is concrete evidence for one: registry-as-vocabulary, static validation as poka-yoke, a separate adversarial faithfulness pass as the external check surface for the Rubber Duck Pass. Worth back-propagating if the pattern holds across sprints 002+.
 
 ---
 
@@ -876,9 +876,9 @@ Two battery arms had the same shape from a different cause: written from memory 
 rather than from the code (`output.stale` and `access_policy_changes`, where the system exposes
 `regeneration_required` and `accessPolicyChanges.effective_at`).
 
-**Lesson 4: the bookkeeping drifted where nothing was grading it.** `sprints/` skipped from 021 to 023 because
+**Lesson 4: the bookkeeping drifted where nothing was grading it.** `dev/sprints/` skipped from 021 to 023 because
 sprint 022 landed with a BLACKBOARD entry and no file, while sprint 023 cited the number in its own frontmatter.
-`signal-reports/` stopped at 018 while `DOCS.md §3` went on calling them "numbered 1:1 pairs" — from 019 the
+`dev/signal-reports/` stopped at 018 while `DOCS.md §3` went on calling them "numbered 1:1 pairs" — from 019 the
 pairing had quietly lapsed and the sprint file absorbed both halves. Every gate this project owns was green
 throughout: they check the contract vocabulary, the drivers and the scenarios, and nothing checks that the
 record of the work is internally consistent. The project has a poka-yoke for a handler escaping the registry
@@ -1012,4 +1012,4 @@ claims.** For TECHNIQUES.md.
 
 ---
 
-*KIT_DIARY.md for the Distributed Factory Execution Record System. Entries 0–32 plus phase syntheses, from the registry-extraction founding act through the closed line, the two roadmap phases (Phase B §18 auto-cascades, Phase A outbox delivery leg), the documentation-index step, the readability arc, the valve-body demo pack, the tsc-drift housekeeping, and Phase C — the access-and-visibility boundary, 24 sprints in one day. The through-line: applying sdd-kit-2 to a contract-first manufacturing-execution build, where across every increment the distrust-the-green review found either a real defect or a byte-identical proof that none was there. Entry 26 adds the direction the bench structurally could not look: scenarios are authored from the vocabulary, so only a domain-first pass can show what the vocabulary lacks. Entry 30 records the arc that built the specified remainder — and found that the deferral ledger and the sprint log had both drifted while every mechanical gate stayed green. Entries 27-31 turn the discipline on the record itself. Entry 32 records Phase C's shape: draft all cards up front, execute auto-within-phase, keep the whole-bench cross-driver diff-to-zero over 37 scenarios PASS all identical at every close, resolve the fail-closed vs byte-identical tension by making every dimensional check opt-in against target-side scoping fields.*
+*KIT_DIARY.md for the Distributed Factory Execution Record System. Entries 0–32 plus phase syntheses, from the registry-extraction founding act through the closed line, the two roadmap phases (Phase B §18 auto-cascades, Phase A outbox delivery leg), the documentation-index step, the readability arc, the valve-body demo pack, the tsc-drift housekeeping, and Phase C — the access-and-visibility boundary, 24 sprints in one day. The through-line: applying dev/sdd-kit-2 to a contract-first manufacturing-execution build, where across every increment the distrust-the-green review found either a real defect or a byte-identical proof that none was there. Entry 26 adds the direction the bench structurally could not look: scenarios are authored from the vocabulary, so only a domain-first pass can show what the vocabulary lacks. Entry 30 records the arc that built the specified remainder — and found that the deferral ledger and the sprint log had both drifted while every mechanical gate stayed green. Entries 27-31 turn the discipline on the record itself. Entry 32 records Phase C's shape: draft all cards up front, execute auto-within-phase, keep the whole-bench cross-driver diff-to-zero over 37 scenarios PASS all identical at every close, resolve the fail-closed vs byte-identical tension by making every dimensional check opt-in against target-side scoping fields.*

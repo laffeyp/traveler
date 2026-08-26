@@ -1,100 +1,96 @@
 # Documentation index
 
-*Every document in this repo, grouped by purpose. All are tracked in git. Start with group 1 (project status), then dip into the rest as needed. The code layout is described in `README.md`; this file catalogs the prose.*
+Every document in the repo, grouped by purpose. All tracked in git. The code layout is in `README.md`; this file catalogs the prose. `STATE.md` and `ROADMAP.md` are the front door for "where is the project."
 
----
+## 1. Project status and record ledgers
 
-## 1. Start here — project status & record ledgers
-
-The "where is the project" front door. `ROADMAP.md` is the entry point and cross-links the rest.
-
-| Document | What it is |
+| Document | What it holds |
 |---|---|
-| [RECEIVING_ACCEPTANCE.md](RECEIVING_ACCEPTANCE.md) | The receiving evidence boundary scored against its own §27 acceptance criteria — fourteen of fifteen pass, one passes in part, each row citing the artifact that settles it. Also lists what was deliberately not built and what the boundary now refuses. |
-| [ACCESS_AND_VISIBILITY_ACCEPTANCE.md](ACCESS_AND_VISIBILITY_ACCEPTANCE.md) | The access and visibility boundary scored against its own §16 acceptance criteria — eighteen of eighteen pass or pass-in-part, each row citing the artifact that settles it. Also lists what §7 asked for and did not get. |
-| [SESSION_2026-08-25.md](SESSION_2026-08-25.md) | Session summary for 2026-08-25 — the day Phase C shipped. 30 commits, 24 sprints (029-052), 8,299 insertions across 112 files, 21 new test files. Chronological narrative from housekeeping through the red-team pass, with the commit ledger at the bottom. |
-| [HANDOFF.md](HANDOFF.md) | Ten-section project overview: what the project is, where it stands, how to run it, where the code and docs live, standing rules, deferred items, deliberate non-goals, and a runbook for common failures. |
-| [PHASE_C_READOUT.md](PHASE_C_READOUT.md) | Phase C summary. The 24-sprint arc (029-052), what the mapping pass did, what went into the main registries, what ended up as fields versus records (the four B-Q calls with candidate answers applied), what was deferred, and the red-team pass's three findings. Registry delta table and commit ledger. |
-| [STATE.md](STATE.md) | Where the product stands against all three things it is measured by — the nine-document founding stack, the receiving boundary specification's §27, and the directive to build the specified remainder. What exists, every gate and its result, what the gates do NOT check, and what is open. Read this first. |
-| [ROADMAP.md](ROADMAP.md) | Measured gate status, everything shipped, the (now-closed) roadmap phases, the deferred backlog, and the deliberate non-goals. The front door. |
-| [DEVIATION_SUMMARY.md](DEVIATION_SUMMARY.md) | How far the build moved from the initial design, how, and where it stands: the locked baseline, a quantified delta table, the method, final status. |
-| [ADDITIONS.md](ADDITIONS.md) | The beyond-spec vocabulary ledger — every capability built on top of the original doc stack, each with its governing standard, the new vocabulary it introduced, and the test that proves it. |
-| [contracts/CONTRACT_GAPS.md](contracts/CONTRACT_GAPS.md) | The typed B-Q ledger — every place the contract stack was underspecified or conflicting and how it was resolved (a faithful registry decision or a ContractGap), so no behavior is invented and each resolution is followable. |
+| [STATE.md](STATE.md) | Where the build stands against every governing document, gate by gate. What exists, what the gates check, what they do not, what is open. Read first. |
+| [ROADMAP.md](ROADMAP.md) | Measured gate status, everything shipped, the closed roadmap phases, deferred backlog, deliberate non-goals. |
+| [HANDOFF.md](HANDOFF.md) | Ten-section project overview: what it is, how to run it, where code and docs live, standing rules, deferred items, non-goals, runbook for common failures. |
+| [PHASE_C_READOUT.md](PHASE_C_READOUT.md) | Phase C summary. The 24-sprint arc (029-052), what went into the registries, what stayed as fields versus records, what was deferred, the red-team pass's three findings. |
+| [SESSION_2026-08-25.md](SESSION_2026-08-25.md) | Day narrative for Phase C close. 30 commits, 24 sprints, 8,299 insertions across 112 files, 21 new test files. Commit ledger at the bottom. |
+| [RECEIVING_ACCEPTANCE.md](RECEIVING_ACCEPTANCE.md) | The receiving-evidence boundary scored against its §27 — 14 of 15 pass, one passes in part. Each row cites the artifact that settles it. |
+| [ACCESS_AND_VISIBILITY_ACCEPTANCE.md](ACCESS_AND_VISIBILITY_ACCEPTANCE.md) | The access-and-visibility boundary scored against its §16 — 18 of 18 pass or pass-in-part. Each row cites the artifact that settles it. |
+| [DEVIATION_SUMMARY.md](DEVIATION_SUMMARY.md) | Quantified delta from the initial design: locked baseline, delta table, method, final status. |
+| [ADDITIONS.md](ADDITIONS.md) | Every capability built on top of the original doc stack, with the new vocabulary it introduced and the test that proves it. |
+| [contracts/CONTRACT_GAPS.md](contracts/CONTRACT_GAPS.md) | The typed B-Q ledger. Every place the contract stack was underspecified or conflicting, and how it was resolved (a registry decision or a ContractGap). |
 
-## 2. SDD process state — this project's live board
+## 2. SDD process state
 
-The running methodology state (this project runs under the SDD kit in `sdd-kit-2/`).
+Live board for the methodology this project runs under (`dev/sdd-kit-2/`).
 
-| Document | What it is |
+| Document | What it holds |
 |---|---|
-| [BLACKBOARD.md](BLACKBOARD.md) | The single-writer-per-section project state board: Surfaced-for-review, Architect Decisions, per-sprint Built log, Deferred, Open questions, Drift watchlist, rolling Sprint tail. |
-| [KIT_DIARY.md](KIT_DIARY.md) | The reflective per-sprint/per-phase diary of how the SDD kit serves the build — what worked, what got in the way — accreting the numbered distrust-the-green practices. |
-| [WORKING_AGREEMENT.md](WORKING_AGREEMENT.md) | Per-project overrides on top of `sdd-kit-2/AGENTS.md`: identity/stack, document authority order, the no-invention hard rule, repo layout, canonical registry homes, build commands, cadence. |
-| [ADDENDUMS.md](ADDENDUMS.md) | Dated, project-stamped technique captures staged between this project's `KIT_DIARY.md` and the kit's `TECHNIQUES.md` catalog (an outlier — it feeds the shared kit, not project state). |
-| [SDD_GENERAL_PROCESS.md](SDD_GENERAL_PROCESS.md) | Theory note: SDD set against the settled fields that already do what it does (process mining, spec mining, grammatical inference, model extraction, model-driven reverse engineering, Rules as Code, computer-interpretable guidelines) — what is a rename, what is genuinely new, the reach test, and where the method stops. Not project state; the doctrine behind it. |
+| [BLACKBOARD.md](dev/BLACKBOARD.md) | The single-writer-per-section project state board: Surfaced-for-review, Architect Decisions, Built log per sprint, Deferred, Open questions, Drift watchlist, rolling Sprint tail. |
+| [KIT_DIARY.md](dev/KIT_DIARY.md) | Per-sprint and per-phase diary of how the kit serves the build. Accretes the numbered distrust-the-green practices. |
+| [WORKING_AGREEMENT.md](dev/WORKING_AGREEMENT.md) | Per-project overrides on top of `dev/sdd-kit-2/AGENTS.md`: identity, stack, authority order, no-invention rule, repo layout, canonical registry homes, build commands, cadence. |
+| [ADDENDUMS.md](dev/ADDENDUMS.md) | Dated technique captures staged between this project's `dev/KIT_DIARY.md` and the kit's `TECHNIQUES.md`. Feeds the shared kit, not project state. |
+| [SDD_GENERAL_PROCESS.md](SDD_GENERAL_PROCESS.md) | SDD placed against the settled fields that already do parts of what it does — process mining, spec mining, grammatical inference, model extraction, model-driven reverse engineering, Rules as Code, computer-interpretable guidelines. What is a rename, what is new, the reach test, where the method stops. |
 
-## 2a. Boundary specifications — governing documents beyond the first slice
+## 2a. Boundary specifications
 
-The nine-document stack in group 5 governs the first executable slice and stops there. A boundary specification governs one boundary beyond it, and ranks with the doc stack in `WORKING_AGREEMENT.md §Authority order`.
+The nine-document stack (group 5) governs the first executable slice and stops there. A boundary specification governs one boundary beyond it and ranks with the doc stack in `dev/WORKING_AGREEMENT.md §Authority order`.
 
-| Document | What it is |
+| Document | What it holds |
 |---|---|
-| [specs/receiving-evidence/boundary-spec-v0.1.md](specs/receiving-evidence/boundary-spec-v0.1.md) | The receiving evidence boundary: how material becomes eligible to enter production. Its §9 invariants, §13 scenario ids, §22 fail-closed mutation battery and §26 product decisions govern that boundary. |
-| [specs/receiving-evidence/registry-pack-v0.1/](specs/receiving-evidence/registry-pack-v0.1/) | The follow-on registry-ready definitions for the same boundary. Subordinate to the spec above. |
-| [specs/access-and-visibility/boundary-spec-v0.1.md](specs/access-and-visibility/boundary-spec-v0.1.md) | The access and visibility boundary: who may act, who may see, at what level of detail, in what context. Its §6 dimensions (11), §7 enforcement points (11), §8 access decision model, §15 scenario families (10) and §16 acceptance criteria (18) govern that boundary. |
-| [specs/access-and-visibility/registry-pack-v0.1/](specs/access-and-visibility/registry-pack-v0.1/) | The follow-on registry-ready definitions for the same boundary. Subordinate to the spec above. Nothing merged into the main registries yet; sprints 031-050 pull items in as each surface lands. |
+| [specs/receiving-evidence/boundary-spec-v0.1.md](specs/receiving-evidence/boundary-spec-v0.1.md) | The receiving-evidence boundary — how material becomes eligible to enter production. §9 invariants, §13 scenario ids, §22 fail-closed mutation battery, §26 product decisions. |
+| [specs/receiving-evidence/registry-pack-v0.1/](specs/receiving-evidence/registry-pack-v0.1/) | Follow-on registry-ready definitions. Subordinate to the boundary spec. |
+| [specs/access-and-visibility/boundary-spec-v0.1.md](specs/access-and-visibility/boundary-spec-v0.1.md) | The access-and-visibility boundary — who may act, who may see, at what level of detail, in what context. §6 (11 dimensions), §7 (11 enforcement points), §8 access decision model, §15 (10 scenario families), §16 (18 acceptance criteria). |
+| [specs/access-and-visibility/registry-pack-v0.1/](specs/access-and-visibility/registry-pack-v0.1/) | Follow-on registry-ready definitions. Subordinate to the boundary spec. Nothing merged into the main registries yet; sprints 031-050 pulled items in as each surface landed. |
 
-## 2b. Demo packs — the domain written out as plain data
+## 2b. Demo packs
 
-*Data only: no runtime, nothing that executes at build time. `demo-packs/check.mjs` proves every name every pack uses is registered (`npm run validate:demo-packs`, and in the suite).*
+Data only. Nothing executes at build time. `demo-packs/check.mjs` proves every name every pack uses is registered (`npm run validate:demo-packs`, and in the suite).
 
-| Path | What it is |
+| Path | What it holds |
 |---|---|
-| [demo-packs/receiving-evidence-valve-body-v0.1/](demo-packs/receiving-evidence-valve-body-v0.1/) | The receiving boundary written out as plain files (boundary spec §24): one consignment of one valve body with its shipment, lines, supplier reference, certificates, receiving check, requirements, access policy and the fail-closed mutation list. Its `manifest.yaml` also records what §24 assumes and this build deliberately does not have — Supplier, PackingList, PurchaseOrderRef and ReceivingInspection as records — each with the reason. |
-| [demo-packs/valve-body-assembly-v0.1/](demo-packs/valve-body-assembly-v0.1/) | The valve body VF-003 already builds, written out as plain files (part, BOM, procedure, tool + calibration, serials, torque requirement, machine evidence, quality path, customer view, expected report) with a `README.md` and `manifest.yaml`. Data only — changes no code, runs nothing at build time. `demo-packs/check.mjs` proves every name it uses is registered in `contracts/` (the no-invention rule on the data side), and is gated. Writing it surfaced three vocabulary gaps, recorded as B-Q-31/32/33. |
+| [demo-packs/receiving-evidence-valve-body-v0.1/](demo-packs/receiving-evidence-valve-body-v0.1/) | The receiving boundary written out as plain files (boundary spec §24): one consignment of one valve body with its shipment, lines, supplier reference, certificates, receiving check, requirements, access policy, fail-closed mutation list. `manifest.yaml` also records what §24 assumes and this build does not have — Supplier, PackingList, PurchaseOrderRef, ReceivingInspection as records — each with the reason. |
+| [demo-packs/valve-body-assembly-v0.1/](demo-packs/valve-body-assembly-v0.1/) | The valve body VF-003 already builds, written out as plain files: part, BOM, procedure, tool and calibration, serials, torque requirement, machine evidence, quality path, customer view, expected report. A `README.md` and `manifest.yaml`. Writing it surfaced three vocabulary gaps recorded as B-Q-31/32/33. |
 
-## 3. Sprint history — sprints 001-028
+## 3. Sprint history — sprints 001-052
 
-`sprints/sprint-NNN-*.md`, contiguous 001 to 028. One file per sprint, and the numbering scheme is recorded in [WORKING_AGREEMENT.md](WORKING_AGREEMENT.md) `§Numbering`.
+`dev/sprints/sprint-NNN-*.md`. Numbering scheme in [WORKING_AGREEMENT.md](dev/WORKING_AGREEMENT.md) `§Numbering`.
 
-**Sprints 001-018 are 1:1 PAIRS**: an input contract in `sprints/` and an output report in `signal-reports/`, read together by number. **From 019 the two merged into one file.** The sprint file carries both halves — `## artifact contract` for what was promised and built, `## observation contract` for what was observed and how it was checked, which is what the signal report carried. That was not a decision anybody made; the pairing lapsed and the sprint file absorbed the content. Recorded here rather than backfilled, because ten retrospective reports derived from the sprint files that replaced them would add pages and no facts.
+Sprints 001-018 have a paired output report in `dev/signal-reports/`, read together by number. From sprint 019 the two merged into one file — the sprint file carries both halves (`## artifact contract` for what was promised and built; `## observation contract` for what was observed and how it was checked). The pairing lapsed; the sprint file absorbed the content. Recorded here rather than backfilled, because ten retrospective reports derived from the sprint files that replaced them would add pages and no facts.
 
-| Folder | What it is |
+| Folder | What it holds |
 |---|---|
-| [sprints/](sprints/) `sprint-001..028-*.md` | Per sprint: plan/scope, artifact contract (files, exit codes), observation contract (what was observed, including the Rubber Duck Pass findings), done criteria, notes. Stamped closed with a date. |
-| [signal-reports/](signal-reports/) `sprint-001..018-report.md` | The separate OUTPUT half for sprints 001-018 only — a retrospective SIGNAL_REPORT (Observed / Expected / Delta self-grade / Hypothesis) with a timestamped signal trace and adversarial-review findings. |
+| [sprints/](dev/sprints/) `sprint-001..052-*.md` | Per sprint: plan and scope, artifact contract (files, exit codes), observation contract (what was observed, including Rubber Duck Pass findings), done criteria, notes. Stamped closed with a date. |
+| [signal-reports/](dev/signal-reports/) `sprint-001..018-report.md` | The separate output half for sprints 001-018 only. A retrospective SIGNAL_REPORT (Observed / Expected / Delta self-grade / Hypothesis) with a timestamped signal trace and adversarial-review findings. |
 
-## 4. Reviews — reusable kit + this project's pass
+## 4. Reviews
 
-| Document | What it is |
+| Document | What it holds |
 |---|---|
-| [persona-review-kit/README.md](persona-review-kit/README.md) | Index of the reusable persona-review machinery. |
-| [persona-review-kit/TRIGGER_PROMPT.md](persona-review-kit/TRIGGER_PROMPT.md) | The reusable, model-agnostic prompt that re-runs the persona review (plus a follow-on change-scoring prompt). |
-| [persona-review-kit/PERSONA_REVIEWS.md](persona-review-kit/PERSONA_REVIEWS.md) | The v1 output: a standards-grounded study of 14 aerospace-manufacturing personas reviewed against the build, with a champion map and gap table. |
-| [reviews/PERSONA_REVIEW_PASS-round-1.md](reviews/PERSONA_REVIEW_PASS-round-1.md) | Project-specific: a plain-language, code-verified ranked remediation backlog turning the persona gaps into a to-do list with DONE markers. |
+| [dev/persona-reviews/README.md](dev/persona-reviews/README.md) | Index of the reusable persona-review machinery. |
+| [dev/persona-reviews/TRIGGER_PROMPT.md](dev/persona-reviews/TRIGGER_PROMPT.md) | The reusable, model-agnostic prompt that re-runs the persona review, plus a follow-on change-scoring prompt. |
+| [dev/persona-reviews/PERSONA_REVIEWS.md](dev/persona-reviews/PERSONA_REVIEWS.md) | The v1 output: a standards-grounded study of 14 aerospace-manufacturing personas reviewed against the build, with a champion map and gap table. |
+| [dev/persona-reviews/PERSONA_REVIEW_PASS-round-1.md](dev/persona-reviews/PERSONA_REVIEW_PASS-round-1.md) | This project's own pass: a code-verified, ranked remediation backlog turning the persona gaps into a to-do list with DONE markers. |
 
-## 5. Governing input doc stack (fixed specifications)
+## 5. Governing input doc stack
 
-The eight numbered specifications the build was authored against, forming one descending chain (why → what → architecture → executable semantics → test oracle → first scenario → build plan → bootstrap order). Read the folder's own `README.md` first. Authority: for product-meaning, top-down (all defer to the Product Spec); for implementation conflicts, the Build Readiness Plan §1.2 inverts it — the executable Contract Spec v0.4.1 wins and the research/product/architecture docs rank last.
+The eight numbered specifications the build was authored against, in one descending chain: why → what → architecture → executable semantics → test oracle → first scenario → build plan → bootstrap order. Read the folder's own `README.md` first. Authority: for product meaning, top-down (all defer to the Product Spec); for implementation conflicts, the Build Readiness Plan §1.2 inverts it — the executable Contract Spec v0.4.1 wins and the research, product, and architecture docs rank last.
 
 | Document | Role |
 |---|---|
-| [.../README.md](specs/founding-stack/README.md) | Bundle manifest + current implementation target. Read first. |
-| [01 Research Dossier](specs/founding-stack/01-research-dossier-v0.12.md) | Theory/doctrine/ontology — the "manufacturing operational grammar" model, 11-layer stack, core invariants. The *why*. |
-| [02 Product Specification](specs/founding-stack/02-product-specification-v0.6.md) | Product authority — what it does, who it serves, owns vs integrates vs excludes, scope, success criteria. |
-| [03 Technical Architecture (TAD)](specs/founding-stack/03-technical-architecture-document-v0.3.md) | Modular-monolith architecture + the §5 authoritative module-ownership registry, state machines, event model. |
-| [04 Operation/Event/State Contract Spec](specs/founding-stack/04-operation-event-state-contract-spec-v0.4.1.md) | Executable-semantics contract layer — the governing contract authority for the first slice; the YAML registries encode this. |
-| [05 Virtual Factory Harness Spec](specs/founding-stack/05-virtual-factory-harness-spec-v0.1.2.md) | The adversarial test-oracle spec: scenario format, the black-box driver interface, assertion engine, ContractGap-vs-GrammarGap boundary. |
-| [06 Executable VF-003 Scenario Spec](specs/founding-stack/06-executable-vf-003-scenario-spec-v0.1.1.md) | The first executable scenario package (valve-body failed-torque / redline / rework / run-close) with expected trace + assertions. |
+| [.../README.md](specs/founding-stack/README.md) | Bundle manifest and current implementation target. Read first. |
+| [01 Research Dossier](specs/founding-stack/01-research-dossier-v0.12.md) | Theory, doctrine, ontology — the "manufacturing operational grammar" model, 11-layer stack, core invariants. The *why*. |
+| [02 Product Specification](specs/founding-stack/02-product-specification-v0.6.md) | Product authority — what it does, who it serves, owns versus integrates versus excludes, scope, success criteria. |
+| [03 Technical Architecture (TAD)](specs/founding-stack/03-technical-architecture-document-v0.3.md) | Modular-monolith architecture plus the §5 authoritative module-ownership registry, state machines, event model. |
+| [04 Operation/Event/State Contract Spec](specs/founding-stack/04-operation-event-state-contract-spec-v0.4.1.md) | Executable-semantics contract layer — governing contract authority for the first slice; the YAML registries encode this. |
+| [05 Virtual Factory Harness Spec](specs/founding-stack/05-virtual-factory-harness-spec-v0.1.2.md) | Adversarial test-oracle spec: scenario format, black-box driver interface, assertion engine, ContractGap-versus-GrammarGap boundary. |
+| [06 Executable VF-003 Scenario Spec](specs/founding-stack/06-executable-vf-003-scenario-spec-v0.1.1.md) | The first executable scenario package (valve-body failed-torque, redline, rework, run-close) with expected trace and assertions. |
 | [07 Build Readiness Plan](specs/founding-stack/07-build-readiness-plan-v0.2.md) | LLM-executable build plan: repo layout, per-operation handler contracts, schema/projection/report/access rules, gated phases. |
-| [08 Repository Bootstrap Plan](specs/founding-stack/08-repository-bootstrap-plan-outline-v0.1.md) | File-by-file bootstrap work order + executor no-invention rules. |
+| [08 Repository Bootstrap Plan](specs/founding-stack/08-repository-bootstrap-plan-outline-v0.1.md) | File-by-file bootstrap work order plus executor no-invention rules. |
 
-*(`specs/founding-stack.zip` is the zipped bundle of the folder above — redundant with the unzipped copy; kept as the original delivered artifact.)*
+`specs/founding-stack.zip` is the zipped bundle of the same folder, kept as the original delivered artifact.
 
-## 6. Vendored methodology — the SDD kit (read-only)
+## 6. Vendored methodology
 
-[sdd-kit-2/](sdd-kit-2/) is the Signal-Driven Development kit this project runs under — pure text-and-convention (markdown + one optional ~150-line Python lib), copied in read-only and never edited. Start from its own `README.md`. Key entry points: `AGENTS.md` (the working agreement an agent reads at session start), `TECHNIQUES.md` (the named-technique catalog), `foundations/` (the four canonical SDD essays), `grammar/` (vocabulary-authoring discipline), `templates/` (the artifacts a project instantiates). **`sdd-kit-2/example/` is a self-contained demo project (a wordcount CLI), not part of this build.**
+[sdd-kit-2/](dev/sdd-kit-2/) is the Signal-Driven Development kit this project runs under. Pure text and convention (markdown plus one optional ~150-line Python lib), copied in read-only. Start from its own `README.md`. Key entry points: `AGENTS.md` (the working agreement an agent reads at session start), `TECHNIQUES.md` (the named-technique catalog), `foundations/` (the four canonical SDD essays), `grammar/` (vocabulary-authoring discipline), `templates/` (the artifacts a project instantiates). `dev/sdd-kit-2/example/` is a self-contained demo project (a wordcount CLI), not part of this build.
 
 ---
 
-*Tracking: every file above is committed to git (`laffeyp/Manufacturing`, private). This index is generated from a document-inventory sweep; keep it current when adding a document.*
+Every file above is committed to git (`laffeyp/traveler`, private). Keep this index current when adding a document.

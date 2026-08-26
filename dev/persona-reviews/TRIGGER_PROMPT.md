@@ -47,7 +47,7 @@ PHASE 2 — REVIEW + SYNTHESIS (after all briefs return):
 - Evidence honesty section: separate standards-anchored findings from vendor/practitioner ones;
   restate what could not be verified.
 
-OUTPUT: write everything to persona-review-kit/PERSONA_REVIEWS.md (append/version, don't clobber
+OUTPUT: write everything to dev/persona-reviews/PERSONA_REVIEWS.md (append/version, don't clobber
 prior runs). Keep the roster table with a champion-verdict column at the top. Save a one-line
 project memory pointing at the file + the headline gap.
 
@@ -70,7 +70,7 @@ procurement and adoption — not just who logs in.
 Once the catalog exists, prioritize a specific proposed change through every persona lens:
 
 ```
-Using persona-review-kit/PERSONA_REVIEWS.md as the persona set, score the proposed change
+Using dev/persona-reviews/PERSONA_REVIEWS.md as the persona set, score the proposed change
 <DESCRIBE CHANGE, e.g. "add a role/authority check to RecordApprovalDecision + VerifyRework +
 disposition transitions"> through EACH persona lens. For each persona: does this move them toward
 champion, and by how much? Weight by the champion map (a change that moves the Director of Quality,

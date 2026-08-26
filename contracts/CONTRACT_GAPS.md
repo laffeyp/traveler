@@ -452,7 +452,7 @@ Serials arrive only as inputs to other operations (`StartRunWithInventory`, `Ins
 
 ## Discovered by the access-and-visibility mapping pass (sprint 029)
 
-*Source: `sprints/sprint-029-mapping-table.md`. Walking the boundary spec against existing vocabulary surfaced four concept calls the Agent could not decide alone. Each is recorded here so the registry pack in sprint 030 is authored against a mapping the Architect has ratified. None are blocking; each is decided in the sprint named. Type: recorded call, awaiting Architect ratification.*
+*Source: `dev/sprints/sprint-029-mapping-table.md`. Walking the boundary spec against existing vocabulary surfaced four concept calls the Agent could not decide alone. Each is recorded here so the registry pack in sprint 030 is authored against a mapping the Architect has ratified. None are blocking; each is decided in the sprint named. Type: recorded call, awaiting Architect ratification.*
 
 ### B-Q-74 — access group storage: caller-context field vs first-class record
 The boundary spec's §6.2 access-group dimension can be stored either as `access_groups: string[]` on the caller-context object (lightweight, no lifecycle) OR as a first-class `AccessGroupMembership` record (durable audit, lifecycle for grant/revoke). The choice is load-bearing for audit fidelity: a record captures WHEN a caller joined a group; a field does not. **Decided in sprint 035.** Candidate answer: caller-context field is enough for the first version, with the record deferred until an audit scenario demands it — matches the receiving-boundary practice of not building a lifecycle the current scenarios do not exercise.

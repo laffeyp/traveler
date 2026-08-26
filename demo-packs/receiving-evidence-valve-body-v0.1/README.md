@@ -31,20 +31,11 @@ file in `captured` would leave the goods quarantined.
 §24 lists nine record types across its file tree. This build has five, and the collapses are decisions with
 reasons, not omissions. `manifest.yaml` names each one under `absent_by_decision`; the short version:
 
-**Supplier** is a reference on the Shipment, the same way the purchase order is a reference into ERP. §26.1
-says reference only and do not build procurement; §26.2 rules out a supplier portal. A supplier with no
-approved-part list, no quality rating and no portal is a name, and a record holding only a name earns nothing.
-Recorded as B-Q-72 — it is wanted the moment supplier approval or a scorecard is specified.
+Supplier is a reference on the Shipment, the same way the purchase order is a reference into ERP. §26.1 says reference only and do not build procurement; §26.2 rules out a supplier portal. A supplier with no approved-part list, no quality rating, and no portal is a name, and a record holding only a name earns nothing. Recorded as B-Q-72 — wanted the moment supplier approval or a scorecard is specified.
 
-**PackingList** and **PurchaseOrderRef** are fields on the Shipment. If a packing list ever needed governing it
-would be a `Certificate` with `cert_type: packing_list`, which the registered document-type list already
-allows — no new record needed.
+PackingList and PurchaseOrderRef are fields on the Shipment. If a packing list ever needed governing it would be a `Certificate` with `cert_type: packing_list`, which the registered document-type list already allows — no new record needed.
 
-**ReceivingInspection** is the interesting one. §8.3 gives it seven states; here the meaning is split across
-two places that already existed. The document lifecycle carries `captured → verified | rejected`, and the
-check result carries `passed | blocked | failed`. Blocked and failed are not the same answer: blocked means the
-file is incomplete and producing the document resolves it, failed means somebody looked and said no. A
-supplier corrective action hangs on the second.
+ReceivingInspection is the interesting one. §8.3 gives it seven states; here the meaning is split across two places that already existed. The document lifecycle carries `captured → verified | rejected`, and the check result carries `passed | blocked | failed`. Blocked and failed are not the same answer: blocked means the file is incomplete and producing the document resolves it; failed means somebody looked and said no. A supplier corrective action hangs on the second.
 
 ## The executable versions
 
@@ -61,7 +52,4 @@ This pack is the still photograph. The moving ones are on the bench, all on both
 | VF-030 | a process certificate for the neighbouring lot, which satisfies nothing |
 | VF-035 | the gasket installed, and the close report saying where it came from |
 
-`assertions/fail_closed_mutations.yaml` is the plain-language version of
-`tests/receiving/fail-closed-battery.test.ts`, which runs 22 of the specification's 26 arms against the real
-driver. The four it does not run all wait on the same missing thing — an access-filtered read path for
-supplier evidence, B-Q-71.
+`assertions/fail_closed_mutations.yaml` is the plain-language version of `tests/receiving/fail-closed-battery.test.ts`, which runs all 26 of the specification's arms against the real driver. The last four closed on 2026-08-07 when the supplier evidence packet was built.
