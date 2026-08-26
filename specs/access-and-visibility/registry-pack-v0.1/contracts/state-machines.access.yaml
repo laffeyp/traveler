@@ -1,6 +1,6 @@
 registry: state-machines
 registry_version: access-and-visibility-pack-v0.1
-source: access-and-visibility-boundary-spec-v0.1.md §6.10
+source: specs/access-and-visibility/boundary-spec-v0.1.md §6.10
 
 state_machines:
   - name: SupportSession

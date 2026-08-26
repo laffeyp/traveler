@@ -1,6 +1,6 @@
 # Access and Visibility Registry Pack v0.1
 
-Registry-ready follow-on to `access-and-visibility-boundary-spec-v0.1.md`. Authored in-repo (unlike the receiving pack, which arrived from outside) against the sprint 029 mapping so every proposed record, operation, event, and rule was pressure-tested against the existing vocabulary before it landed. Nothing here duplicates a name in `contracts/*.yaml`.
+Registry-ready follow-on to `specs/access-and-visibility/boundary-spec-v0.1.md`. Authored in-repo (unlike the receiving pack, which arrived from outside) against the sprint 029 mapping so every proposed record, operation, event, and rule was pressure-tested against the existing vocabulary before it landed. Nothing here duplicates a name in `contracts/*.yaml`.
 
 ## Reading order
 
@@ -11,7 +11,7 @@ Registry-ready follow-on to `access-and-visibility-boundary-spec-v0.1.md`. Autho
 
 ## Authority
 
-Subordinate to `access-and-visibility-boundary-spec-v0.1.md` (WORKING_AGREEMENT.md §Authority order item 9). Where this pack differs from the spec, the spec governs. Registered in §Authority order as item 10 in sprint 030's close.
+Subordinate to `specs/access-and-visibility/boundary-spec-v0.1.md` (WORKING_AGREEMENT.md §Authority order item 9). Where this pack differs from the spec, the spec governs. Registered in §Authority order as item 10 in sprint 030's close.
 
 ## Registry fragments
 

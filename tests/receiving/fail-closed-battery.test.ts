@@ -1,7 +1,7 @@
 /**
  * The fail-closed mutation battery the boundary specification requires.
  *
- * `receiving-evidence-registry-pack-v0.1/mutations/receiving-fail-closed-battery.yaml` names twenty-eight
+ * `specs/receiving-evidence/registry-pack-v0.1/mutations/receiving-fail-closed-battery.yaml` names twenty-eight
  * mutations across four groups, and boundary spec §27 makes "fail-closed mutation battery passes" acceptance
  * criterion 13. It shipped with the pack and was never wired in — which is why the review that found six
  * fail-open defects found them: the artifact that would have caught most of them sat unused.
@@ -16,7 +16,7 @@ import { readYaml } from "../../src/registry/load.ts";
 import { InMemoryProductDriver } from "../../src/driver/driver.ts";
 
 const battery = readYaml(
-  "receiving-evidence-registry-pack-v0.1/mutations/receiving-fail-closed-battery.yaml",
+  "specs/receiving-evidence/registry-pack-v0.1/mutations/receiving-fail-closed-battery.yaml",
 );
 
 let seq = 0;

@@ -1,6 +1,6 @@
 # Access and Visibility — acceptance scoring
 
-Measured 2026-08-25 against `access-and-visibility-boundary-spec-v0.1.md §16`. Eighteen criteria, row-by-row, each with the artifact that settles it. Same shape as `RECEIVING_ACCEPTANCE.md`.
+Measured 2026-08-25 against `specs/access-and-visibility/boundary-spec-v0.1.md §16`. Eighteen criteria, row-by-row, each with the artifact that settles it. Same shape as `RECEIVING_ACCEPTANCE.md`.
 
 ## §16 acceptance criteria
 

@@ -14,7 +14,7 @@ The `access` module was already registered from the first slice — `Access / Vi
 
 ## What the pack authored
 
-Sprint 030 authored `access-and-visibility-registry-pack-v0.1/` in-repo: 14 files including README, main document, per-layer rationale, and eleven registry fragments under `contracts/`. Nothing merged into the main registries at that point — sprints 031-050 pulled items in as each surface landed.
+Sprint 030 authored `specs/access-and-visibility/registry-pack-v0.1/` in-repo: 14 files including README, main document, per-layer rationale, and eleven registry fragments under `contracts/`. Nothing merged into the main registries at that point — sprints 031-050 pulled items in as each surface landed.
 
 ## What went into the main registries
 

@@ -1,6 +1,6 @@
 registry: reason-codes
 registry_version: access-and-visibility-pack-v0.1
-source: access-and-visibility-boundary-spec-v0.1.md §8.3
+source: specs/access-and-visibility/boundary-spec-v0.1.md §8.3
 note: >
   Twenty-two reason codes. Each is used by at least one enforcement point.
   Reason codes ride on the AccessDecision record's reason field and on the

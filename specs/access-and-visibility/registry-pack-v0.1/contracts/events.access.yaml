@@ -1,6 +1,6 @@
 registry: events
 registry_version: access-and-visibility-pack-v0.1
-source: access-and-visibility-boundary-spec-v0.1.md §6.10, §7.9, §12, §13
+source: specs/access-and-visibility/boundary-spec-v0.1.md §6.10, §7.9, §12, §13
 note: >
   Five new events. The four already-registered ACCESS_DECISION_* events
   (ALLOWED / SUMMARY / DENIED / AUDITED) in the main events.yaml are unchanged;

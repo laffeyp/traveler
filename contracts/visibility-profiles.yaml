@@ -1,6 +1,6 @@
 registry: visibility-profiles
 registry_version: contracts-0.4.1
-source: access-and-visibility-boundary-spec-v0.1.md §9
+source: specs/access-and-visibility/boundary-spec-v0.1.md §9
 note: >
   Eight visibility profiles registered as first-class policy shapes. `customer_summary_access` and
   `customer_extended_access` already live inline in `contracts/reports.yaml` and in `src/driver/handlers.ts`

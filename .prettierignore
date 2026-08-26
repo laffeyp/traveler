@@ -20,7 +20,7 @@
 /artifacts
 /sdd-kit-2
 /persona-review-kit
-/manufacturing-software-doc-stack-build-ready
+/specs/founding-stack
 *.json
 *.yaml
 *.yml

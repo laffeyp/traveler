@@ -1,9 +1,9 @@
 registry: reason-codes
 registry_version: contracts-0.4.1
-source: access-and-visibility-boundary-spec-v0.1.md §8.3
+source: specs/access-and-visibility/boundary-spec-v0.1.md §8.3
 note: >
   Twenty-two reason codes an access decision can carry. Each is used at least once by an enforcement point
-  (§7) or by the fail-closed mutation battery (`access-and-visibility-registry-pack-v0.1/mutations/access-fail-closed-battery.yaml`).
+  (§7) or by the fail-closed mutation battery (`specs/access-and-visibility/registry-pack-v0.1/mutations/access-fail-closed-battery.yaml`).
   Reason codes ride on the AccessDecision record's `reason` field and on the ACCESS_DECISION_* event
   payloads. `allowed` is the code for a successful decision so audit records name their outcome uniformly.
 

@@ -1,6 +1,6 @@
 registry: enforcement-points
 registry_version: access-and-visibility-pack-v0.1
-source: access-and-visibility-boundary-spec-v0.1.md §7
+source: specs/access-and-visibility/boundary-spec-v0.1.md §7
 
 enforcement_points:
   - name: operation_authorization

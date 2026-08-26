@@ -16,9 +16,9 @@ The project runs under **Signal-Driven Development kit v2** (`sdd-kit-2/`, vendo
 
 **Three governing documents are all closed:**
 
-- The **nine-document founding stack** (`manufacturing-software-doc-stack-build-ready/`) — the first executable slice, plus the extended adversarial arc.
-- The **receiving evidence boundary specification** (`receiving-evidence-boundary-spec-v0.1.md`) — 15 of 15 §27 acceptance criteria pass (`RECEIVING_ACCEPTANCE.md`).
-- The **access and visibility boundary specification** (`access-and-visibility-boundary-spec-v0.1.md`, arrived 2026-08-24) — 18 of 18 §16 acceptance criteria pass or pass-in-part (`ACCESS_AND_VISIBILITY_ACCEPTANCE.md`).
+- The **nine-document founding stack** (`specs/founding-stack/`) — the first executable slice, plus the extended adversarial arc.
+- The **receiving evidence boundary specification** (`specs/receiving-evidence/boundary-spec-v0.1.md`) — 15 of 15 §27 acceptance criteria pass (`RECEIVING_ACCEPTANCE.md`).
+- The **access and visibility boundary specification** (`specs/access-and-visibility/boundary-spec-v0.1.md`, arrived 2026-08-24) — 18 of 18 §16 acceptance criteria pass or pass-in-part (`ACCESS_AND_VISIBILITY_ACCEPTANCE.md`).
 
 **The gates, at day's close:**
 
@@ -71,9 +71,9 @@ No build step, no bundler. The runtime reads `.ts` directly via Node's type-stri
 | `tests/` | Vitest suites. Scenario tests, discrimination tests, mutation-coupling suites (`tests/consolidation/coupling.test.ts`), prototype-safety suite, handler-registration reverse check, and the whole `tests/access/` directory (Phase C). |
 | `sprints/` | One file per sprint 001-052, contiguous. |
 | `signal-reports/` | Per-sprint output for sprints 001-018 (the pairing lapsed at 019 and the sprint file absorbs both halves; see `DOCS.md §3`). |
-| `access-and-visibility-registry-pack-v0.1/` | Phase C registry pack authored in-repo. Contents not merged into main registries; sprints 031-050 pulled items in as each surface landed. |
-| `receiving-evidence-registry-pack-v0.1/` | The receiving pack that arrived from outside on 2026-07-31. |
-| `manufacturing-software-doc-stack-build-ready/` | The eight numbered governing input specifications the build was authored against (read-only). |
+| `specs/access-and-visibility/registry-pack-v0.1/` | Phase C registry pack authored in-repo. Contents not merged into main registries; sprints 031-050 pulled items in as each surface landed. |
+| `specs/receiving-evidence/registry-pack-v0.1/` | The receiving pack that arrived from outside on 2026-07-31. |
+| `specs/founding-stack/` | The eight numbered governing input specifications the build was authored against (read-only). |
 | `sdd-kit-2/` | The vendored Signal-Driven Development kit (read-only). |
 | `demo-packs/` | Two demo packs (valve-body-assembly, receiving-evidence-valve-body) — data only, gated by `demo-packs/check.mjs` and `npm run validate:demo-packs`. |
 | `persona-review-kit/` and `reviews/` | The 14-persona aerospace stakeholder review kit and this project's own pass. |
@@ -113,7 +113,7 @@ Hard rules, not guidance. Each has a reason and a record of what happens when br
 
 7. **Opt-in on target-side scoping fields.** Every Phase C dimension check reads a caller-side context field AND a target-side scoping field. Existing records carry no scoping field, so the check is dormant for every existing trace. This is how eight dimension sprints preserved the whole-bench cross-driver equivalence check while adding real fail-closed guards. When adding a new dimension, follow the same shape: the check must fire fail-closed against callers who don't provide the matching context, and must be dormant against targets that don't declare the scoping field.
 
-8. **Never edit `sdd-kit-2/`, `manufacturing-software-doc-stack-build-ready/`, `receiving-evidence-boundary-spec-v0.1.md`, or `access-and-visibility-boundary-spec-v0.1.md`.** These are the governing documents; the audit trail is the work. New thinking lands in project-side documents, additive.
+8. **Never edit `sdd-kit-2/`, `specs/founding-stack/`, `specs/receiving-evidence/boundary-spec-v0.1.md`, or `specs/access-and-visibility/boundary-spec-v0.1.md`.** These are the governing documents; the audit trail is the work. New thinking lands in project-side documents, additive.
 
 9. **Every gate green before commit.** `npm run validate:contracts && npm run validate:schemas && npx vitest run && npx tsc -p tsconfig.json --noEmit && npm run format:check`. If a commit needs a follow-up fix (as sprints 043, 046, 048 did), commit the fix as its own commit — don't amend.
 

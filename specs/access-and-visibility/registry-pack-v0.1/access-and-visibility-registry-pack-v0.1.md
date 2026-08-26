@@ -1,6 +1,6 @@
 # Access and Visibility Registry Pack v0.1 — main document
 
-*Registry-ready follow-on to `access-and-visibility-boundary-spec-v0.1.md`. This document reads end to end; the yaml fragments in `contracts/` are the same content in registry form.*
+*Registry-ready follow-on to `specs/access-and-visibility/boundary-spec-v0.1.md`. This document reads end to end; the yaml fragments in `contracts/` are the same content in registry form.*
 
 ## 1. Module
 

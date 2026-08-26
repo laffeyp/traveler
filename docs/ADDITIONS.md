@@ -82,7 +82,7 @@ This phase is the clearest case of adversarial review earning its keep: the skep
 
 ## Phase C — access and visibility boundary (2026-08-25)
 
-The third boundary the build satisfies, after the receiving evidence boundary. Governed by `access-and-visibility-boundary-spec-v0.1.md` (WORKING_AGREEMENT §Authority order item 9). Twenty-four sprints (029-052) opened and closed in one day; the narrative and per-sprint detail live in `SESSION_2026-08-25.md`; the row-by-row §16 scoring lives in `ACCESS_AND_VISIBILITY_ACCEPTANCE.md` (18 of 18 pass or pass-in-part).
+The third boundary the build satisfies, after the receiving evidence boundary. Governed by `specs/access-and-visibility/boundary-spec-v0.1.md` (WORKING_AGREEMENT §Authority order item 9). Twenty-four sprints (029-052) opened and closed in one day; the narrative and per-sprint detail live in `SESSION_2026-08-25.md`; the row-by-row §16 scoring lives in `ACCESS_AND_VISIBILITY_ACCEPTANCE.md` (18 of 18 pass or pass-in-part).
 
 The receiving-boundary discipline governed the sequence: mapping pass first, in-repo registry pack second, then dimension by dimension, then enforcement by enforcement, then cross-cutting (audit, freshness cascade, mutation battery), then the acceptance closeout. Every dimensional check is opt-in on target-side scoping fields; existing scenarios' assertions preserved.
 

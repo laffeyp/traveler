@@ -1,6 +1,6 @@
 registry: summary-shapes
 registry_version: access-and-visibility-pack-v0.1
-source: access-and-visibility-boundary-spec-v0.1.md §10
+source: specs/access-and-visibility/boundary-spec-v0.1.md §10
 
 summary_shapes:
   - name: machine_evidence_summary

@@ -1,6 +1,6 @@
 registry: visibility-profiles
 registry_version: access-and-visibility-pack-v0.1
-source: access-and-visibility-boundary-spec-v0.1.md §9
+source: specs/access-and-visibility/boundary-spec-v0.1.md §9
 note: >
   Eight profiles. customer_summary_access and customer_extended_access already
   exist inline in contracts/reports.yaml as report scopes; sprint 034's fold

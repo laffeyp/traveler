@@ -1,6 +1,6 @@
 registry: mutation-battery
 registry_version: access-and-visibility-pack-v0.1
-source: access-and-visibility-boundary-spec-v0.1.md §16 criterion 16, §14
+source: specs/access-and-visibility/boundary-spec-v0.1.md §16 criterion 16, §14
 
 # Every arm proves an access-decision surface FAILS CLOSED on missing / empty /
 # malformed context. Each arm names the specific reason_code from

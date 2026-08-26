@@ -39,10 +39,10 @@ The nine-document stack in group 5 governs the first executable slice and stops 
 
 | Document | What it is |
 |---|---|
-| [receiving-evidence-boundary-spec-v0.1.md](receiving-evidence-boundary-spec-v0.1.md) | The receiving evidence boundary: how material becomes eligible to enter production. Its §9 invariants, §13 scenario ids, §22 fail-closed mutation battery and §26 product decisions govern that boundary. |
-| [receiving-evidence-registry-pack-v0.1/](receiving-evidence-registry-pack-v0.1/) | The follow-on registry-ready definitions for the same boundary. Subordinate to the spec above. |
-| [access-and-visibility-boundary-spec-v0.1.md](access-and-visibility-boundary-spec-v0.1.md) | The access and visibility boundary: who may act, who may see, at what level of detail, in what context. Its §6 dimensions (11), §7 enforcement points (11), §8 access decision model, §15 scenario families (10) and §16 acceptance criteria (18) govern that boundary. |
-| [access-and-visibility-registry-pack-v0.1/](access-and-visibility-registry-pack-v0.1/) | The follow-on registry-ready definitions for the same boundary. Subordinate to the spec above. Nothing merged into the main registries yet; sprints 031-050 pull items in as each surface lands. |
+| [specs/receiving-evidence/boundary-spec-v0.1.md](specs/receiving-evidence/boundary-spec-v0.1.md) | The receiving evidence boundary: how material becomes eligible to enter production. Its §9 invariants, §13 scenario ids, §22 fail-closed mutation battery and §26 product decisions govern that boundary. |
+| [specs/receiving-evidence/registry-pack-v0.1/](specs/receiving-evidence/registry-pack-v0.1/) | The follow-on registry-ready definitions for the same boundary. Subordinate to the spec above. |
+| [specs/access-and-visibility/boundary-spec-v0.1.md](specs/access-and-visibility/boundary-spec-v0.1.md) | The access and visibility boundary: who may act, who may see, at what level of detail, in what context. Its §6 dimensions (11), §7 enforcement points (11), §8 access decision model, §15 scenario families (10) and §16 acceptance criteria (18) govern that boundary. |
+| [specs/access-and-visibility/registry-pack-v0.1/](specs/access-and-visibility/registry-pack-v0.1/) | The follow-on registry-ready definitions for the same boundary. Subordinate to the spec above. Nothing merged into the main registries yet; sprints 031-050 pull items in as each surface lands. |
 
 ## 2b. Demo packs — the domain written out as plain data
 
@@ -79,17 +79,17 @@ The eight numbered specifications the build was authored against, forming one de
 
 | Document | Role |
 |---|---|
-| [.../README.md](manufacturing-software-doc-stack-build-ready/README.md) | Bundle manifest + current implementation target. Read first. |
-| [01 Research Dossier](manufacturing-software-doc-stack-build-ready/01-research-dossier-v0.12.md) | Theory/doctrine/ontology — the "manufacturing operational grammar" model, 11-layer stack, core invariants. The *why*. |
-| [02 Product Specification](manufacturing-software-doc-stack-build-ready/02-product-specification-v0.6.md) | Product authority — what it does, who it serves, owns vs integrates vs excludes, scope, success criteria. |
-| [03 Technical Architecture (TAD)](manufacturing-software-doc-stack-build-ready/03-technical-architecture-document-v0.3.md) | Modular-monolith architecture + the §5 authoritative module-ownership registry, state machines, event model. |
-| [04 Operation/Event/State Contract Spec](manufacturing-software-doc-stack-build-ready/04-operation-event-state-contract-spec-v0.4.1.md) | Executable-semantics contract layer — the governing contract authority for the first slice; the YAML registries encode this. |
-| [05 Virtual Factory Harness Spec](manufacturing-software-doc-stack-build-ready/05-virtual-factory-harness-spec-v0.1.2.md) | The adversarial test-oracle spec: scenario format, the black-box driver interface, assertion engine, ContractGap-vs-GrammarGap boundary. |
-| [06 Executable VF-003 Scenario Spec](manufacturing-software-doc-stack-build-ready/06-executable-vf-003-scenario-spec-v0.1.1.md) | The first executable scenario package (valve-body failed-torque / redline / rework / run-close) with expected trace + assertions. |
-| [07 Build Readiness Plan](manufacturing-software-doc-stack-build-ready/07-build-readiness-plan-v0.2.md) | LLM-executable build plan: repo layout, per-operation handler contracts, schema/projection/report/access rules, gated phases. |
-| [08 Repository Bootstrap Plan](manufacturing-software-doc-stack-build-ready/08-repository-bootstrap-plan-outline-v0.1.md) | File-by-file bootstrap work order + executor no-invention rules. |
+| [.../README.md](specs/founding-stack/README.md) | Bundle manifest + current implementation target. Read first. |
+| [01 Research Dossier](specs/founding-stack/01-research-dossier-v0.12.md) | Theory/doctrine/ontology — the "manufacturing operational grammar" model, 11-layer stack, core invariants. The *why*. |
+| [02 Product Specification](specs/founding-stack/02-product-specification-v0.6.md) | Product authority — what it does, who it serves, owns vs integrates vs excludes, scope, success criteria. |
+| [03 Technical Architecture (TAD)](specs/founding-stack/03-technical-architecture-document-v0.3.md) | Modular-monolith architecture + the §5 authoritative module-ownership registry, state machines, event model. |
+| [04 Operation/Event/State Contract Spec](specs/founding-stack/04-operation-event-state-contract-spec-v0.4.1.md) | Executable-semantics contract layer — the governing contract authority for the first slice; the YAML registries encode this. |
+| [05 Virtual Factory Harness Spec](specs/founding-stack/05-virtual-factory-harness-spec-v0.1.2.md) | The adversarial test-oracle spec: scenario format, the black-box driver interface, assertion engine, ContractGap-vs-GrammarGap boundary. |
+| [06 Executable VF-003 Scenario Spec](specs/founding-stack/06-executable-vf-003-scenario-spec-v0.1.1.md) | The first executable scenario package (valve-body failed-torque / redline / rework / run-close) with expected trace + assertions. |
+| [07 Build Readiness Plan](specs/founding-stack/07-build-readiness-plan-v0.2.md) | LLM-executable build plan: repo layout, per-operation handler contracts, schema/projection/report/access rules, gated phases. |
+| [08 Repository Bootstrap Plan](specs/founding-stack/08-repository-bootstrap-plan-outline-v0.1.md) | File-by-file bootstrap work order + executor no-invention rules. |
 
-*(`manufacturing-software-build-ready-doc-stack.zip` is the zipped bundle of the folder above — redundant with the unzipped copy; kept as the original delivered artifact.)*
+*(`specs/founding-stack.zip` is the zipped bundle of the folder above — redundant with the unzipped copy; kept as the original delivered artifact.)*
 
 ## 6. Vendored methodology — the SDD kit (read-only)
 

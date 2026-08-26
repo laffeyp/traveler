@@ -1,6 +1,6 @@
 registry: failure-classes
 registry_version: contracts-0.4.1
-source: access-and-visibility-boundary-spec-v0.1.md §14
+source: specs/access-and-visibility/boundary-spec-v0.1.md §14
 note: >
   Twenty-one candidate failure classes an operation may return when an access decision refuses. Every entry
   either maps_to a class the main registries already carry (`authorization_denied`, `validation_error`, ...)

@@ -1,6 +1,6 @@
 registry: operations
 registry_version: access-and-visibility-pack-v0.1
-source: access-and-visibility-boundary-spec-v0.1.md §6.10, §7.9, §13
+source: specs/access-and-visibility/boundary-spec-v0.1.md §6.10, §7.9, §13
 note: >
   Four new operations. EvaluateAccess is not listed here — it stays in the main
   operations.yaml and is generalized in sprint 031 (widened output schema per §8,

@@ -17,13 +17,13 @@ so you can weigh them differently.
 The first pass of this review said the receiving/outbound work was built beyond the documents, with no specification
 behind it. That was wrong, and the error mattered.
 
-`receiving-evidence-boundary-spec-v0.1.md` exists. It is dated 2026-07-31 00:28, the night before the work landed,
+`specs/receiving-evidence/boundary-spec-v0.1.md` exists. It is dated 2026-07-31 00:28, the night before the work landed,
 and its own §0 says:
 
 > This is Receiving Evidence Boundary Specification v0.1. It is the next governing document after the completed
 > first executable slice.
 
-`receiving-evidence-registry-pack-v0.1/` in the repo is the follow-on that "hardens the earlier Receiving Evidence
+`specs/receiving-evidence/registry-pack-v0.1/` in the repo is the follow-on that "hardens the earlier Receiving Evidence
 Boundary Specification by turning the boundary into registry-ready definitions."
 
 So the increment was specified. The review that matters is not "why was this unspecified" but **which of the
@@ -33,7 +33,7 @@ what follows.
 One thing about the specification itself, before the findings:
 
 **F0. The governing document is not in the repository.** The boundary spec sits in `~/Downloads`, untracked, absent
-from `manufacturing-software-doc-stack-build-ready/`, absent from `DOCS.md`, and absent from the authority order in
+from `specs/founding-stack/`, absent from `DOCS.md`, and absent from the authority order in
 `WORKING_AGREEMENT.md §Authority order`. The registry pack is tracked but is likewise in neither `DOCS.md` nor the
 authority order. Nothing inside the project points at either. For a build whose premise is that authorised-versus-
 invented behaviour is distinguishable by a followable record, the authority for the newest boundary cannot be
@@ -144,7 +144,7 @@ goods it covers.
 Specification: BuildCheck must fail if selected inventory is receiving-quarantined, receiving-inspection-blocked,
 missing required supplier evidence, or "released by unverifiable receiving path." The build check reads inventory
 state only; it has no notion of receiving inspection state or evidence sufficiency. The pack's own VF-025 skeleton
-(`receiving-evidence-registry-pack-v0.1/scenarios/VF-025/scenario.yaml`) ends with `RunBuildCheck` expecting
+(`specs/receiving-evidence/registry-pack-v0.1/scenarios/VF-025/scenario.yaml`) ends with `RunBuildCheck` expecting
 `BUILD_CHECK_FAILED` + `BUILD_BLOCKER_CREATED`; the built VF-025 stops at the quarantine and never runs a build check.
 
 ### F6. §10.3 — "shipment received does not mean inventory released", but the receiving check does not care whether the shipment was ever received.
@@ -190,7 +190,7 @@ the same name. The built scenarios are worth keeping; the ids are the problem.
 
 **Severity: high. Reproduced (four arms).**
 
-`receiving-evidence-registry-pack-v0.1/mutations/receiving-fail-closed-battery.yaml` is a shipped artifact listing
+`specs/receiving-evidence/registry-pack-v0.1/mutations/receiving-fail-closed-battery.yaml` is a shipped artifact listing
 twenty-eight named mutations across four groups. Boundary spec §27 makes it acceptance criterion 13: "Fail-closed
 mutation battery passes." Nothing in the repo runs it — `grep -rl receiving-fail-closed-battery src/ tests/` returns
 nothing.

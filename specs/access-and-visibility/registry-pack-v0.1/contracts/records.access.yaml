@@ -1,6 +1,6 @@
 registry: records
 registry_version: access-and-visibility-pack-v0.1
-source: access-and-visibility-boundary-spec-v0.1.md §6.10, §7.10
+source: specs/access-and-visibility/boundary-spec-v0.1.md §6.10, §7.10
 note: >
   New record proposed by this pack: SupportSession. AccessGroupMembership and
   ServiceAccountScope are NOT records — the sprint 029 mapping's candidate
