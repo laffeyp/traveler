@@ -1,10 +1,12 @@
 # Distributed Factory Execution & Record System
 
-Software for running a distributed factory that builds complex hardware. Written in TypeScript. Built by reading what's public — standards, job postings, industry docs, open-source code — and using an LLM to turn it into a system that runs.
+A factory-execution system for complex hardware, written in TypeScript. Reverse-engineered from the public record — standards, published architectures, job postings, open-source projects, regulatory guidance, vendor talks, conference material — with a language model against a method called Signal-Driven Development.
 
-Sources named in [`specs/founding-stack/01-research-dossier-v0.12.md`](specs/founding-stack/01-research-dossier-v0.12.md) §9. How each was weighed in §10.
+The research dossier names its sources in §9. First Resonance ION for manufacturing execution vocabulary. Hadrian for distributed-factory ambition. SpaceX for the argument that at enough complexity factory software becomes part of the production system. ISA-95 and B2MML for operations vocabulary. MTConnect and OPC UA for machine data. ERP and MRP vocabulary. AS9100, AS13100, and NAS412 for aerospace quality. FAA production guidance. ITAR and EAR for export control. Each source was rated on domain relevance, interface quality, scale posture, adapter burden, and architectural trust. The lens sits in §10 of [`specs/founding-stack/01-research-dossier-v0.12.md`](specs/founding-stack/01-research-dossier-v0.12.md).
 
-The method is Signal-Driven Development. Read text as an imperfect copy of a small typed grammar. Lock the grammar. Use it to build and to check. Most of this is old work under new names — process mining, spec mining, model extraction, Rules-as-Code, guideline formalization. [`docs/SDD_GENERAL_PROCESS.md`](docs/SDD_GENERAL_PROCESS.md) sets it against the fields that got there first.
+The work ran in two directions. Forward: read the domain out of the public record, then write governing specifications a Tier-1 LLM could implement without inventing behavior — theory dossier, product spec, technical architecture, executable contract, test-oracle harness, first scenario, build plan. Reverse: for the external systems the product must talk to — ERP, PLM, operator stations, machine adapters, identity providers — build doc-derived simulators from public docs and standards, not real integrations. §30 of the research dossier calls the second one a doc-derived reverse harness. Both honor one rule: no invention.
+
+Signal-Driven Development is the method. Treat a body of text as an imperfect, repeated copy of a small typed grammar. Lock the grammar. Use it to both build and check. Most of the operation is old work under a new name: process mining, spec mining, grammatical inference, model extraction, model-driven reverse engineering, Rules-as-Code, computer-interpretable clinical guidelines. The theory note in [`docs/SDD_GENERAL_PROCESS.md`](docs/SDD_GENERAL_PROCESS.md) sets SDD against those five fields and names the parts that are actually new. There are few.
 
 ## What the code does
 
