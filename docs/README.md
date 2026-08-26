@@ -18,4 +18,4 @@ Start with `STATE.md`. `DOCS.md` catalogs every document in the repo.
 | [SESSION_2026-08-25.md](SESSION_2026-08-25.md) | Full-day narrative of the Phase C session. Commit ledger at the bottom. |
 | [SDD_GENERAL_PROCESS.md](SDD_GENERAL_PROCESS.md) | SDD set against the settled fields that already do parts of what it does. Not project state; the doctrine behind it. |
 
-SDD process state — [`dev/BLACKBOARD.md`](../dev/BLACKBOARD.md), [`dev/KIT_DIARY.md`](../dev/KIT_DIARY.md), [`dev/WORKING_AGREEMENT.md`](../dev/WORKING_AGREEMENT.md), [`dev/ADDENDUMS.md`](../dev/ADDENDUMS.md) — lives in `dev/` alongside the vendored kit and sprint history.
+SDD process state — [`dev/BLACKBOARD.md`](../dev/BLACKBOARD.md), [`dev/KIT_DIARY.md`](../dev/KIT_DIARY.md), [`dev/WORKING_AGREEMENT.md`](../dev/WORKING_AGREEMENT.md), [`dev/ADDENDUMS.md`](../dev/ADDENDUMS.md) — lives in `dev/` alongside the vendored kit, sprint history, review outputs, and [`dev/process-notes/`](../dev/process-notes/) (first-principles walk-throughs of arcs the SDD ledger does not fully cover).

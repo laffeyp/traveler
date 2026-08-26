@@ -29,6 +29,14 @@ Live board for the methodology this project runs under (`dev/sdd-kit-2/`).
 | [ADDENDUMS.md](dev/ADDENDUMS.md) | Dated technique captures staged between this project's `dev/KIT_DIARY.md` and the kit's `TECHNIQUES.md`. Feeds the shared kit, not project state. |
 | [SDD_GENERAL_PROCESS.md](SDD_GENERAL_PROCESS.md) | SDD placed against the settled fields that already do parts of what it does — process mining, spec mining, grammatical inference, model extraction, model-driven reverse engineering, Rules as Code, computer-interpretable guidelines. What is a rename, what is new, the reach test, where the method stops. |
 
+## 2c. Process notes
+
+Dated walk-throughs of arcs the SDD ledger does not fully cover — how a specific process was done, from first principles, so the next arc of the same shape can follow the sequence rather than rediscover it.
+
+| Document | What it holds |
+|---|---|
+| [dev/process-notes/repo-cleanup-for-public-release.md](../dev/process-notes/repo-cleanup-for-public-release.md) | The three-move pre-public-release grooming this repo went through: register-strip every project-authored doc via the `dellm` skill, backfill every ledger surface where sprint coverage drifted, move every process artifact under `dev/` so the root reads as a normal Node/TS repo. Concrete commands, the errors each move caught in this project, the sequence that matters. |
+
 ## 2a. Boundary specifications
 
 The nine-document stack (group 5) governs the first executable slice and stops there. A boundary specification governs one boundary beyond it and ranks with the doc stack in `dev/WORKING_AGREEMENT.md §Authority order`.
