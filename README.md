@@ -6,24 +6,18 @@ A factory-execution system for building complex hardware. TypeScript on Node. Th
 
 Signal-Driven Development: [`docs/SDD_GENERAL_PROCESS.md`](docs/SDD_GENERAL_PROCESS.md). Source list and evaluation: [`specs/founding-stack/01-research-dossier-v0.12.md`](specs/founding-stack/01-research-dossier-v0.12.md) §9-10.
 
-## What it does
+## What it is
 
-A part moves through the shop; traveler records what happens to it. Which procedure ran. Which step the operator was on. What measurement was captured, which child parts were installed, when the run closed and by whose sign-off.
+A prototype in TypeScript that models a manufacturing execution record system. A single fixed contract lists everything the runtime knows how to do; the runtime refuses anything else. The same code runs against a memory backend and a SQLite backend; twenty-nine scenarios drive each in turn, and the two backends emit event streams that match byte for byte. Nothing runs on physical hardware; nothing serves an end user.
 
-The record is authoritative. A shipment cannot enter production until a quality engineer clears its documents. A run cannot close until every rule in [`contracts/run-close-rules.yaml`](contracts/run-close-rules.yaml) passes. A nonconformance walks disposition, rework, and verification before it closes. A certificate of conformance is generated from the run's own events and is superseded when those events change.
+## What it is not
 
-Sixteen YAML registries in [`contracts/`](contracts/) name every record, operation, event, and state machine the runtime knows. `src/` is a generic executor over those registries. Two drivers sit behind one interface — an in-memory driver and a `node:sqlite` backend — and a whole-bench check asserts they produce equivalent event traces on the same scenarios. A handler that emits an unregistered event throws and rolls back. A caller whose type no authorization rule names is refused. A required behavior the contracts do not name surfaces as a `ContractGap`, `not_implemented`, or B-Q — never a guess.
-
-## What it does not do
-
-Traveler is a record system and an executor. It does not:
-
-- render a live floor UI. The design pack under [`canvas/`](canvas/) is 47 wireframes on a canvas, not a deployed app.
-- integrate with physical devices. Scanners, printers, and machine adapters are named in the vocabulary but have no driver code (handoff-E, [`dev/BLACKBOARD.md`](dev/BLACKBOARD.md)).
-- carry a standalone Part, Drawing, MaterialSpecification, or InspectionRequirement record. Those wait behind handoff-F.
-- schedule work. No planning engine, no MRP tie-in, no capacity model.
-- authenticate. The caller identity is trusted at the driver boundary; a real deployment sits behind an identity provider.
-- talk to an ERP, another vendor's MES, or a customer portal.
+- No live floor UI. The design pack under [`canvas/`](canvas/) is 47 wireframes on a canvas.
+- No device integration. Scanners, printers, and machine adapters are named in the vocabulary but have no driver code (handoff-E, [`dev/BLACKBOARD.md`](dev/BLACKBOARD.md)).
+- No standalone Part, Drawing, MaterialSpecification, or InspectionRequirement records. Those wait behind handoff-F.
+- No scheduling, no MRP tie-in, no capacity model.
+- No authentication. The caller identity is trusted at the driver boundary.
+- No ERP integration, no other-vendor MES connection, no customer portal.
 
 ## Status, measured 2026-08-25
 
