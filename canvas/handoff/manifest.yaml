@@ -1,0 +1,171 @@
+bundle: phase-d-canvas
+version: 1
+canvas_artifact: https://claude.ai/code/artifact/347f2431-d036-4bcf-a3ad-28cc928a3dda
+built_at: 2026-08-26
+authored_against:
+  spec: specs/ui-surface-design/ui-surface-design-spec-v0.3.md
+  philosophy: specs/ui-surface-design/design-philosophy.md
+  registries: contracts/*.yaml
+  visibility: src/driver/visibility.ts
+
+# Files under canvas/, keyed by kind. Every file resolves under
+# https://claude.ai/code/artifact/347f2431-d036-4bcf-a3ad-28cc928a3dda
+# when the canvas is opened in a browser.
+
+vocabulary:
+  - Main.dc.html
+
+tokens:
+  - tokens/handheld.dc.html
+  - tokens/mac.dc.html
+
+components:
+  - components/page-shell.dc.html
+  - components/global-search.dc.html
+  - components/caller-profile-chip.dc.html
+  - components/state-badge.dc.html
+  - components/blocker-card.dc.html
+  - components/visibility-badge.dc.html
+  - components/action-button.dc.html
+  - components/disabled-action-strip.dc.html
+
+patterns:
+  - patterns/runtime-states.dc.html
+  - patterns/empty-states.dc.html
+  - patterns/blockers.dc.html
+
+screens_handheld:
+  - handheld/OperatorHome.dc.html
+  - handheld/RunStepView.dc.html
+  - handheld/ScanInventoryView.dc.html
+  - handheld/MeasurementCaptureView.dc.html
+  - handheld/InstallInventoryView.dc.html
+  - handheld/RedlineRequestView.dc.html
+  - handheld/BlockerView.dc.html
+  - handheld/RunCloseReadinessView.dc.html
+
+screens_mac_planning:
+  - mac/RunPlanningQueue.dc.html
+  - mac/BuildCheckView.dc.html
+  - mac/InventoryQueue.dc.html
+  - mac/EffectivityView.dc.html
+
+screens_mac_receiving:
+  - mac/ReceivingQueue.dc.html
+  - mac/ShipmentView.dc.html
+  - mac/ShipmentLineView.dc.html
+  - mac/SupplierEvidenceChecklist.dc.html
+  - mac/SupplierDocumentReview.dc.html
+  - mac/ReceivingCheckView.dc.html
+  - mac/InventoryQuarantineView.dc.html
+
+screens_mac_quality:
+  - mac/QualityQueue.dc.html
+  - mac/NonconformanceView.dc.html
+  - mac/ContainmentView.dc.html
+  - mac/DispositionView.dc.html
+  - mac/ReworkVerificationView.dc.html
+  - mac/RunBlockingConsole.dc.html
+
+screens_mac_engineering:
+  - mac/ProcedureAuthoringView.dc.html
+  - mac/StructureAuthoringView.dc.html
+  - mac/RedlineReviewQueue.dc.html
+  - mac/RedlineDecisionView.dc.html
+
+screens_mac_run_close:
+  - mac/RunCloseObservationView.dc.html
+  - mac/RunCloseReportGenerationView.dc.html
+
+screens_mac_evidence:
+  - mac/MachineRegistrationView.dc.html
+  - mac/MachineEvidenceQueue.dc.html
+  - mac/MachineEvidenceRecordView.dc.html
+  - mac/AdapterAttributionView.dc.html
+  - mac/InvalidationImpactView.dc.html
+
+screens_mac_reports:
+  - mac/ReportsHome.dc.html
+  - mac/RunCloseReportView.dc.html
+  - mac/CertificateOfConformanceView.dc.html
+  - mac/SupplierEvidencePacketView.dc.html
+  - mac/SerialHistoryView.dc.html
+  - mac/AsBuiltView.dc.html
+  - mac/BoundedDrillDownView.dc.html
+
+screens_mac_support_and_admin:
+  - mac/AccessDecisionAuditView.dc.html
+  - mac/SupportSessionView.dc.html
+  - mac/SupportDiagnosticsView.dc.html
+  - mac/AdminPolicyView.dc.html
+
+flow_maps:
+  - flows/handheld-operator.dc.html
+  - flows/receiving.dc.html
+  - flows/quality.dc.html
+  - flows/access.dc.html
+
+# Handoff gaps this bundle does not close.
+
+handoffs:
+  - id: handoff-E
+    boundary: Physical Presence
+    questions_from: specs/ui-surface-design/ui-surface-design-spec-v0.3.md#22
+    related_blackboard: B-Q-33
+    seen_on:
+      - handheld/ScanInventoryView.dc.html
+      - handheld/InstallInventoryView.dc.html
+    candidate_operations:
+      - PresentInventoryAtStation
+      - ScanPhysicalItem
+      - BindPresentedItemToRunStep
+      - RejectPresentedItem
+      - ClearPresentedItem
+      - TimeoutPresentation
+    candidate_records:
+      - Station
+      - Presentation
+
+  - id: handoff-F
+    boundary: Part and Inspection Requirement
+    questions_from: specs/ui-surface-design/ui-surface-design-spec-v0.3.md#23
+    related_blackboard: [B-Q-31, B-Q-32]
+    seen_on:
+      - handheld/RunStepView.dc.html
+      - handheld/MeasurementCaptureView.dc.html
+      - mac/SupplierEvidenceChecklist.dc.html
+    candidate_records:
+      - Part
+      - PartRevision
+      - Drawing
+      - MaterialSpecification
+      - InspectionRequirement
+      - InspectionRequirementVersion
+
+# Token pointers. The implementer reads token names from the token
+# artboards; this section names which token maps to which purpose.
+
+tokens_summary:
+  ground: "#FAFAF7"
+  fill_weak: "#F0EDDF"
+  rule: "#D9D6CE"
+  ink_primary: "#1A1A1A"   # 17:1 AAA
+  ink_secondary: "#4A4A4A" # 9.4:1 AAA
+  ink_tertiary: "#6B6B6B"  # 5.5:1 AA-large
+  amber: "#B45309"         # pending, waiting, deferred
+  red: "#B00020"           # refusal, hard fail
+  blue: "#1E4E8C"           # informational, focus ring
+  green: "#2D6A3C"          # load-bearing success only
+  type_pairing:
+    display: "IBM Plex Sans"
+    body: "IBM Plex Sans"
+    mono: "IBM Plex Mono"
+  minimum_body_px:
+    handheld: 15
+    mac: 12
+  tap_target_pt:
+    handheld_min: 48
+    handheld_primary: 56
+    mac_default: 30
+
+# What the implementer must not do lives in README.md; five items.

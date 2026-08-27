@@ -59,6 +59,40 @@ Phase C — access and visibility boundary. Twenty-four sprints (029-052) landed
 
 The distinct spine the boundary holds against, per §18: summary is not denial; denial is not hidden existence; service processing is not human disclosure; support access is not superuser access; report generation is not report read; drill-down is not arbitrary event replay.
 
+## Phase D — UI surface design (shipped 2026-08-26)
+
+Shipped. 66 artefacts on the canvas: 1 vocabulary reference, 2 token sheets, 8 shared components, 3 pattern libraries, 47 screen artboards (8 handheld + 39 Mac), 4 flow maps, 1 handoff bundle (3 files). The 47 drawn screens are full coverage of the surfaces the design spec at v0.3 defines. Every artboard cites only registered names from `contracts/*.yaml`; every action binds to a registered operation, a registered read path, a named pipeline, a composite chain, or an explicit handoff row. No code landed. No registry edits. Every gate green throughout. `docs/UI_SURFACE_ACCEPTANCE.md` scores 21 of 21 §25 criteria pass or pass-in-part (one row pass-in-part on the mechanical grep cadence). Canvas published at https://claude.ai/code/artifact/347f2431-d036-4bcf-a3ad-28cc928a3dda.
+
+Discipline: the design philosophy at `specs/ui-surface-design/design-philosophy.md` — seventeen principles drawn from seven traditions (high-performance HMI, alarm management, poka-yoke, classical human factors, situation awareness, aviation cockpit design, and Signal-Driven Development). Every artboard passes the three tests in §6 of the philosophy before its sprint closes.
+
+Tooling: the `design` skill in this Claude Code session — an early preview of Claude Design running inside the terminal agent. Artboards are `.dc.html` files on one pan-zoom canvas, published as an Artifact on claude.ai and refined visually in the browser. Detail lives in `docs/PHASE_D_PLAN.md`.
+
+Cadence: auto-within-phase. All 36 sprint cards (053-088) drafted up front. Amended in place if the read of the code changes what a card should hold.
+
+### Phase D sprint index
+
+| # | Sprint | Scope |
+|---|---|---|
+| D.1 | 053 | Canvas established; vocabulary loaded from `contracts/*.yaml` |
+| | 054 | Design tokens for handheld and Mac; shared component library |
+| | 055 | Runtime action state library (nine states from §6) |
+| | 056 | Empty and no-authority state library (patterns from §8) |
+| | 057 | Blocker presentation library (row shape from §7) |
+| D.2 | 058-065 | Handheld pack: OperatorHome, RunStepView, ScanInventoryView, MeasurementCaptureView, InstallInventoryView, RedlineRequestView, BlockerView, RunCloseReadinessView |
+| D.3 | 066-072 | Receiving pack: ReceivingQueue, ShipmentView, ShipmentLineView, SupplierEvidenceChecklist, SupplierDocumentReview, ReceivingCheckView, InventoryQuarantineView |
+| D.4 | 073-077 | Quality pack: QualityQueue, NonconformanceView, ContainmentView, DispositionView, ReworkVerificationView |
+| D.5 | 078-082 | Access and reports pack: RunCloseReportView, SerialHistoryView, BoundedDrillDownView, AccessDecisionAuditView, SupportSessionView |
+| D.6 | 083-086 | Flow assembly: handheld operator, receiving, quality, access flows against real scenarios |
+| D.7 | 087 | Handoff bundle plus design tokens plus component tree |
+| D.8 | 088 | §25 acceptance closeout; `docs/UI_SURFACE_ACCEPTANCE.md`; STATE, ROADMAP, DOCS, KIT_DIARY refresh |
+
+Two handoffs Phase D produces but does not close:
+
+- **Physical Presence Boundary** — no operation asserts "this part is in front of me now"; no operation binds a scanned item to a run step. The demo pack's B-Q-33 named the operation gap. §22 of the design spec records the questions.
+- **Part / Inspection Requirement Boundary** — no standalone `Part` record; no drawing or material-specification home; no versioned inspection requirement. Demo pack's B-Q-31 and B-Q-32 named two of three gaps. §23 records the questions.
+
+Neither closes in this phase.
+
 ## Post-Phase-C deferred
 
 Recorded by the 2026-08-25 red-team probe (KIT_DIARY Entry 32):

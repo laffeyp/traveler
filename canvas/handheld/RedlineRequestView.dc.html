@@ -1,0 +1,193 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.4; }
+    .device { width: 390px; height: 844px; background: #FAFAF7; display: flex; flex-direction: column; }
+
+    /* Header + meta shared */
+    .header { display: flex; align-items: center; gap: 8px; padding: 12px 14px 10px; border-bottom: 1px solid #D9D6CE; }
+    .back { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #1A1A1A; margin-left: -6px; }
+    .back svg { width: 22px; height: 22px; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; background: #F0EDDF; border: 1px solid #D9D6CE; border-radius: 3px; font-size: 11px; }
+    .chip .actor { font-weight: 500; }
+    .chip .mono { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #4A4A4A; }
+    .chip .sep { color: #B8B4A8; }
+    .station { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-align: right; line-height: 1.15; }
+
+    .meta { padding: 10px 16px; background: #F0EDDF; border-bottom: 1px solid #D9D6CE; font-size: 12px; }
+    .meta .mono { font-family: "IBM Plex Mono", monospace; color: #4A4A4A; }
+    .meta .sep { color: #B8B4A8; margin: 0 6px; }
+
+    .body { flex: 1; padding: 16px; overflow-y: auto; }
+
+    /* Current instruction card */
+    .instr { background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; padding: 12px 14px; margin-bottom: 14px; }
+    .instr .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .instr .text { font-size: 15px; color: #1A1A1A; line-height: 1.35; margin-bottom: 6px; }
+    .instr .cite { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; }
+
+    /* Field label + textarea */
+    .field-lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin: 8px 0 6px; display: flex; align-items: baseline; gap: 6px; }
+    .field-lbl .req { color: #B00020; }
+    .field-lbl .hint { font-family: "IBM Plex Sans", sans-serif; font-size: 11px; color: #6B6B6B; text-transform: none; letter-spacing: 0; margin-left: auto; }
+    .ta { display: block; width: 100%; background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; padding: 10px 12px; font-family: "IBM Plex Sans", sans-serif; font-size: 15px; color: #1A1A1A; line-height: 1.4; margin-bottom: 4px; min-height: 88px; }
+    .ta.filled { color: #1A1A1A; }
+    .ta .placeholder { color: #8B8B8B; font-style: normal; }
+    .caret { display: inline-block; width: 2px; height: 18px; background: #1A1A1A; vertical-align: -4px; margin-left: 2px; }
+
+    /* Attach row */
+    .attach { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; margin: 14px 0; min-height: 56px; }
+    .attach .icon { width: 24px; display: flex; justify-content: center; color: #6B4A00; }
+    .attach .icon svg { width: 20px; height: 20px; }
+    .attach .info { flex: 1; }
+    .attach .info .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+    .attach .info .name { font-size: 13px; color: #1A1A1A; }
+    .attach .info .op { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; }
+    .attach .cta { padding: 6px 12px; border-radius: 3px; font-size: 13px; font-weight: 500; height: 36px; display: inline-flex; align-items: center; background: transparent; color: #1A1A1A; border: 1px solid #1A1A1A; }
+
+    /* Primary */
+    .btn-primary { display: flex; align-items: center; justify-content: center; height: 56px; background: #1A1A1A; color: #FAFAF7; border-radius: 4px; font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+    .btn-primary.disabled { background: #E5E5E5; color: #8B8B8B; }
+    .cite-op { font-size: 11px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; text-align: center; margin-bottom: 12px; }
+    .cite-op .stage { display: inline-block; padding: 1px 6px; background: #F0EDDF; border-radius: 2px; margin: 0 2px; }
+
+    /* Lifecycle preview */
+    .lifecycle { padding-top: 12px; border-top: 1px solid #E0DDD3; margin-top: 12px; }
+    .lifecycle .lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+    .lifecycle .chain { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; }
+    .lifecycle .chain .st { padding: 2px 6px; border-radius: 2px; background: #F0EDDF; color: #4A4A4A; border: 1px solid #D9D6CE; }
+    .lifecycle .chain .st.here { background: #2D6A3C; color: #FAFAF7; border-color: #2D6A3C; }
+    .lifecycle .chain .st.next { background: #B45309; color: #FAFAF7; border-color: #B45309; }
+    .lifecycle .chain .st.mac { color: #6B6B6B; border-style: dashed; }
+    .lifecycle .chain .arr { color: #B8B4A8; }
+    .lifecycle .note { font-size: 11px; color: #6B6B6B; margin-top: 6px; }
+
+    /* Tabs */
+    .tabs { display: flex; border-top: 1px solid #B8B4A8; background: #FAFAF7; }
+    .tabs .tab { flex: 1; padding: 8px 4px; text-align: center; font-size: 11px; color: #6B6B6B; border-right: 1px solid #E0DDD3; }
+    .tabs .tab:last-child { border-right: none; }
+    .tabs .tab.active { background: #F0EDDF; color: #1A1A1A; font-weight: 500; }
+    .tabs .tab .icon { display: block; height: 18px; margin: 0 auto 3px; }
+  </style>
+</helmet>
+
+<div class="device">
+
+  <div class="header">
+    <div class="back">
+      <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 4 L6 11 L14 18"/></svg>
+    </div>
+    <div class="chip">
+      <span class="actor">j.rivera</span>
+      <span class="sep">·</span>
+      <span class="mono">operator</span>
+    </div>
+    <div class="station">14:31<br>station-B4</div>
+  </div>
+
+  <div class="meta">
+    <span class="mono">RUN-VF-003-0812-01</span>
+    <span class="sep">·</span>
+    Step 3
+    <span class="sep">·</span>
+    Redline
+  </div>
+
+  <div class="body">
+
+    <div class="instr">
+      <div class="lbl">Current instruction</div>
+      <div class="text">Torque M8 bolt at 24-28 Nm.</div>
+      <div class="cite">ProcedureStep step_003 · ProcedureVersion valve_body_v3 (released)</div>
+    </div>
+
+    <div class="field-lbl">
+      Proposed change <span class="req">·</span>
+      <span class="hint">→ RedlineDiff</span>
+    </div>
+    <div class="ta filled">Range too tight for this stiffener revision. Suggest 22-30 Nm on M8 bolt at this step, matching supplier torque chart for rev B.<span class="caret"></span></div>
+
+    <div class="field-lbl">Reason <span class="req">·</span></div>
+    <div class="ta filled">Three prior runs required rework at this step because torques settled around 22 Nm after 24 h. Chart TC-2026-04-A supports the wider band.</div>
+
+    <div class="attach">
+      <div class="icon">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M13 4 L5 12 A3 3 0 0 0 9 16 L16 9"/></svg>
+      </div>
+      <div class="info">
+        <div class="lbl">Attachment</div>
+        <div class="name">Photo · torque chart TC-2026-04-A</div>
+        <div class="op">→ CreateAttachment + LinkAttachment</div>
+      </div>
+      <div class="cta">Attach</div>
+    </div>
+
+    <div class="btn-primary">Submit for review</div>
+    <div class="cite-op">
+      <span class="stage">CreateRedlineDraft</span> →
+      <span class="stage">SubmitRedline</span>
+      · rule redline_authoring
+    </div>
+
+    <div class="lifecycle">
+      <div class="lbl">Redline lifecycle</div>
+      <div class="chain">
+        <span class="st here">draft</span>
+        <span class="arr">→</span>
+        <span class="st next">submitted</span>
+        <span class="arr">→</span>
+        <span class="st mac">under_review</span>
+        <span class="arr">→</span>
+        <span class="st mac">approved</span>
+        <span class="arr">→</span>
+        <span class="st mac">applied</span>
+        <span class="arr">→</span>
+        <span class="st mac">merge_candidate</span>
+        <span class="arr">→</span>
+        <span class="st mac">merged</span>
+        <span class="arr">→</span>
+        <span class="st mac">closed</span>
+        <span class="arr">·</span>
+        <span class="st mac">rejected</span>
+      </div>
+      <div class="note">Dashed states move under `redline_review` on the Mac Engineering station (manufacturing_engineer). Nothing further is decided from this screen.</div>
+    </div>
+
+  </div>
+
+  <div class="tabs">
+    <div class="tab active">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 10 L10 4 L16 10 M6 9 V16 H14 V9"/></svg>
+      Assigned
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="6" width="14" height="8" rx="1"/><path d="M6 6 V14 M9 6 V14 M13 6 V14"/></svg>
+      Scan
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5 H16 M4 10 H16 M4 15 H16"/></svg>
+      Runs
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3 L17 15 H3 Z M10 8 V11 M10 13 V13.5"/></svg>
+      Blockers
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="7" r="3"/><path d="M4 17 C4 13 7 11 10 11 C13 11 16 13 16 17"/></svg>
+      Profile
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

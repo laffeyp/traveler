@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.4; }
+    .device { width: 390px; height: 844px; background: #FAFAF7; display: flex; flex-direction: column; }
+
+    /* Header */
+    .header { display: flex; align-items: center; gap: 8px; padding: 12px 14px 10px; border-bottom: 1px solid #D9D6CE; }
+    .back { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #1A1A1A; margin-left: -6px; }
+    .back svg { width: 22px; height: 22px; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; background: #F0EDDF; border: 1px solid #D9D6CE; border-radius: 3px; font-size: 11px; }
+    .chip .actor { font-weight: 500; }
+    .chip .mono { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #4A4A4A; }
+    .chip .sep { color: #B8B4A8; }
+    .station { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-align: right; line-height: 1.15; }
+
+    /* Meta */
+    .meta { padding: 10px 16px; background: #F0EDDF; border-bottom: 1px solid #D9D6CE; font-size: 12px; }
+    .meta .mono { font-family: "IBM Plex Mono", monospace; color: #4A4A4A; }
+    .meta .sep { color: #B8B4A8; margin: 0 6px; }
+
+    /* Body */
+    .body { flex: 1; padding: 16px; overflow-y: auto; }
+    .section-lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 8px; }
+
+    /* Expected + scanned cards */
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+    .card { background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; padding: 10px 12px; }
+    .card .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .card .name { font-size: 14px; font-weight: 500; margin-bottom: 2px; line-height: 1.2; }
+    .card .val { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; }
+
+    .match { display: flex; align-items: center; gap: 8px; margin: 10px 0; padding: 10px 12px; background: #E5F1E9; border-left: 3px solid #2D6A3C; border-radius: 0 3px 3px 0; font-size: 13px; }
+    .match svg { width: 20px; height: 20px; color: #2D6A3C; flex-shrink: 0; }
+    .match .m-lbl { font-weight: 500; color: #1A1A1A; }
+    .match .m-mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #2D6A3C; margin-left: auto; }
+
+    /* Eligibility chips */
+    .elig { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+    .elig .pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 11px; background: #F0EDDF; border: 1px solid #D9D6CE; color: #4A4A4A; }
+    .elig .pill.good { background: #E5F1E9; border-color: #2D6A3C; color: #2D6A3C; }
+    .elig .pill svg { width: 12px; height: 12px; }
+
+    /* Handoff-E banner */
+    .handoff { padding: 12px 14px; background: #FFF3D9; border-left: 3px solid #B45309; border-radius: 0 3px 3px 0; margin-bottom: 14px; font-size: 12px; }
+    .handoff .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B4A00; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .handoff .r { color: #1A1A1A; margin-bottom: 4px; font-size: 13px; }
+    .handoff .path { color: #6B4A00; font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+
+    /* Classification legend */
+    .cls-legend { font-size: 11px; color: #6B6B6B; margin-top: 8px; padding-top: 8px; border-top: 1px solid #E0DDD3; }
+    .cls-legend .k { font-family: "IBM Plex Mono", monospace; color: #4A4A4A; }
+    .cls-legend .row { padding: 3px 0; }
+
+    /* Primary + secondary */
+    .btn-primary { display: flex; align-items: center; justify-content: center; gap: 6px; height: 56px; background: #B45309; color: #FAFAF7; border-radius: 4px; font-size: 15px; font-weight: 500; }
+    .btn-primary .handoff-mark { font-family: "IBM Plex Mono", monospace; font-size: 10px; background: rgba(255,255,255,0.18); padding: 2px 6px; border-radius: 2px; }
+    .actions-row { display: flex; gap: 8px; margin-top: 8px; }
+    .btn-sec { flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; background: transparent; color: #1A1A1A; border: 1px solid #1A1A1A; border-radius: 3px; font-size: 13px; font-weight: 500; }
+    .btn-sec .mark { display: inline-block; margin-left: 6px; padding: 1px 5px; border-radius: 2px; background: #FFF3D9; color: #6B4A00; font-family: "IBM Plex Mono", monospace; font-size: 10px; }
+
+    /* Tab strip */
+    .tabs { display: flex; border-top: 1px solid #B8B4A8; background: #FAFAF7; }
+    .tabs .tab { flex: 1; padding: 8px 4px; text-align: center; font-size: 11px; color: #6B6B6B; border-right: 1px solid #E0DDD3; }
+    .tabs .tab:last-child { border-right: none; }
+    .tabs .tab.active { background: #F0EDDF; color: #1A1A1A; font-weight: 500; }
+    .tabs .tab .icon { display: block; height: 18px; margin: 0 auto 3px; }
+  </style>
+</helmet>
+
+<div class="device">
+
+  <div class="header">
+    <div class="back">
+      <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 4 L6 11 L14 18"/></svg>
+    </div>
+    <div class="chip">
+      <span class="actor">j.rivera</span>
+      <span class="sep">·</span>
+      <span class="mono">operator</span>
+    </div>
+    <div class="station">14:24<br>station-B4</div>
+  </div>
+
+  <div class="meta">
+    <span class="mono">RUN-VF-003-0812-01</span>
+    <span class="sep">·</span>
+    Step 3 requires
+    <span class="sep">·</span>
+    <span class="mono">gasket_003</span>
+  </div>
+
+  <div class="body">
+
+    <p class="section-lbl">Expected vs scanned</p>
+    <div class="compare">
+      <div class="card">
+        <div class="lbl">expected</div>
+        <div class="name">Gasket · rev B</div>
+        <div class="val">P/N 45-8829-G</div>
+      </div>
+      <div class="card">
+        <div class="lbl">scanned</div>
+        <div class="name">Gasket · rev B</div>
+        <div class="val">P/N 45-8829-G · SN&nbsp;000112</div>
+      </div>
+    </div>
+
+    <div class="match">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10 L8 14 L16 6"/></svg>
+      <span class="m-lbl">Matched</span>
+      <span class="m-mono">identity_only</span>
+    </div>
+
+    <p class="section-lbl">InventoryItem state</p>
+    <div class="elig">
+      <span class="pill good">
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7 L5 9 L10 3"/></svg>
+        reserved
+      </span>
+      <span class="pill good">reserved → RUN-VF-003-0812-01</span>
+      <span class="pill good">
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7 L5 9 L10 3"/></svg>
+        Certificate&nbsp;verified
+      </span>
+      <span class="pill">receiving_check&nbsp;passed</span>
+    </div>
+
+    <div class="handoff">
+      <div class="lbl">handoff-E · Physical Presence Boundary</div>
+      <div class="r">Identity resolved. Physical presence at this station cannot be asserted from a scan — no operation registered.</div>
+      <div class="path">B-Q-33 · design spec §22 · candidate: <span>PresentInventoryAtStation</span></div>
+    </div>
+
+    <div class="btn-primary">
+      Confirm matched item
+      <span class="handoff-mark">handoff-E</span>
+    </div>
+
+    <div class="actions-row">
+      <div class="btn-sec">Reject <span class="mark">handoff-E</span></div>
+      <div class="btn-sec">Open summary</div>
+    </div>
+
+    <div class="cls-legend">
+      <div class="row"><span class="k">identity_only</span> · resolves to a record; no product claim</div>
+      <div class="row"><span class="k">operation_binding</span> · supplies a parameter to a registered op</div>
+      <div class="row"><span class="k">presence_asserting</span> · claims physical presence · handoff-E</div>
+      <div class="row"><span class="k">handoff-gap</span> · vocabulary does not describe · handoff-E</div>
+    </div>
+
+  </div>
+
+  <div class="tabs">
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 10 L10 4 L16 10 M6 9 V16 H14 V9"/></svg>
+      Assigned
+    </div>
+    <div class="tab active">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="6" width="14" height="8" rx="1"/><path d="M6 6 V14 M9 6 V14 M13 6 V14"/></svg>
+      Scan
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5 H16 M4 10 H16 M4 15 H16"/></svg>
+      Runs
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3 L17 15 H3 Z M10 8 V11 M10 13 V13.5"/></svg>
+      Blockers
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="7" r="3"/><path d="M4 17 C4 13 7 11 10 11 C13 11 16 13 16 17"/></svg>
+      Profile
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

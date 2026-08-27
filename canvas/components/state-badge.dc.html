@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+    .doc { width: 440px; padding: 24px 28px; }
+    h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+    .meta { font-size: 11px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 20px; }
+    h2 { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #6B6B6B; margin: 20px 0 8px; }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+    .lede { font-size: 12px; color: #4A4A4A; margin: 0 0 12px; }
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+    
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 12px; margin: 2px 6px 2px 0; border: 1px solid transparent; }
+    .badge.n { background: #F0EDDF; color: #4A4A4A; border-color: #D9D6CE; }
+    .badge.a { background: #B45309; color: #FAFAF7; }
+    .badge.r { background: #B00020; color: #FAFAF7; }
+    .badge.i { background: #1E4E8C; color: #FAFAF7; }
+    .badge.g { background: #2D6A3C; color: #FAFAF7; }
+    .badge.t { background: #E5E5E5; color: #6B6B6B; text-decoration: line-through; }
+
+  </style>
+</helmet>
+<div class="doc">
+  <h1>State badge</h1>
+  <p class="meta">sprint 054 · shared component · shows a registered state name</p>
+  <p class="lede">One pill per registered state. Ground states use greyscale; exception states use the palette exactly once each.</p>
+
+  <p class="lede">Three of sixteen state-machined records drawn as samples. Full inventory in <span class="mono">contracts/state-machines.yaml</span>; the pattern below applies to every lifecycle record without exception.</p>
+
+  <h2>Run</h2>
+  <div>
+    <span class="badge n">planned</span>
+    <span class="badge n">ready</span>
+    <span class="badge r">blocked</span>
+    <span class="badge n">in_progress</span>
+    <span class="badge a">paused</span>
+    <span class="badge n">complete</span>
+    <span class="badge n">close_check</span>
+    <span class="badge r">close_blocked</span>
+    <span class="badge g">closed</span>
+    <span class="badge t">cancelled</span>
+  </div>
+
+  <h2>InventoryItem</h2>
+  <div>
+    <span class="badge n">expected</span>
+    <span class="badge n">received</span>
+    <span class="badge n">available</span>
+    <span class="badge r">quarantined</span>
+    <span class="badge n">reserved</span>
+    <span class="badge n">kitted</span>
+    <span class="badge n">in_wip</span>
+    <span class="badge n">installed</span>
+    <span class="badge n">removed</span>
+    <span class="badge t">scrapped</span>
+    <span class="badge t">shipped</span>
+  </div>
+
+  <h2>Certificate</h2>
+  <div>
+    <span class="badge n">captured</span>
+    <span class="badge a">review_required</span>
+    <span class="badge g">verified</span>
+    <span class="badge t">rejected</span>
+    <span class="badge t">superseded</span>
+  </div>
+
+  <p class="lede" style="margin-top:16px;">Terminal states carry the strike-through and a mute; the record cannot leave them. Colour uses: red for refusal states (blocked, quarantined, close_blocked); amber for waiting-on-review (paused, review_required); green for the load-bearing success state ONLY — the terminal success step of a lifecycle (closed, verified). Grey for ground including working states (in_progress); strike-through grey for other terminal states that are not a success (cancelled, rejected, scrapped). Philosophy §3.1: green is finite; if every step were green nothing would draw the eye.</p>
+
+</div>
+</x-dc>
+</body>
+</html>

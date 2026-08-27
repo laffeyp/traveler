@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+    .doc { width: 440px; padding: 24px 28px; }
+    h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+    .meta { font-size: 11px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 20px; }
+    h2 { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #6B6B6B; margin: 20px 0 8px; }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+    .lede { font-size: 12px; color: #4A4A4A; margin: 0 0 12px; }
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+    
+    .strip { background: #F0EDDF; border-left: 3px solid #B45309; padding: 10px 14px; margin-bottom: 12px; font-size: 12px; border-radius: 0 2px 2px 0; }
+    .strip .why { color: #6B4A00; font-family: "IBM Plex Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .strip .r { color: #1A1A1A; margin-bottom: 6px; }
+    .strip .path { color: #4A4A4A; font-size: 11px; }
+    .strip .path .who { font-family: "IBM Plex Mono", monospace; }
+
+  </style>
+</helmet>
+<div class="doc">
+  <h1>Disabled action strip</h1>
+  <p class="meta">sprint 054 · shared component · beside every refused action</p>
+  <p class="lede">Beside every disabled action, the strip names the specific reason (registered rule id or reason code), what condition would clear it, and which caller_type resolves. Never a generic "you can't do this".</p>
+
+  <div class="strip">
+    <div class="why">Why disabled · <span class="mono-inline">certificate_of_conformance_unverified</span></div>
+    <div class="r">Receiving-rule blocker on this line — a certificate is present but has not been accepted as evidence.</div>
+    <div class="path">clears when a <span class="who">quality_engineer</span> fires <span class="mono-inline">AcceptCertificateAsEvidence</span> · rule <span class="mono-inline">receiving_decision</span> · walks Certificate to verified · re-runs RunReceivingCheck</div>
+  </div>
+
+  <div class="strip">
+    <div class="why">Why disabled · <span class="mono-inline">required_measurements_present</span></div>
+    <div class="r">Run-close-rule blocker — a required step has no captured measurement.</div>
+    <div class="path">clears when an <span class="who">operator</span> fires <span class="mono-inline">CaptureMeasurement</span> on the named step · rule <span class="mono-inline">run_execution</span> · emits MEASUREMENT_CAPTURED</div>
+  </div>
+
+  <div class="strip" style="border-left-color:#B00020;">
+    <div class="why">Why refused · <span class="mono-inline">authorization_denied</span> · guard <span class="mono-inline">elevated_disposition_authority</span></div>
+    <div class="r">RecordDisposition allows the caller (rule <span class="mono-inline">disposition_recording</span>), but the disposition kind is use_as_is or repair. The disposition-kind guard evaluates the actor against elevated_disposition_authority and refuses this actor.</div>
+    <div class="path">resolves when a <span class="who">manufacturing_engineer</span> or <span class="who">quality_engineer</span> records the disposition</div>
+  </div>
+
+  <div class="strip">
+    <div class="why">Why disabled · <span class="mono-inline">support_context_missing</span></div>
+    <div class="r">Reason code from an access decision — no open, in-scope, in-time SupportSession for this caller.</div>
+    <div class="path">clears when an <span class="who">access_admin</span> or <span class="who">support_user</span> fires <span class="mono-inline">OpenSupportSession</span> with a scope covering this record · rule <span class="mono-inline">support_session_management</span></div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

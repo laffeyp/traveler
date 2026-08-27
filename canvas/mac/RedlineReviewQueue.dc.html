@@ -1,0 +1,144 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><script src="./support.js"></script></head>
+<body><x-dc>
+<helmet><style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.4; }
+    .app { width: 1200px; height: 800px; display: flex; flex-direction: column; background: #FAFAF7; }
+    .shell-top { display: flex; align-items: center; gap: 14px; padding: 10px 18px; background: #EFECDF; border-bottom: 1px solid #B8B4A8; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: #FAFAF7; border: 1px solid #D9D6CE; border-radius: 3px; font-size: 12px; }
+    .chip .actor { font-weight: 500; }
+    .chip .sep { color: #B8B4A8; }
+    .chip .mono { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; }
+    .ctx { display: flex; gap: 12px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; }
+    .search { display: flex; align-items: center; background: #FAFAF7; border: 1px solid #B8B4A8; padding: 4px 10px; border-radius: 3px; width: 320px; font-size: 12px; margin-left: auto; }
+    .search input { border: none; outline: none; flex: 1; font-family: inherit; font-size: 12px; background: transparent; }
+    .search .kbd { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; margin-left: 8px; }
+    .main { display: flex; flex: 1; overflow: hidden; }
+    .rail { width: 160px; background: #F0EDDF; border-right: 1px solid #B8B4A8; padding: 8px 0; }
+    .rail .item { padding: 7px 16px; font-size: 12.5px; color: #4A4A4A; border-left: 3px solid transparent; }
+    .rail .item.active { background: #FAFAF7; color: #1A1A1A; font-weight: 500; border-left-color: #1A1A1A; }
+    .rail .item .count { float: right; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; }
+    .content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+    .h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+    .h1 .id { font-family: "IBM Plex Mono", monospace; font-size: 16px; color: #4A4A4A; font-weight: 400; margin-left: 10px; }
+    .h1 .badge { display: inline-flex; padding: 2px 8px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 12px; margin-left: 10px; }
+    .sub { font-size: 12px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 14px; }
+    .mono { font-family: "IBM Plex Mono", monospace; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 3px; font-size: 13px; font-weight: 500; height: 30px; }
+    .btn.primary { background: #1A1A1A; color: #FAFAF7; }
+    .btn.secondary { background: transparent; color: #1A1A1A; border: 1px solid #1A1A1A; }
+    .btn.destructive { background: #B00020; color: #FAFAF7; }
+    .btn.disabled { background: #E5E5E5; color: #8B8B8B; cursor: not-allowed; }
+    .fields { display: grid; grid-template-columns: 160px 1fr; gap: 6px 16px; padding: 8px 0; }
+    .fields dt { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; }
+    .fields dd { margin: 0; font-size: 13px; color: #1A1A1A; }
+    .card { background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; padding: 14px 16px; margin-bottom: 12px; }
+    .card h3 { font-size: 14px; font-weight: 600; margin: 0 0 8px; }
+    .sec-head { padding: 6px 8px; background: #F0EDDF; border-top: 1px solid #D9D6CE; border-bottom: 1px solid #D9D6CE; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; text-transform: uppercase; letter-spacing: 0.04em; margin: 14px 0 0; }
+    .tbl { width: 100%; border-collapse: collapse; }
+    .tbl th, .tbl td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #E0DDD3; font-size: 12px; vertical-align: middle; }
+    .tbl th { font-weight: 500; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; text-transform: uppercase; letter-spacing: 0.03em; background: #FAFAF7; }
+    .tbl td.mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #333; }
+    .badge { display: inline-flex; padding: 1px 6px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+    .b-neutral { background: #F0EDDF; color: #4A4A4A; border: 1px solid #D9D6CE; }
+    .b-amber { background: #FFF3D9; color: #6B4A00; border: 1px solid #D4A946; }
+    .b-red { background: #B00020; color: #FAFAF7; }
+    .b-green { background: #2D6A3C; color: #FAFAF7; }
+    .b-term { background: #E5E5E5; color: #6B6B6B; text-decoration: line-through; }
+    .blk { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #B00020; }
+    .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .cite { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; }
+    .disabled-strip { background: #F0EDDF; border-left: 3px solid #B45309; padding: 8px 12px; margin-top: 8px; font-size: 12px; border-radius: 0 2px 2px 0; }
+    .disabled-strip .why { color: #6B4A00; font-family: "IBM Plex Mono", monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+    .disabled-strip .r { color: #1A1A1A; }
+    .lifecycle { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-family: "IBM Plex Mono", monospace; font-size: 11px; padding: 8px 0; }
+    .lifecycle .st { padding: 2px 8px; border-radius: 2px; background: #F0EDDF; color: #4A4A4A; border: 1px solid #D9D6CE; }
+    .lifecycle .st.here { background: #B45309; color: #FAFAF7; border-color: #B45309; }
+    .lifecycle .st.done { background: #2D6A3C; color: #FAFAF7; border-color: #2D6A3C; }
+    .lifecycle .st.future { color: #B8B4A8; border-style: dashed; }
+    .lifecycle .arr { color: #B8B4A8; }
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+</style></helmet>
+<div class="app">
+
+    <div class="shell-top">
+      <div class="chip">
+        <span class="actor">k.iwasaki</span>
+        <span class="sep">·</span>
+        <span class="mono">manufacturing_engineer</span>
+        <span class="sep">·</span>
+        <span class="mono">internal_full_quality</span>
+      </div>
+      <div class="ctx"><span>program: aero-b · contract: 2026-04-11</span></div>
+      <div class="search">
+        <span style="color:#6B6B6B; margin-right:6px;">⌕</span>
+        <input placeholder="Search records, reports, runs">
+        <span class="kbd">⌘K</span>
+      </div>
+    </div>
+
+  <div class="main">
+      <div class="rail">
+        <div class="item">Work <span class="count">2</span></div>
+        <div class="item active">Planning</div>
+        <div class="item">Receiving <span class="count">14</span></div>
+        <div class="item">Quality <span class="count">3</span></div>
+        <div class="item">Run Close</div>
+        <div class="item">Evidence <span class="count">1</span></div>
+        <div class="item">Reports</div>
+        <div class="item">Support</div>
+        <div class="item">Admin</div>
+      </div>
+
+    <div class="content">
+
+      <h1 class="h1">Redline review queue</h1>
+      <p class="sub">reads: Redline · rule redline_review · caller manufacturing_engineer</p>
+
+      <div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
+        <span class="btn secondary" style="background:#1A1A1A; color:#FAFAF7; border-color:#1A1A1A;">All · 14</span>
+        <span class="btn secondary">submitted · 3</span>
+        <span class="btn secondary">under_review · 2</span>
+        <span class="btn secondary">approved · 2</span>
+        <span class="btn secondary">applied · 2</span>
+        <span class="btn secondary">merge_candidate · 2</span>
+        <span class="btn secondary">rejected · 1</span>
+        <span class="btn secondary">merged · 1</span>
+        <span class="btn secondary">closed · 1</span>
+      </div>
+      <div class="cite" style="margin-bottom:6px;">Row action: open — routes to RedlineDecisionView.</div>
+
+      <div class="sec-head">Submitted · 3</div>
+      <table class="tbl">
+        <thead><tr><th style="width:150px;">redline</th><th style="width:130px;">state</th><th>author · run · step</th><th style="width:160px;">proposed change</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">rl_003</td><td><span class="badge b-neutral">submitted</span></td><td class="mono">j.rivera · RUN-VF-003-0812-01 · step_003</td><td>Widen torque band 24-28 → 22-30 Nm</td></tr>
+          <tr><td class="mono">rl_004</td><td><span class="badge b-neutral">submitted</span></td><td class="mono">j.rivera · RUN-VF-002-0812-04 · step_005</td><td>Reorder installation sequence</td></tr>
+          <tr><td class="mono">rl_005</td><td><span class="badge b-neutral">submitted</span></td><td class="mono">t.mueller · RUN-VF-004-0812-01 · step_002</td><td>Add pre-heat check</td></tr>
+        </tbody>
+      </table>
+
+      <div class="sec-head">Under review · 2</div>
+      <table class="tbl">
+        <thead><tr><th style="width:150px;">redline</th><th style="width:130px;">state</th><th>reviewer · started</th><th>proposed change</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">rl_001</td><td><span class="badge b-amber">under_review</span></td><td class="mono">k.iwasaki · 08-12 09:14</td><td>Loosen ambient temp tolerance</td></tr>
+        </tbody>
+      </table>
+
+      <div class="actions">
+        <span class="btn primary">ReviewRedline</span>
+        <span class="btn secondary">RequestApproval</span>
+        <span class="btn secondary">CancelApprovalRequest</span>
+      </div>
+      <div class="cite" style="margin-top:8px;">
+        <span class="mono-inline">ReviewRedline</span> · rule <span class="mono-inline">redline_review</span> · <span class="mono-inline">RequestApproval</span> · rule <span class="mono-inline">approval_request</span> · <span class="mono-inline">CancelApprovalRequest</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc></body></html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+    .doc { width: 460px; padding: 24px 28px; }
+    h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+    .meta { font-size: 11px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 20px; }
+    h2 { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #6B6B6B; margin: 20px 0 8px; }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+    .lede { font-size: 12px; color: #4A4A4A; margin: 0 0 12px; }
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+    
+    .card { background: #FFFFFF; border: 1px solid #B8B4A8; border-left: 4px solid #B00020; padding: 14px 16px; margin-bottom: 12px; border-radius: 2px; }
+    .card .id { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 500; color: #B00020; margin-bottom: 4px; }
+    .card .desc { font-size: 13px; color: #1A1A1A; margin-bottom: 10px; }
+    .card .row { display: flex; gap: 12px; padding: 3px 0; font-size: 12px; }
+    .card .row .k { min-width: 120px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; }
+    .card .row .v { color: #1A1A1A; }
+    .card .action { margin-top: 10px; font-size: 12px; color: #4A4A4A; padding-top: 8px; border-top: 1px solid #E0DDD3; }
+
+  </style>
+</helmet>
+<div class="doc">
+  <h1>Blocker card</h1>
+  <p class="meta">sprint 054 · shared component · spec §7 row shape</p>
+  <p class="lede">Spec §7 row shape. The card cites the registered rule id (never a paraphrase), the description verbatim from the rule registry, the affected record and state, the next-actor caller_type, and the current caller's allowed action. Design philosophy §3.16 (show state, do not narrate) governs how the row reads once populated.</p>
+
+  <div class="card">
+    <div class="id">certificate_of_conformance_unverified</div>
+    <div class="desc">A certificate of conformance covering the delivered goods exists, but nobody has accepted it as evidence. Capturing records that paperwork arrived; it does not record that anyone read it.</div>
+    <div class="row"><span class="k">affected</span><span class="v"><span class="mono-inline">valve_body_001</span> · quarantined</span></div>
+    <div class="row"><span class="k">check</span><span class="v"><span class="mono-inline">ReceivingCheck</span> · blocked</span></div>
+    <div class="row"><span class="k">certificate</span><span class="v"><span class="mono-inline">cert_conf_001</span> · captured</span></div>
+    <div class="row"><span class="k">next actor</span><span class="v">quality_engineer</span></div>
+    <div class="action">current caller (<span class="mono-inline">operator</span>) may open the certificate as summary; the accept-as-evidence write is out of scope.</div>
+  </div>
+
+  <div class="card" style="border-left-color:#B45309;">
+    <div class="id" style="color:#B45309;">failed_measurement_has_quality_path</div>
+    <div class="desc">Every failed Measurement has a linked Nonconformance and required verification is complete. This is the rule that blocks the first VF-003 close attempt.</div>
+    <div class="row"><span class="k">affected</span><span class="v"><span class="mono-inline">torque_capture_003</span> · fail</span></div>
+    <div class="row"><span class="k">nonconformance</span><span class="v"><span class="mono-inline">nc_003</span> · disposition_pending</span></div>
+    <div class="row"><span class="k">next actor</span><span class="v">quality_engineer</span></div>
+    <div class="action">current caller (<span class="mono-inline">operator</span>) may view; the disposition write is out of scope.</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

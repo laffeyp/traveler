@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.5; }
+    .doc { width: 800px; padding: 40px 48px 56px; }
+    h1 { font-size: 26px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+    .subtitle { color: #4A4A4A; font-size: 14px; margin: 0 0 4px; }
+    .meta { font-size: 12px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 32px; }
+    h2 { font-size: 16px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: #333; margin: 36px 0 12px; padding-bottom: 6px; border-bottom: 1px solid #B8B4A8; }
+    .grid { display: grid; grid-template-columns: 160px 1fr; gap: 8px 16px; align-items: center; }
+    .row { display: flex; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid #E0DDD3; }
+    .swatch { width: 40px; height: 40px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.05); flex-shrink: 0; }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: #333; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 13px; background: #F0EDDF; padding: 1px 5px; border-radius: 2px; }
+    .lede { font-size: 13px; color: #4A4A4A; margin: 0 0 12px; }
+    .type-row { display: flex; align-items: baseline; gap: 16px; padding: 8px 0; border-bottom: 1px solid #E0DDD3; }
+    .type-row .sample { color: #1A1A1A; }
+    .type-row .label { min-width: 100px; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #6B6B6B; }
+    .tap { display: inline-flex; align-items: center; justify-content: center; background: #1A1A1A; color: #FAFAF7; font-weight: 500; padding: 0 20px; border-radius: 4px; margin-right: 12px; margin-bottom: 8px; font-size: 15px; letter-spacing: 0.01em; }
+    .tap-note { font-size: 12px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; }
+    .space-scale { display: flex; align-items: flex-end; gap: 4px; }
+    .space-scale > div { background: #B8B4A8; }
+    .contrast-row { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
+    .contrast-chip { padding: 8px 14px; border-radius: 4px; font-weight: 500; }
+    p.principle { margin: 0 0 8px; font-size: 12px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; }
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+  </style>
+</helmet>
+
+<div class="doc">
+  <h1>Handheld tokens</h1>
+  <p class="subtitle">Line-app device: phone, rugged scanner-phone, shop tablet. Gloves, dust, glare, interruption.</p>
+  <p class="meta">sprint 054, phase D.1 · tokens for operator_station_view</p>
+
+  <h2>Colour · greyscale ground, exception palette</h2>
+  <p class="principle">§3.1 grey is the ground; colour is exception. §3.8 WCAG AAA contrast.</p>
+  <div class="grid">
+    <div class="row"><div class="swatch" style="background:#FAFAF7;"></div><div><span class="mono">ground</span> · #FAFAF7 warm off-white</div></div>
+    <div class="row"><div class="swatch" style="background:#F0EDDF;"></div><div><span class="mono">fill-weak</span> · #F0EDDF warm parchment · name cells, code inline</div></div>
+    <div class="row"><div class="swatch" style="background:#D9D6CE;"></div><div><span class="mono">rule</span> · #D9D6CE warm grey rule</div></div>
+    <div class="row"><div class="swatch" style="background:#6B6B6B;"></div><div><span class="mono">ink-tertiary</span> · #6B6B6B · meta, hint (5.5:1 AA-large)</div></div>
+    <div class="row"><div class="swatch" style="background:#4A4A4A;"></div><div><span class="mono">ink-secondary</span> · #4A4A4A · secondary body (9.4:1 AAA)</div></div>
+    <div class="row"><div class="swatch" style="background:#1A1A1A;"></div><div><span class="mono">ink-primary</span> · #1A1A1A · headings, body (17:1 AAA)</div></div>
+    <div class="row"><div class="swatch" style="background:#B45309;"></div><div><span class="mono">amber</span> · #B45309 · pending action, expiry, deferred; the "waiting" colour</div></div>
+    <div class="row"><div class="swatch" style="background:#B00020;"></div><div><span class="mono">red</span> · #B00020 · refusal, hard fail, run blocked</div></div>
+    <div class="row"><div class="swatch" style="background:#1E4E8C;"></div><div><span class="mono">blue</span> · #1E4E8C · informational, focus ring, actionable link</div></div>
+    <div class="row"><div class="swatch" style="background:#2D6A3C;"></div><div><span class="mono">green</span> · #2D6A3C · success confirmation only; used sparingly</div></div>
+  </div>
+
+  <h2>Type · IBM Plex Sans + IBM Plex Mono</h2>
+  <p class="principle">§3.8 no thin fonts on the floor; body 15px minimum.</p>
+  <div class="type-row"><span class="label">display / 28</span><span class="sample" style="font-size:28px; font-weight:600;">Torque capture</span></div>
+  <div class="type-row"><span class="label">title / 20</span><span class="sample" style="font-size:20px; font-weight:600;">Step 003 of 007</span></div>
+  <div class="type-row"><span class="label">body / 17</span><span class="sample" style="font-size:17px;">Capture torque at 24-28 Nm on M8 bolt.</span></div>
+  <div class="type-row"><span class="label">body-s / 15</span><span class="sample" style="font-size:15px;">Required inventory: valve_body_001, gasket_003</span></div>
+  <div class="type-row"><span class="label">meta / 13</span><span class="sample" style="font-size:13px; color:#6B6B6B;">last action 12s ago</span></div>
+  <div class="type-row"><span class="label">mono / 14</span><span class="sample mono" style="font-size:14px;">RunCloseCheck.blockers</span></div>
+  <div class="type-row"><span class="label">mono-s / 13</span><span class="sample mono" style="font-size:13px;">certificate_of_conformance_unverified</span></div>
+
+  <h2>Tap targets · 48pt minimum, 56pt recommended</h2>
+  <p class="principle">§3.8 Fitts's Law + gloves; 15 mm physical minimum.</p>
+  <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
+    <div class="tap" style="height:56px;">Complete step</div><span class="tap-note">56pt primary</span>
+  </div>
+  <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:12px;">
+    <div class="tap" style="height:48px; background:transparent; color:#1A1A1A; border:1px solid #1A1A1A;">View blocker</div><span class="tap-note">48pt secondary</span>
+  </div>
+  <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:12px;">
+    <div class="tap" style="height:48px; background:#E5E5E5; color:#8B8B8B; cursor:not-allowed;">Complete step</div><span class="tap-note">48pt disabled · reason cited below</span>
+  </div>
+  <p class="lede" style="margin-top:16px;">Adjacent controls with different consequences are separated by one tap-target width (48pt gap).</p>
+
+  <h2>Spacing scale · 4/8 base, 4pt increments</h2>
+  <div class="space-scale">
+    <div style="width:4px; height:24px;"></div><span class="mono">4</span>
+    <div style="width:8px; height:24px;"></div><span class="mono">8</span>
+    <div style="width:12px; height:24px;"></div><span class="mono">12</span>
+    <div style="width:16px; height:24px;"></div><span class="mono">16</span>
+    <div style="width:20px; height:24px;"></div><span class="mono">20</span>
+    <div style="width:24px; height:24px;"></div><span class="mono">24</span>
+    <div style="width:32px; height:24px;"></div><span class="mono">32</span>
+    <div style="width:48px; height:24px;"></div><span class="mono">48</span>
+  </div>
+
+  <h2>Radii · 4 default, 2 dense, 0 tabular</h2>
+  <div style="display:flex; gap:16px; align-items:flex-end;">
+    <div style="width:56px; height:56px; background:#F0EDDF; border:1px solid #B8B4A8; border-radius:0;"></div>
+    <div style="width:56px; height:56px; background:#F0EDDF; border:1px solid #B8B4A8; border-radius:2px;"></div>
+    <div style="width:56px; height:56px; background:#F0EDDF; border:1px solid #B8B4A8; border-radius:4px;"></div>
+  </div>
+  <p class="lede">0 for tables and dense reference (matches an engineering document). 2 for chips and inline flags. 4 default for buttons and cards. Nothing rounder — the floor is not the demo.</p>
+
+  <h2>Focus &amp; contrast</h2>
+  <div class="contrast-row">
+    <span class="contrast-chip" style="background:#FAFAF7; color:#1A1A1A; border:2px solid #1E4E8C; outline-offset:2px;">Focused button</span>
+    <span class="tap-note">focus ring · 2px #1E4E8C</span>
+  </div>
+  <p class="lede">Every keyboard-reachable control shows a 2px focus ring. Ambient glare and viewing angle are the design case; 4.5:1 (WCAG AA) is the floor, 7:1 (AAA) is the target.</p>
+</div>
+</x-dc>
+</body>
+</html>

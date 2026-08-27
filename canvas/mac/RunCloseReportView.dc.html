@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.4; }
+    .app { width: 1200px; height: 800px; display: flex; flex-direction: column; background: #FAFAF7; }
+    .shell-top { display: flex; align-items: center; gap: 14px; padding: 10px 18px; background: #EFECDF; border-bottom: 1px solid #B8B4A8; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: #FAFAF7; border: 1px solid #D9D6CE; border-radius: 3px; font-size: 12px; }
+    .chip .actor { font-weight: 500; }
+    .chip .sep { color: #B8B4A8; }
+    .chip .mono { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; }
+    .chip.support { background: #B45309; color: #FAFAF7; border-color: #B45309; }
+    .chip.support .actor, .chip.support .mono, .chip.support .sep { color: #FAFAF7; }
+    .ctx { display: flex; gap: 12px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; }
+    .search { display: flex; align-items: center; background: #FAFAF7; border: 1px solid #B8B4A8; padding: 4px 10px; border-radius: 3px; width: 320px; font-size: 12px; margin-left: auto; }
+    .search input { border: none; outline: none; flex: 1; font-family: inherit; font-size: 12px; background: transparent; }
+    .search .kbd { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; margin-left: 8px; }
+    .main { display: flex; flex: 1; overflow: hidden; }
+    .rail { width: 160px; background: #F0EDDF; border-right: 1px solid #B8B4A8; padding: 8px 0; }
+    .rail .item { padding: 7px 16px; font-size: 12.5px; color: #4A4A4A; border-left: 3px solid transparent; }
+    .rail .item.active { background: #FAFAF7; color: #1A1A1A; font-weight: 500; border-left-color: #1A1A1A; }
+    .rail .item .count { float: right; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; }
+    .content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+    .h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+    .h1 .id { font-family: "IBM Plex Mono", monospace; font-size: 16px; color: #4A4A4A; font-weight: 400; margin-left: 10px; }
+    .h1 .badge { display: inline-flex; padding: 2px 8px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 12px; margin-left: 10px; }
+    .sub { font-size: 12px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 14px; }
+    .mono { font-family: "IBM Plex Mono", monospace; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 3px; font-size: 13px; font-weight: 500; height: 30px; }
+    .btn.primary { background: #1A1A1A; color: #FAFAF7; }
+    .btn.secondary { background: transparent; color: #1A1A1A; border: 1px solid #1A1A1A; }
+    .btn.destructive { background: #B00020; color: #FAFAF7; }
+    .btn.disabled { background: #E5E5E5; color: #8B8B8B; cursor: not-allowed; }
+    .fields { display: grid; grid-template-columns: 160px 1fr; gap: 6px 16px; padding: 8px 0; }
+    .fields dt { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; }
+    .fields dd { margin: 0; font-size: 13px; color: #1A1A1A; }
+    .card { background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; padding: 14px 16px; margin-bottom: 12px; }
+    .card h3 { font-size: 14px; font-weight: 600; margin: 0 0 8px; }
+    .sec-head { padding: 6px 8px; background: #F0EDDF; border-top: 1px solid #D9D6CE; border-bottom: 1px solid #D9D6CE; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; text-transform: uppercase; letter-spacing: 0.04em; margin: 14px 0 0; }
+    .tbl { width: 100%; border-collapse: collapse; }
+    .tbl th, .tbl td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #E0DDD3; font-size: 12px; vertical-align: middle; }
+    .tbl th { font-weight: 500; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; text-transform: uppercase; letter-spacing: 0.03em; background: #FAFAF7; }
+    .tbl td.mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #333; }
+    .badge { display: inline-flex; padding: 1px 6px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+    .b-full { background: #F0EDDF; color: #4A4A4A; border: 1px solid #D9D6CE; }
+    .b-summary { background: #FFF3D9; color: #6B4A00; border: 1px solid #D4A946; }
+    .b-denied { background: #FEECEC; color: #B00020; border: 1px solid #B00020; }
+    .b-hidden { background: transparent; border: 1px dashed #D9D6CE; color: transparent; padding: 1px 20px; }
+    .b-generated { background: #2D6A3C; color: #FAFAF7; }
+    .b-superseded { background: #E5E5E5; color: #6B6B6B; text-decoration: line-through; }
+    .b-open { background: #2D6A3C; color: #FAFAF7; }
+    .b-closed { background: #E5E5E5; color: #6B6B6B; text-decoration: line-through; }
+    .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .cite { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; }
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+</style>
+</helmet>
+
+<div class="app">
+
+    <div class="shell-top">
+      <div class="chip">
+        <span class="actor">d.chen (Lockheed Prime)</span>
+        <span class="sep">·</span>
+        <span class="mono">external_viewer</span>
+        <span class="sep">·</span>
+        <span class="mono">customer_summary_access</span>
+      </div>
+      <div class="ctx"><span>customer: lockheed-11 · contract: 2026-04-11</span></div>
+      <div class="search">
+        <span style="color:#6B6B6B; margin-right:6px;">⌕</span>
+        <input placeholder="Search records, reports, runs">
+        <span class="kbd">⌘K</span>
+      </div>
+    </div>
+
+  <div class="main">
+      <div class="rail">
+        <div class="item">Work <span class="count">2</span></div>
+        <div class="item">Planning</div>
+        <div class="item">Receiving <span class="count">14</span></div>
+        <div class="item">Quality <span class="count">3</span></div>
+        <div class="item">Run Close</div>
+        <div class="item">Evidence <span class="count">1</span></div>
+        <div class="item active">Reports</div>
+        <div class="item">Support</div>
+        <div class="item">Admin</div>
+      </div>
+
+    <div class="content">
+
+      <h1 class="h1">RunCloseReport <span class="id">rcr_RUN-VF-003-0812-01</span> <span class="badge b-summary">summary</span></h1>
+      <p class="sub">GeneratedReport · type RunCloseReport · read via GetReport under customer_summary_access · shaped by the 13 required sections registered in contracts/reports.yaml</p>
+
+      <div class="card">
+        <h3>Report header</h3>
+        <dl class="fields">
+          <dt>report type</dt><dd class="mono">RunCloseReport</dd>
+          <dt>run</dt><dd class="mono">RUN-VF-003-0812-01</dd>
+          <dt>run status</dt><dd class="mono">closed</dd>
+          <dt>generated at</dt><dd class="mono">2026-08-12 · 16:04</dd>
+          <dt>audience profile</dt><dd class="mono">customer_summary_access</dd>
+          <dt>freshness</dt><dd><span class="badge b-generated">generated</span> · no regeneration trigger fired since generation; <span class="mono-inline">report_access_stale</span> reason not raised</dd>
+          <dt>access_policy_snapshot</dt><dd class="mono">policy_2026-04-11-A · frozen at generation</dd>
+        </dl>
+      </div>
+
+      <div class="sec-head">Sections</div>
+      <table class="tbl">
+        <thead><tr><th style="width:280px;">section</th><th style="width:120px;">visibility</th><th>note</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">report_header</td><td><span class="badge b-full">full</span></td><td>run alias, part revision, serial</td></tr>
+          <tr><td class="mono">run_context</td><td><span class="badge b-summary">summary</span></td><td>operator identity redacted; program name shown</td></tr>
+          <tr><td class="mono">executed_steps</td><td><span class="badge b-summary">summary</span></td><td>step count and completion status only</td></tr>
+          <tr><td class="mono">measurement_summary</td><td><span class="badge b-summary">summary</span></td><td>fact of measurement; values withheld</td></tr>
+          <tr><td class="mono">quality_path</td><td><span class="badge b-summary">summary</span></td><td>fact-of-verification; nc reason withheld</td></tr>
+          <tr><td class="mono">redline_history</td><td><span class="badge b-denied">denied</span></td><td>reason: <span class="mono-inline">record_type_restricted</span></td></tr>
+          <tr><td class="mono">installed_inventory</td><td><span class="badge b-summary">summary</span></td><td>fact-of-installation; serials withheld</td></tr>
+          <tr><td class="mono">receiving_evidence_summary</td><td><span class="badge b-summary">summary</span></td><td>fact-of-verification; document ids, CAGE, signer withheld</td></tr>
+          <tr><td class="mono">machine_evidence_summary</td><td><span class="badge b-summary">summary</span></td><td>accepted / rejected count; payload withheld</td></tr>
+          <tr><td class="mono">run_close_observations</td><td><span class="badge b-summary">summary</span></td><td>observation count only</td></tr>
+          <tr><td class="mono">final_close_result</td><td><span class="badge b-full">full</span></td><td>closed at time; RunCloseCheck outcome</td></tr>
+          <tr><td class="mono">source_traceability</td><td><span class="badge b-denied">denied</span></td><td>reason: <span class="mono-inline">record_type_restricted</span></td></tr>
+          <tr><td class="mono">access_policy_snapshot</td><td><span class="badge b-summary">summary</span></td><td>policy alias only; scope withheld</td></tr>
+        </tbody>
+      </table>
+
+      <div class="actions" style="margin-top: 12px;">
+        <span class="btn primary">GetReport</span>
+        <span class="btn secondary">BoundedDrillDown</span>
+        <span class="btn secondary">SupersedeReport</span>
+      </div>
+      <div class="cite" style="margin-top: 8px;">
+        <span class="mono-inline">GetReport</span> · rule <span class="mono-inline">production_read</span>. <span class="mono-inline">BoundedDrillDown</span> · rule <span class="mono-inline">bounded_drill_down</span> · refuses hops into denied sections with <span class="mono-inline">bounded_drilldown_denied</span>. <span class="mono-inline">SupersedeReport</span> · rule <span class="mono-inline">report_supersession</span> · caller [quality_engineer, system_worker].
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

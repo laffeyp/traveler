@@ -1,0 +1,206 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.4; }
+    .device { width: 390px; height: 844px; background: #FAFAF7; display: flex; flex-direction: column; }
+
+    /* Header + meta (shared with earlier handheld screens) */
+    .header { display: flex; align-items: center; gap: 8px; padding: 12px 14px 10px; border-bottom: 1px solid #D9D6CE; }
+    .back { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #1A1A1A; margin-left: -6px; }
+    .back svg { width: 22px; height: 22px; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; background: #F0EDDF; border: 1px solid #D9D6CE; border-radius: 3px; font-size: 11px; }
+    .chip .actor { font-weight: 500; }
+    .chip .mono { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #4A4A4A; }
+    .chip .sep { color: #B8B4A8; }
+    .station { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-align: right; line-height: 1.15; }
+
+    .meta { padding: 10px 16px; background: #F0EDDF; border-bottom: 1px solid #D9D6CE; font-size: 12px; }
+    .meta .mono { font-family: "IBM Plex Mono", monospace; color: #4A4A4A; }
+    .meta .sep { color: #B8B4A8; margin: 0 6px; }
+
+    .body { flex: 1; padding: 16px; overflow-y: auto; }
+    .section-lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 8px; }
+
+    /* Parent card */
+    .parent { background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; padding: 12px 14px; margin-bottom: 14px; }
+    .parent .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .parent .name { font-size: 15px; font-weight: 500; margin-bottom: 2px; }
+    .parent .val { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #4A4A4A; }
+
+    /* BOM slot + child compare */
+    .bom { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+    .card { background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; padding: 10px 12px; min-height: 100px; }
+    .card .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .card .name { font-size: 14px; font-weight: 500; margin-bottom: 2px; line-height: 1.2; }
+    .card .val { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; line-height: 1.4; }
+    .card.slot .cite { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; margin-top: 6px; }
+
+    /* Transition preview */
+    .transition { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #E5F1E9; border-left: 3px solid #2D6A3C; border-radius: 0 3px 3px 0; margin: 10px 0 12px; font-size: 12px; }
+    .transition .from, .transition .to { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+    .transition .from { background: #F0EDDF; color: #4A4A4A; border: 1px solid #D9D6CE; }
+    .transition .to { background: #2D6A3C; color: #FAFAF7; }
+    .transition svg { width: 14px; height: 14px; color: #2D6A3C; }
+    .transition .via { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #2D6A3C; }
+
+    /* Handoff-E */
+    .handoff { padding: 10px 12px; background: #FFF3D9; border-left: 3px solid #B45309; border-radius: 0 3px 3px 0; margin-bottom: 12px; font-size: 12px; color: #6B4A00; }
+    .handoff .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+    .handoff .r { color: #1A1A1A; }
+
+    /* Primary + secondary */
+    .btn-primary { display: flex; align-items: center; justify-content: center; gap: 6px; height: 56px; background: #1A1A1A; color: #FAFAF7; border-radius: 4px; font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+    .btn-primary .handoff-mark { font-family: "IBM Plex Mono", monospace; font-size: 10px; background: rgba(255,255,255,0.18); padding: 2px 6px; border-radius: 2px; }
+    .cite-op { font-size: 11px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; text-align: center; margin-bottom: 12px; }
+    .btn-sec { display: flex; align-items: center; justify-content: space-between; padding: 0 14px; height: 44px; background: #E5E5E5; color: #8B8B8B; border-radius: 3px; font-size: 13px; font-weight: 500; }
+    .btn-sec .why { font-family: "IBM Plex Mono", monospace; font-size: 10px; }
+
+    /* Refusal-state legend */
+    .legend { margin-top: 18px; padding-top: 12px; border-top: 1px solid #E0DDD3; }
+    .legend .lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .legend .row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12px; }
+    .legend .row .state { display: inline-flex; padding: 1px 8px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 11px; min-width: 110px; justify-content: center; }
+    .legend .r-quar { background: #B00020; color: #FAFAF7; }
+    .legend .r-other { background: #F0EDDF; color: #4A4A4A; border: 1px solid #D9D6CE; }
+    .legend .row .reason { color: #4A4A4A; font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+
+    /* Tabs */
+    .tabs { display: flex; border-top: 1px solid #B8B4A8; background: #FAFAF7; }
+    .tabs .tab { flex: 1; padding: 8px 4px; text-align: center; font-size: 11px; color: #6B6B6B; border-right: 1px solid #E0DDD3; }
+    .tabs .tab:last-child { border-right: none; }
+    .tabs .tab.active { background: #F0EDDF; color: #1A1A1A; font-weight: 500; }
+    .tabs .tab .icon { display: block; height: 18px; margin: 0 auto 3px; }
+  </style>
+</helmet>
+
+<div class="device">
+
+  <div class="header">
+    <div class="back">
+      <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 4 L6 11 L14 18"/></svg>
+    </div>
+    <div class="chip">
+      <span class="actor">j.rivera</span>
+      <span class="sep">·</span>
+      <span class="mono">operator</span>
+    </div>
+    <div class="station">14:28<br>station-B4</div>
+  </div>
+
+  <div class="meta">
+    <span class="mono">RUN-VF-003-0812-01</span>
+    <span class="sep">·</span>
+    Step 3
+    <span class="sep">·</span>
+    Install child
+  </div>
+
+  <div class="body">
+
+    <p class="section-lbl">Parent (target)</p>
+    <div class="parent">
+      <div class="lbl">InventoryItem · in_wip</div>
+      <div class="name">Valve body assembly · rev B</div>
+      <div class="val">valve_body_001 · SN 45-8829-C-000234</div>
+    </div>
+
+    <p class="section-lbl">Slot vs scanned child</p>
+    <div class="bom">
+      <div class="card slot">
+        <div class="lbl">BOM slot</div>
+        <div class="name">Gasket · rev B</div>
+        <div class="val">qty 1</div>
+        <div class="cite">
+          BOMLine gasket_bom_003<br>
+          EffectivityResolution&nbsp;✓
+        </div>
+      </div>
+      <div class="card">
+        <div class="lbl">scanned child</div>
+        <div class="name">Gasket · rev B</div>
+        <div class="val">
+          gasket_003<br>
+          SN 45-8829-G-000112<br>
+          state <span style="color:#1A1A1A;">reserved</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="transition">
+      <span class="from">reserved</span>
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 7 H11 M8 4 L11 7 L8 10"/></svg>
+      <span class="to">installed</span>
+      <span class="via">via InstallInventory</span>
+    </div>
+
+    <div class="handoff">
+      <div class="lbl">handoff-E · Physical Presence Boundary</div>
+      <div class="r">The install acts on the scanned identity; the presence-at-station claim is out of vocabulary today (B-Q-33). The state-machine walk is legitimate.</div>
+    </div>
+
+    <div class="btn-primary">Install</div>
+    <div class="cite-op">→ InstallInventory · rule run_execution · emits INVENTORY_INSTALLED</div>
+
+    <div class="btn-sec" title="RemoveInventory cites run_execution; a Remove affordance belongs on a separate step whose scope is removal, not the install step.">
+      <span>RemoveInventory</span>
+      <span class="why">not on this step · surfaces on a removal-scoped step</span>
+    </div>
+
+    <div class="legend">
+      <div class="lbl">InstallInventory refuses when child InventoryItem state is not <span class="mono">in_wip</span></div>
+      <div class="row">
+        <span class="state r-quar">quarantined</span>
+        <span class="reason">state-machine forbids quarantined → installed via InstallInventory</span>
+      </div>
+      <div class="row">
+        <span class="state r-other">expected</span>
+        <span class="reason">state-machine forbids expected → installed via InstallInventory</span>
+      </div>
+      <div class="row">
+        <span class="state r-other">available</span>
+        <span class="reason">state-machine requires reserved/kitted/in_wip; available is upstream</span>
+      </div>
+      <div class="row">
+        <span class="state r-other">installed</span>
+        <span class="reason">state-machine forbids installed → installed (terminal for this parent)</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tabs">
+    <div class="tab active">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 10 L10 4 L16 10 M6 9 V16 H14 V9"/></svg>
+      Assigned
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="6" width="14" height="8" rx="1"/><path d="M6 6 V14 M9 6 V14 M13 6 V14"/></svg>
+      Scan
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5 H16 M4 10 H16 M4 15 H16"/></svg>
+      Runs
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3 L17 15 H3 Z M10 8 V11 M10 13 V13.5"/></svg>
+      Blockers
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="7" r="3"/><path d="M4 17 C4 13 7 11 10 11 C13 11 16 13 16 17"/></svg>
+      Profile
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

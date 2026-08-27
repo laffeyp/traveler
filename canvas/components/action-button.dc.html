@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+    .doc { width: 440px; padding: 24px 28px; }
+    h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+    .meta { font-size: 11px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 20px; }
+    h2 { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #6B6B6B; margin: 20px 0 8px; }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+    .lede { font-size: 12px; color: #4A4A4A; margin: 0 0 12px; }
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+    
+    .btn { display: inline-flex; align-items: center; padding: 10px 18px; border-radius: 4px; font-weight: 500; font-size: 14px; margin: 4px 6px 4px 0; cursor: pointer; }
+    .btn.primary { background: #1A1A1A; color: #FAFAF7; }
+    .btn.secondary { background: transparent; color: #1A1A1A; border: 1px solid #1A1A1A; }
+    .btn.destructive { background: #B00020; color: #FAFAF7; }
+    .btn.disabled { background: #E5E5E5; color: #8B8B8B; cursor: not-allowed; }
+    .btn.pipeline { background: #1A1A1A; color: #FAFAF7; padding-right: 12px; }
+    .btn.pipeline .kbd { margin-left: 10px; padding-left: 10px; border-left: 1px solid rgba(255,255,255,0.2); font-family: "IBM Plex Mono", monospace; font-size: 11px; opacity: 0.7; }
+    .op-note { font-size: 11px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin-left: 4px; }
+
+  </style>
+</helmet>
+<div class="doc">
+  <h1>Action button</h1>
+  <p class="meta">sprint 054 · shared component · every state-changing surface</p>
+  <p class="lede">Every button names its operation. Primary is the state-changing act. Secondary is the read or the escape. Destructive carries the refusal palette. Pipeline names the pipeline it enters and reveals the stages the operator will watch.</p>
+
+  <h2>Primary + secondary</h2>
+  <div>
+    <span class="btn primary">Complete step</span>
+    <span class="op-note">CompleteRunStep</span>
+  </div>
+  <div>
+    <span class="btn secondary">View blocker</span>
+    <span class="op-note">read</span>
+  </div>
+
+  <h2>Destructive</h2>
+  <div>
+    <span class="btn destructive">Reject certificate</span>
+    <span class="op-note">RejectCertificateAsEvidence · irreversible</span>
+  </div>
+
+  <h2>Disabled with reason</h2>
+  <div>
+    <span class="btn disabled">Complete step</span>
+    <span class="op-note">disabled: required_measurements_present</span>
+  </div>
+  <div>
+    <span class="btn disabled">Release from quarantine</span>
+    <span class="op-note">disabled: no fresh ReceivingCheck passed</span>
+  </div>
+
+  <h2>Pipeline · shows the stages</h2>
+  <div>
+    <span class="btn pipeline">Attempt close</span>
+  </div>
+  <div style="margin-top:8px; font-size:11px; color:#6B6B6B; font-family:'IBM Plex Mono', monospace; line-height:1.7;">
+    →&nbsp;<span style="color:#1A1A1A;">RunCloseCheck</span><br>
+    →&nbsp;<span style="color:#1A1A1A;">RequestRunCloseReport</span><br>
+    →&nbsp;<span style="color:#1A1A1A;">GenerateRunCloseReport</span><br>
+    →&nbsp;<span style="color:#1A1A1A;">ApplyRunCloseResultToRun</span>
+  </div>
+  <p class="lede" style="margin-top:8px;">The button names the operation the caller invokes (<span class="mono-inline">AttemptRunClose</span>); the trailing chain lists the system-worker stages that follow. The close console renders each stage as the pipeline walks it.</p>
+
+</div>
+</x-dc>
+</body>
+</html>

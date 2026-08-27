@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+    .doc { width: 440px; padding: 24px 28px; }
+    h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+    .meta { font-size: 11px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 20px; }
+    h2 { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #6B6B6B; margin: 20px 0 8px; }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+    .lede { font-size: 12px; color: #4A4A4A; margin: 0 0 12px; }
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+    
+    .shell { border: 1px solid #B8B4A8; background: #FAFAF7; height: 260px; display: flex; flex-direction: column; margin-bottom: 20px; border-radius: 2px; }
+    .shell-header { background: #EFECDF; padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #B8B4A8; font-size: 12px; }
+    .shell-header .left { display: flex; gap: 10px; align-items: center; }
+    .shell-header .right { display: flex; gap: 8px; align-items: center; color: #6B6B6B; font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+    .shell-body { flex: 1; padding: 12px 14px; overflow: hidden; }
+    .shell-tabs { border-top: 1px solid #B8B4A8; display: flex; }
+    .shell-tabs div { flex: 1; padding: 8px 4px; text-align: center; font-size: 11px; color: #4A4A4A; border-right: 1px solid #E0DDD3; }
+    .shell-tabs div:last-child { border-right: none; }
+    .shell-tabs .active { background: #F0EDDF; font-weight: 500; color: #1A1A1A; }
+
+  </style>
+</helmet>
+<div class="doc">
+  <h1>Page shell</h1>
+  <p class="meta">sprint 054 · shared component · consumed by every screen</p>
+  <p class="lede">Same skeleton on both devices: header strip carries caller identity and active profile; body carries the screen's content; tab strip (handheld) or side rail (Mac) carries navigation.</p>
+
+  <h2>Handheld shell</h2>
+  <div class="shell">
+    <div class="shell-header">
+      <span class="left"><span style="font-weight:500;">operator</span> · <span class="mono">operator_station_view</span></span>
+      <span class="right">14:22 · station-B4</span>
+    </div>
+    <div class="shell-body">
+      <div style="font-size: 15px; font-weight: 500; margin-bottom: 4px;">Run RUN-VF-003-0812-01</div>
+      <div style="font-size: 13px; color: #4A4A4A;">Step 3 of 7 · torque capture on M8</div>
+    </div>
+    <div class="shell-tabs">
+      <div class="active">Assigned</div>
+      <div>Scan</div>
+      <div>Runs</div>
+      <div>Blockers</div>
+      <div>Profile</div>
+    </div>
+  </div>
+
+  <h2>Mac shell (compact preview)</h2>
+  <div class="shell" style="height: 180px;">
+    <div class="shell-header">
+      <span class="left"><span style="font-weight:500;">quality_engineer</span> · <span class="mono">internal_full_quality</span></span>
+      <span class="right">program: aero-b · contract: 2026-04-11</span>
+    </div>
+    <div class="shell-body">
+      <div style="font-size: 13px; color: #6B6B6B; margin-bottom: 6px;">RECEIVING QUEUE · 3 awaiting evidence</div>
+      <div style="font-size: 13px;">SHIP-2026-0812-004 · valve_body_001 · quarantined</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

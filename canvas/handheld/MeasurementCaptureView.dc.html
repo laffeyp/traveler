@@ -1,0 +1,198 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.4; }
+    .device { width: 390px; height: 844px; background: #FAFAF7; display: flex; flex-direction: column; }
+
+    /* Header */
+    .header { display: flex; align-items: center; gap: 8px; padding: 12px 14px 10px; border-bottom: 1px solid #D9D6CE; }
+    .back { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #1A1A1A; margin-left: -6px; }
+    .back svg { width: 22px; height: 22px; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; background: #F0EDDF; border: 1px solid #D9D6CE; border-radius: 3px; font-size: 11px; }
+    .chip .actor { font-weight: 500; }
+    .chip .mono { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #4A4A4A; }
+    .chip .sep { color: #B8B4A8; }
+    .station { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-align: right; line-height: 1.15; }
+
+    /* Meta */
+    .meta { padding: 10px 16px; background: #F0EDDF; border-bottom: 1px solid #D9D6CE; font-size: 12px; }
+    .meta .mono { font-family: "IBM Plex Mono", monospace; color: #4A4A4A; }
+    .meta .sep { color: #B8B4A8; margin: 0 6px; }
+
+    /* Body */
+    .body { flex: 1; padding: 16px; overflow-y: auto; }
+
+    /* Field name + range */
+    .field-name { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 6px; }
+    .field-title { font-size: 18px; font-weight: 500; margin-bottom: 10px; }
+    .range { display: flex; align-items: baseline; gap: 8px; padding: 12px 14px; background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; margin-bottom: 14px; }
+    .range .lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; }
+    .range .val { font-size: 20px; font-weight: 500; color: #1A1A1A; }
+    .range .unit { font-size: 15px; color: #4A4A4A; }
+
+    /* Big numeric display (the "entered" state) */
+    .entry { background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; padding: 20px 16px; margin-bottom: 12px; text-align: center; position: relative; }
+    .entry .lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .entry .number { font-family: "IBM Plex Mono", monospace; font-size: 56px; font-weight: 500; color: #1A1A1A; line-height: 1; letter-spacing: -0.02em; }
+    .entry .unit { font-size: 22px; color: #4A4A4A; margin-left: 6px; }
+    .entry .clear { position: absolute; top: 14px; right: 14px; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #1E4E8C; }
+    .entry .caret { display: inline-block; width: 2px; height: 44px; background: #1A1A1A; margin-left: 4px; vertical-align: -8px; animation: none; }
+
+    /* Range indicator */
+    .indicator { padding: 8px 14px; background: #E5F1E9; border-left: 3px solid #2D6A3C; border-radius: 0 3px 3px 0; font-size: 12px; color: #1A1A1A; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .indicator svg { width: 18px; height: 18px; color: #2D6A3C; flex-shrink: 0; }
+    .indicator .mono { font-family: "IBM Plex Mono", monospace; color: #2D6A3C; }
+
+    /* Tool row */
+    .tool { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; margin-bottom: 14px; }
+    .tool .lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; }
+    .tool .name { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: #1A1A1A; font-weight: 500; }
+    .tool .cal { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: #E5F1E9; border: 1px solid #2D6A3C; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #2D6A3C; }
+    .tool .cal svg { width: 12px; height: 12px; }
+
+    /* Primary */
+    .btn-primary { display: flex; align-items: center; justify-content: center; height: 56px; background: #1A1A1A; color: #FAFAF7; border-radius: 4px; font-size: 16px; font-weight: 500; margin-bottom: 8px; }
+    .cite-op { font-size: 11px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; text-align: center; margin-top: 6px; }
+
+    /* Result-state legend */
+    .legend { margin-top: 20px; padding-top: 14px; border-top: 1px solid #E0DDD3; }
+    .legend .lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .legend .row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; }
+    .legend .row .badge { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 11px; min-width: 100px; justify-content: center; }
+    .legend .b-pass { background: #2D6A3C; color: #FAFAF7; }
+    .legend .b-warn { background: #FFF3D9; color: #6B4A00; border: 1px solid #D4A946; }
+    .legend .b-fail { background: #B00020; color: #FAFAF7; }
+    .legend .b-ne { background: #F0EDDF; color: #4A4A4A; border: 1px solid #D9D6CE; }
+    .legend .row .note { color: #4A4A4A; }
+    .legend .row .cite { font-family: "IBM Plex Mono", monospace; color: #6B6B6B; font-size: 11px; }
+
+    /* Tabs */
+    .tabs { display: flex; border-top: 1px solid #B8B4A8; background: #FAFAF7; }
+    .tabs .tab { flex: 1; padding: 8px 4px; text-align: center; font-size: 11px; color: #6B6B6B; border-right: 1px solid #E0DDD3; }
+    .tabs .tab:last-child { border-right: none; }
+    .tabs .tab.active { background: #F0EDDF; color: #1A1A1A; font-weight: 500; }
+    .tabs .tab .icon { display: block; height: 18px; margin: 0 auto 3px; }
+  </style>
+</helmet>
+
+<div class="device">
+
+  <div class="header">
+    <div class="back">
+      <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 4 L6 11 L14 18"/></svg>
+    </div>
+    <div class="chip">
+      <span class="actor">j.rivera</span>
+      <span class="sep">·</span>
+      <span class="mono">operator</span>
+    </div>
+    <div class="station">14:26<br>station-B4</div>
+  </div>
+
+  <div class="meta">
+    <span class="mono">RUN-VF-003-0812-01</span>
+    <span class="sep">·</span>
+    Step 3
+    <span class="sep">·</span>
+    Measurement
+  </div>
+
+  <div class="body">
+
+    <p class="field-name">DataCollectionField · torque_bolt_m8</p>
+    <div class="field-title">M8 bolt torque</div>
+
+    <div class="range">
+      <span class="lbl">expected</span>
+      <span class="val">24 – 28</span>
+      <span class="unit">Nm</span>
+    </div>
+
+    <div class="entry">
+      <div class="clear">Clear</div>
+      <div class="lbl">Reading</div>
+      <div class="number">26.5<span class="unit">Nm</span></div>
+    </div>
+
+    <div class="indicator">
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9 L7 13 L15 5"/></svg>
+      <span>Inside expected range · projected result</span>
+      <span class="mono" style="margin-left:auto;">pass</span>
+    </div>
+
+    <div class="tool">
+      <div>
+        <div class="lbl">Tool</div>
+        <div class="name">cal_torque_wrench_a</div>
+      </div>
+      <div class="cal">
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6 L5 8 L9 4"/></svg>
+        in_cal
+      </div>
+    </div>
+
+    <div class="btn-primary">Capture measurement</div>
+    <div class="cite-op">→ CaptureMeasurement · rule run_execution</div>
+
+    <div class="legend">
+      <div class="lbl">Result values (Measurement.result)</div>
+      <div class="row">
+        <span class="badge b-pass">pass</span>
+        <span class="note">value inside expected range</span>
+      </div>
+      <div class="row">
+        <span class="badge b-warn">warning</span>
+        <span class="note">inside range, near a limit or out of typical spread</span>
+      </div>
+      <div class="row">
+        <span class="badge b-fail">fail</span>
+        <span class="note">outside expected range — opens quality path</span>
+      </div>
+      <div class="row" style="margin-top:2px;">
+        <span class="badge b-ne">not_evaluated</span>
+        <span class="note">value captured, evaluation deferred</span>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <span class="note" style="color:#6B6B6B; font-style:normal;">A fail activates rule</span>
+        <span class="cite">failed_measurement_has_quality_path</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tabs">
+    <div class="tab active">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 10 L10 4 L16 10 M6 9 V16 H14 V9"/></svg>
+      Assigned
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="6" width="14" height="8" rx="1"/><path d="M6 6 V14 M9 6 V14 M13 6 V14"/></svg>
+      Scan
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5 H16 M4 10 H16 M4 15 H16"/></svg>
+      Runs
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3 L17 15 H3 Z M10 8 V11 M10 13 V13.5"/></svg>
+      Blockers
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="7" r="3"/><path d="M4 17 C4 13 7 11 10 11 C13 11 16 13 16 17"/></svg>
+      Profile
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

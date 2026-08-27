@@ -1,0 +1,171 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.4; }
+    .device { width: 390px; height: 844px; background: #FAFAF7; display: flex; flex-direction: column; }
+
+    /* Header strip: caller-profile chip + station id */
+    .header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 10px; background: #FAFAF7; border-bottom: 1px solid #D9D6CE; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: #F0EDDF; border: 1px solid #D9D6CE; border-radius: 3px; font-size: 12px; }
+    .chip .actor { font-weight: 500; }
+    .chip .sep { color: #B8B4A8; }
+    .chip .profile { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; }
+    .station { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-align: right; line-height: 1.2; }
+
+    /* Body */
+    .body { flex: 1; padding: 16px; overflow-y: auto; }
+    .section-lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 8px; }
+
+    /* Active run card */
+    .active { background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 4px; padding: 14px 14px 16px; margin-bottom: 14px; }
+    .active .run-alias { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: #4A4A4A; margin-bottom: 4px; }
+    .active .part { font-size: 15px; font-weight: 500; margin-bottom: 2px; }
+    .active .serial { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #6B6B6B; }
+    .active .state-row { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .badge.progress { background: #2D6A3C; color: #FAFAF7; }
+    .badge.step { background: #F0EDDF; color: #4A4A4A; border: 1px solid #D9D6CE; }
+    .active .step-name { font-size: 14px; color: #1A1A1A; margin-top: 6px; margin-bottom: 14px; }
+    .btn-primary { display: flex; align-items: center; justify-content: center; height: 56px; background: #1A1A1A; color: #FAFAF7; border-radius: 4px; font-size: 16px; font-weight: 500; }
+
+    /* Top blocker (compact) */
+    .blocker-strip { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #FFF3D9; border-left: 3px solid #B45309; border-radius: 0 3px 3px 0; margin-bottom: 14px; font-size: 12px; }
+    .blocker-strip .rid { font-family: "IBM Plex Mono", monospace; color: #6B4A00; font-weight: 500; }
+    .blocker-strip .sep { color: #B8B4A8; }
+    .blocker-strip .next { color: #4A4A4A; font-family: "IBM Plex Mono", monospace; }
+
+    /* Assigned runs */
+    .assigned-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 12px; background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; margin-bottom: 8px; min-height: 56px; }
+    .assigned-row .left { display: flex; flex-direction: column; }
+    .assigned-row .a-alias { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #6B6B6B; margin-bottom: 2px; }
+    .assigned-row .a-part { font-size: 14px; font-weight: 500; }
+    .assigned-row .a-serial { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; }
+    .assigned-row .a-state { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .btn-secondary { display: inline-flex; align-items: center; height: 36px; padding: 0 12px; background: transparent; color: #1A1A1A; border: 1px solid #1A1A1A; border-radius: 3px; font-size: 13px; font-weight: 500; }
+
+    /* Recent action */
+    .recent { display: flex; align-items: center; gap: 8px; padding: 8px 0; margin-top: 6px; font-size: 12px; color: #6B6B6B; }
+    .recent .op { font-family: "IBM Plex Mono", monospace; color: #1A1A1A; }
+    .recent .event { font-family: "IBM Plex Mono", monospace; color: #2D6A3C; }
+
+    /* Tab strip */
+    .tabs { display: flex; border-top: 1px solid #B8B4A8; background: #FAFAF7; }
+    .tabs .tab { flex: 1; padding: 10px 4px; text-align: center; font-size: 11px; color: #6B6B6B; border-right: 1px solid #E0DDD3; }
+    .tabs .tab:last-child { border-right: none; }
+    .tabs .tab.active { background: #F0EDDF; color: #1A1A1A; font-weight: 500; }
+    .tabs .tab .icon { display: block; height: 18px; margin: 0 auto 3px; }
+  </style>
+</helmet>
+
+<div class="device">
+
+  <div class="header">
+    <div class="chip">
+      <span class="actor">j.rivera</span>
+      <span class="sep">·</span>
+      <span class="mono" style="font-family:'IBM Plex Mono',monospace; font-size:11px;">operator</span>
+      <span class="sep">·</span>
+      <span class="profile">operator_station_view</span>
+    </div>
+    <div class="station">
+      14:22<br>station-B4
+    </div>
+  </div>
+
+  <div class="body">
+
+    <p class="section-lbl">Active run</p>
+    <div class="active">
+      <div class="run-alias">RUN-VF-003-0812-01</div>
+      <div class="part">Valve body assembly · rev B</div>
+      <div class="serial">SN 45-8829-C-000234</div>
+      <div class="state-row">
+        <span class="badge progress">in_progress</span>
+        <span class="badge step">Step 3 of 7</span>
+      </div>
+      <div class="step-name">Torque M8 bolt at 24-28 Nm</div>
+      <div class="btn-primary">Continue → RunStepView</div>
+    </div>
+
+    <div class="blocker-strip">
+      <span class="rid">failed_measurement_has_quality_path</span>
+      <span class="sep">·</span>
+      <span>Step 2</span>
+      <span class="sep">·</span>
+      <span class="next">→ quality_engineer</span>
+    </div>
+
+    <p class="section-lbl">Assigned · 2 runs</p>
+
+    <div class="assigned-row">
+      <div class="left">
+        <div class="a-alias">RUN-VF-003-0812-05</div>
+        <div class="a-part">Valve body assembly · rev B</div>
+        <div class="a-serial">SN 45-8829-C-000241</div>
+      </div>
+      <div class="a-state">
+        <span class="badge step" style="background:#F0EDDF;">ready</span>
+        <span class="btn-secondary">Start</span>
+      </div>
+    </div>
+
+    <div class="assigned-row">
+      <div class="left">
+        <div class="a-alias">RUN-VF-003-0812-08</div>
+        <div class="a-part">Valve body assembly · rev B</div>
+        <div class="a-serial">SN 45-8829-C-000247</div>
+      </div>
+      <div class="a-state">
+        <span class="badge" style="background:#FFF3D9; color:#6B4A00; border:1px solid #D4A946;">blocked</span>
+        <span style="font-size:11px; color:#6B4A00; font-family:'IBM Plex Mono', monospace;">quarantined_inventory</span>
+      </div>
+    </div>
+
+    <div class="recent">
+      <span>Last action</span>
+      <span>·</span>
+      <span class="op">CompleteRunStep</span>
+      <span>·</span>
+      <span class="event">RUN_STEP_COMPLETED</span>
+      <span>·</span>
+      <span>Step 2 · 8 s ago</span>
+    </div>
+
+  </div>
+
+  <div class="tabs">
+    <div class="tab active">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 10 L10 4 L16 10 M6 9 V16 H14 V9"/></svg>
+      Assigned
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="6" width="14" height="8" rx="1"/><path d="M6 6 V14 M9 6 V14 M13 6 V14"/></svg>
+      Scan
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5 H16 M4 10 H16 M4 15 H16"/></svg>
+      Runs
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3 L17 15 H3 Z M10 8 V11 M10 13 V13.5"/></svg>
+      Blockers
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="7" r="3"/><path d="M4 17 C4 13 7 11 10 11 C13 11 16 13 16 17"/></svg>
+      Profile
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.4; }
+    .device { width: 390px; height: 844px; background: #FAFAF7; display: flex; flex-direction: column; }
+
+    .header { display: flex; align-items: center; gap: 8px; padding: 12px 14px 10px; border-bottom: 1px solid #D9D6CE; }
+    .back { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; margin-left: -6px; }
+    .back svg { width: 22px; height: 22px; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; background: #F0EDDF; border: 1px solid #D9D6CE; border-radius: 3px; font-size: 11px; }
+    .chip .actor { font-weight: 500; }
+    .chip .mono { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #4A4A4A; }
+    .chip .sep { color: #B8B4A8; }
+    .station { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-align: right; line-height: 1.15; }
+
+    .meta { padding: 10px 16px; background: #F0EDDF; border-bottom: 1px solid #D9D6CE; font-size: 12px; }
+    .meta .mono { font-family: "IBM Plex Mono", monospace; color: #4A4A4A; }
+    .meta .sep { color: #B8B4A8; margin: 0 6px; }
+    .meta .badge { display: inline-flex; padding: 1px 6px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 11px; background: #F0EDDF; color: #4A4A4A; border: 1px solid #D9D6CE; }
+    .meta .badge.state { background: #F0EDDF; }
+
+    .body { flex: 1; padding: 14px 14px 16px; overflow-y: auto; }
+
+    .roll { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+    .cell { background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; padding: 8px 10px; }
+    .cell .k { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; }
+    .cell .v { font-size: 14px; font-weight: 500; margin-top: 2px; }
+    .cell .v .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #4A4A4A; }
+    .cell.good .v { color: #2D6A3C; }
+    .cell.bad .v { color: #B00020; }
+
+    .section-lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin: 8px 0 6px; }
+
+    .rules { background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
+    .rule { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid #E0DDD3; font-size: 11.5px; }
+    .rule:last-child { border-bottom: none; }
+    .rule .st { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .rule .st svg { width: 12px; height: 12px; }
+    .rule .st.pass { color: #2D6A3C; }
+    .rule .st.fail { color: #B00020; }
+    .rule .st.na { color: #B8B4A8; }
+    .rule .id { flex: 1; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #1A1A1A; word-break: break-word; }
+    .rule.fail .id { color: #B00020; font-weight: 500; }
+    .rule .tag { padding: 0 6px; font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; }
+
+    .report { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #F0EDDF; border-left: 3px solid #B45309; border-radius: 0 3px 3px 0; margin-bottom: 12px; font-size: 12px; }
+    .report .k { color: #6B4A00; font-family: "IBM Plex Mono", monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .report .v { flex: 1; color: #1A1A1A; }
+    .report .mono { font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+
+    .btn-primary { display: flex; align-items: center; justify-content: center; height: 56px; background: #E5E5E5; color: #8B8B8B; border-radius: 4px; font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+    .disabled-strip { background: #F0EDDF; border-left: 3px solid #B45309; padding: 10px 12px; margin-bottom: 10px; font-size: 12px; border-radius: 0 2px 2px 0; }
+    .disabled-strip .why { color: #6B4A00; font-family: "IBM Plex Mono", monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+    .disabled-strip .r { color: #1A1A1A; margin-bottom: 4px; }
+    .disabled-strip .path { color: #4A4A4A; font-size: 11px; }
+    .disabled-strip .mono { font-family: "IBM Plex Mono", monospace; }
+
+    .pipeline { padding-top: 10px; border-top: 1px solid #E0DDD3; margin-top: 8px; }
+    .pipeline .lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .pipeline .stage-list { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: #4A4A4A; line-height: 1.7; }
+    .pipeline .stage-list .arr { color: #B8B4A8; margin-right: 4px; }
+    .pipeline .stage-list .op { color: #1A1A1A; }
+    .pipeline .stage-list .who { color: #6B6B6B; margin-left: 4px; }
+
+    .tabs { display: flex; border-top: 1px solid #B8B4A8; background: #FAFAF7; }
+    .tabs .tab { flex: 1; padding: 8px 4px; text-align: center; font-size: 11px; color: #6B6B6B; border-right: 1px solid #E0DDD3; }
+    .tabs .tab:last-child { border-right: none; }
+    .tabs .tab.active { background: #F0EDDF; color: #1A1A1A; font-weight: 500; }
+    .tabs .tab .icon { display: block; height: 18px; margin: 0 auto 3px; }
+  </style>
+</helmet>
+
+<div class="device">
+
+  <div class="header">
+    <div class="back">
+      <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 4 L6 11 L14 18"/></svg>
+    </div>
+    <div class="chip">
+      <span class="actor">j.rivera</span>
+      <span class="sep">·</span>
+      <span class="mono">operator</span>
+    </div>
+    <div class="station">15:12<br>station-B4</div>
+  </div>
+
+  <div class="meta">
+    <span class="mono">RUN-VF-003-0812-01</span>
+    <span class="sep">·</span>
+    <span class="badge state">complete</span>
+    <span class="sep">·</span>
+    Close readiness
+  </div>
+
+  <div class="body">
+
+    <div class="roll">
+      <div class="cell good">
+        <div class="k">Steps</div>
+        <div class="v">7 / 7 <span class="mono">complete</span></div>
+      </div>
+      <div class="cell good">
+        <div class="k">Measurements</div>
+        <div class="v">4 / 4</div>
+      </div>
+      <div class="cell good">
+        <div class="k">Installations</div>
+        <div class="v">3 / 3</div>
+      </div>
+      <div class="cell bad">
+        <div class="k">Blockers</div>
+        <div class="v">1 open</div>
+      </div>
+    </div>
+
+    <p class="section-lbl">Run-close rules · 13</p>
+    <div class="rules">
+      <div class="rule">
+        <div class="st pass"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6 L5 9 L10 3"/></svg></div>
+        <div class="id">required_steps_complete</div><div class="tag">pass</div>
+      </div>
+      <div class="rule">
+        <div class="st pass"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6 L5 9 L10 3"/></svg></div>
+        <div class="id">required_measurements_present</div><div class="tag">pass</div>
+      </div>
+      <div class="rule fail">
+        <div class="st fail"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3 L9 9 M9 3 L3 9"/></svg></div>
+        <div class="id">failed_measurement_has_quality_path</div><div class="tag">fail</div>
+      </div>
+      <div class="rule">
+        <div class="st pass"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6 L5 9 L10 3"/></svg></div>
+        <div class="id">required_installations_present</div><div class="tag">pass</div>
+      </div>
+      <div class="rule">
+        <div class="st pass"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6 L5 9 L10 3"/></svg></div>
+        <div class="id">redline_approved_before_applied</div><div class="tag">pass</div>
+      </div>
+      <div class="rule">
+        <div class="st na"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6 H9"/></svg></div>
+        <div class="id">redline_applied_before_step_complete_if_affecting_step</div><div class="tag">n/a</div>
+      </div>
+      <div class="rule">
+        <div class="st pass"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6 L5 9 L10 3"/></svg></div>
+        <div class="id">machine_evidence_reviewed_if_required</div><div class="tag">pass</div>
+      </div>
+      <div class="rule">
+        <div class="st pass"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6 L5 9 L10 3"/></svg></div>
+        <div class="id">nonconformance_disposition_recorded</div><div class="tag">pass</div>
+      </div>
+      <div class="rule">
+        <div class="st fail"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3 L9 9 M9 3 L3 9"/></svg></div>
+        <div class="id">nonconformance_verified_before_close_if_required</div><div class="tag">fail</div>
+      </div>
+      <div class="rule">
+        <div class="st pass"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6 L5 9 L10 3"/></svg></div>
+        <div class="id">no_blocking_reconciliation_conflict</div><div class="tag">pass</div>
+      </div>
+      <div class="rule">
+        <div class="st pass"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6 L5 9 L10 3"/></svg></div>
+        <div class="id">run_context_snapshot_exists</div><div class="tag">pass</div>
+      </div>
+      <div class="rule">
+        <div class="st pass"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6 L5 9 L10 3"/></svg></div>
+        <div class="id">report_definition_available</div><div class="tag">pass</div>
+      </div>
+      <div class="rule">
+        <div class="st pass"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6 L5 9 L10 3"/></svg></div>
+        <div class="id">access_policy_available</div><div class="tag">pass</div>
+      </div>
+    </div>
+
+    <div class="report">
+      <div>
+        <div class="k">Report</div>
+        <div class="v"><span class="mono">RunCloseReport</span> · not yet generated</div>
+      </div>
+    </div>
+
+    <div class="btn-primary">Attempt close</div>
+
+    <div class="disabled-strip">
+      <div class="why">Why disabled</div>
+      <div class="r">1 run-close rule fails.</div>
+      <div class="path">Resolve <span class="mono">failed_measurement_has_quality_path</span> · next actor <span class="mono">quality_engineer</span> · disposition → rework → verify</div>
+    </div>
+
+    <div class="pipeline">
+      <div class="lbl">Close pipeline (when rules pass)</div>
+      <div class="stage-list">
+        <div><span class="arr">→</span><span class="op">AttemptRunClose</span> <span class="who">· operator · Run.close_check</span></div>
+        <div><span class="arr">→</span><span class="op">RunCloseCheck</span> <span class="who">· system_worker</span></div>
+        <div><span class="arr">→</span><span class="op">RequestRunCloseReport</span> <span class="who">· system_worker</span></div>
+        <div><span class="arr">→</span><span class="op">GenerateRunCloseReport</span> <span class="who">· system_worker · walks requested → generating → generated</span></div>
+        <div><span class="arr">→</span><span class="op">ApplyRunCloseResultToRun</span> <span class="who">· system_worker · Run.closed</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tabs">
+    <div class="tab active">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 10 L10 4 L16 10 M6 9 V16 H14 V9"/></svg>
+      Assigned
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="6" width="14" height="8" rx="1"/><path d="M6 6 V14 M9 6 V14 M13 6 V14"/></svg>
+      Scan
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5 H16 M4 10 H16 M4 15 H16"/></svg>
+      Runs
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3 L17 15 H3 Z M10 8 V11 M10 13 V13.5"/></svg>
+      Blockers
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="7" r="3"/><path d="M4 17 C4 13 7 11 10 11 C13 11 16 13 16 17"/></svg>
+      Profile
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

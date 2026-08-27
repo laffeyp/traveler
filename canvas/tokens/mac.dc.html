@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+    .doc { width: 800px; padding: 40px 48px 56px; }
+    h1 { font-size: 26px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+    .subtitle { color: #4A4A4A; font-size: 14px; margin: 0 0 4px; }
+    .meta { font-size: 12px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 32px; }
+    h2 { font-size: 16px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: #333; margin: 36px 0 12px; padding-bottom: 6px; border-bottom: 1px solid #B8B4A8; }
+    .row { display: flex; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid #E0DDD3; }
+    .swatch { width: 32px; height: 32px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.05); flex-shrink: 0; }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #333; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+    .lede { font-size: 12px; color: #4A4A4A; margin: 0 0 12px; }
+    .type-row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid #E0DDD3; }
+    .type-row .label { min-width: 100px; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #6B6B6B; }
+    .btn-mac { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 3px; font-weight: 500; font-size: 13px; }
+    .table-preview { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .table-preview th, .table-preview td { text-align: left; padding: 5px 10px; border-bottom: 1px solid #E0DDD3; }
+    .table-preview th { background: #EFECDF; font-weight: 500; color: #333; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; }
+    p.principle { margin: 0 0 8px; font-size: 12px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; }
+    .focus-demo { display: inline-block; padding: 4px 12px; border: 1px solid #B8B4A8; background: #FAFAF7; border-radius: 3px; box-shadow: 0 0 0 2px #1E4E8C; }
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+  </style>
+</helmet>
+
+<div class="doc">
+  <h1>Mac tokens</h1>
+  <p class="subtitle">Station app: laptop or workstation. Review, comparison, queues, evidence, reports, governed decisions.</p>
+  <p class="meta">sprint 054, phase D.1 · tokens for the seven Mac-side caller_types</p>
+
+  <h2>Palette · unchanged from handheld</h2>
+  <p class="principle">§3.1 same ground and same exceptions across devices; one paint job.</p>
+  <div style="display:grid; grid-template-columns: 40px 1fr 40px 1fr; gap:6px 12px; align-items:center;">
+    <div class="swatch" style="background:#FAFAF7;"></div><span class="mono">ground</span>
+    <div class="swatch" style="background:#F0EDDF;"></div><span class="mono">fill-weak</span>
+    <div class="swatch" style="background:#EFECDF;"></div><span class="mono">table-head</span>
+    <div class="swatch" style="background:#D9D6CE;"></div><span class="mono">rule</span>
+    <div class="swatch" style="background:#6B6B6B;"></div><span class="mono">ink-tertiary</span>
+    <div class="swatch" style="background:#4A4A4A;"></div><span class="mono">ink-secondary</span>
+    <div class="swatch" style="background:#1A1A1A;"></div><span class="mono">ink-primary</span>
+    <div class="swatch" style="background:#B45309;"></div><span class="mono">amber</span>
+    <div class="swatch" style="background:#B00020;"></div><span class="mono">red</span>
+    <div class="swatch" style="background:#1E4E8C;"></div><span class="mono">blue</span>
+    <div class="swatch" style="background:#2D6A3C;"></div><span class="mono">green</span>
+    <div></div><div></div>
+  </div>
+
+  <h2>Type · dense workstation scale</h2>
+  <p class="principle">§3.8 body 12pt floor; §3.5 progressive disclosure — dense queues, one hop to detail.</p>
+  <div class="type-row"><span class="label">display / 22</span><span style="font-size:22px; font-weight:600;">Receiving Queue</span></div>
+  <div class="type-row"><span class="label">title / 17</span><span style="font-size:17px; font-weight:600;">Shipment SHIP-2026-0812-004</span></div>
+  <div class="type-row"><span class="label">body / 14</span><span style="font-size:14px;">Three lines received; one blocker (certificate_of_conformance_unverified).</span></div>
+  <div class="type-row"><span class="label">body-s / 13</span><span style="font-size:13px;">last check 2h ago · quality_engineer</span></div>
+  <div class="type-row"><span class="label">table / 12</span><span style="font-size:12px;">valve_body_001 · P/N 45-8829-C · rev B</span></div>
+  <div class="type-row"><span class="label">meta / 12</span><span style="font-size:12px; color:#6B6B6B;">RECEIVING_CHECK_BLOCKED · seq 4831</span></div>
+
+  <h2>Row density · queues and tables</h2>
+  <p class="lede">Row height 28px on queues, 24px on dense reference tables. Zebra striping avoided (§3.1 grey ground); rule between rows carries the eye.</p>
+  <table class="table-preview">
+    <thead><tr><th>alias</th><th>state</th><th>blocker</th><th>next actor</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">valve_body_001</td><td>quarantined</td><td class="mono">certificate_of_conformance_unverified</td><td>quality_engineer</td></tr>
+      <tr><td class="mono">gasket_003</td><td>available</td><td>—</td><td>—</td></tr>
+      <tr><td class="mono">seal_kit_a</td><td>received</td><td class="mono">material_test_report_unverified</td><td>quality_engineer</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Buttons · 30pt default, keyboard-first</h2>
+  <p class="principle">§3.4 primary vs secondary; §3.7 focus ring on every tab-reachable control.</p>
+  <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+    <span class="btn-mac" style="background:#1A1A1A; color:#FAFAF7;">Run receiving check</span>
+    <span class="btn-mac" style="background:transparent; color:#1A1A1A; border:1px solid #1A1A1A;">Open shipment</span>
+    <span class="btn-mac" style="background:#E5E5E5; color:#8B8B8B;">Apply check to inventory</span>
+    <span class="focus-demo mono" style="font-family:'IBM Plex Sans', sans-serif;">Cancel</span>
+    <span class="mono">focus ring</span>
+  </div>
+
+  <h2>Spacing scale · 4/8 base, same as handheld</h2>
+  <p class="lede">Same scale. Density comes from tighter row heights and smaller type, not from a second spacing scale.</p>
+
+  <h2>Radii · 2 default, 0 tabular, 3 buttons</h2>
+  <p class="lede">Slightly tighter than handheld — the workstation reads closer, and the visual system feels engineered rather than soft.</p>
+</div>
+</x-dc>
+</body>
+</html>

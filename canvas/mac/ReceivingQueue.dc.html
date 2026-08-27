@@ -1,0 +1,222 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.4; }
+    .app { width: 1200px; height: 800px; display: flex; flex-direction: column; background: #FAFAF7; }
+
+    /* Top shell */
+    .shell-top { display: flex; align-items: center; gap: 14px; padding: 10px 18px; background: #EFECDF; border-bottom: 1px solid #B8B4A8; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: #FAFAF7; border: 1px solid #D9D6CE; border-radius: 3px; font-size: 12px; }
+    .chip .actor { font-weight: 500; }
+    .chip .sep { color: #B8B4A8; }
+    .chip .mono { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; }
+    .ctx { display: flex; gap: 12px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; }
+    .search { display: flex; align-items: center; background: #FAFAF7; border: 1px solid #B8B4A8; padding: 4px 10px; border-radius: 3px; width: 320px; font-size: 12px; margin-left: auto; }
+    .search input { border: none; outline: none; flex: 1; font-family: inherit; font-size: 12px; background: transparent; }
+    .search .kbd { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; margin-left: 8px; }
+
+    /* Main split: side rail + content */
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    /* Side rail */
+    .rail { width: 160px; background: #F0EDDF; border-right: 1px solid #B8B4A8; padding: 8px 0; }
+    .rail .item { padding: 7px 16px; font-size: 12.5px; color: #4A4A4A; border-left: 3px solid transparent; }
+    .rail .item.active { background: #FAFAF7; color: #1A1A1A; font-weight: 500; border-left-color: #1A1A1A; }
+    .rail .item .count { float: right; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; }
+
+    /* Content */
+    .content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+    .h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+    .sub { font-size: 12px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 14px; }
+
+    /* Filters */
+    .filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+    .fc { padding: 4px 10px; background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; font-size: 12px; font-family: "IBM Plex Mono", monospace; color: #4A4A4A; }
+    .fc.on { background: #1A1A1A; color: #FAFAF7; border-color: #1A1A1A; }
+
+    /* Section head */
+    .sec { margin-bottom: 14px; }
+    .sec-head { display: flex; align-items: baseline; padding: 6px 8px; background: #F0EDDF; border-top: 1px solid #D9D6CE; border-bottom: 1px solid #D9D6CE; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; text-transform: uppercase; letter-spacing: 0.04em; }
+    .sec-head .n { margin-left: auto; }
+    .sec-head.red { background: #FEECEC; color: #B00020; }
+    .sec-head.amber { background: #FFF3D9; color: #6B4A00; }
+    .sec-head.green { background: #E5F1E9; color: #2D6A3C; }
+
+    /* Table */
+    .tbl { width: 100%; border-collapse: collapse; }
+    .tbl th, .tbl td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #E0DDD3; font-size: 12px; vertical-align: middle; }
+    .tbl th { font-weight: 500; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; text-transform: uppercase; letter-spacing: 0.03em; background: #FAFAF7; }
+    .tbl td.mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #333; }
+    .tbl .badge { display: inline-flex; padding: 1px 6px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+    .tbl .b-quar { background: #B00020; color: #FAFAF7; }
+    .tbl .b-block { background: #FFF3D9; color: #6B4A00; border: 1px solid #D4A946; }
+    .tbl .b-ready { background: #2D6A3C; color: #FAFAF7; }
+    .tbl .b-await { background: #F0EDDF; color: #4A4A4A; border: 1px solid #D9D6CE; }
+    .tbl .blk { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #B00020; }
+
+  </style>
+</helmet>
+
+<div class="app">
+
+  <div class="shell-top">
+    <div class="chip">
+      <span class="actor">m.tan</span>
+      <span class="sep">·</span>
+      <span class="mono">quality_engineer</span>
+      <span class="sep">·</span>
+      <span class="mono">receiving_inspector_view</span>
+    </div>
+    <div class="ctx">
+      <span>program: aero-b</span>
+      <span>contract: 2026-04-11</span>
+      <span>node: hq-b4</span>
+    </div>
+    <div class="search">
+      <span style="color:#6B6B6B; margin-right:6px;">⌕</span>
+      <input placeholder="Search shipments, records, reports">
+      <span class="kbd">⌘K</span>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <div class="rail">
+      <div class="item">Work <span class="count">2</span></div>
+      <div class="item">Planning</div>
+      <div class="item active">Receiving <span class="count">14</span></div>
+      <div class="item">Quality <span class="count">3</span></div>
+      <div class="item">Run Close</div>
+      <div class="item">Evidence <span class="count">1</span></div>
+      <div class="item">Reports</div>
+      <div class="item">Support</div>
+      <div class="item">Admin</div>
+    </div>
+
+    <div class="content">
+
+      <h1 class="h1">Receiving queue</h1>
+      <p class="sub">reads: Shipment · ShipmentLine · ReceivingCheck · via readRecordAsCaller under receiving_inspector_view</p>
+
+      <div class="filters">
+        <span class="fc on">All · 17</span>
+        <span class="fc">awaiting_receipt · 1</span>
+        <span class="fc">received_no_check · 3</span>
+        <span class="fc">check_blocked · 4</span>
+        <span class="fc">check_failed · 1</span>
+        <span class="fc">quarantined · 2</span>
+        <span class="fc">check_passed_apply_pending · 3</span>
+        <span class="fc">ready_to_release · 2</span>
+        <span class="fc">corrective_action_open · 1</span>
+      </div>
+      <div class="filters" style="margin-top:6px;">
+        <span class="fc">missing_documents · 4</span>
+        <span class="fc">blocked · 4</span>
+        <span class="fc">supplier_corrective_action_open · 1</span>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head amber"><span>awaiting_receipt · Shipment.status = created</span><span class="n">1</span></div>
+        <table class="tbl">
+          <thead><tr><th style="width:200px;">shipment</th><th style="width:120px;">state</th><th>booked</th><th style="width:140px;">next actor</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">SHIP-2026-0812-025</td><td><span class="badge b-await">created</span></td><td>booked 08:12 · not yet arrived</td><td>planner (ReceiveShipment)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head amber"><span>received_no_check · Shipment received, no ReceivingCheck yet</span><span class="n">3</span></div>
+        <table class="tbl">
+          <thead><tr><th style="width:200px;">shipment · line</th><th style="width:120px;">state</th><th>arrived</th><th style="width:140px;">next actor</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">SHIP-2026-0812-021 · L1</td><td><span class="badge b-await">received</span></td><td>14 min ago</td><td>quality_engineer (RunReceivingCheck)</td></tr>
+            <tr><td class="mono">SHIP-2026-0812-021 · L2</td><td><span class="badge b-await">received</span></td><td>14 min ago</td><td>quality_engineer (RunReceivingCheck)</td></tr>
+            <tr><td class="mono">SHIP-2026-0812-024 · L1</td><td><span class="badge b-await">received</span></td><td>2 min ago</td><td>quality_engineer (RunReceivingCheck)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head red"><span>check_blocked · ReceivingCheck.status = blocked</span><span class="n">4</span></div>
+        <table class="tbl">
+          <thead><tr><th style="width:200px;">shipment · line</th><th style="width:120px;">state</th><th>blockers</th><th style="width:140px;">next actor</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">SHIP-2026-0812-004 · L1</td><td><span class="badge b-block">blocked</span></td><td class="blk">certificate_of_conformance_unverified</td><td>quality_engineer</td></tr>
+            <tr><td class="mono">SHIP-2026-0812-004 · L2</td><td><span class="badge b-block">blocked</span></td><td class="blk">material_test_report_unverified</td><td>quality_engineer</td></tr>
+            <tr><td class="mono">SHIP-2026-0812-011 · L1</td><td><span class="badge b-block">blocked</span></td><td class="blk">document_matches_part_revision</td><td>quality_engineer</td></tr>
+            <tr><td class="mono">SHIP-2026-0812-013 · L3</td><td><span class="badge b-block">blocked</span></td><td class="blk">first_article_report_present</td><td>quality_engineer</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head red"><span>check_failed · ReceivingCheck evaluated, material must be rejected (return_to_supplier or scrap)</span><span class="n">1</span></div>
+        <table class="tbl">
+          <thead><tr><th style="width:200px;">shipment · line</th><th style="width:120px;">state</th><th>evidence</th><th style="width:140px;">next actor</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">SHIP-2026-0812-016 · L1</td><td><span class="badge b-block">failed</span></td><td class="blk">certificate_of_conformance_covers_serial · CoC cites wrong part revision, cannot be reconciled</td><td>quality_engineer (OpenReceivingNonconformance · RecordDisposition kind=return_to_supplier)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head red"><span>quarantined · InventoryItem.status = quarantined</span><span class="n">2</span></div>
+        <table class="tbl">
+          <thead><tr><th style="width:200px;">inventory · shipment line</th><th style="width:120px;">state</th><th>reason</th><th style="width:140px;">next actor</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">valve_body_001 · SHIP-2026-0812-004 · L1</td><td><span class="badge b-quar">quarantined</span></td><td class="blk">certificate_of_conformance_unverified</td><td>quality_engineer</td></tr>
+            <tr><td class="mono">gasket_007 · SHIP-2026-0812-013 · L3</td><td><span class="badge b-quar">quarantined</span></td><td class="blk">first_article_report_present</td><td>quality_engineer</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head green"><span>check_passed_apply_pending · ReceivingCheck.status = passed, ready for ApplyReceivingCheckResultToInventory</span><span class="n">3</span></div>
+        <table class="tbl">
+          <thead><tr><th style="width:200px;">inventory · shipment line</th><th style="width:120px;">state</th><th>evidence</th><th style="width:140px;">next actor</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">seal_012 · SHIP-2026-0812-018 · L1</td><td><span class="badge b-ready">passed</span></td><td>CoC verified · MTR verified</td><td>system_worker (ApplyReceivingCheckResultToInventory)</td></tr>
+            <tr><td class="mono">bolt_kit_003 · SHIP-2026-0812-019 · L1</td><td><span class="badge b-ready">passed</span></td><td>CoC verified</td><td>system_worker (ApplyReceivingCheckResultToInventory)</td></tr>
+            <tr><td class="mono">washer_005 · SHIP-2026-0812-019 · L2</td><td><span class="badge b-ready">passed</span></td><td>CoC verified</td><td>system_worker (ApplyReceivingCheckResultToInventory)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head green"><span>ready_to_release · InventoryItem.status = available, ready for kitting / reservation</span><span class="n">2</span></div>
+        <table class="tbl">
+          <thead><tr><th style="width:200px;">inventory · shipment line</th><th style="width:120px;">state</th><th>evidence</th><th style="width:140px;">next actor</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">seal_012 · SHIP-2026-0812-018 · L1</td><td><span class="badge b-ready">available</span></td><td>ReceivingCheck applied · CoC verified · MTR verified</td><td>planner (ReserveInventory / KitInventory)</td></tr>
+            <tr><td class="mono">bolt_kit_003 · SHIP-2026-0812-019 · L1</td><td><span class="badge b-ready">available</span></td><td>ReceivingCheck applied · CoC verified</td><td>planner (ReserveInventory / KitInventory)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head amber"><span>corrective_action_open · Issue via OpenSupplierCorrectiveAction</span><span class="n">1</span></div>
+        <table class="tbl">
+          <thead><tr><th style="width:200px;">issue · shipment</th><th style="width:120px;">state</th><th>opened for</th><th style="width:140px;">next actor</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">iss_2026-0812-007 · SHIP-2026-0812-011</td><td><span class="badge b-await">open</span></td><td class="blk">document_matches_part_revision · supplier response outstanding</td><td>quality_engineer</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

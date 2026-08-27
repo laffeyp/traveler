@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.4; }
+    .doc { width: 1600px; padding: 32px 40px 48px; }
+    h1 { font-size: 26px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+    .subtitle { color: #4A4A4A; font-size: 13px; margin: 0 0 4px; }
+    .meta { font-size: 12px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 28px; }
+    p.lede { font-size: 13px; color: #4A4A4A; margin: 0 0 16px; max-width: 900px; }
+
+    h2 { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: #333; margin: 30px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #B8B4A8; }
+
+    .chain { display: flex; align-items: stretch; gap: 8px; padding: 20px 0; overflow-x: auto; }
+    .step { flex: 0 0 auto; display: flex; flex-direction: column; align-items: stretch; }
+    .screen { width: 200px; background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; padding: 10px 12px; min-height: 130px; }
+    .screen .kind { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .screen .name { font-size: 13px; font-weight: 500; margin-bottom: 6px; line-height: 1.25; }
+    .screen .ops { display: flex; flex-direction: column; gap: 2px; }
+    .screen .ops .op { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: #4A4A4A; }
+    .screen .ops .op .sr { color: #6B6B6B; }
+    .screen.hh { background: #F0EDDF; }
+    .step .step-note { font-size: 11px; color: #6B6B6B; padding: 6px 4px 2px; text-align: center; font-family: "IBM Plex Mono", monospace; }
+
+    .arrow { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; padding-top: 40px; }
+    .arrow svg { width: 40px; height: 22px; color: #4A4A4A; }
+    .arrow .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: #4A4A4A; margin-top: 2px; text-align: center; max-width: 100px; line-height: 1.3; }
+
+    .steps { margin-top: 8px; padding: 12px 16px; background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; }
+    .steps .lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+    .steps ol { margin: 0; padding-left: 20px; }
+    .steps li { font-size: 13px; color: #1A1A1A; padding: 2px 0; }
+    .steps li .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #4A4A4A; }
+
+    .scenario { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; background: #F0EDDF; border: 1px solid #D9D6CE; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; margin-right: 6px; }
+    .scenario.done { background: #E5F1E9; color: #2D6A3C; border-color: #2D6A3C; }
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+</style>
+</helmet>
+<div class="doc">
+  <h1>Handheld operator flows</h1>
+  <p class="subtitle">Three flows across the D.2 handheld pack</p>
+  <p class="meta">§21.1 · §21.2 · §21.5 · scenarios VF-001, VF-002, VF-003, VF-010</p>
+  <div style="margin-bottom: 18px;"><span class="scenario done">VF-001</span><span class="scenario done">VF-002</span><span class="scenario done">VF-003</span><span class="scenario done">VF-010</span></div>
+
+  <p class="lede">Three operator flows the handheld pack renders, each traced across artboards drawn in D.2. All three walk scenarios that pass on both drivers today (VF-001, VF-002, VF-003, VF-010).</p>
+
+  <h2>§21.1 · Operator completes a normal step (VF-001)</h2>
+  <div class="chain">
+<div class="step"><div class="screen hh"><div class="kind">handheld</div><div class="name">OperatorHome</div><div class="ops"><div class="op">readRecordAsCaller(Run)</div><div class="op sr">→ Continue</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Continue</div></div><div class="step"><div class="screen hh"><div class="kind">handheld</div><div class="name">RunStepView</div><div class="ops"><div class="op">readRecordAsCaller(RunStep)</div><div class="op">→ Scan required inv</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Scan</div></div><div class="step"><div class="screen hh"><div class="kind">handheld</div><div class="name">ScanInventoryView</div><div class="ops"><div class="op">readRecordAsCaller(InventoryItem)</div><div class="op sr">identity_only</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Confirm</div></div><div class="step"><div class="screen hh"><div class="kind">handheld</div><div class="name">MeasurementCaptureView</div><div class="ops"><div class="op">CaptureMeasurement</div><div class="op sr">→ pass</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Complete</div></div><div class="step"><div class="screen hh"><div class="kind">handheld</div><div class="name">RunStepView</div><div class="ops"><div class="op">CompleteRunStep</div><div class="op sr">→ next step</div></div></div></div>
+  </div>
+
+  <div class="steps">
+    <div class="lbl">VF-001 scenario steps walked · handles both drivers</div>
+    <ol>
+      <li>OperatorHome reads the active Run and its current step. Operator taps Continue.</li>
+      <li>RunStepView renders instruction, required measurement, required inventory. Operator scans the required inventory.</li>
+      <li>ScanInventoryView resolves the scanned identity against the current step's expected inventory. Match &middot; <span class="mono">identity_only</span>.</li>
+      <li>MeasurementCaptureView takes the reading. <span class="mono">CaptureMeasurement</span> returns <span class="mono">pass</span>. Event <span class="mono">MEASUREMENT_CAPTURED · MEASUREMENT_PASSED</span> fires.</li>
+      <li>RunStepView advances to the next step. Complete step fires <span class="mono">CompleteRunStep · emits RUN_STEP_COMPLETED</span>.</li>
+    </ol>
+  </div>
+
+  <h2>§21.2 · Operator meets a failed measurement (VF-002 · VF-003)</h2>
+  <div class="chain">
+<div class="step"><div class="screen hh"><div class="kind">handheld</div><div class="name">RunStepView</div><div class="ops"><div class="op">readRecordAsCaller(RunStep)</div><div class="op sr">→ Capture</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Capture</div></div><div class="step"><div class="screen hh"><div class="kind">handheld</div><div class="name">MeasurementCaptureView</div><div class="ops"><div class="op">CaptureMeasurement</div><div class="op sr">→ fail</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">System · NC opens</div></div><div class="step"><div class="screen hh"><div class="kind">handheld</div><div class="name">BlockerView</div><div class="ops"><div class="op">rule failed_measurement_has_quality_path</div><div class="op sr">next: quality_engineer</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Return</div></div><div class="step"><div class="screen hh"><div class="kind">handheld</div><div class="name">RunStepView</div><div class="ops"><div class="op">Complete step disabled</div><div class="op sr">until nc verified</div></div></div></div>
+  </div>
+
+  <div class="steps">
+    <div class="lbl">VF-002 · VF-003 scenario steps walked</div>
+    <ol>
+      <li>RunStepView. Operator taps Capture on the required measurement.</li>
+      <li>MeasurementCaptureView. <span class="mono">CaptureMeasurement</span> returns <span class="mono">fail</span>. Event <span class="mono">MEASUREMENT_FAILED</span>. System opens <span class="mono">Nonconformance</span> via <span class="mono">OpenNonconformance</span>.</li>
+      <li>BlockerView. The blocker <span class="mono">failed_measurement_has_quality_path</span> is now in the "Waiting on another actor" section citing <span class="mono">quality_engineer · rule quality_disposition</span>.</li>
+      <li>RunStepView. Complete step disabled with the standard disabled-strip citing the rule; the operator returns to OperatorHome. Quality resolution happens on the Mac Quality station.</li>
+    </ol>
+  </div>
+
+  <h2>§21.5 · Run close blocked, then passes (VF-010 · VF-003)</h2>
+  <div class="chain">
+<div class="step"><div class="screen hh"><div class="kind">handheld</div><div class="name">RunCloseReadinessView</div><div class="ops"><div class="op">readProjection(RunCloseReadiness)</div><div class="op sr">→ Attempt close</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Attempt close</div></div><div class="step"><div class="screen hh"><div class="kind">handheld</div><div class="name">RunCloseReadinessView</div><div class="ops"><div class="op">AttemptRunClose</div><div class="op sr">Run.close_check</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">System pipeline</div></div><div class="step"><div class="screen hh"><div class="kind">handheld</div><div class="name">RunCloseReadinessView</div><div class="ops"><div class="op">RunCloseCheck</div><div class="op sr">blocked · rule report_definition_available</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Resolve rule</div></div><div class="step"><div class="screen hh"><div class="kind">handheld</div><div class="name">RunCloseReadinessView</div><div class="ops"><div class="op">Manufacturing engineer supplies ReportDefinition</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Attempt close</div></div><div class="step"><div class="screen hh"><div class="kind">handheld</div><div class="name">RunCloseReadinessView</div><div class="ops"><div class="op">pipeline completes</div><div class="op sr">Run.closed</div></div></div></div>
+  </div>
+
+  <div class="steps">
+    <div class="lbl">VF-010 · VF-003 scenario steps walked</div>
+    <ol>
+      <li>RunCloseReadinessView. Every registered rule reads pass except <span class="mono">report_definition_available</span> which reads fail (VF-010 shape).</li>
+      <li>Attempt close fires <span class="mono">AttemptRunClose · Run.close_check</span>. System worker runs <span class="mono">RunCloseCheck</span>. Result <span class="mono">blocked</span> · <span class="mono">RUN_CLOSE_CHECK_BLOCKED</span>. Apply result walks Run to <span class="mono">close_blocked</span>.</li>
+      <li>Manufacturing engineer supplies the missing ReportDefinition on the Mac station.</li>
+      <li>Operator taps Attempt close again. This time <span class="mono">RunCloseCheck</span> passes. <span class="mono">RequestRunCloseReport · GenerateRunCloseReport · ApplyRunCloseResultToRun</span>. Run.closed. Event <span class="mono">RUN_CLOSED</span>.</li>
+    </ol>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.4; }
+    .device { width: 390px; height: 844px; background: #FAFAF7; display: flex; flex-direction: column; }
+
+    /* Header + meta */
+    .header { display: flex; align-items: center; gap: 8px; padding: 12px 14px 10px; border-bottom: 1px solid #D9D6CE; }
+    .back { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #1A1A1A; margin-left: -6px; }
+    .back svg { width: 22px; height: 22px; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; background: #F0EDDF; border: 1px solid #D9D6CE; border-radius: 3px; font-size: 11px; }
+    .chip .actor { font-weight: 500; }
+    .chip .mono { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #4A4A4A; }
+    .chip .sep { color: #B8B4A8; }
+    .station { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-align: right; line-height: 1.15; }
+
+    .meta { padding: 10px 16px; background: #F0EDDF; border-bottom: 1px solid #D9D6CE; font-size: 12px; }
+    .meta .mono { font-family: "IBM Plex Mono", monospace; color: #4A4A4A; }
+    .meta .sep { color: #B8B4A8; margin: 0 6px; }
+
+    .body { flex: 1; padding: 14px 14px 16px; overflow-y: auto; }
+    .section-head { display: flex; align-items: baseline; padding: 6px 2px; margin-top: 8px; margin-bottom: 8px; border-bottom: 1px solid #B8B4A8; }
+    .section-head .lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; text-transform: uppercase; letter-spacing: 0.04em; }
+    .section-head .count { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; }
+
+    /* Blocker card (six-field shape from sprint 057) */
+    .card { background: #FFFFFF; border: 1px solid #B8B4A8; border-left: 4px solid #B00020; padding: 12px 14px 14px; margin-bottom: 10px; border-radius: 2px; }
+    .card.amber { border-left-color: #B45309; }
+    .card.blue { border-left-color: #1E4E8C; }
+    .card .id { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; font-weight: 500; color: #B00020; margin-bottom: 4px; word-break: break-word; }
+    .card.amber .id { color: #B45309; }
+    .card.blue .id { color: #1E4E8C; }
+    .card .desc { font-size: 12.5px; color: #1A1A1A; margin-bottom: 8px; line-height: 1.4; }
+    .card .row { display: flex; gap: 8px; padding: 2px 0; font-size: 11px; align-items: baseline; }
+    .card .row .k { min-width: 78px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .card .row .v { color: #1A1A1A; flex: 1; }
+    .card .row .v .mono { font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+    .card .action-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 8px; border-top: 1px solid #E0DDD3; }
+    .card .action-row .allowed { flex: 1; font-size: 11px; color: #4A4A4A; }
+    .card .action-row .btn-primary { height: 44px; padding: 0 14px; background: #1A1A1A; color: #FAFAF7; border-radius: 3px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; }
+    .card .action-row .btn-primary-lg { height: 56px; padding: 0 18px; background: #1A1A1A; color: #FAFAF7; border-radius: 4px; font-size: 15px; font-weight: 500; display: inline-flex; align-items: center; }
+    .card .action-row .btn-sec { height: 40px; padding: 0 12px; background: transparent; color: #1A1A1A; border: 1px solid #1A1A1A; border-radius: 3px; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; }
+    .card .clear { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; margin-top: 6px; padding-top: 6px; border-top: 1px solid #E0DDD3; }
+
+    .hidden-note { padding: 10px 12px; background: #F0EDDF; border: 1px dashed #B8B4A8; border-radius: 3px; font-size: 11px; color: #4A4A4A; margin-bottom: 10px; }
+    .hidden-note .k { font-family: "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: 0.04em; color: #6B6B6B; font-size: 10px; margin-bottom: 3px; }
+    .card.compact { padding: 9px 12px; }
+    .card.compact .id { font-size: 12px; }
+    .card.compact .desc { font-size: 12px; margin-bottom: 4px; }
+    .card.compact .row { font-size: 10.5px; padding: 1px 0; }
+    .card.compact .row .k { font-size: 9.5px; min-width: 62px; }
+
+    /* Tabs */
+    .tabs { display: flex; border-top: 1px solid #B8B4A8; background: #FAFAF7; }
+    .tabs .tab { flex: 1; padding: 8px 4px; text-align: center; font-size: 11px; color: #6B6B6B; border-right: 1px solid #E0DDD3; }
+    .tabs .tab:last-child { border-right: none; }
+    .tabs .tab.active { background: #F0EDDF; color: #1A1A1A; font-weight: 500; }
+    .tabs .tab .icon { display: block; height: 18px; margin: 0 auto 3px; }
+  </style>
+</helmet>
+
+<div class="device">
+
+  <div class="header">
+    <div class="back">
+      <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 4 L6 11 L14 18"/></svg>
+    </div>
+    <div class="chip">
+      <span class="actor">j.rivera</span>
+      <span class="sep">·</span>
+      <span class="mono">operator</span>
+    </div>
+    <div class="station">14:33<br>station-B4</div>
+  </div>
+
+  <div class="meta">
+    <span class="mono">RUN-VF-003-0812-01</span>
+    <span class="sep">·</span>
+    Blockers · 4
+  </div>
+
+  <div class="body">
+
+    <div class="section-head">
+      <span class="lbl">can_resolve</span>
+      <span class="count">1</span>
+    </div>
+
+    <div class="card amber">
+      <div class="id">required_measurements_present</div>
+      <div class="desc">Every step requiring a measurement has one captured.</div>
+      <div class="row"><span class="k">affected</span><span class="v"><span class="mono">RunStep step_003</span> · in_progress</span></div>
+      <div class="row"><span class="k">rule id</span><span class="v"><span class="mono">required_measurements_present</span> · contracts/run-close-rules.yaml</span></div>
+      <div class="row"><span class="k">next actor</span><span class="v"><span class="mono">operator</span> · rule <span class="mono">run_execution</span></span></div>
+      <div class="action-row">
+        <span class="allowed">Capture the torque reading for step 3.</span>
+        <span class="btn-primary-lg">Resolve</span>
+      </div>
+      <div class="clear">→ CaptureMeasurement · then Complete step</div>
+    </div>
+
+    <div class="section-head">
+      <span class="lbl">can_view</span>
+      <span class="count">1</span>
+    </div>
+
+    <div class="card compact amber">
+      <div class="id">required_measurements_present</div>
+      <div class="desc">Step 4 also requires a torque reading; the operator sees it but cannot start it until step 3 clears (state gate: RunStep.not_started → in_progress via StartRunStep from ready).</div>
+      <div class="row"><span class="k">affected</span><span class="v"><span class="mono">RunStep step_004</span> · not_started</span></div>
+      <div class="row"><span class="k">next actor</span><span class="v"><span class="mono">operator</span> · rule <span class="mono">run_execution</span></span></div>
+      <div class="row"><span class="k">why view</span><span class="v">state-machine gate holds: <span class="mono">not_started → in_progress</span> refused while upstream step blocks</span></div>
+    </div>
+
+    <div class="section-head">
+      <span class="lbl">waiting_on_another_actor</span>
+      <span class="count">2</span>
+    </div>
+
+    <div class="card">
+      <div class="id">certificate_of_conformance_unverified</div>
+      <div class="desc">A certificate of conformance covering the delivered goods exists, but nobody has accepted it as evidence. Capturing records that paperwork arrived; it does not record that anyone read it.</div>
+      <div class="row"><span class="k">affected</span><span class="v"><span class="mono">valve_body_001</span> · <span class="mono">InventoryItem.quarantined</span></span></div>
+      <div class="row"><span class="k">check</span><span class="v"><span class="mono">ReceivingCheck</span> · blocked</span></div>
+      <div class="row"><span class="k">next actor</span><span class="v"><span class="mono">quality_engineer</span> · rule <span class="mono">receiving_decision</span></span></div>
+      <div class="action-row">
+        <span class="allowed">Open the certificate as summary (this role) or route to a quality engineer.</span>
+        <span class="btn-sec">View detail</span>
+      </div>
+      <div class="clear">→ AcceptCertificateAsEvidence · then RunReceivingCheck · then ApplyReceivingCheckResultToInventory</div>
+    </div>
+
+    <div class="card amber">
+      <div class="id">failed_measurement_has_quality_path</div>
+      <div class="desc">Every failed Measurement has a linked Nonconformance and required verification is complete.</div>
+      <div class="row"><span class="k">affected</span><span class="v"><span class="mono">torque_capture_002</span> · <span class="mono">Measurement.fail</span></span></div>
+      <div class="row"><span class="k">nc</span><span class="v"><span class="mono">nc_003</span> · <span class="mono">Nonconformance.disposition_pending</span></span></div>
+      <div class="row"><span class="k">next actor</span><span class="v"><span class="mono">quality_engineer</span> · rule <span class="mono">quality_disposition</span></span></div>
+      <div class="action-row">
+        <span class="allowed">View the nonconformance in summary; disposition happens elsewhere.</span>
+        <span class="btn-sec">View detail</span>
+      </div>
+      <div class="clear">→ RecordDisposition → StartRework → CompleteRework → VerifyRework</div>
+    </div>
+
+    <div class="section-head">
+      <span class="lbl">summary_only</span>
+      <span class="count">0</span>
+    </div>
+
+    <div class="hidden-note">
+      <div class="k">no rows on this run</div>
+      A blocker lands here when the target record's shape is scoped to summary under the caller's visibility profile (§9 in <span class="mono">contracts/visibility-profiles.yaml</span>). The row shows rule id, next-actor caller_type, and affected record TYPE; the record's fields render through the record-type summary shape (§10). A read for detail refuses with <span class="mono">record_type_restricted</span> or <span class="mono">controlled_data_denied</span>.
+    </div>
+
+    <div class="section-head">
+      <span class="lbl">hidden_existence</span>
+      <span class="count">0</span>
+    </div>
+
+    <div class="hidden-note">
+      <div class="k">no rows on this run</div>
+      A blocker lands here when a visibility profile with <span class="mono">denial_behavior: hidden_existence</span> covers the target (<span class="mono">customer_summary_access</span>, <span class="mono">customer_extended_access</span>). The count in the meta strip includes the row; no id, description, or affected record appears. Attempting to read returns the standard not-found shape; audit records the internal outcome <span class="mono">hidden_existence_required</span>.
+    </div>
+
+  </div>
+
+  <div class="tabs">
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 10 L10 4 L16 10 M6 9 V16 H14 V9"/></svg>
+      Assigned
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="6" width="14" height="8" rx="1"/><path d="M6 6 V14 M9 6 V14 M13 6 V14"/></svg>
+      Scan
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5 H16 M4 10 H16 M4 15 H16"/></svg>
+      Runs
+    </div>
+    <div class="tab active">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3 L17 15 H3 Z M10 8 V11 M10 13 V13.5"/></svg>
+      Blockers
+    </div>
+    <div class="tab">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="7" r="3"/><path d="M4 17 C4 13 7 11 10 11 C13 11 16 13 16 17"/></svg>
+      Profile
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

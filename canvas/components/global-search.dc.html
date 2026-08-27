@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+    .doc { width: 420px; padding: 24px 28px; }
+    h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+    .meta { font-size: 11px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 20px; }
+    h2 { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #6B6B6B; margin: 20px 0 8px; }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+    .lede { font-size: 12px; color: #4A4A4A; margin: 0 0 12px; }
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+    
+    .search { display: flex; align-items: center; background: #FFFFFF; border: 1px solid #B8B4A8; padding: 8px 12px; border-radius: 3px; margin-bottom: 12px; }
+    .search input { border: none; outline: none; flex: 1; font-family: inherit; font-size: 13px; background: transparent; }
+    .search .kbd { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; }
+    .result-row { display: flex; align-items: center; padding: 8px 12px; border-bottom: 1px solid #E0DDD3; font-size: 13px; gap: 12px; }
+    .result-row .kind { color: #6B6B6B; font-family: 'IBM Plex Mono', monospace; font-size: 11px; min-width: 90px; }
+    .result-row .name { flex: 1; }
+    .result-row .vis { font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 2px; }
+    .vis-full { background: #F0EDDF; color: #4A4A4A; }
+    .vis-summary { background: #FFF3D9; color: #6B4A00; }
+    .vis-denied { background: #FEECEC; color: #B00020; }
+    .vis-hidden { background: #E5E5E5; color: #8B8B8B; font-style: italic; }
+
+  </style>
+</helmet>
+<div class="doc">
+  <h1>Global search</h1>
+  <p class="meta">sprint 054 · shared component · every Mac screen; handheld Profile tab</p>
+  <p class="lede">One search input. Every row shows one of the four visibility outcomes. A hidden-existence row is byte-identical to no-result and renders as blank — the demonstration below shows the alignment; the running UI omits it.</p>
+
+  <div class="search">
+    <span style="color:#6B6B6B; margin-right:8px;">⌕</span>
+    <input placeholder="Search records, reports, runs" value="valve_body_001">
+    <span class="kbd">⌘K</span>
+  </div>
+
+  <div>
+    <div class="result-row">
+      <span class="kind">InventoryItem</span>
+      <span class="name mono">valve_body_001</span>
+      <span class="vis vis-full">full</span>
+    </div>
+    <div class="result-row">
+      <span class="kind">GeneratedReport</span>
+      <span class="name mono">RunCloseReport RUN-VF-003</span>
+      <span class="vis vis-summary">summary</span>
+    </div>
+    <div class="result-row">
+      <span class="kind">MachineEvidenceRecord</span>
+      <span class="name" style="color:#B00020;">access denied</span>
+      <span class="vis vis-denied">denied</span>
+    </div>
+    <div class="result-row" style="opacity: 0.5;">
+      <span class="kind">Certificate</span>
+      <span class="name" style="font-style:italic; color:#8B8B8B;">(byte-identical to not-found — this row does not appear in the running UI)</span>
+      <span class="vis vis-hidden">hidden</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

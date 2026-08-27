@@ -1,0 +1,219 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+    .doc { width: 720px; padding: 40px 48px 56px; }
+    h1 { font-size: 24px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+    .subtitle { color: #4A4A4A; font-size: 13px; margin: 0 0 4px; }
+    .meta { font-size: 12px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 24px; }
+    p.lede { font-size: 13px; color: #4A4A4A; margin: 8px 0 20px; }
+
+    .pattern { border: 1px solid #D9D6CE; background: #FFFFFF; margin-bottom: 20px; border-radius: 3px; overflow: hidden; }
+    .pat-head { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 16px; background: #F0EDDF; border-bottom: 1px solid #D9D6CE; }
+    .pat-name { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 500; color: #1A1A1A; }
+    .pat-reason { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B4A00; }
+    .pat-body { padding: 14px 16px; }
+    .lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .note { font-size: 12px; color: #4A4A4A; margin-top: 8px; }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #333; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+
+    .demo { background: #FAFAF7; border: 1px solid #E0DDD3; border-radius: 3px; padding: 16px; }
+
+    .empty-msg { color: #6B6B6B; font-size: 13px; }
+    .empty-msg strong { color: #1A1A1A; font-weight: 500; display: block; margin-bottom: 4px; }
+    .empty-blank { min-height: 44px; }
+
+    .cta { font-size: 12px; color: #1E4E8C; margin-top: 6px; }
+    .cta .mono-inline { color: #1E4E8C; background: transparent; padding: 0; }
+
+    .banner { display: flex; gap: 10px; padding: 10px 12px; border-radius: 3px; font-size: 13px; }
+    .banner.amber { background: #FFF3D9; border-left: 3px solid #B45309; color: #6B4A00; }
+    .banner.red { background: #FEECEC; border-left: 3px solid #B00020; color: #B00020; }
+    .banner.grey { background: #F0EDDF; border-left: 3px solid #6B6B6B; color: #4A4A4A; }
+
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+  </style>
+</helmet>
+
+<div class="doc">
+  <h1>Empty and no-authority states</h1>
+  <p class="subtitle">Eleven reusable patterns. Every list, queue, search, or detail surface picks from this set when the result is empty or the caller cannot act.</p>
+  <p class="meta">sprint 056 · phase D.1 · §8 of the design spec</p>
+
+  <p class="lede">A blank list without a named cause shows a claim the surface did not check. Every pattern below names its cause and cites the registered reason code, rule id, or condition that would clear it.</p>
+
+  <div class="pattern">
+    <div class="pat-head"><span class="pat-name">no_records_visible_under_current_profile</span><span class="pat-reason">record_type_restricted / report_type_restricted</span></div>
+    <div class="pat-body">
+      <div class="demo empty-msg">
+        <strong>No records visible under <span class="mono">internal_full_quality</span></strong>
+        <div>The active visibility profile's whitelist excludes the record types this queue reads.</div>
+        <div class="cta">Switch profile via the caller-profile chip · profile is registered in <span class="mono-inline">contracts/visibility-profiles.yaml</span></div>
+      </div>
+      <div class="note">The profile whitelist filtered every candidate out. Distinct from `no_records_exist`; the audit trail differs. Reason code on a specific-type denial: <span class="mono-inline">record_type_restricted</span> or <span class="mono-inline">report_type_restricted</span>.</div>
+    </div>
+  </div>
+
+  <div class="pattern">
+    <div class="pat-head"><span class="pat-name">no_records_exist</span><span class="pat-reason">underlying data is empty</span></div>
+    <div class="pat-body">
+      <div class="demo empty-msg">
+        <strong>No shipments awaiting receipt</strong>
+        <div>The receiving inbox is clear.</div>
+      </div>
+      <div class="note">The underlying data is empty. No cause to name beyond the fact — the queue is clear.</div>
+    </div>
+  </div>
+
+  <div class="pattern">
+    <div class="pat-head"><span class="pat-name">summary_only</span><span class="pat-reason">§10 shape applied</span></div>
+    <div class="pat-body">
+      <div class="demo">
+        <div class="lbl">record summary</div>
+        <div style="font-size:13px;">
+          <div><span class="mono">Certificate cert_conf_001</span></div>
+          <div class="note" style="margin-top:4px;">shape: <span class="mono-inline">supplier_document_summary</span> · reveals: cert_type</div>
+          <div class="note" style="margin-top:4px; color:#6B4A00;">withheld: document_body · serial_or_lot · cage_code · expires_at</div>
+        </div>
+      </div>
+      <div class="note">The caller sees a registered §10 shape and no more. The shape name and the withheld list are shown so a caller who needs the full record knows what to ask for.</div>
+    </div>
+  </div>
+
+  <div class="pattern">
+    <div class="pat-head"><span class="pat-name">hidden_existence</span><span class="pat-reason">§5.4 invariant</span></div>
+    <div class="pat-body">
+      <div class="demo empty-msg">
+        <strong>No results</strong>
+        <div>No shipment matches the query.</div>
+      </div>
+      <div class="note">Byte-identical to a not-found response (design spec §5.4). A caller cannot tell whether the record exists. The audit event captures the difference; the caller sees only this shape.</div>
+    </div>
+  </div>
+
+  <div class="pattern">
+    <div class="pat-head"><span class="pat-name">action_unavailable_under_current_role</span><span class="pat-reason">authorization_denied / role_not_authorized</span></div>
+    <div class="pat-body">
+      <div class="demo">
+        <div class="banner grey">
+          <div>
+            <div><strong style="color:#1A1A1A;">Accept as evidence — unavailable under <span class="mono">operator</span></strong></div>
+            <div style="margin-top:4px; font-size:12px;">The <span class="mono-inline">receiving_decision</span> rule names <span class="mono">quality_engineer</span>. Route to a quality engineer.</div>
+          </div>
+        </div>
+      </div>
+      <div class="note">Refusal reason today: <span class="mono-inline">authorization_denied</span> (generic); reason after the wrapper unification (row 4 of the acceptance file): <span class="mono-inline">role_not_authorized</span>. The strip cites the authorization rule the operation names.</div>
+    </div>
+  </div>
+
+  <div class="pattern">
+    <div class="pat-head"><span class="pat-name">support_session_required</span><span class="pat-reason">support_context_missing / support_context_expired</span></div>
+    <div class="pat-body">
+      <div class="demo">
+        <div class="banner amber">
+          <div>
+            <strong style="color:#6B4A00;">Support session required</strong>
+            <div style="margin-top:4px; font-size:12px;">The target requires <span class="mono-inline">support_admin_context</span>. Open a scoped session via the support console.</div>
+            <div class="cta" style="margin-top:6px;">→ <span class="mono-inline">OpenSupportSession</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="note">Two refusal reasons: <span class="mono-inline">support_context_missing</span> (no open session covering the target) and <span class="mono-inline">support_context_expired</span> (the session's `expires_at` has passed the clock). Both fire against the same target scoping predicate.</div>
+    </div>
+  </div>
+
+  <div class="pattern">
+    <div class="pat-head"><span class="pat-name">blocked_by_receiving_evidence</span><span class="pat-reason">contracts/receiving-rules.yaml</span></div>
+    <div class="pat-body">
+      <div class="demo">
+        <div class="banner red">
+          <div>
+            <strong style="color:#B00020;">valve_body_001 · quarantined</strong>
+            <div style="margin-top:4px; font-size:12px; color:#1A1A1A;">Held by 1 receiving-rule id.</div>
+            <div style="margin-top:4px;" class="mono">certificate_of_conformance_unverified</div>
+            <div class="cta" style="margin-top:6px;">clears when a <span class="mono-inline">quality_engineer</span> accepts the certificate as evidence · <span class="mono-inline">AcceptCertificateAsEvidence</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="note">Applies to any surface reading an <span class="mono-inline">InventoryItem</span> in the <span class="mono-inline">quarantined</span> state. The rule ids are read from the last <span class="mono-inline">ReceivingCheck</span>'s <span class="mono-inline">blockers[]</span> for the item's shipment line.</div>
+    </div>
+  </div>
+
+  <div class="pattern">
+    <div class="pat-head"><span class="pat-name">blocked_by_quality_path</span><span class="pat-reason">contracts/run-close-rules.yaml</span></div>
+    <div class="pat-body">
+      <div class="demo">
+        <div class="banner red">
+          <div>
+            <strong style="color:#B00020;">Complete step refused — quality path required</strong>
+            <div style="margin-top:4px;" class="mono">failed_measurement_has_quality_path</div>
+            <div class="cta" style="margin-top:6px;">clears when <span class="mono-inline">nc_003</span> reaches <span class="mono-inline">verified</span> · <span class="mono-inline">VerifyRework</span> · next actor: <span class="mono-inline">quality_engineer</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="note">The <span class="mono-inline">failed_measurement_has_quality_path</span> rule blocks the run close, and by projection blocks the operator's Complete step. The strip names the specific Nonconformance and the state that clears the block.</div>
+    </div>
+  </div>
+
+  <div class="pattern">
+    <div class="pat-head"><span class="pat-name">blocked_by_stale_report</span><span class="pat-reason">report_access_stale</span></div>
+    <div class="pat-body">
+      <div class="demo">
+        <div class="banner amber">
+          <div>
+            <strong style="color:#6B4A00;">RunCloseReport RUN-VF-003 · regeneration_required</strong>
+            <div style="margin-top:4px; font-size:12px;">Trigger: <span class="mono-inline">access_policy_change_for_controlled_export</span></div>
+            <div class="cta" style="margin-top:6px;">→ Regenerate report (system worker) · report will supersede the current version</div>
+          </div>
+        </div>
+      </div>
+      <div class="note">Freshness cascade refused a read. Refusal reason: <span class="mono-inline">report_access_stale</span>. The four registered triggers: <span class="mono-inline">report_definition_change</span>, <span class="mono-inline">reconciliation_resolution_affecting_run</span>, <span class="mono-inline">access_policy_change_for_controlled_export</span>, <span class="mono-inline">source_record_correction</span>.</div>
+    </div>
+  </div>
+
+  <div class="pattern">
+    <div class="pat-head"><span class="pat-name">projection_stale</span><span class="pat-reason">projection diverged since last render</span></div>
+    <div class="pat-body">
+      <div class="demo">
+        <div class="banner amber">
+          <div>
+            <span class="mono-inline">QualityQueue</span> diverged since the last render (6 s ago).
+            <div class="cta" style="margin-top:6px;">→ Reload</div>
+          </div>
+        </div>
+      </div>
+      <div class="note">Same underlying condition as the runtime-states variant, in the context of a list rather than an in-flight action. The banner names the projection and the elapsed time.</div>
+    </div>
+  </div>
+
+  <div class="pattern">
+    <div class="pat-head"><span class="pat-name">network_unavailable</span><span class="pat-reason">driver did not return</span></div>
+    <div class="pat-body">
+      <div class="demo">
+        <div class="banner red">
+          <div>
+            No answer from the driver.
+            <div style="margin-top:4px; font-size:12px;">The queue could not be read.</div>
+            <div class="cta" style="margin-top:6px; color:#B00020;">→ Retry</div>
+          </div>
+        </div>
+      </div>
+      <div class="note">The driver call did not return. The surface refuses to render stale data as fresh. Retry is safe on read paths; on write paths, the runtime-states <span class="mono-inline">retry_safe</span> / <span class="mono-inline">retry_unsafe</span> distinction applies.</div>
+    </div>
+  </div>
+
+  <p class="lede" style="margin-top:12px;">Downstream sprints (058-087) cite one of these names on every empty or refused surface. No blank list ships without a named cause.</p>
+</div>
+</x-dc>
+</body>
+</html>

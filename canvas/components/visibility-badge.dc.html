@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+    .doc { width: 400px; padding: 24px 28px; }
+    h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+    .meta { font-size: 11px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 20px; }
+    h2 { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #6B6B6B; margin: 20px 0 8px; }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+    .lede { font-size: 12px; color: #4A4A4A; margin: 0 0 12px; }
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+    
+    .vbadge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 12px; margin: 2px 6px 6px 0; }
+    .v-full { background: #F0EDDF; color: #4A4A4A; border: 1px solid #D9D6CE; }
+    .v-summary { background: #FFF3D9; color: #6B4A00; border: 1px solid #D4A946; }
+    .v-denied { background: #FEECEC; color: #B00020; border: 1px solid #B00020; }
+    .v-hidden { background: transparent; color: transparent; border: 1px dashed #D9D6CE; }
+    .side-note { font-size: 11px; color: #6B6B6B; margin-left: 4px; }
+
+  </style>
+</helmet>
+<div class="doc">
+  <h1>Visibility badge</h1>
+  <p class="meta">sprint 054 · shared component · four §5 outcomes</p>
+  <p class="lede">The four <span class="mono-inline">VisibilityLevel</span> outcomes from <span class="mono-inline">src/driver/visibility.ts</span>. Every read surface names the level it renders. Hidden-existence renders as an empty badge — the caller sees only the shape.</p>
+
+  <h2>The four badges</h2>
+  <div>
+    <span class="vbadge v-full">full</span>
+    <span class="side-note">whole record; all fields</span>
+  </div>
+  <div>
+    <span class="vbadge v-summary">summary</span>
+    <span class="side-note">§10 shape; the shape name follows</span>
+  </div>
+  <div>
+    <span class="vbadge v-denied">denied</span>
+    <span class="side-note">refusal + reason code; no data</span>
+  </div>
+  <div>
+    <span class="vbadge v-hidden">hidden_existence</span>
+    <span class="side-note">the caller sees blank; §5.4 invariant</span>
+  </div>
+
+  <h2>Summary with shape</h2>
+  <div>
+    <span class="vbadge v-summary">summary</span>
+    <span class="mono" style="font-size:11px;">supplier_document_summary</span>
+  </div>
+  <div>
+    <span class="vbadge v-summary">summary</span>
+    <span class="mono" style="font-size:11px;">nonconformance_summary</span>
+  </div>
+
+  <p class="lede" style="margin-top:14px;">Registered summary shapes today: <span class="mono-inline">machine_evidence_summary</span>, <span class="mono-inline">supplier_document_summary</span>, <span class="mono-inline">nonconformance_summary</span>, <span class="mono-inline">report_summary</span>. Requesting a summary for a record with no shape refuses with <span class="mono-inline">no_summary_shape_registered</span>.</p>
+
+</div>
+</x-dc>
+</body>
+</html>

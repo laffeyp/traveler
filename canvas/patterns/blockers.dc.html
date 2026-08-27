@@ -1,0 +1,142 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+    .doc { width: 720px; padding: 40px 48px 56px; }
+    h1 { font-size: 24px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+    .subtitle { color: #4A4A4A; font-size: 13px; margin: 0 0 4px; }
+    .meta { font-size: 12px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 24px; }
+    p.lede { font-size: 13px; color: #4A4A4A; margin: 8px 0 20px; }
+
+    h2 { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: #333; margin: 32px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #B8B4A8; }
+
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #333; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+
+    .fields { display: grid; grid-template-columns: 140px 1fr; gap: 6px 16px; padding: 12px 0; }
+    .fields dt { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #4A4A4A; }
+    .fields dd { margin: 0; font-size: 13px; color: #1A1A1A; }
+
+    .card { background: #FFFFFF; border: 1px solid #B8B4A8; border-left: 4px solid #B00020; padding: 14px 16px; margin-bottom: 12px; border-radius: 2px; }
+    .card .id { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 500; color: #B00020; margin-bottom: 4px; }
+    .card .desc { font-size: 13px; color: #1A1A1A; margin-bottom: 10px; }
+    .card .row { display: flex; gap: 12px; padding: 3px 0; font-size: 12px; }
+    .card .row .k { min-width: 120px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; }
+    .card .row .v { color: #1A1A1A; }
+    .card .action { margin-top: 10px; font-size: 12px; color: #4A4A4A; padding-top: 8px; border-top: 1px solid #E0DDD3; }
+
+    .amber { border-left-color: #B45309; }
+    .amber .id { color: #B45309; }
+
+    .compact { display: flex; gap: 10px; align-items: center; padding: 8px 12px; background: #FEECEC; border-left: 3px solid #B00020; margin-bottom: 8px; font-size: 12px; border-radius: 0 2px 2px 0; }
+    .compact .id { font-family: "IBM Plex Mono", monospace; font-weight: 500; color: #B00020; }
+    .compact .sep { color: #B8B4A8; }
+    .compact .actor { color: #6B6B6B; font-family: "IBM Plex Mono", monospace; }
+
+    .anno { background: #F0EDDF; border-left: 3px solid #6B4A00; padding: 10px 14px; margin-top: 10px; font-size: 12px; color: #4A4A4A; }
+    .anno .k { font-family: "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: 0.04em; color: #6B4A00; font-size: 11px; margin-bottom: 4px; }
+
+    .grid-cite { display: grid; grid-template-columns: 200px 1fr; gap: 6px 16px; padding: 10px 0; font-size: 13px; }
+    .grid-cite dt { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #4A4A4A; }
+
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+  </style>
+</helmet>
+
+<div class="doc">
+  <h1>Blocker presentation library</h1>
+  <p class="subtitle">One row shape shared across every blocker surface. Two worked examples. One compact variant. One handoff-gap treatment.</p>
+  <p class="meta">sprint 057 · phase D.1 · §7 of the design spec · philosophy §3.9 (alarms are ranked and rare)</p>
+
+  <p class="lede">A blocker is a product fact — a state the record actually holds. Not a warning the caller can dismiss. Every blocker in every downstream artboard uses this shape.</p>
+
+  <h2>Six required fields</h2>
+  <dl class="fields">
+    <dt>rule id</dt>       <dd>Registered id from <span class="mono-inline">contracts/receiving-rules.yaml</span> or <span class="mono-inline">contracts/run-close-rules.yaml</span>. Monospace. Never paraphrased.</dd>
+    <dt>description</dt>   <dd>The rule's description string. Verbatim from the registry. Never rewritten for "friendliness".</dd>
+    <dt>affected record</dt><dd>Alias and current state of the record the blocker holds. Cites <span class="mono-inline">contracts/state-machines.yaml</span> state names verbatim.</dd>
+    <dt>next actor</dt>    <dd>The <span class="mono-inline">caller_type</span> that resolves. Names the authorization rule that grants the resolution.</dd>
+    <dt>current-caller action</dt><dd>What the reading caller may do now: view detail, request paperwork, request a re-check, redirect. Never a false control.</dd>
+    <dt>clearing operation</dt><dd>The registered operation that would clear the block, if any. Names the transition.</dd>
+  </dl>
+
+  <h2>Worked example · receiving-rule blocker</h2>
+  <div class="card">
+    <div class="id">certificate_of_conformance_unverified</div>
+    <div class="desc">A certificate of conformance covering the delivered goods exists, but nobody has accepted it as evidence. Capturing records that paperwork arrived; it does not record that anyone read it.</div>
+    <div class="row"><span class="k">affected</span><span class="v"><span class="mono-inline">valve_body_001</span> · <span class="mono-inline">InventoryItem.quarantined</span></span></div>
+    <div class="row"><span class="k">check</span><span class="v"><span class="mono-inline">ReceivingCheck</span> · blocked</span></div>
+    <div class="row"><span class="k">certificate</span><span class="v"><span class="mono-inline">cert_conf_001</span> · captured</span></div>
+    <div class="row"><span class="k">next actor</span><span class="v"><span class="mono">quality_engineer</span> · rule <span class="mono-inline">receiving_decision</span></span></div>
+    <div class="row"><span class="k">clears via</span><span class="v"><span class="mono-inline">AcceptCertificateAsEvidence</span> · then <span class="mono-inline">RunReceivingCheck</span> · then <span class="mono-inline">ApplyReceivingCheckResultToInventory</span></span></div>
+    <div class="action">current caller (<span class="mono-inline">operator</span>) may open the certificate as summary; the accept-as-evidence write is out of scope.</div>
+  </div>
+  <div class="anno">
+    <div class="k">where this appears</div>
+    In BlockerView on the handheld; in ReceivingCheckView row and InventoryQuarantineView on Mac; on the RunCloseReadinessView receiving-evidence panel; on an InventoryQueue row's expanded detail.
+  </div>
+
+  <h2>Worked example · run-close-rule blocker</h2>
+  <div class="card amber">
+    <div class="id">failed_measurement_has_quality_path</div>
+    <div class="desc">Every failed Measurement has a linked Nonconformance and required verification is complete. Resolution requires the required nonconformance, containment, disposition, rework, and verification records. This is the rule that blocks the first VF-003 close attempt.</div>
+    <div class="row"><span class="k">affected</span><span class="v"><span class="mono-inline">torque_capture_003</span> · <span class="mono-inline">Measurement.fail</span></span></div>
+    <div class="row"><span class="k">nonconformance</span><span class="v"><span class="mono-inline">nc_003</span> · <span class="mono-inline">Nonconformance.disposition_pending</span></span></div>
+    <div class="row"><span class="k">run close</span><span class="v"><span class="mono-inline">RunCloseCheck</span> · blocked</span></div>
+    <div class="row"><span class="k">next actor</span><span class="v"><span class="mono">quality_engineer</span> · rule <span class="mono-inline">quality_disposition</span></span></div>
+    <div class="row"><span class="k">clears via</span><span class="v"><span class="mono-inline">RecordDisposition</span> → <span class="mono-inline">StartRework</span> → <span class="mono-inline">CompleteRework</span> → <span class="mono-inline">VerifyRework</span></span></div>
+    <div class="action">current caller (<span class="mono-inline">operator</span>) may open the nonconformance in summary; the quality-path acts are out of scope.</div>
+  </div>
+  <div class="anno">
+    <div class="k">where this appears</div>
+    On the operator's RunStepView (Complete step disabled); on RunCloseReadinessView (Attempt close disabled, this blocker cited); in QualityQueue rows; on the RunCloseObservationView row for this rule.
+  </div>
+
+  <h2>Compact variant · queue row</h2>
+  <p class="lede">On a dense queue row a single line carries the id, the record alias, and the next actor. The full card opens on tap.</p>
+  <div class="compact">
+    <span class="id">certificate_of_conformance_unverified</span>
+    <span class="sep">·</span>
+    <span><span class="mono-inline">valve_body_001</span></span>
+    <span class="sep">·</span>
+    <span class="actor">→ quality_engineer</span>
+  </div>
+  <div class="compact">
+    <span class="id">failed_measurement_has_quality_path</span>
+    <span class="sep">·</span>
+    <span><span class="mono-inline">RUN-VF-003-0812-01</span></span>
+    <span class="sep">·</span>
+    <span class="actor">→ quality_engineer</span>
+  </div>
+
+  <h2>Handoff-gap variant · driver returned an unregistered id</h2>
+  <p class="lede">If the driver returns a blocker id the registry does not know, the surface renders a <span class="mono-inline">GrammarGap</span>. The runtime creates it at the emit site via <span class="mono-inline">NormalizeMachineEvidence</span> or <span class="mono-inline">CreateGrammarGap</span>. The UI shows the raw id, the caller who saw it, and the gap record so the vocabulary bump can happen later.</p>
+  <div class="card" style="border-left-color:#1E4E8C;">
+    <div class="id" style="color:#1E4E8C;">unregistered blocker · GrammarGap opened</div>
+    <div class="desc">The driver returned a blocker id the registry does not carry. A <span class="mono-inline">GrammarGap</span> was opened at the emit site.</div>
+    <div class="row"><span class="k">raw id</span><span class="v"><span class="mono">supplier_test_certificate_present</span></span></div>
+    <div class="row"><span class="k">grammar gap</span><span class="v"><span class="mono-inline">gap_20260826_003</span></span></div>
+    <div class="row"><span class="k">next actor</span><span class="v"><span class="mono">manufacturing_engineer</span> · vocabulary owner</span></div>
+    <div class="row"><span class="k">clears via</span><span class="v">registry proposal via the eight supervised-grammar-evolution types</span></div>
+  </div>
+
+  <h2>What a blocker never carries</h2>
+  <dl class="grid-cite">
+    <dt>no dismiss</dt><dd>A blocker is a product fact. There is no "OK" or "Got it" that removes it. It clears when the state clears.</dd>
+    <dt>no snooze</dt><dd>Alarms are ranked and rare (philosophy §3.9). Deferral is not a UI action; it is a scheduling decision, and that decision lives in the run planning surface.</dd>
+    <dt>no generic copy</dt><dd>Never "an error occurred" or "this action isn't available right now". The rule id and the description carry the specific meaning.</dd>
+    <dt>no false controls</dt><dd>A resolve button appears only when the current caller can invoke the clearing operation. Otherwise the strip names the next actor and leaves the resolve out.</dd>
+  </dl>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,80 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",                   "x":    0, "y":    0, "w": 1200, "h": 5200, "title": "Vocabulary reference",    "print": "flow", "expand": "fit" },
+
+    { "file": "handheld.dc.html",               "x": 1400, "y":    0, "w":  800, "h": 1500, "title": "Handheld tokens",         "print": "fixed" },
+    { "file": "mac.dc.html",                    "x": 2320, "y":    0, "w":  800, "h": 1300, "title": "Mac tokens",              "print": "fixed" },
+
+    { "file": "page-shell.dc.html",             "x": 1400, "y": 1620, "w":  480, "h":  620, "title": "Page shell",              "print": "fixed" },
+    { "file": "global-search.dc.html",          "x": 1960, "y": 1620, "w":  460, "h":  480, "title": "Global search",           "print": "fixed" },
+    { "file": "caller-profile-chip.dc.html",    "x": 2500, "y": 1620, "w":  480, "h":  460, "title": "Caller profile chip",     "print": "fixed" },
+    { "file": "state-badge.dc.html",            "x": 3060, "y": 1620, "w":  480, "h":  560, "title": "State badge",             "print": "fixed" },
+
+    { "file": "blocker-card.dc.html",           "x": 1400, "y": 2320, "w":  500, "h":  620, "title": "Blocker card",            "print": "fixed" },
+    { "file": "visibility-badge.dc.html",       "x": 1980, "y": 2320, "w":  440, "h":  520, "title": "Visibility badge",        "print": "fixed" },
+    { "file": "action-button.dc.html",          "x": 2500, "y": 2320, "w":  480, "h":  620, "title": "Action button",           "print": "fixed" },
+    { "file": "disabled-action-strip.dc.html",  "x": 3060, "y": 2320, "w":  480, "h":  540, "title": "Disabled action strip",   "print": "fixed" },
+
+    { "file": "runtime-states.dc.html",         "x": 1400, "y": 3060, "w":  720, "h": 2600, "title": "Runtime action states",   "print": "fixed" },
+    { "file": "empty-states.dc.html",           "x": 2220, "y": 3060, "w":  720, "h": 3200, "title": "Empty and no-authority states", "print": "fixed" },
+    { "file": "blockers.dc.html",               "x": 3040, "y": 3060, "w":  720, "h": 3000, "title": "Blocker presentation library",  "print": "fixed" },
+
+    { "file": "OperatorHome.dc.html",           "x":    0, "y": 6400, "w":  390, "h":  844, "title": "OperatorHome (handheld)",       "print": "fixed" },
+    { "file": "RunStepView.dc.html",            "x":  450, "y": 6400, "w":  390, "h":  844, "title": "RunStepView (handheld)",        "print": "fixed" },
+    { "file": "ScanInventoryView.dc.html",      "x":  900, "y": 6400, "w":  390, "h":  844, "title": "ScanInventoryView (handheld)",  "print": "fixed" },
+    { "file": "MeasurementCaptureView.dc.html", "x": 1350, "y": 6400, "w":  390, "h":  844, "title": "MeasurementCaptureView (handheld)", "print": "fixed" },
+    { "file": "InstallInventoryView.dc.html",   "x": 1800, "y": 6400, "w":  390, "h":  844, "title": "InstallInventoryView (handheld)",   "print": "fixed" },
+    { "file": "RedlineRequestView.dc.html",     "x": 2250, "y": 6400, "w":  390, "h":  844, "title": "RedlineRequestView (handheld)",     "print": "fixed" },
+    { "file": "BlockerView.dc.html",            "x": 2700, "y": 6400, "w":  390, "h":  844, "title": "BlockerView (handheld)",            "print": "fixed" },
+    { "file": "RunCloseReadinessView.dc.html",  "x": 3150, "y": 6400, "w":  390, "h":  844, "title": "RunCloseReadinessView (handheld)", "print": "fixed" },
+
+    { "file": "ReceivingQueue.dc.html",         "x":    0, "y": 7400, "w": 1200, "h":  800, "title": "ReceivingQueue (Mac)",             "print": "fixed" },
+    { "file": "ShipmentView.dc.html",           "x": 1300, "y": 7400, "w": 1200, "h":  800, "title": "ShipmentView (Mac)",               "print": "fixed" },
+    { "file": "ShipmentLineView.dc.html",       "x": 2600, "y": 7400, "w": 1200, "h":  800, "title": "ShipmentLineView (Mac)",           "print": "fixed" },
+    { "file": "SupplierEvidenceChecklist.dc.html","x":    0, "y": 8320, "w": 1200, "h":  800, "title": "SupplierEvidenceChecklist (Mac)",  "print": "fixed" },
+    { "file": "SupplierDocumentReview.dc.html", "x": 1300, "y": 8320, "w": 1200, "h":  800, "title": "SupplierDocumentReview (Mac)",     "print": "fixed" },
+    { "file": "ReceivingCheckView.dc.html",     "x": 2600, "y": 8320, "w": 1200, "h":  800, "title": "ReceivingCheckView (Mac)",         "print": "fixed" },
+    { "file": "InventoryQuarantineView.dc.html","x":    0, "y": 9240, "w": 1200, "h":  800, "title": "InventoryQuarantineView (Mac)",    "print": "fixed" },
+
+    { "file": "QualityQueue.dc.html",           "x":    0, "y": 10160, "w": 1200, "h":  800, "title": "QualityQueue (Mac)",              "print": "fixed" },
+    { "file": "NonconformanceView.dc.html",     "x": 1300, "y": 10160, "w": 1200, "h":  800, "title": "NonconformanceView (Mac)",        "print": "fixed" },
+    { "file": "ContainmentView.dc.html",        "x": 2600, "y": 10160, "w": 1200, "h":  800, "title": "ContainmentView (Mac)",           "print": "fixed" },
+    { "file": "DispositionView.dc.html",        "x":    0, "y": 11080, "w": 1200, "h":  800, "title": "DispositionView (Mac)",           "print": "fixed" },
+    { "file": "ReworkVerificationView.dc.html", "x": 1300, "y": 11080, "w": 1200, "h":  800, "title": "ReworkVerificationView (Mac)",    "print": "fixed" },
+
+    { "file": "RunCloseReportView.dc.html",     "x":    0, "y": 12000, "w": 1200, "h":  800, "title": "RunCloseReportView (Mac)",        "print": "fixed" },
+    { "file": "SerialHistoryView.dc.html",      "x": 1300, "y": 12000, "w": 1200, "h":  800, "title": "SerialHistoryView (Mac)",         "print": "fixed" },
+    { "file": "BoundedDrillDownView.dc.html",   "x": 2600, "y": 12000, "w": 1200, "h":  800, "title": "BoundedDrillDownView (Mac)",      "print": "fixed" },
+    { "file": "AccessDecisionAuditView.dc.html","x":    0, "y": 12920, "w": 1200, "h":  800, "title": "AccessDecisionAuditView (Mac)",   "print": "fixed" },
+    { "file": "SupportSessionView.dc.html",     "x": 1300, "y": 12920, "w": 1200, "h":  800, "title": "SupportSessionView (Mac)",        "print": "fixed" },
+
+    { "file": "handheld-operator.dc.html",      "x":    0, "y": 13840, "w": 1600, "h": 1400, "title": "Flow · handheld operator (§21.1, §21.2, §21.5)", "print": "flow" },
+    { "file": "receiving.dc.html",              "x": 1700, "y": 13840, "w": 1600, "h":  900, "title": "Flow · receiving (§21.4)",         "print": "flow" },
+    { "file": "quality.dc.html",                "x":    0, "y": 15360, "w": 1600, "h":  900, "title": "Flow · quality (§21.3)",           "print": "flow" },
+    { "file": "access.dc.html",                 "x": 1700, "y": 15360, "w": 1600, "h": 1300, "title": "Flow · access (§21.6, §21.7)",     "print": "flow" },
+
+    { "file": "RunPlanningQueue.dc.html",       "x":    0, "y": 17000, "w": 1200, "h":  800, "title": "RunPlanningQueue (Mac)",           "print": "fixed" },
+    { "file": "BuildCheckView.dc.html",         "x": 1300, "y": 17000, "w": 1200, "h":  800, "title": "BuildCheckView (Mac)",             "print": "fixed" },
+    { "file": "InventoryQueue.dc.html",         "x": 2600, "y": 17000, "w": 1200, "h":  800, "title": "InventoryQueue (Mac)",             "print": "fixed" },
+    { "file": "EffectivityView.dc.html",        "x":    0, "y": 17920, "w": 1200, "h":  800, "title": "EffectivityView (Mac)",            "print": "fixed" },
+    { "file": "RunBlockingConsole.dc.html",     "x": 1300, "y": 17920, "w": 1200, "h":  800, "title": "RunBlockingConsole (Mac)",         "print": "fixed" },
+    { "file": "ProcedureAuthoringView.dc.html", "x": 2600, "y": 17920, "w": 1200, "h":  800, "title": "ProcedureAuthoringView (Mac)",     "print": "fixed" },
+    { "file": "StructureAuthoringView.dc.html", "x":    0, "y": 18840, "w": 1200, "h":  800, "title": "StructureAuthoringView (Mac)",     "print": "fixed" },
+    { "file": "RedlineReviewQueue.dc.html",     "x": 1300, "y": 18840, "w": 1200, "h":  800, "title": "RedlineReviewQueue (Mac)",         "print": "fixed" },
+    { "file": "RedlineDecisionView.dc.html",    "x": 2600, "y": 18840, "w": 1200, "h":  800, "title": "RedlineDecisionView (Mac)",        "print": "fixed" },
+    { "file": "RunCloseObservationView.dc.html","x":    0, "y": 19760, "w": 1200, "h":  800, "title": "RunCloseObservationView (Mac)",    "print": "fixed" },
+    { "file": "RunCloseReportGenerationView.dc.html","x": 1300, "y": 19760, "w": 1200, "h": 800, "title": "RunCloseReportGenerationView (Mac)", "print": "fixed" },
+    { "file": "MachineRegistrationView.dc.html","x": 2600, "y": 19760, "w": 1200, "h":  800, "title": "MachineRegistrationView (Mac)",    "print": "fixed" },
+    { "file": "MachineEvidenceQueue.dc.html",   "x":    0, "y": 20680, "w": 1200, "h":  800, "title": "MachineEvidenceQueue (Mac)",       "print": "fixed" },
+    { "file": "MachineEvidenceRecordView.dc.html","x": 1300, "y": 20680, "w": 1200, "h": 800, "title": "MachineEvidenceRecordView (Mac)", "print": "fixed" },
+    { "file": "AdapterAttributionView.dc.html", "x": 2600, "y": 20680, "w": 1200, "h":  800, "title": "AdapterAttributionView (Mac)",     "print": "fixed" },
+    { "file": "InvalidationImpactView.dc.html", "x":    0, "y": 21600, "w": 1200, "h":  800, "title": "InvalidationImpactView (Mac)",     "print": "fixed" },
+    { "file": "ReportsHome.dc.html",            "x": 1300, "y": 21600, "w": 1200, "h":  800, "title": "ReportsHome (Mac)",                "print": "fixed" },
+    { "file": "CertificateOfConformanceView.dc.html","x": 2600, "y": 21600, "w": 1200, "h": 800, "title": "CertificateOfConformanceView (Mac)", "print": "fixed" },
+    { "file": "SupplierEvidencePacketView.dc.html","x": 0, "y": 22520, "w": 1200, "h": 800, "title": "SupplierEvidencePacketView (Mac)", "print": "fixed" },
+    { "file": "AsBuiltView.dc.html",            "x": 1300, "y": 22520, "w": 1200, "h":  800, "title": "AsBuiltView (Mac)",                "print": "fixed" },
+    { "file": "SupportDiagnosticsView.dc.html", "x": 2600, "y": 22520, "w": 1200, "h":  800, "title": "SupportDiagnosticsView (Mac)",     "print": "fixed" },
+    { "file": "AdminPolicyView.dc.html",        "x":    0, "y": 23440, "w": 1200, "h":  800, "title": "AdminPolicyView (Mac)",            "print": "fixed" }
+  ],
+  "launch": { "view": "focused", "file": "Main.dc.html" }
+}

@@ -1,0 +1,209 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.55; }
+    .doc { width: 1200px; padding: 56px 72px 96px; }
+    .page-title { font-size: 32px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 6px; }
+    .subtitle { font-size: 17px; color: #444; margin: 0 0 4px; }
+    .meta { font-size: 13px; color: #666; margin: 0 0 40px; font-family: "IBM Plex Mono", monospace; }
+    h2 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin: 48px 0 4px; padding-bottom: 6px; border-bottom: 1px solid #B8B4A8; }
+    h2 .count { font-family: "IBM Plex Mono", monospace; font-size: 14px; font-weight: 400; color: #666; margin-left: 10px; }
+    .lede { font-size: 14px; color: #555; margin: 0 0 20px; max-width: 900px; }
+    table { border-collapse: collapse; margin: 8px 0 12px; width: 100%; font-size: 14px; }
+    th, td { border-bottom: 1px solid #E0DDD3; padding: 8px 10px; vertical-align: top; text-align: left; }
+    th { background: #EFECDF; font-weight: 500; font-size: 13px; letter-spacing: 0.02em; text-transform: uppercase; color: #333; }
+    td.mono, td .mono { font-family: "IBM Plex Mono", monospace; font-size: 13.5px; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 13.5px; background: #F0EDDF; padding: 1px 5px; border-radius: 2px; }
+    .terminal { color: #8B4513; font-weight: 500; }
+    .flag { display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: 11px; padding: 1px 6px; border: 1px solid #B8B4A8; border-radius: 2px; margin-left: 6px; letter-spacing: 0.03em; text-transform: uppercase; color: #555; }
+    .flag.deferred { background: #FFF3D9; border-color: #D4A946; color: #6B4A00; }
+    .flag.internal { background: #E9E9E9; color: #555; }
+    .rule-desc { font-size: 13px; color: #333; }
+    .footer { margin-top: 56px; padding-top: 24px; border-top: 1px solid #B8B4A8; font-size: 13px; color: #555; }
+    .footer p { margin: 4px 0; }
+    code { font-family: "IBM Plex Mono", monospace; font-size: 13.5px; color: #333; }
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+  </style>
+</helmet>
+
+<div class="doc">
+
+  <h1 class="page-title">Factory UI — Vocabulary Reference</h1>
+  <p class="subtitle">Every registered name a downstream artboard may cite.</p>
+  <p class="meta">read 2026-08-26 · from contracts/*.yaml and src/driver/visibility.ts · sprint 053, phase D.1</p>
+
+  <p class="lede">The registries under <code>contracts/</code> are the project's locked vocabulary. Every artboard in this canvas cites names from those files — verbatim, never softened, never paraphrased. This sheet lists what the vocabulary contains today. A name absent from this sheet is absent from the UI.</p>
+
+  <h2>Caller types <span class="count">10 · contracts/modules.yaml</span></h2>
+  <table>
+    <thead><tr><th style="width: 30%;">id</th><th>where it appears</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">manufacturing_engineer</td><td>authors procedures and structures; reviews and approves redlines; merges redlines into new procedure versions</td></tr>
+      <tr><td class="mono">planner</td><td>creates, pauses, resumes and cancels runs; moves inventory through planning states; runs the build check; authors effectivity rules; captures supplier certificates</td></tr>
+      <tr><td class="mono">operator</td><td>executes runs on the floor; captures measurements; installs inventory; attempts run close; drafts redlines; records dispositions</td></tr>
+      <tr><td class="mono">quality_engineer</td><td>owns quality lifecycle, receiving decisions, quarantine release, machine evidence review, attachment review, report supersession, certificate issuance, run blocking</td></tr>
+      <tr><td class="mono">machine_integration_owner</td><td>registers a machine and its adapter</td></tr>
+      <tr><td class="mono">adapter</td><td>delivers machine evidence from a shop-floor adapter (no UI; ingests through <span class="mono-inline">ReceiveMachineEvidence</span>)</td></tr>
+      <tr><td class="mono">system_worker</td><td>applies check results to runs; runs close checks; requests reports; normalises evidence; expires approvals; raises grammar gaps (no UI; pipeline stages)</td></tr>
+      <tr><td class="mono">access_admin</td><td>evaluates access decisions; amends access policies; opens support sessions</td></tr>
+      <tr><td class="mono">service_account</td><td>read-for-processing under <span class="mono-inline">service_projection_scope</span> (no UI; audited)</td></tr>
+      <tr><td class="mono">support_user</td><td>opens and closes support sessions; drills down under the bounded drill-down rules</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Records with lifecycles <span class="count">16 · contracts/state-machines.yaml</span></h2>
+  <p class="lede">Every state named here resolves in <code>contracts/state-machines.yaml</code>. Terminal states are shown in <span class="terminal">warm brown</span>. A UI cannot show a state the machine does not declare.</p>
+  <table>
+    <thead><tr><th style="width: 22%;">record</th><th style="width: 10%;">state field</th><th>states</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">ProcedureVersion</td><td class="mono">status</td><td class="mono">draft, in_review, released, <span class="terminal">superseded</span>, <span class="terminal">retired</span> · a released procedure is never edited (forbidden released → draft / released → in_review)</td></tr>
+      <tr><td class="mono">ManufacturingStructureVersion</td><td class="mono">status</td><td class="mono">draft, in_review, released, <span class="terminal">superseded</span>, <span class="terminal">retired</span></td></tr>
+      <tr><td class="mono">Run</td><td class="mono">status</td><td class="mono">planned, ready, blocked, in_progress, paused, complete, close_check, close_blocked, <span class="terminal">closed</span>, <span class="terminal">cancelled</span></td></tr>
+      <tr><td class="mono">RunStep</td><td class="mono">status</td><td class="mono">not_started, ready, in_progress, blocked, <span class="terminal">complete</span>, failed, rework_required, rework_in_progress, <span class="terminal">skipped</span></td></tr>
+      <tr><td class="mono">InventoryItem</td><td class="mono">status</td><td class="mono">expected, received, available, quarantined, reserved, kitted, in_wip, installed, removed, <span class="terminal">scrapped</span>, <span class="terminal">shipped</span></td></tr>
+      <tr><td class="mono">MachineEvidenceRecord</td><td class="mono">state</td><td class="mono">raw, normalized, quarantined, review_required, accepted, <span class="terminal">rejected</span>, <span class="terminal">invalidated</span></td></tr>
+      <tr><td class="mono">Issue</td><td class="mono">status</td><td class="mono">open, triaged, resolved, <span class="terminal">closed</span>, <span class="terminal">cancelled</span></td></tr>
+      <tr><td class="mono">Nonconformance</td><td class="mono">status</td><td class="mono">open, containment_required, disposition_pending, dispositioned, in_rework, verification_pending, verified, <span class="terminal">closed</span>, <span class="terminal">cancelled</span></td></tr>
+      <tr><td class="mono">QualityContainmentAction</td><td class="mono">status</td><td class="mono">required, <span class="terminal">active</span></td></tr>
+      <tr><td class="mono">Redline</td><td class="mono">status</td><td class="mono">draft, submitted, under_review, approved, rejected, applied, merge_candidate, merged, <span class="terminal">closed</span></td></tr>
+      <tr><td class="mono">ApprovalRequest</td><td class="mono">status</td><td class="mono">requested, <span class="terminal">approved</span>, <span class="terminal">rejected</span>, <span class="terminal">cancelled</span>, <span class="terminal">expired</span></td></tr>
+      <tr><td class="mono">GeneratedReport</td><td class="mono">status</td><td class="mono">requested, generating, generated, failed, <span class="terminal">superseded</span></td></tr>
+      <tr><td class="mono">Certificate</td><td class="mono">status</td><td class="mono">captured, review_required, verified, <span class="terminal">rejected</span>, <span class="terminal">superseded</span></td></tr>
+      <tr><td class="mono">Attachment</td><td class="mono">status</td><td class="mono">uploaded, linked, accepted, review_required, rejected, restricted, <span class="terminal">deleted_reference</span></td></tr>
+      <tr><td class="mono">Shipment</td><td class="mono">status</td><td class="mono">created, <span class="terminal">received</span></td></tr>
+      <tr><td class="mono">SupportSession</td><td class="mono">status</td><td class="mono">open, <span class="terminal">closed</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Status-light records &amp; result-valued record <span class="count">4 · contracts/records.yaml</span></h2>
+  <p class="lede">Not state machines. A single status field plus (for the check records) a <span class="mono-inline">blockers[]</span> list of registered rule ids.</p>
+  <table>
+    <thead><tr><th style="width: 25%;">record</th><th style="width: 15%;">field</th><th>values</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">BuildCheckResult</td><td class="mono">status</td><td class="mono">passed, blocked</td></tr>
+      <tr><td class="mono">ReceivingCheck</td><td class="mono">status</td><td class="mono">passed, blocked, failed</td></tr>
+      <tr><td class="mono">RunCloseCheck</td><td class="mono">status</td><td class="mono">passed, blocked</td></tr>
+      <tr><td class="mono">Measurement</td><td class="mono">result</td><td class="mono">not_evaluated, pass, fail, warning</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Receiving-rule ids <span class="count">10 · contracts/receiving-rules.yaml</span></h2>
+  <p class="lede">Each rule id appears in <span class="mono-inline">ReceivingCheck.blockers[]</span>. A blocker view cites the id and reads its description verbatim.</p>
+  <table>
+    <thead><tr><th style="width: 34%;">id</th><th>description</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">certificate_of_conformance_present</td><td class="rule-desc">The consignment carries a certificate of conformance covering the delivered lot or serial.</td></tr>
+      <tr><td class="mono">certificate_of_conformance_expired</td><td class="rule-desc">A certificate of conformance was presented but its expiry is past, missing or unparseable. Distinct from <span class="mono-inline">certificate_of_conformance_present</span>: absent paperwork and stale paperwork are different facts.</td></tr>
+      <tr><td class="mono">certificate_of_conformance_unverified</td><td class="rule-desc">A certificate of conformance covering the delivered goods exists, but nobody has accepted it as evidence. Capturing records that paperwork arrived; it does not record that anyone read it.</td></tr>
+      <tr><td class="mono">material_test_report_present</td><td class="rule-desc">Raw material carries a mill test report for the delivered heat or lot.</td></tr>
+      <tr><td class="mono">material_test_report_unverified</td><td class="rule-desc">A mill test report covering the delivered heat or lot exists but has not been verified.</td></tr>
+      <tr><td class="mono">first_article_report_present</td><td class="rule-desc">A new part revision carries a first article report. Scoped to the part revision, not the lot.</td></tr>
+      <tr><td class="mono">first_article_report_unverified</td><td class="rule-desc">A first article report for the part revision exists but has not been verified.</td></tr>
+      <tr><td class="mono">process_certificate_present</td><td class="rule-desc">A part that went through a special process at the supplier — heat treat, plating, NDT, welding — carries the certificate for that process against the delivered lot or serial.</td></tr>
+      <tr><td class="mono">process_certificate_unverified</td><td class="rule-desc">A process certificate covering the delivered lot exists but nobody has verified it.</td></tr>
+      <tr><td class="mono">document_matches_part_revision</td><td class="rule-desc">A presented document names the part revision it is offered against.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Run-close-rule ids <span class="count">13 · contracts/run-close-rules.yaml</span></h2>
+  <p class="lede">Each rule id appears in <span class="mono-inline">RunCloseCheck.blockers[]</span>. Run close blocks with the specific ids listed; no generic "close failed".</p>
+  <table>
+    <thead><tr><th style="width: 40%;">id</th><th>description</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">required_steps_complete</td><td class="rule-desc">All required RunStep records are complete or skipped.</td></tr>
+      <tr><td class="mono">required_measurements_present</td><td class="rule-desc">Every step requiring a measurement has one captured.</td></tr>
+      <tr><td class="mono">failed_measurement_has_quality_path</td><td class="rule-desc">Every failed Measurement has a linked Nonconformance and required verification is complete. This is the rule that blocks the first VF-003 close attempt.</td></tr>
+      <tr><td class="mono">required_installations_present</td><td class="rule-desc">Every required BOM installation has an InstallationEvent.</td></tr>
+      <tr><td class="mono">redline_approved_before_applied</td><td class="rule-desc">Any applied Redline was approved before application.</td></tr>
+      <tr><td class="mono">redline_applied_before_step_complete_if_affecting_step</td><td class="rule-desc">A redline affecting a step was applied before that step completed.</td></tr>
+      <tr><td class="mono">machine_evidence_reviewed_if_required</td><td class="rule-desc">review_required machine evidence is represented in close observations and not used as measurement.</td></tr>
+      <tr><td class="mono">nonconformance_disposition_recorded</td><td class="rule-desc">Every open nonconformance for the run has a recorded disposition.</td></tr>
+      <tr><td class="mono">nonconformance_verified_before_close_if_required</td><td class="rule-desc">Nonconformances requiring verification are verified before close.</td></tr>
+      <tr><td class="mono">no_blocking_reconciliation_conflict</td><td class="rule-desc">No unresolved blocking reconciliation conflict touches the run's records.</td></tr>
+      <tr><td class="mono">run_context_snapshot_exists</td><td class="rule-desc">The run has a RunContextSnapshot.</td></tr>
+      <tr><td class="mono">report_definition_available</td><td class="rule-desc">A RunCloseReport definition is available for generation.</td></tr>
+      <tr><td class="mono">access_policy_available</td><td class="rule-desc">An access policy is available for the report and its controlled detail.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Reason codes <span class="count">19 caller-visible + 7 internal · contracts/reason-codes.yaml</span></h2>
+  <p class="lede">A UI surface renders the caller-visible codes on refusal. Two carry a <span class="flag deferred">deferred</span> flag — the registry names them but the driver has not started emitting them yet. Internal codes fire before any UI would render, or represent an outcome name, and never appear as caller-facing refusals.</p>
+  <table>
+    <thead><tr><th style="width: 34%;">id</th><th style="width: 14%;">scope</th><th>note</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">role_not_authorized <span class="flag deferred">deferred</span></td><td>caller-visible</td><td class="rule-desc">the specific §14 name for the case the driver's operation-authorization wrapper currently emits generically as <span class="mono-inline">authorization_denied</span></td></tr>
+      <tr><td class="mono">access_group_missing</td><td>caller-visible</td><td class="rule-desc">the caller lacks a required access group</td></tr>
+      <tr><td class="mono">customer_scope_mismatch</td><td>caller-visible</td><td class="rule-desc">the target's customer scope does not match the caller's customer context</td></tr>
+      <tr><td class="mono">program_scope_mismatch</td><td>caller-visible</td><td class="rule-desc">program scope mismatch</td></tr>
+      <tr><td class="mono">contract_scope_mismatch</td><td>caller-visible</td><td class="rule-desc">contract scope mismatch</td></tr>
+      <tr><td class="mono">factory_node_scope_mismatch</td><td>caller-visible</td><td class="rule-desc">factory-node scope mismatch</td></tr>
+      <tr><td class="mono">record_type_restricted</td><td>caller-visible</td><td class="rule-desc">the caller's profile whitelist does not admit this record type</td></tr>
+      <tr><td class="mono">report_type_restricted</td><td>caller-visible</td><td class="rule-desc">the caller's profile whitelist does not admit this report type</td></tr>
+      <tr><td class="mono">controlled_data_denied <span class="flag deferred">deferred</span></td><td>caller-visible</td><td class="rule-desc">the generalised §14 name for controlled-data refusal; the export path emits <span class="mono-inline">deemed_export_denied</span> today</td></tr>
+      <tr><td class="mono">deemed_export_denied</td><td>caller-visible</td><td class="rule-desc">export-controlled document denied under the deemed-export rule (nationality)</td></tr>
+      <tr><td class="mono">support_context_missing</td><td>caller-visible</td><td class="rule-desc">the target requires an open, in-scope SupportSession; the caller has none</td></tr>
+      <tr><td class="mono">support_context_expired</td><td>caller-visible</td><td class="rule-desc">the SupportSession's <span class="mono-inline">expires_at</span> is past the current clock</td></tr>
+      <tr><td class="mono">service_scope_denied</td><td>caller-visible</td><td class="rule-desc">the service account's processing/disclosure scope denies the action</td></tr>
+      <tr><td class="mono">attachment_access_denied</td><td>caller-visible</td><td class="rule-desc"><span class="mono-inline">AccessAttachment</span> refuses download or preview</td></tr>
+      <tr><td class="mono">bounded_drilldown_denied</td><td>caller-visible</td><td class="rule-desc">a bounded drill-down hop into a hidden field is refused</td></tr>
+      <tr><td class="mono">report_audience_mismatch</td><td>caller-visible</td><td class="rule-desc">the caller's <span class="mono-inline">caller_profile</span> does not match the report's <span class="mono-inline">audience_profile</span></td></tr>
+      <tr><td class="mono">report_access_stale</td><td>caller-visible</td><td class="rule-desc">the report is <span class="mono-inline">regeneration_required</span>; freshness cascade refused a read</td></tr>
+      <tr><td class="mono">policy_change_forbidden</td><td>caller-visible</td><td class="rule-desc">an access-policy amendment would rewrite history; refused</td></tr>
+      <tr><td class="mono">no_summary_shape_registered</td><td>caller-visible</td><td class="rule-desc">a requested summary of a record type with no §10 shape; refused rather than silently promoted to full</td></tr>
+      <tr><td class="mono">allowed <span class="flag internal">internal</span></td><td>internal</td><td class="rule-desc">the successful-decision code; every audited allow carries it</td></tr>
+      <tr><td class="mono">summary_only <span class="flag internal">internal</span></td><td>internal</td><td class="rule-desc">outcome name — produces a summary response, not a caller-visible failure</td></tr>
+      <tr><td class="mono">hidden_existence_required <span class="flag internal">internal</span></td><td>internal</td><td class="rule-desc">outcome name — produces a hidden_existence response</td></tr>
+      <tr><td class="mono">access_context_missing <span class="flag internal">internal</span></td><td>guard</td><td class="rule-desc">no target at all; fail-closed guard fires before any UI would render</td></tr>
+      <tr><td class="mono">access_context_malformed <span class="flag internal">internal</span></td><td>guard</td><td class="rule-desc">caller_type spelled a way no authorization rule spells; fail-closed guard</td></tr>
+      <tr><td class="mono">resource_not_found <span class="flag internal">internal</span></td><td>existing</td><td class="rule-desc">shipped in the first slice as an <span class="mono-inline">exportAccessDecision</span> fail-closed case</td></tr>
+      <tr><td class="mono">export_control_malformed <span class="flag internal">internal</span></td><td>existing</td><td class="rule-desc">a resource with a present-but-malformed <span class="mono-inline">export_control</span> fails closed</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Visibility profiles <span class="count">8 · contracts/visibility-profiles.yaml</span></h2>
+  <p class="lede">The global shell displays the caller's active profile. A whitelist refusal surfaces as <span class="mono-inline">record_type_restricted</span> or <span class="mono-inline">report_type_restricted</span>.</p>
+  <table>
+    <thead><tr><th style="width: 25%;">name</th><th style="width: 20%;">audience</th><th style="width: 22%;">default visibility</th><th>controlled-data behaviour</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">internal_full_quality</td><td>quality_engineer, manufacturing_engineer</td><td class="mono">full</td><td>full within program and contract</td></tr>
+      <tr><td class="mono">operator_station_view</td><td>operator</td><td class="mono">full</td><td>denied</td></tr>
+      <tr><td class="mono">receiving_inspector_view</td><td>quality_engineer</td><td class="mono">full</td><td>full within document export control</td></tr>
+      <tr><td class="mono">customer_summary_access</td><td>external_viewer</td><td class="mono">summary</td><td>denied</td></tr>
+      <tr><td class="mono">customer_extended_access</td><td>external_viewer</td><td class="mono">full_within_customer_scope</td><td>summary</td></tr>
+      <tr><td class="mono">supplier_evidence_reviewer</td><td>quality_engineer</td><td class="mono">full</td><td>full within program and contract</td></tr>
+      <tr><td class="mono">support_diagnostics_summary</td><td>support_user</td><td class="mono">summary</td><td>denied</td></tr>
+      <tr><td class="mono">service_projection_scope</td><td>service_account</td><td class="mono">full_processing_only</td><td>full for processing, denied for disclosure</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Visibility levels <span class="count">4 · src/driver/visibility.ts</span></h2>
+  <p class="lede">The read-side outcomes of an access-aware record read. <span class="mono-inline">full</span> and <span class="mono-inline">summary</span> return a record shape; <span class="mono-inline">denied</span> and <span class="mono-inline">hidden_existence</span> return no record. §5.4 invariant: the bytes of <span class="mono-inline">hidden_existence</span> match those of not-found.</p>
+  <table>
+    <thead><tr><th style="width: 22%;">level</th><th>what the caller receives</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">full</td><td>the whole record; every field</td></tr>
+      <tr><td class="mono">summary</td><td>a registered §10 shape, revealed fields only. Four shapes registered today, for <span class="mono-inline">MachineEvidenceRecord</span>, <span class="mono-inline">Certificate</span>, <span class="mono-inline">Nonconformance</span>, <span class="mono-inline">GeneratedReport</span></td></tr>
+      <tr><td class="mono">denied</td><td>the refusal and its reason code; no record data</td></tr>
+      <tr><td class="mono">hidden_existence</td><td>no record; the shape is byte-identical to a not-found response. The audit event captures the difference; the caller does not</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <p>Grade downstream artboards against this reference. Every name any artboard shows resolves here.</p>
+    <p>See <code>specs/ui-surface-design/ui-surface-design-spec-v0.3.md</code> for the screen catalogue and the §9 binding table; <code>specs/ui-surface-design/design-philosophy.md</code> for the seventeen principles the artboards must honour.</p>
+    <p>A name absent from this reference is absent from the UI. When a screen needs a name the vocabulary does not carry, the sprint halts with <code>design_pattern_missing</code>.</p>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -121,6 +121,10 @@ Phase 1 (registry extraction, the founding act) ran plan-mode-per-sprint: the Ag
 
 Phase C (access-and-visibility boundary, sprints 029-052) ran auto-within-phase. All 24 sprint cards were drafted up front and amended in place if the Architect's read of the code changed what a subsequent card should hold. The Agent proceeded card-to-execution; halts surface to `## Surfaced for review`.
 
+Phase D (UI surface design, sprints 053-088, opened 2026-08-26) runs auto-within-phase on the same shape. All 36 cards drafted up front. The pass_kind for D.1 through D.7 is `functional`, but with a modified contract shape: the artifact is a `.dc.html` artboard on a Claude Design canvas, not TypeScript. The signal contract for each screen sprint is the set of registered names cited (operations, states, blockers, reason codes, visibility profiles), checked by grep against `contracts/*.yaml`. The observation contract is the published Artifact URL: the canvas renders, the artboard is legible, the reader sees the actor label, the primary action, disabled states, blocker examples, and access variants. D.8 is `pass_kind: docs` — the acceptance closeout.
+
+Phase D adds no code and edits no registry. `validate:contracts`, bench 29/29 both drivers, backend gate exit 0, vitest 432/432, tsc 0, and prettier stay untouched across all 36 sprints. `docs/PHASE_D_PLAN.md` carries the full narrative.
+
 Later phases revisit cadence at each phase boundary. Mechanical fan-out (per-operation schema generation, handler implementation across the seven operation groups) is a candidate for multi-agent orchestration once the registries and the no-invention guard are in place.
 
 ## Readability-refactor basis (arc 4 — TS best practices, researched 2026-07-01)
@@ -147,7 +151,7 @@ Canonical home note: the split keeps `src/driver/` as the ProductDriver's canoni
 
 Per AGENTS.md hard rule 10: explicit hand-authorizations logged here.
 
-- None to date.
+- **2026-08-26** — Phase D open. Authorized invocation of the `design` skill (an early preview of Claude Design inside Claude Code) for every artboard-authoring sprint in Phase D (053-087). The skill authors `.dc.html` files from a prompt describing the intended canvas; the Agent supplies the prompt and the vocabulary, and the skill produces the artboard. The dual-contract adaptation is in `docs/PHASE_D_PLAN.md` and in the Cadence section above. Halts on the skill still apply: `design_pattern_missing` when the skill cannot render a pattern the design spec requires.
 
 ## Numbering
 

@@ -1,0 +1,220 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+    .doc { width: 720px; padding: 40px 48px 56px; }
+    h1 { font-size: 24px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+    .subtitle { color: #4A4A4A; font-size: 13px; margin: 0 0 4px; }
+    .meta { font-size: 12px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 24px; }
+    .principle { font-size: 12px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 12px; }
+    p.lede { font-size: 13px; color: #4A4A4A; margin: 8px 0 20px; }
+
+    .state { border: 1px solid #D9D6CE; background: #FFFFFF; margin-bottom: 20px; border-radius: 3px; overflow: hidden; }
+    .state-head { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 16px; background: #F0EDDF; border-bottom: 1px solid #D9D6CE; }
+    .state-name { font-family: "IBM Plex Mono", monospace; font-size: 14px; font-weight: 500; color: #1A1A1A; }
+    .state-threshold { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B4A00; }
+    .state-body { padding: 14px 16px; }
+    .demo { padding: 14px; background: #FAFAF7; border: 1px solid #E0DDD3; border-radius: 3px; margin-bottom: 10px; }
+    .lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .note { font-size: 12px; color: #4A4A4A; margin-top: 6px; }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #333; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 4px; font-weight: 500; font-size: 14px; }
+    .btn.primary { background: #1A1A1A; color: #FAFAF7; }
+    .btn.pending { background: #4A4A4A; color: #FAFAF7; opacity: 0.85; }
+    .btn.succeeded { background: #2D6A3C; color: #FAFAF7; }
+    .btn.failed { background: #B00020; color: #FAFAF7; }
+    .btn.retry { background: transparent; color: #1E4E8C; border: 1px solid #1E4E8C; }
+    .btn.disabled { background: #E5E5E5; color: #8B8B8B; cursor: not-allowed; }
+
+    .skel { display: flex; gap: 8px; flex-direction: column; }
+    .skel > div { height: 10px; background: linear-gradient(90deg, #E5E5E5, #F0EDDF, #E5E5E5); border-radius: 2px; }
+    .skel > div.short { width: 45%; }
+    .skel > div.mid { width: 70%; }
+    .skel > div.long { width: 100%; }
+
+    .spin { display: inline-block; width: 12px; height: 12px; border: 2px solid #FAFAF7; border-top-color: transparent; border-radius: 50%; margin-right: 4px; }
+    .check { color: #FAFAF7; font-weight: 500; }
+
+    .banner { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 3px; font-size: 13px; }
+    .banner.amber { background: #FFF3D9; border-left: 3px solid #B45309; color: #6B4A00; }
+    .banner.red { background: #FEECEC; border-left: 3px solid #B00020; color: #B00020; }
+
+    .fail-classes { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; padding: 8px 10px; background: #F0EDDF; border-radius: 2px; margin-top: 8px; line-height: 1.7; }
+    .fail-classes b { color: #B00020; font-weight: 500; }
+
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+  </style>
+</helmet>
+
+<div class="doc">
+  <h1>Runtime action states</h1>
+  <p class="subtitle">The nine states every state-changing surface handles.</p>
+  <p class="meta">sprint 055 · phase D.1 · §6 of the design philosophy · Nielsen (1993) latency thresholds</p>
+
+  <p class="lede">A tap on a state-changing button walks the caller through some of these states. The 0.1 s / 1 s / 10 s thresholds are Nielsen's — feels instantaneous, holds the user's flow, still worth waiting for. Anything longer becomes a background job with its own state. Every state carries factual copy; no reassurance, no narration.</p>
+
+  <div class="state">
+    <div class="state-head"><span class="state-name">loading</span><span class="state-threshold">≤ 0.1 s · Nielsen "instantaneous"</span></div>
+    <div class="state-body">
+      <div class="demo">
+        <div class="lbl">skeleton</div>
+        <div class="skel"><div class="mid"></div><div class="long"></div><div class="short"></div><div class="mid"></div></div>
+      </div>
+      <div class="note">The surface is fetching what it needs to render. Skeleton fields fill the layout so the reading eye does not jump when values arrive.</div>
+    </div>
+  </div>
+
+  <div class="state">
+    <div class="state-head"><span class="state-name">operation_pending</span><span class="state-threshold">appears ≤ 0.1 s after the tap</span></div>
+    <div class="state-body">
+      <div class="demo">
+        <div class="lbl">button state</div>
+        <span class="btn pending"><span class="spin"></span>Capturing measurement…</span>
+      </div>
+      <div class="note">The operation was invoked; the driver has not returned. The label names the operation, not "please wait". The spinner marks compute; the copy marks intent.</div>
+    </div>
+  </div>
+
+  <div class="state">
+    <div class="state-head"><span class="state-name">operation_succeeded</span><span class="state-threshold">≤ 1 s on the happy path · Nielsen "flow"</span></div>
+    <div class="state-body">
+      <div class="demo">
+        <div class="lbl">confirmation</div>
+        <span class="btn succeeded"><span class="check">✓</span>&nbsp;Measurement captured</span>
+        <div class="note" style="margin-top:8px;">emitted event: <span class="mono-inline">MEASUREMENT_PASSED</span> · record state: <span class="mono-inline">pass</span></div>
+      </div>
+      <div class="note">The driver returned success. The response carries the new record state and any emitted events; both are named on the confirmation. Green is reserved for the load-bearing success state per §3.1.</div>
+    </div>
+  </div>
+
+  <div class="state">
+    <div class="state-head"><span class="state-name">operation_failed</span><span class="state-threshold">names the typed failure class</span></div>
+    <div class="state-body">
+      <div class="demo">
+        <div class="lbl">refusal</div>
+        <span class="btn failed">Complete step refused</span>
+        <div class="note" style="margin-top:8px;">reason: <span class="mono-inline">state_transition_forbidden</span></div>
+      </div>
+      <div class="fail-classes">
+        <b>runtime-emitted classes (src/driver/world.ts, src/driver/handlers.ts):</b><br>
+        authorization_denied · not_implemented · validation_error · state_transition_forbidden · bridge_mapping_required · idempotency_conflict · report_regeneration_required<br>
+        <b>plus the §14 access failure classes registered in contracts/failure-classes.yaml:</b> access_group_missing · customer_scope_mismatch · program_scope_mismatch · contract_scope_mismatch · factory_node_scope_mismatch · record_type_restricted · report_type_restricted · controlled_data_denied · support_context_missing · support_context_expired · service_scope_denied · attachment_access_denied · bounded_drilldown_denied · report_audience_mismatch · report_access_stale · policy_change_forbidden · role_not_authorized · access_context_missing · access_context_malformed
+      </div>
+      <div class="note">Every failure names its class. Never a generic "something went wrong".</div>
+    </div>
+  </div>
+
+  <div class="state">
+    <div class="state-head"><span class="state-name">summary_only_access</span><span class="state-threshold">internal outcome — response is a summary payload, not a refusal</span></div>
+    <div class="state-body">
+      <div class="demo">
+        <div class="lbl">response</div>
+        <div class="banner amber" style="border-color:#D4A946;">
+          <div><span class="mono-inline">RunCloseReport</span> · summary shape<br>
+            <div class="note" style="margin-top:4px;">revealed: run id · outcome<br>withheld: measurement_summary · redline_history · controlled sections</div>
+          </div>
+        </div>
+      </div>
+      <div class="note">Registered as an internal outcome name in <span class="mono-inline">failure-classes.yaml</span> and <span class="mono-inline">reason-codes.yaml</span>. The response IS a summary payload — the caller never sees a refusal, only a bounded read. Not a caller-visible failure class.</div>
+    </div>
+  </div>
+
+  <div class="state">
+    <div class="state-head"><span class="state-name">hidden_existence_required</span><span class="state-threshold">internal outcome — response hides that the record exists</span></div>
+    <div class="state-body">
+      <div class="demo">
+        <div class="lbl">response</div>
+        <div class="banner" style="background:#F0EDDF; border-left-color:#6B6B6B;">
+          <div>404 · <span class="mono-inline">resource_not_found</span><br>
+            <div class="note" style="margin-top:4px;">The record does not exist for this caller. No confirmation that it exists for any other.</div>
+          </div>
+        </div>
+      </div>
+      <div class="note">Registered as an internal outcome name. Two of the eight visibility profiles carry <span class="mono-inline">denial_behavior: hidden_existence</span> (customer_summary_access, customer_extended_access). The caller sees a normal not-found response — the outcome name is what audit records; the caller never sees this string.</div>
+    </div>
+  </div>
+
+  <div class="state">
+    <div class="state-head"><span class="state-name">retry_safe</span><span class="state-threshold">idempotency guarantees a safe retry</span></div>
+    <div class="state-body">
+      <div class="demo">
+        <div class="lbl">recovery affordance</div>
+        <span class="btn retry">Retry</span>
+      </div>
+      <div class="note">The operation is <span class="mono-inline">required_idempotency_key</span> or <span class="mono-inline">transactional_unique_constraint</span>. Retrying with the same key returns the prior result or refuses with <span class="mono-inline">idempotency_conflict</span>. 106 of 128 first-slice operations are in this class.</div>
+    </div>
+  </div>
+
+  <div class="state">
+    <div class="state-head"><span class="state-name">retry_unsafe</span><span class="state-threshold">reload before retrying</span></div>
+    <div class="state-body">
+      <div class="demo">
+        <div class="lbl">no-retry affordance</div>
+        <span class="btn retry">Reload before retrying</span>
+      </div>
+      <div class="note">The operation is <span class="mono-inline">not_idempotent</span>. A retry would create a second fact. The UI reloads and re-reads before offering the action again.</div>
+    </div>
+  </div>
+
+  <div class="state">
+    <div class="state-head"><span class="state-name">projection_stale</span><span class="state-threshold">reload the view</span></div>
+    <div class="state-body">
+      <div class="demo">
+        <div class="banner amber">
+          <div>
+            <span class="mono-inline">RunCloseReadiness</span> diverged since the last render (4 s ago).
+            <div style="margin-top:6px;"><span class="btn retry" style="padding:6px 12px; font-size:13px;">Reload</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="note">A projection this surface reads has diverged since the last render. The banner names the projection and the elapsed time; the button reloads.</div>
+    </div>
+  </div>
+
+  <div class="state">
+    <div class="state-head"><span class="state-name">report_stale</span><span class="state-threshold">regenerate through the registered path</span></div>
+    <div class="state-body">
+      <div class="demo">
+        <div class="banner amber">
+          <div>
+            <span class="mono-inline">RunCloseReport</span> · <span class="mono-inline">regeneration_required</span>
+            <div class="note" style="color:#6B4A00; margin-top:4px;">trigger: <span class="mono-inline">access_policy_change_for_controlled_export</span></div>
+            <div style="margin-top:6px;"><span class="btn retry" style="padding:6px 12px; font-size:13px;">Regenerate report</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="note">A report this surface reads is <span class="mono-inline">regeneration_required</span>. The registered triggers are <span class="mono-inline">report_definition_change</span>, <span class="mono-inline">reconciliation_resolution_affecting_run</span>, <span class="mono-inline">access_policy_change_for_controlled_export</span>, <span class="mono-inline">source_record_correction</span>. The UI names which fired.</div>
+    </div>
+  </div>
+
+  <div class="state">
+    <div class="state-head"><span class="state-name">network_unavailable</span><span class="state-threshold">no claim of success or failure</span></div>
+    <div class="state-body">
+      <div class="demo">
+        <div class="banner red">
+          <div>
+            No answer from the driver. The action was not confirmed as succeeded or failed.
+            <div style="margin-top:6px;"><span class="btn retry" style="padding:6px 12px; font-size:13px; color:#B00020; border-color:#B00020;">Retry</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="note">The driver call did not return. The UI does not claim success or failure until it does. Retry is offered only when the operation is idempotency-safe; otherwise the UI reloads and re-reads.</div>
+    </div>
+  </div>
+
+  <p class="lede" style="margin-top:12px;">Longer than 10 s: the action becomes a background job with its own progress indicator and its own return path. The close pipeline is an example — <span class="mono-inline">AttemptRunClose</span> triggers four system-worker stages, and the close console renders each stage as it walks.</p>
+</div>
+</x-dc>
+</body>
+</html>

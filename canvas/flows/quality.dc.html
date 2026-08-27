@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.4; }
+    .doc { width: 1600px; padding: 32px 40px 48px; }
+    h1 { font-size: 26px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+    .subtitle { color: #4A4A4A; font-size: 13px; margin: 0 0 4px; }
+    .meta { font-size: 12px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 28px; }
+    p.lede { font-size: 13px; color: #4A4A4A; margin: 0 0 16px; max-width: 900px; }
+
+    h2 { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: #333; margin: 30px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #B8B4A8; }
+
+    .chain { display: flex; align-items: stretch; gap: 8px; padding: 20px 0; overflow-x: auto; }
+    .step { flex: 0 0 auto; display: flex; flex-direction: column; align-items: stretch; }
+    .screen { width: 200px; background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; padding: 10px 12px; min-height: 130px; }
+    .screen .kind { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .screen .name { font-size: 13px; font-weight: 500; margin-bottom: 6px; line-height: 1.25; }
+    .screen .ops { display: flex; flex-direction: column; gap: 2px; }
+    .screen .ops .op { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: #4A4A4A; }
+    .screen .ops .op .sr { color: #6B6B6B; }
+    .screen.hh { background: #F0EDDF; }
+    .step .step-note { font-size: 11px; color: #6B6B6B; padding: 6px 4px 2px; text-align: center; font-family: "IBM Plex Mono", monospace; }
+
+    .arrow { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; padding-top: 40px; }
+    .arrow svg { width: 40px; height: 22px; color: #4A4A4A; }
+    .arrow .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: #4A4A4A; margin-top: 2px; text-align: center; max-width: 100px; line-height: 1.3; }
+
+    .steps { margin-top: 8px; padding: 12px 16px; background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; }
+    .steps .lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+    .steps ol { margin: 0; padding-left: 20px; }
+    .steps li { font-size: 13px; color: #1A1A1A; padding: 2px 0; }
+    .steps li .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #4A4A4A; }
+
+    .scenario { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; background: #F0EDDF; border: 1px solid #D9D6CE; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; margin-right: 6px; }
+    .scenario.done { background: #E5F1E9; color: #2D6A3C; border-color: #2D6A3C; }
+    a { color: #6B4A00; } a:hover { color: #442E00; }
+</style>
+</helmet>
+<div class="doc">
+  <h1>Quality flow</h1>
+  <p class="subtitle">One flow across the D.4 Mac quality pack</p>
+  <p class="meta">§21.3 · scenarios VF-002, VF-003, VF-036 walked</p>
+  <div style="margin-bottom: 18px;"><span class="scenario done">VF-002 (containment path)</span><span class="scenario done">VF-003 (disposition path)</span><span class="scenario done">VF-036 (use-as-is elevated authority)</span></div>
+
+  <p class="lede">§21.3 · Quality resolves failed measurements and receiving nonconformances across three scenarios. Walks the Mac quality pack (D.4).</p>
+
+  <h2>VF-002 · containment before disposition</h2>
+  <div class="chain">
+<div class="step"><div class="screen"><div class="kind">Mac</div><div class="name">QualityQueue</div><div class="ops"><div class="op">readProjection QualityQueue</div><div class="op sr">→ Open nc_012</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Open</div></div><div class="step"><div class="screen"><div class="kind">Mac</div><div class="name">NonconformanceView</div><div class="ops"><div class="op">DefineAffectedPopulation</div><div class="op sr">24 items scoped</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Start containment</div></div><div class="step"><div class="screen"><div class="kind">Mac</div><div class="name">ContainmentView</div><div class="ops"><div class="op">StartQualityContainment</div><div class="op sr">state required</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Activate</div></div><div class="step"><div class="screen"><div class="kind">Mac</div><div class="name">ContainmentView</div><div class="ops"><div class="op">ActivateQualityContainment</div><div class="op sr">state active</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Then dispositions</div></div><div class="step"><div class="screen"><div class="kind">Mac</div><div class="name">DispositionView</div><div class="ops"><div class="op">RecordDisposition per item</div><div class="op sr">containment scope closed</div></div></div></div>
+  </div>
+
+  <h2>VF-003 · disposition and rework</h2>
+
+  <div class="chain">
+<div class="step"><div class="screen"><div class="kind">Mac</div><div class="name">QualityQueue</div><div class="ops"><div class="op">readProjection QualityQueue</div><div class="op sr">→ Open nc</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Open nc</div></div><div class="step"><div class="screen"><div class="kind">Mac</div><div class="name">NonconformanceView</div><div class="ops"><div class="op">readRecord(Nonconformance)</div><div class="op sr">state disposition_pending</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Record</div></div><div class="step"><div class="screen"><div class="kind">Mac</div><div class="name">DispositionView</div><div class="ops"><div class="op">RecordDisposition · kind rework</div><div class="op sr">→ dispositioned</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Start rework</div></div><div class="step"><div class="screen"><div class="kind">Mac</div><div class="name">ReworkVerificationView</div><div class="ops"><div class="op">StartRework · CompleteRework</div><div class="op sr">state verification_pending</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Verify</div></div><div class="step"><div class="screen"><div class="kind">Mac</div><div class="name">ReworkVerificationView</div><div class="ops"><div class="op">VerifyRework · CloseNonconformance</div><div class="op sr">state verified · closed</div></div></div></div>
+  </div>
+
+  <h2>VF-036 · elevated authority on use_as_is</h2>
+  <div class="chain">
+<div class="step"><div class="screen"><div class="kind">Mac</div><div class="name">NonconformanceView</div><div class="ops"><div class="op">state disposition_pending</div><div class="op sr">operator on shift</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Try use_as_is</div></div><div class="step"><div class="screen"><div class="kind">Mac</div><div class="name">DispositionView</div><div class="ops"><div class="op">RecordDisposition · kind use_as_is</div><div class="op sr" style="color:#B00020;">refused · elevated_disposition_authority</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">Reassign</div></div><div class="step"><div class="screen"><div class="kind">Mac</div><div class="name">DispositionView</div><div class="ops"><div class="op">quality_engineer records</div><div class="op sr">RecordDisposition succeeds</div></div></div></div><div class="arrow"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11 H36 M30 5 L36 11 L30 17"/></svg><div class="lbl">→ dispositioned</div></div><div class="step"><div class="screen"><div class="kind">Mac</div><div class="name">NonconformanceView</div><div class="ops"><div class="op">state dispositioned</div><div class="op sr">kind: use_as_is · disposition guard cleared</div></div></div></div>
+  </div>
+
+  <div class="steps">
+    <div class="lbl">VF-003 disposition and rework steps walked</div>
+    <ol>
+      <li>QualityQueue shows one open Nonconformance in the "Needs disposition" section (<span class="mono">nc_003 · disposition_pending</span>).</li>
+      <li>NonconformanceView opens with the full lifecycle drawn. State reads <span class="mono">disposition_pending</span>.</li>
+      <li>DispositionView. Quality engineer records disposition kind <span class="mono">rework</span>. <span class="mono">RecordDisposition · rule disposition_recording</span> (rework does not trip <span class="mono">elevated_disposition_authority</span>). State walks to <span class="mono">dispositioned</span>.</li>
+      <li>ReworkVerificationView. <span class="mono">StartRework · CompleteRework</span>. Rework record complete. State walks to <span class="mono">verification_pending</span>.</li>
+      <li>Quality engineer (segregated from the operator who did the rework) verifies. <span class="mono">VerifyRework · emits VERIFICATION_COMPLETED</span>. Then <span class="mono">CloseNonconformance</span>. State walks to <span class="mono">verified · closed</span>. The rule <span class="mono">nonconformance_verified_before_close_if_required</span> now reads pass on the run.</li>
+    </ol>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
