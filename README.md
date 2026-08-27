@@ -8,7 +8,7 @@ Signal-Driven Development: [`docs/SDD_GENERAL_PROCESS.md`](docs/SDD_GENERAL_PROC
 
 ## What it is
 
-A prototype in TypeScript that models a manufacturing execution record system. A single fixed contract lists everything the runtime knows how to do; the runtime refuses anything else. The same code runs against a memory backend and a SQLite backend; twenty-nine scenarios drive each in turn, and the two backends emit event streams that match byte for byte. Nothing runs on physical hardware; nothing serves an end user.
+A prototype in TypeScript that models a manufacturing execution record system. The runtime reads a single fixed contract; each operation it runs, each event it emits, each record it holds is declared there. The same code runs against a memory backend and a SQLite backend. Twenty-nine scenarios drive each; the two produce event streams that match byte for byte.
 
 ## What it is not
 
