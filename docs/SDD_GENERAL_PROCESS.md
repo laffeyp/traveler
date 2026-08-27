@@ -2,25 +2,25 @@
 
 ## How to think about it
 
-Every domain has a hidden shape under its paperwork. Ten insurance policies are ten descriptions of the same shape. Ten factory work instructions are ten redescriptions of the same lifecycle. The words vary; the underlying kinds of things, states they can be in, moves that are allowed, and refusals that fire — those repeat.
+Any domain repeats itself across its documents. Ten factory work instructions describe the same steps in different words. The kinds of things, the states they can be in, the moves allowed, and the reasons a move gets refused stay constant. The wording changes.
 
-Signal-Driven Development is one move applied in two directions:
+Signal-Driven Development is a method with two parts:
 
-- **Dig the shape out.** Write it down as a small locked list: names for the things, the moves, the states, the refusals. Usually fewer than a hundred entries. That list is the grammar.
-- **Use the list two ways.** Build a system that speaks only names on the list. Check the domain's own documents against the list. The two uses are the same operation read from opposite sides.
-- **Everything a built system does has a name someone can point to on the list.** Anything a document says that the list cannot express is either a gap the list must grow to hold, or a proposal that gets refused.
+- Name the things that repeat: the kinds of things, the states they can be in, the moves that are allowed, and the reasons a move gets refused. Usually fewer than a hundred entries. That set of names is the grammar.
+- Use the grammar two ways. Build a system that only speaks names in the grammar. Check the domain's own documents against the grammar. Building and checking are the same operation run in opposite directions.
+- Everything a built system does has a name in the grammar. Anything the grammar cannot name is either a gap the grammar must add, or a proposal the checker refuses.
 
-The move is old. Law wrote statutes as logic programs in the 1980s (Sergot and Kowalski, on the British Nationality Act). Medicine has decades of computer-interpretable guidelines. Process mining reads process models out of event logs. Program synthesis builds code from specifications. SDD is what those methods look like when you run the loop over plain text, with a language model as the reader, and use the same list to both build and check.
+The method is old. Law wrote statutes as logic programs in the 1980s (Sergot and Kowalski, on the British Nationality Act). Medicine has decades of computer-interpretable guidelines. Process mining reads process models out of event logs. Program synthesis builds code from specifications. SDD is what those methods look like when the loop runs over plain text, with a language model reading the text, and one list serves both to build and to check.
 
-The rest of this note places SDD against the fields that already do parts of it — so the parts that are new are legible against the parts that are old — and names where the method fails.
+The rest of this note places SDD against the fields that already do parts of it, and names where the method fails.
 
 ---
 
-## 1. Two directions, same list
+## 1. Two directions, same grammar
 
-Forward: someone writes the list down from what they know, then builds and checks a system against it. Reverse: someone reads the list out of an existing body of text, then builds a cleaner system from it. §4 pushes forward into rule-bound domains; §5 pushes reverse until the method breaks.
+Forward: someone writes the grammar down from what they know, then builds and checks a system against it. Reverse: someone reads the grammar out of an existing body of text, then builds a cleaner system from it. §4 covers the forward direction into rule-bound domains; §5 covers the reverse direction to the point where the method breaks.
 
-The list is a boundary. It fixes the set of things that count. That boundary yields two operations at once: build things by following the rules, and check things by asking which side of the line they fall on. The builder can only produce what passes the check; the checker only accepts what the builder can produce. A type does the same job for values in a program.
+The grammar fixes the set of things that count. It yields two operations at once: build things by following the rules, and check things by asking whether they satisfy the rules. The builder can only produce what passes the check; the checker only accepts what the builder can produce. A type does the same job for values in a program.
 
 ---
 
@@ -45,13 +45,13 @@ The new parts are worth naming: running this loop over plain text with a languag
 
 ## 3. The reach test
 
-SDD works when the list can hold a domain's real work. It fails when the list has to leave the real work out.
+SDD works when the grammar can express the important behavior of a domain. It fails when the important behavior cannot fit in the grammar.
 
-Two formal statements say the same thing. By minimum description length, the best list makes "the list plus the text given the list" shortest to write down; whatever will not shrink is the cruft. By rate-distortion theory (Shannon; Tishby, Pereira and Bialek 1999), the list is a compact code that keeps the useful part of the text; what it drops is the loss.
+Two formal statements say the same thing. By minimum description length, the best grammar makes "the grammar plus the text given the grammar" shortest to write down; whatever will not shrink is the cruft. By rate-distortion theory (Shannon; Tishby, Pereira and Bialek 1999), the grammar is a compact code that keeps the useful part of the text; what it drops is the loss.
 
-Rate-distortion assumes you already know which losses count, and no fixed rule picks that. Choosing a list is choosing what counts as loss. The list declares what is cruft and cannot prove, from inside itself, that the cruft was worthless. Two more limits agree. Kolmogorov says a short list need not exist at all, and no method can tell you in advance whether one does. No-Free-Lunch (Wolpert and Macready 1997) says any method that does well on rule-shaped domains does exactly as badly on the others.
+Rate-distortion assumes you already know which losses count, and no fixed rule picks that. Choosing a grammar is choosing what counts as loss. The grammar declares what is cruft and cannot prove, from inside itself, that the cruft was worthless. Two more limits agree. Kolmogorov says a short grammar need not exist at all, and no method can tell you in advance whether one does. No-Free-Lunch (Wolpert and Macready 1997) says any method that does well on rule-shaped domains does exactly as badly on the others.
 
-The reach test is a testable bet, not a proof. The test is one question: does a locked list reproduce the behavior we care about? It explains results better than it predicts them, because you learn which case you were in after you build. §5 names the four ways it can fail.
+The reach test is a testable bet, not a proof. The test is one question: does a locked grammar reproduce the behavior we care about? It explains results better than it predicts them, because you learn which case you were in after you build. §5 names the four ways it can fail.
 
 ---
 
