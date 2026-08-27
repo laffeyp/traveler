@@ -1,3 +1,5 @@
+![traveler — a manufacturing execution record system built on a locked vocabulary of registered records, operations, and events](docs/banner.png)
+
 # Distributed Factory Execution & Record System
 
 A factory-execution system for building complex hardware. TypeScript on Node. The specifications were reverse-engineered from public sources — industry standards, published architectures, job postings, open-source projects, regulatory guidance — using Signal-Driven Development and a language model.
