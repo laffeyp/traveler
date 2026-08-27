@@ -1,0 +1,237 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0F0F10; color: #FAFAF7; font-family: "IBM Plex Sans", system-ui, sans-serif; }
+    .frame { width: 1600px; height: 800px; background: #0F0F10; position: relative; overflow: hidden; }
+
+    /* left panel — dark ground, title, subtitle, meta */
+    .left { position: absolute; left: 0; top: 0; width: 640px; height: 800px; padding: 72px 56px; display: flex; flex-direction: column; justify-content: space-between; }
+    .brand { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #8B8B8B; }
+    .title { font-family: "IBM Plex Sans"; font-size: 96px; font-weight: 600; line-height: 0.95; letter-spacing: -0.03em; color: #FAFAF7; margin: 40px 0 20px; }
+    .subtitle { font-size: 20px; line-height: 1.35; color: #C4C0B4; max-width: 480px; margin-bottom: 40px; }
+    .meta { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #8B8B8B; align-content: end; }
+    .meta .k { color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; }
+    .meta .v { color: #C4C0B4; }
+    .meta .v .accent-amber { color: #E39A46; }
+    .meta .v .accent-blue { color: #6A9AD4; }
+    .meta .v .accent-green { color: #5FB37A; }
+
+    /* right panel — the device spread */
+    .right { position: absolute; left: 640px; top: 0; width: 960px; height: 800px; background: linear-gradient(135deg, #17171A 0%, #0F0F10 100%); overflow: hidden; }
+
+    /* phone frame (~55% scale of 390x844 → 215x464) */
+    .phone { position: absolute; left: 48px; top: 168px; width: 234px; height: 506px; background: #FAFAF7; border-radius: 22px; box-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.3); overflow: hidden; transform: rotate(-4deg); }
+    .phone .p-header { display: flex; align-items: center; gap: 4px; padding: 8px 10px 6px; border-bottom: 1px solid #D9D6CE; font-size: 8px; color: #1A1A1A; }
+    .phone .p-header .chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 5px; background: #F0EDDF; border: 1px solid #D9D6CE; border-radius: 2px; font-size: 7px; }
+    .phone .p-header .mono { font-family: "IBM Plex Mono", monospace; font-size: 6.5px; color: #4A4A4A; }
+    .phone .p-header .station { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 6.5px; color: #6B6B6B; text-align: right; line-height: 1.05; }
+    .phone .p-meta { padding: 6px 10px; background: #F0EDDF; border-bottom: 1px solid #D9D6CE; font-size: 8px; font-family: "IBM Plex Mono", monospace; color: #4A4A4A; }
+    .phone .p-body { padding: 10px; }
+    .phone .p-lbl { font-family: "IBM Plex Mono", monospace; font-size: 7px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 5px; }
+    .phone .p-card { background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 2px; padding: 7px 9px; margin-bottom: 7px; }
+    .phone .p-card .k { font-family: "IBM Plex Mono", monospace; font-size: 6.5px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+    .phone .p-card .n { font-size: 10px; font-weight: 500; margin-bottom: 1px; }
+    .phone .p-card .v { font-family: "IBM Plex Mono", monospace; font-size: 8px; color: #4A4A4A; }
+    .phone .p-trans { display: flex; align-items: center; gap: 4px; padding: 6px 8px; background: #E5F1E9; border-left: 2px solid #2D6A3C; border-radius: 0 2px 2px 0; margin: 6px 0 8px; font-size: 8px; }
+    .phone .p-trans .from { padding: 1px 5px; background: #F0EDDF; color: #4A4A4A; border: 1px solid #D9D6CE; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 7px; }
+    .phone .p-trans .to { padding: 1px 5px; background: #2D6A3C; color: #FAFAF7; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 7px; }
+    .phone .p-trans .via { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 6.5px; color: #2D6A3C; }
+    .phone .p-btn-primary { display: flex; align-items: center; justify-content: center; height: 36px; background: #1A1A1A; color: #FAFAF7; border-radius: 3px; font-size: 10px; font-weight: 500; margin-top: 2px; }
+    .phone .p-cite { font-family: "IBM Plex Mono", monospace; font-size: 6px; color: #6B6B6B; text-align: center; margin-top: 4px; }
+    .phone .p-tabs { position: absolute; left: 0; right: 0; bottom: 0; display: flex; border-top: 1px solid #B8B4A8; background: #FAFAF7; }
+    .phone .p-tabs .tab { flex: 1; padding: 5px 2px; text-align: center; font-size: 6.5px; color: #6B6B6B; border-right: 1px solid #E0DDD3; }
+    .phone .p-tabs .tab.active { background: #F0EDDF; color: #1A1A1A; font-weight: 500; }
+    .phone .p-tabs .tab:last-child { border-right: none; }
+
+    /* mac window — quality queue crop (~48% scale) */
+    .mac-a { position: absolute; left: 316px; top: 90px; width: 560px; height: 340px; background: #FAFAF7; border-radius: 6px; box-shadow: 0 32px 70px rgba(0,0,0,0.55), 0 4px 12px rgba(0,0,0,0.35); overflow: hidden; transform: rotate(2deg); }
+    .mac-a .m-titlebar { height: 22px; background: #E8E5DC; border-bottom: 1px solid #D9D6CE; display: flex; align-items: center; padding: 0 10px; gap: 5px; }
+    .mac-a .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .mac-a .dot.r { background: #E06060; } .mac-a .dot.y { background: #E0C660; } .mac-a .dot.g { background: #78C078; }
+    .mac-a .m-title { margin-left: 10px; font-family: "IBM Plex Mono", monospace; font-size: 9px; color: #6B6B6B; }
+    .mac-a .m-body { display: grid; grid-template-columns: 92px 1fr; height: calc(100% - 22px); }
+    .mac-a .rail { background: #F0EDDF; border-right: 1px solid #D9D6CE; padding: 8px 6px; font-size: 9px; }
+    .mac-a .rail .item { padding: 4px 6px; color: #4A4A4A; }
+    .mac-a .rail .item.active { background: #FAFAF7; color: #1A1A1A; font-weight: 500; border-left: 2px solid #1A1A1A; margin-left: -6px; padding-left: 8px; }
+    .mac-a .rail .count { float: right; font-family: "IBM Plex Mono", monospace; font-size: 8px; color: #6B6B6B; }
+    .mac-a .content { padding: 12px 14px; background: #FAFAF7; overflow: hidden; }
+    .mac-a .h1 { font-size: 14px; font-weight: 600; margin: 0 0 4px; color: #1A1A1A; }
+    .mac-a .sub { font-size: 9px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 10px; }
+    .mac-a table { width: 100%; border-collapse: collapse; font-size: 9px; color: #1A1A1A; }
+    .mac-a th { text-align: left; padding: 5px 6px; background: #F0EDDF; font-weight: 500; border-bottom: 1px solid #D9D6CE; font-family: "IBM Plex Mono", monospace; font-size: 8px; color: #4A4A4A; }
+    .mac-a td { padding: 6px; border-bottom: 1px solid #E8E5DC; }
+    .mac-a td.mono { font-family: "IBM Plex Mono", monospace; font-size: 8.5px; }
+    .mac-a .badge { display: inline-flex; padding: 1px 6px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 8px; font-weight: 500; }
+    .mac-a .b-red { background: #B00020; color: #FAFAF7; }
+    .mac-a .b-amber { background: #FFF3D9; color: #6B4A00; border: 1px solid #D4A946; }
+    .mac-a .b-green { background: #E5F1E9; color: #1F4B29; border: 1px solid #A9CBB4; }
+    .mac-a .blk { font-family: "IBM Plex Mono", monospace; font-size: 8px; color: #B00020; }
+
+    /* mac window — nonconformance detail (~44% scale) */
+    .mac-b { position: absolute; left: 470px; top: 400px; width: 500px; height: 340px; background: #FAFAF7; border-radius: 6px; box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4); overflow: hidden; transform: rotate(-3deg); }
+    .mac-b .m-titlebar { height: 22px; background: #E8E5DC; border-bottom: 1px solid #D9D6CE; display: flex; align-items: center; padding: 0 10px; gap: 5px; }
+    .mac-b .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .mac-b .dot.r { background: #E06060; } .mac-b .dot.y { background: #E0C660; } .mac-b .dot.g { background: #78C078; }
+    .mac-b .m-title { margin-left: 10px; font-family: "IBM Plex Mono", monospace; font-size: 9px; color: #6B6B6B; }
+    .mac-b .content { padding: 14px 18px; }
+    .mac-b .h1 { font-size: 15px; font-weight: 600; margin: 0 0 3px; color: #1A1A1A; }
+    .mac-b .h1 .id { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #6B6B6B; margin-left: 4px; }
+    .mac-b .badge { display: inline-flex; padding: 2px 7px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 9px; font-weight: 500; margin-left: 4px; }
+    .mac-b .b-amber { background: #FFF3D9; color: #6B4A00; border: 1px solid #D4A946; }
+    .mac-b .sub { font-size: 10px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 10px; }
+    .mac-b .card { background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px; padding: 10px 12px; margin-bottom: 10px; }
+    .mac-b dl { margin: 0; display: grid; grid-template-columns: 108px 1fr; gap: 3px 10px; font-size: 10px; }
+    .mac-b dt { color: #6B6B6B; font-family: "IBM Plex Mono", monospace; font-size: 9px; }
+    .mac-b dd { margin: 0; font-family: "IBM Plex Mono", monospace; font-size: 9.5px; color: #1A1A1A; }
+    .mac-b .lifecycle { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; margin-top: 8px; }
+    .mac-b .st { font-family: "IBM Plex Mono", monospace; font-size: 8.5px; padding: 2px 6px; border-radius: 2px; }
+    .mac-b .st.done { background: #1A1A1A; color: #FAFAF7; }
+    .mac-b .st.here { background: #B45309; color: #FAFAF7; }
+    .mac-b .st.future { background: #F0EDDF; color: #6B6B6B; border: 1px solid #D9D6CE; }
+    .mac-b .arr { color: #B8B4A8; font-size: 9px; }
+
+    /* footer strip on right panel */
+    .foot { position: absolute; left: 660px; right: 40px; bottom: 30px; font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; text-align: right; letter-spacing: 0.06em; }
+  </style>
+</helmet>
+
+<div class="frame">
+
+  <div class="left">
+    <div class="brand">Distributed Factory Execution Record System</div>
+
+    <div>
+      <div class="title">traveler</div>
+      <div class="subtitle">A contract-first execution record for the shop floor. Every state, every refusal, every event — a registered name in <span style="color:#FAFAF7; font-family:'IBM Plex Mono', monospace; font-size:16px;">contracts/*.yaml</span>.</div>
+    </div>
+
+    <div class="meta">
+      <span class="k">surfaces</span><span class="v">47 UI screens · 8 handheld · 39 Mac station</span>
+      <span class="k">artefacts</span><span class="v">66 canvas artefacts across 38 sprints</span>
+      <span class="k">vocabulary</span><span class="v"><span class="accent-amber">122 operations</span> · <span class="accent-blue">145 events</span> · <span class="accent-green">16 record lifecycles</span></span>
+      <span class="k">gate</span><span class="v">432/432 tests · 29/29 scenarios on two drivers</span>
+      <span class="k">stack</span><span class="v">TypeScript · Node · contract-first · SDD kit v2</span>
+    </div>
+  </div>
+
+  <div class="right">
+
+    <!-- Handheld: MeasurementCaptureView-like -->
+    <div class="phone">
+      <div class="p-header">
+        <div class="chip">
+          <span style="font-weight:500;">j.rivera</span>
+          <span style="color:#B8B4A8;">·</span>
+          <span class="mono">operator</span>
+        </div>
+        <div class="station">14:12<br>station-B4</div>
+      </div>
+      <div class="p-meta">RUN-VF-003-0812-01 · Step 2</div>
+      <div class="p-body">
+        <p class="p-lbl">Torque · target 22–30 Nm</p>
+        <div class="p-card">
+          <div class="k">captured</div>
+          <div class="n">24.6 Nm</div>
+          <div class="v">torque_capture_002 · adapter tw_adapter_v2</div>
+        </div>
+        <div class="p-trans">
+          <span class="from">in_progress</span>
+          <span style="color:#2D6A3C;">→</span>
+          <span class="to">complete</span>
+          <span class="via">CaptureMeasurement</span>
+        </div>
+        <div class="p-btn-primary">Complete step</div>
+        <div class="p-cite">→ CompleteRunStep · rule run_execution</div>
+        <p class="p-lbl" style="margin-top:10px;">Refuses on state</p>
+        <div class="p-card" style="padding:5px 8px;">
+          <div class="v" style="color:#B00020;">quarantined · state-machine forbids installed → complete</div>
+        </div>
+      </div>
+      <div class="p-tabs">
+        <div class="tab active">Assigned</div>
+        <div class="tab">Scan</div>
+        <div class="tab">Runs</div>
+        <div class="tab">Blockers</div>
+        <div class="tab">Profile</div>
+      </div>
+    </div>
+
+    <!-- Mac queue: quality/receiving-style -->
+    <div class="mac-a">
+      <div class="m-titlebar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="m-title">Receiving queue · station B4</span>
+      </div>
+      <div class="m-body">
+        <div class="rail">
+          <div class="item">Work <span class="count">2</span></div>
+          <div class="item">Planning</div>
+          <div class="item active">Receiving <span class="count">14</span></div>
+          <div class="item">Quality <span class="count">3</span></div>
+          <div class="item">Run Close</div>
+          <div class="item">Evidence <span class="count">1</span></div>
+          <div class="item">Reports</div>
+        </div>
+        <div class="content">
+          <h1 class="h1">Receiving queue</h1>
+          <p class="sub">reads: Shipment · ShipmentLine · ReceivingCheck</p>
+          <table>
+            <thead><tr><th>shipment · line</th><th>state</th><th>blockers</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">SHIP-2026-0812-004 · L1</td><td><span class="badge b-red">blocked</span></td><td class="blk">certificate_of_conformance_unverified</td></tr>
+              <tr><td class="mono">SHIP-2026-0812-004 · L2</td><td><span class="badge b-red">blocked</span></td><td class="blk">material_test_report_unverified</td></tr>
+              <tr><td class="mono">SHIP-2026-0812-018 · L1</td><td><span class="badge b-green">passed</span></td><td style="color:#6B6B6B;">CoC verified · MTR verified</td></tr>
+              <tr><td class="mono">SHIP-2026-0812-025</td><td><span class="badge b-amber">created</span></td><td style="color:#6B6B6B;">awaiting_receipt</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mac detail: NonconformanceView-like -->
+    <div class="mac-b">
+      <div class="m-titlebar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="m-title">Nonconformance · nc_003</span>
+      </div>
+      <div class="content">
+        <h1 class="h1">Nonconformance <span class="id">nc_003</span><span class="badge b-amber">disposition_pending</span></h1>
+        <p class="sub">reads: Nonconformance · Measurement · Run · via readRecordAsCaller</p>
+        <div class="card">
+          <dl>
+            <dt>opened by</dt><dd>system_worker · via CaptureMeasurement</dd>
+            <dt>source measurement</dt><dd>torque_capture_002 · fail</dd>
+            <dt>affected run</dt><dd>RUN-VF-003-0812-01 · Step 2</dd>
+            <dt>source event</dt><dd>MEASUREMENT_FAILED</dd>
+            <dt>run close impact</dt><dd>failed_measurement_has_quality_path · blocking</dd>
+          </dl>
+        </div>
+        <div class="lifecycle">
+          <span class="st done">open</span><span class="arr">→</span>
+          <span class="st done">containment_required</span><span class="arr">→</span>
+          <span class="st here">disposition_pending</span><span class="arr">→</span>
+          <span class="st future">dispositioned</span><span class="arr">→</span>
+          <span class="st future">in_rework</span><span class="arr">→</span>
+          <span class="st future">verified</span><span class="arr">→</span>
+          <span class="st future">closed</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">github.com/laffeyp/traveler</span></div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
