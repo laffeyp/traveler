@@ -13,24 +13,67 @@
     body { margin: 0; background: #0F0F10; color: #FAFAF7; font-family: "IBM Plex Sans", system-ui, sans-serif; }
     .frame { width: 1600px; height: 800px; background: #0F0F10; position: relative; overflow: hidden; }
 
-    /* left panel — dark ground, title, subtitle, meta */
-    .left { position: absolute; left: 0; top: 0; width: 640px; height: 800px; padding: 72px 56px; display: flex; flex-direction: column; justify-content: space-between; }
-    .brand { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #8B8B8B; }
-    .title { font-family: "IBM Plex Sans"; font-size: 96px; font-weight: 600; line-height: 0.95; letter-spacing: -0.03em; color: #FAFAF7; margin: 40px 0 20px; }
-    .subtitle { font-size: 20px; line-height: 1.35; color: #C4C0B4; max-width: 480px; margin-bottom: 40px; }
-    .meta { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #8B8B8B; align-content: end; }
-    .meta .k { color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; }
+    /* left panel */
+    .left { position: absolute; left: 0; top: 0; width: 640px; height: 800px; padding: 68px 56px; display: flex; flex-direction: column; justify-content: space-between; z-index: 10; }
+    .brand { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: #7A7A7A; }
+    .title { font-family: "IBM Plex Sans"; font-size: 108px; font-weight: 600; line-height: 0.9; letter-spacing: -0.03em; color: #FAFAF7; margin: 36px 0 22px; }
+    .subtitle { font-size: 18px; line-height: 1.45; color: #C4C0B4; max-width: 500px; margin-bottom: 36px; }
+    .subtitle .code { font-family: "IBM Plex Mono", monospace; font-size: 15px; color: #FAFAF7; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 2px; }
+    .meta { display: grid; grid-template-columns: 108px 1fr; gap: 8px 20px; font-family: "IBM Plex Mono", monospace; font-size: 12px; align-content: end; }
+    .meta .k { color: #5F5F5F; text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; }
     .meta .v { color: #C4C0B4; }
-    .meta .v .accent-amber { color: #E39A46; }
-    .meta .v .accent-blue { color: #6A9AD4; }
-    .meta .v .accent-green { color: #5FB37A; }
+    .meta .v .a { color: #E39A46; } .meta .v .b { color: #6A9AD4; } .meta .v .g { color: #5FB37A; }
 
-    /* right panel — the device spread */
-    .right { position: absolute; left: 640px; top: 0; width: 960px; height: 800px; background: linear-gradient(135deg, #17171A 0%, #0F0F10 100%); overflow: hidden; }
+    /* right panel */
+    .right { position: absolute; left: 640px; top: 0; width: 960px; height: 800px; background: radial-gradient(ellipse at 30% 40%, #1A1A1E 0%, #0F0F10 70%); overflow: hidden; }
 
-    /* phone frame (~55% scale of 390x844 → 215x464) */
-    .phone { position: absolute; left: 48px; top: 168px; width: 234px; height: 506px; background: #FAFAF7; border-radius: 22px; box-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.3); overflow: hidden; transform: rotate(-4deg); }
-    .phone .p-header { display: flex; align-items: center; gap: 4px; padding: 8px 10px 6px; border-bottom: 1px solid #D9D6CE; font-size: 8px; color: #1A1A1A; }
+    /* background wall — dense mosaic of tiles */
+    .wall { position: absolute; inset: 0; }
+
+    /* small phone tile */
+    .bg-phone { position: absolute; width: 118px; height: 208px; background: #FAFAF7; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.45); overflow: hidden; opacity: 0.42; }
+    .bg-phone .hdr { display: flex; align-items: center; gap: 3px; padding: 5px 6px 4px; border-bottom: 1px solid #D9D6CE; }
+    .bg-phone .chip { display: inline-flex; padding: 1px 4px; background: #F0EDDF; border: 1px solid #D9D6CE; border-radius: 1px; font-family: "IBM Plex Mono", monospace; font-size: 5px; color: #4A4A4A; }
+    .bg-phone .stn { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 4.5px; color: #6B6B6B; }
+    .bg-phone .mt { padding: 3px 6px; background: #F0EDDF; border-bottom: 1px solid #D9D6CE; font-family: "IBM Plex Mono", monospace; font-size: 5px; color: #4A4A4A; }
+    .bg-phone .bd { padding: 5px 6px; }
+    .bg-phone .row { padding: 3px 5px; margin-bottom: 3px; background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 1px; font-size: 5.5px; color: #1A1A1A; line-height: 1.3; }
+    .bg-phone .row.red { border-left: 2px solid #B00020; }
+    .bg-phone .row.amb { border-left: 2px solid #B45309; }
+    .bg-phone .row.grn { border-left: 2px solid #2D6A3C; }
+    .bg-phone .row .mono { font-family: "IBM Plex Mono", monospace; font-size: 5px; color: #4A4A4A; display: block; }
+    .bg-phone .btn { margin-top: 4px; height: 18px; background: #1A1A1A; color: #FAFAF7; border-radius: 2px; font-size: 6.5px; display: flex; align-items: center; justify-content: center; font-weight: 500; }
+    .bg-phone .tabs { position: absolute; left: 0; right: 0; bottom: 0; height: 14px; display: flex; background: #FAFAF7; border-top: 1px solid #B8B4A8; }
+    .bg-phone .tab { flex: 1; font-size: 4.5px; color: #6B6B6B; text-align: center; padding-top: 4px; border-right: 1px solid #E0DDD3; }
+    .bg-phone .tab.act { background: #F0EDDF; color: #1A1A1A; }
+    .bg-phone .tab:last-child { border-right: none; }
+
+    /* small mac tile */
+    .bg-mac { position: absolute; width: 220px; height: 158px; background: #FAFAF7; border-radius: 4px; box-shadow: 0 10px 24px rgba(0,0,0,0.5); overflow: hidden; opacity: 0.45; }
+    .bg-mac .tb { height: 14px; background: #E8E5DC; border-bottom: 1px solid #D9D6CE; display: flex; align-items: center; padding: 0 6px; gap: 3px; }
+    .bg-mac .dot { width: 5.5px; height: 5.5px; border-radius: 50%; }
+    .bg-mac .r { background: #E06060; } .bg-mac .y { background: #E0C660; } .bg-mac .grn { background: #78C078; }
+    .bg-mac .ttl { margin-left: 6px; font-family: "IBM Plex Mono", monospace; font-size: 6px; color: #6B6B6B; }
+    .bg-mac .body { display: grid; grid-template-columns: 46px 1fr; height: calc(100% - 14px); }
+    .bg-mac .rail { background: #F0EDDF; border-right: 1px solid #D9D6CE; padding: 4px 3px; font-size: 5.5px; }
+    .bg-mac .rail .it { padding: 2px 3px; color: #4A4A4A; }
+    .bg-mac .rail .it.act { background: #FAFAF7; color: #1A1A1A; font-weight: 500; border-left: 2px solid #1A1A1A; margin-left: -3px; padding-left: 5px; }
+    .bg-mac .cnt { padding: 6px 7px; background: #FAFAF7; overflow: hidden; }
+    .bg-mac .h { font-size: 8px; font-weight: 600; margin: 0 0 2px; color: #1A1A1A; }
+    .bg-mac .sub { font-family: "IBM Plex Mono", monospace; font-size: 5.5px; color: #6B6B6B; margin-bottom: 4px; }
+    .bg-mac table { width: 100%; border-collapse: collapse; font-size: 5.5px; }
+    .bg-mac th { text-align: left; padding: 2px 3px; background: #F0EDDF; font-weight: 500; border-bottom: 1px solid #D9D6CE; font-family: "IBM Plex Mono", monospace; font-size: 5px; color: #4A4A4A; }
+    .bg-mac td { padding: 2px 3px; border-bottom: 1px solid #E8E5DC; color: #1A1A1A; }
+    .bg-mac td.m { font-family: "IBM Plex Mono", monospace; font-size: 5.5px; }
+    .bg-mac .bdg { display: inline-block; padding: 0 3px; border-radius: 1px; font-family: "IBM Plex Mono", monospace; font-size: 5px; font-weight: 500; }
+    .bg-mac .b-red { background: #B00020; color: #FAFAF7; }
+    .bg-mac .b-amb { background: #FFF3D9; color: #6B4A00; border: 1px solid #D4A946; }
+    .bg-mac .b-grn { background: #E5F1E9; color: #1F4B29; border: 1px solid #A9CBB4; }
+    .bg-mac .blk { font-family: "IBM Plex Mono", monospace; font-size: 5px; color: #B00020; }
+
+    /* foreground: phone (larger) */
+    .phone { position: absolute; left: 44px; top: 176px; width: 240px; height: 518px; background: #FAFAF7; border-radius: 22px; box-shadow: 0 32px 70px rgba(0,0,0,0.65), 0 4px 12px rgba(0,0,0,0.4); overflow: hidden; transform: rotate(-4deg); z-index: 5; }
+    .phone .p-header { display: flex; align-items: center; gap: 4px; padding: 9px 10px 7px; border-bottom: 1px solid #D9D6CE; font-size: 8px; color: #1A1A1A; }
     .phone .p-header .chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 5px; background: #F0EDDF; border: 1px solid #D9D6CE; border-radius: 2px; font-size: 7px; }
     .phone .p-header .mono { font-family: "IBM Plex Mono", monospace; font-size: 6.5px; color: #4A4A4A; }
     .phone .p-header .station { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 6.5px; color: #6B6B6B; text-align: right; line-height: 1.05; }
@@ -39,26 +82,26 @@
     .phone .p-lbl { font-family: "IBM Plex Mono", monospace; font-size: 7px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 5px; }
     .phone .p-card { background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 2px; padding: 7px 9px; margin-bottom: 7px; }
     .phone .p-card .k { font-family: "IBM Plex Mono", monospace; font-size: 6.5px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
-    .phone .p-card .n { font-size: 10px; font-weight: 500; margin-bottom: 1px; }
+    .phone .p-card .n { font-size: 11px; font-weight: 500; margin-bottom: 1px; }
     .phone .p-card .v { font-family: "IBM Plex Mono", monospace; font-size: 8px; color: #4A4A4A; }
     .phone .p-trans { display: flex; align-items: center; gap: 4px; padding: 6px 8px; background: #E5F1E9; border-left: 2px solid #2D6A3C; border-radius: 0 2px 2px 0; margin: 6px 0 8px; font-size: 8px; }
     .phone .p-trans .from { padding: 1px 5px; background: #F0EDDF; color: #4A4A4A; border: 1px solid #D9D6CE; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 7px; }
     .phone .p-trans .to { padding: 1px 5px; background: #2D6A3C; color: #FAFAF7; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 7px; }
     .phone .p-trans .via { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 6.5px; color: #2D6A3C; }
-    .phone .p-btn-primary { display: flex; align-items: center; justify-content: center; height: 36px; background: #1A1A1A; color: #FAFAF7; border-radius: 3px; font-size: 10px; font-weight: 500; margin-top: 2px; }
+    .phone .p-btn-primary { display: flex; align-items: center; justify-content: center; height: 38px; background: #1A1A1A; color: #FAFAF7; border-radius: 3px; font-size: 11px; font-weight: 500; margin-top: 2px; }
     .phone .p-cite { font-family: "IBM Plex Mono", monospace; font-size: 6px; color: #6B6B6B; text-align: center; margin-top: 4px; }
     .phone .p-tabs { position: absolute; left: 0; right: 0; bottom: 0; display: flex; border-top: 1px solid #B8B4A8; background: #FAFAF7; }
     .phone .p-tabs .tab { flex: 1; padding: 5px 2px; text-align: center; font-size: 6.5px; color: #6B6B6B; border-right: 1px solid #E0DDD3; }
     .phone .p-tabs .tab.active { background: #F0EDDF; color: #1A1A1A; font-weight: 500; }
     .phone .p-tabs .tab:last-child { border-right: none; }
 
-    /* mac window — quality queue crop (~48% scale) */
-    .mac-a { position: absolute; left: 316px; top: 90px; width: 560px; height: 340px; background: #FAFAF7; border-radius: 6px; box-shadow: 0 32px 70px rgba(0,0,0,0.55), 0 4px 12px rgba(0,0,0,0.35); overflow: hidden; transform: rotate(2deg); }
+    /* foreground mac-a */
+    .mac-a { position: absolute; left: 316px; top: 78px; width: 580px; height: 344px; background: #FAFAF7; border-radius: 6px; box-shadow: 0 40px 90px rgba(0,0,0,0.7), 0 4px 12px rgba(0,0,0,0.4); overflow: hidden; transform: rotate(2deg); z-index: 6; }
     .mac-a .m-titlebar { height: 22px; background: #E8E5DC; border-bottom: 1px solid #D9D6CE; display: flex; align-items: center; padding: 0 10px; gap: 5px; }
     .mac-a .dot { width: 9px; height: 9px; border-radius: 50%; }
     .mac-a .dot.r { background: #E06060; } .mac-a .dot.y { background: #E0C660; } .mac-a .dot.g { background: #78C078; }
     .mac-a .m-title { margin-left: 10px; font-family: "IBM Plex Mono", monospace; font-size: 9px; color: #6B6B6B; }
-    .mac-a .m-body { display: grid; grid-template-columns: 92px 1fr; height: calc(100% - 22px); }
+    .mac-a .m-body { display: grid; grid-template-columns: 96px 1fr; height: calc(100% - 22px); }
     .mac-a .rail { background: #F0EDDF; border-right: 1px solid #D9D6CE; padding: 8px 6px; font-size: 9px; }
     .mac-a .rail .item { padding: 4px 6px; color: #4A4A4A; }
     .mac-a .rail .item.active { background: #FAFAF7; color: #1A1A1A; font-weight: 500; border-left: 2px solid #1A1A1A; margin-left: -6px; padding-left: 8px; }
@@ -76,8 +119,8 @@
     .mac-a .b-green { background: #E5F1E9; color: #1F4B29; border: 1px solid #A9CBB4; }
     .mac-a .blk { font-family: "IBM Plex Mono", monospace; font-size: 8px; color: #B00020; }
 
-    /* mac window — nonconformance detail (~44% scale) */
-    .mac-b { position: absolute; left: 470px; top: 400px; width: 500px; height: 340px; background: #FAFAF7; border-radius: 6px; box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4); overflow: hidden; transform: rotate(-3deg); }
+    /* foreground mac-b */
+    .mac-b { position: absolute; left: 468px; top: 400px; width: 508px; height: 340px; background: #FAFAF7; border-radius: 6px; box-shadow: 0 50px 100px rgba(0,0,0,0.75), 0 4px 12px rgba(0,0,0,0.45); overflow: hidden; transform: rotate(-3deg); z-index: 7; }
     .mac-b .m-titlebar { height: 22px; background: #E8E5DC; border-bottom: 1px solid #D9D6CE; display: flex; align-items: center; padding: 0 10px; gap: 5px; }
     .mac-b .dot { width: 9px; height: 9px; border-radius: 50%; }
     .mac-b .dot.r { background: #E06060; } .mac-b .dot.y { background: #E0C660; } .mac-b .dot.g { background: #78C078; }
@@ -99,33 +142,226 @@
     .mac-b .st.future { background: #F0EDDF; color: #6B6B6B; border: 1px solid #D9D6CE; }
     .mac-b .arr { color: #B8B4A8; font-size: 9px; }
 
-    /* footer strip on right panel */
-    .foot { position: absolute; left: 660px; right: 40px; bottom: 30px; font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; text-align: right; letter-spacing: 0.06em; }
+    /* fade overlay at bottom-right of the right panel to darken the background wall */
+    .veil { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 55%, rgba(15,15,16,0) 0%, rgba(15,15,16,0.35) 55%, rgba(15,15,16,0.7) 100%); pointer-events: none; z-index: 3; }
+
+    .foot { position: absolute; right: 40px; bottom: 22px; font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; letter-spacing: 0.06em; z-index: 10; }
   </style>
 </helmet>
 
 <div class="frame">
 
   <div class="left">
-    <div class="brand">Distributed Factory Execution Record System</div>
+    <div class="brand">Manufacturing execution record</div>
 
     <div>
       <div class="title">traveler</div>
-      <div class="subtitle">A contract-first execution record for the shop floor. Every state, every refusal, every event — a registered name in <span style="color:#FAFAF7; font-family:'IBM Plex Mono', monospace; font-size:16px;">contracts/*.yaml</span>.</div>
+      <div class="subtitle">The digital record that walks with the part. A locked vocabulary in <span class="code">contracts/*.yaml</span> names every operation, event, record state, and refusal. Handheld app runs on the line; Mac app runs at the stations.</div>
     </div>
 
     <div class="meta">
-      <span class="k">surfaces</span><span class="v">47 UI screens · 8 handheld · 39 Mac station</span>
-      <span class="k">artefacts</span><span class="v">66 canvas artefacts across 38 sprints</span>
-      <span class="k">vocabulary</span><span class="v"><span class="accent-amber">122 operations</span> · <span class="accent-blue">145 events</span> · <span class="accent-green">16 record lifecycles</span></span>
-      <span class="k">gate</span><span class="v">432/432 tests · 29/29 scenarios on two drivers</span>
+      <span class="k">screens</span><span class="v">47 · 8 handheld · 39 Mac</span>
+      <span class="k">artefacts</span><span class="v">66 canvas artboards · 38 sprints</span>
+      <span class="k">vocabulary</span><span class="v"><span class="a">122 operations</span> · <span class="b">145 events</span> · <span class="g">16 record lifecycles</span></span>
+      <span class="k">gate</span><span class="v">432 tests · 29 scenarios on two drivers</span>
       <span class="k">stack</span><span class="v">TypeScript · Node · contract-first · SDD kit v2</span>
     </div>
   </div>
 
   <div class="right">
 
-    <!-- Handheld: MeasurementCaptureView-like -->
+    <div class="wall">
+
+      <!-- back row 1 (top edge) -->
+      <div class="bg-mac" style="left:6px; top:12px; transform:rotate(-3deg); opacity:0.38;">
+        <div class="tb"><span class="dot r"></span><span class="dot y"></span><span class="dot grn"></span><span class="ttl">RunPlanningQueue</span></div>
+        <div class="body"><div class="rail"><div class="it">Work</div><div class="it act">Planning</div><div class="it">Receiving</div><div class="it">Quality</div></div>
+          <div class="cnt"><div class="h">Planned runs</div><div class="sub">Run · via readRecord</div>
+            <table><thead><tr><th>run</th><th>state</th></tr></thead><tbody>
+              <tr><td class="m">RUN-VF-003-…-07</td><td><span class="bdg b-amb">planned</span></td></tr>
+              <tr><td class="m">RUN-VF-003-…-08</td><td><span class="bdg b-red">blocked</span></td></tr>
+              <tr><td class="m">RUN-VF-003-…-09</td><td><span class="bdg b-grn">ready</span></td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-mac" style="left:236px; top:6px; transform:rotate(1deg); opacity:0.36;">
+        <div class="tb"><span class="dot r"></span><span class="dot y"></span><span class="dot grn"></span><span class="ttl">QualityQueue</span></div>
+        <div class="body"><div class="rail"><div class="it">Work</div><div class="it">Planning</div><div class="it act">Quality</div><div class="it">Reports</div></div>
+          <div class="cnt"><div class="h">Nonconformances</div><div class="sub">Nonconformance · readRecordAsCaller</div>
+            <table><thead><tr><th>nc</th><th>state</th></tr></thead><tbody>
+              <tr><td class="m">nc_003</td><td><span class="bdg b-amb">disposition_pending</span></td></tr>
+              <tr><td class="m">nc_004</td><td><span class="bdg b-amb">in_rework</span></td></tr>
+              <tr><td class="m">nc_005</td><td><span class="bdg b-grn">verified</span></td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-mac" style="left:466px; top:12px; transform:rotate(-2deg); opacity:0.34;">
+        <div class="tb"><span class="dot r"></span><span class="dot y"></span><span class="dot grn"></span><span class="ttl">CertificateOfConformance</span></div>
+        <div class="body"><div class="rail"><div class="it">Reports</div><div class="it act">CoC</div><div class="it">SEP</div></div>
+          <div class="cnt"><div class="h">Certificate of conformance</div><div class="sub">GeneratedReport · CoC</div>
+            <table><thead><tr><th>section</th><th>state</th></tr></thead><tbody>
+              <tr><td>packet header</td><td><span class="bdg b-grn">present</span></td></tr>
+              <tr><td>conformity statement</td><td><span class="bdg b-grn">present</span></td></tr>
+              <tr><td>signer</td><td class="m">m.tan</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-mac" style="left:696px; top:4px; transform:rotate(2deg); opacity:0.32;">
+        <div class="tb"><span class="dot r"></span><span class="dot y"></span><span class="dot grn"></span><span class="ttl">SerialHistoryView</span></div>
+        <div class="body"><div class="rail"><div class="it act">Reports</div><div class="it">Support</div><div class="it">Admin</div></div>
+          <div class="cnt"><div class="h">Serial history</div><div class="sub">SerialHistory · readProjectionAsCaller</div>
+            <table><thead><tr><th>at</th><th>event</th></tr></thead><tbody>
+              <tr><td class="m">12:14</td><td class="m">SHIPMENT_RECEIVED</td></tr>
+              <tr><td class="m">12:43</td><td class="m">INVENTORY_QUARANTINED</td></tr>
+              <tr><td class="m">13:55</td><td class="m">INVENTORY_AVAILABLE</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- back row 2 -->
+      <div class="bg-phone" style="left:14px; top:224px; transform:rotate(4deg); opacity:0.42;">
+        <div class="hdr"><span class="chip">j.rivera · op</span><span class="stn">B4</span></div>
+        <div class="mt">Assigned · 2 runs</div>
+        <div class="bd">
+          <div class="row"><b>RUN-VF-003-01</b><span class="mono">Step 3 · in_progress</span></div>
+          <div class="row"><b>RUN-VF-004-02</b><span class="mono">Step 1 · ready</span></div>
+        </div>
+        <div class="tabs"><div class="tab act">Assigned</div><div class="tab">Scan</div><div class="tab">Runs</div><div class="tab">Blockers</div><div class="tab">Profile</div></div>
+      </div>
+
+      <div class="bg-mac" style="left:150px; top:214px; transform:rotate(-1deg); opacity:0.36;">
+        <div class="tb"><span class="dot r"></span><span class="dot y"></span><span class="dot grn"></span><span class="ttl">MachineEvidenceRecordView</span></div>
+        <div class="body"><div class="rail"><div class="it">Work</div><div class="it act">Evidence</div><div class="it">Reports</div></div>
+          <div class="cnt"><div class="h">Machine evidence</div><div class="sub">MachineEvidenceRecord · lifecycle</div>
+            <table><thead><tr><th>step</th><th>state</th></tr></thead><tbody>
+              <tr><td>raw</td><td><span class="bdg b-grn">done</span></td></tr>
+              <tr><td>normalized</td><td><span class="bdg b-grn">done</span></td></tr>
+              <tr><td>review_required</td><td><span class="bdg b-amb">here</span></td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-mac" style="left:390px; top:226px; transform:rotate(2deg); opacity:0.34;">
+        <div class="tb"><span class="dot r"></span><span class="dot y"></span><span class="dot grn"></span><span class="ttl">SupplierEvidencePacket</span></div>
+        <div class="body"><div class="rail"><div class="it">Work</div><div class="it act">Reports</div><div class="it">Support</div></div>
+          <div class="cnt"><div class="h">Supplier evidence packet</div><div class="sub">SupplierEvidencePacket · generated</div>
+            <table><thead><tr><th>doc</th><th>decision</th></tr></thead><tbody>
+              <tr><td class="m">cert_conf_001</td><td><span class="bdg b-grn">verified</span></td></tr>
+              <tr><td class="m">mtr_001</td><td><span class="bdg b-grn">verified</span></td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-mac" style="left:632px; top:214px; transform:rotate(-2deg); opacity:0.32;">
+        <div class="tb"><span class="dot r"></span><span class="dot y"></span><span class="dot grn"></span><span class="ttl">InventoryQuarantineView</span></div>
+        <div class="body"><div class="rail"><div class="it act">Inventory</div><div class="it">Quality</div><div class="it">Reports</div></div>
+          <div class="cnt"><div class="h">Quarantined</div><div class="sub">InventoryItem · quarantined</div>
+            <table><thead><tr><th>item</th><th>reason</th></tr></thead><tbody>
+              <tr><td class="m">valve_body_001</td><td class="blk">CoC unverified</td></tr>
+              <tr><td class="m">gasket_014</td><td class="blk">MTR unverified</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-phone" style="left:844px; top:224px; transform:rotate(-3deg); opacity:0.42;">
+        <div class="hdr"><span class="chip">k.iwasaki · me</span><span class="stn">14:03</span></div>
+        <div class="mt">Redline · rl_004</div>
+        <div class="bd">
+          <div class="row amb"><b>proposed</b><span class="mono">Torque 22-30 → 20-32 Nm</span></div>
+          <div class="row"><b>author</b><span class="mono">j.rivera · operator</span></div>
+          <div class="btn">Submit redline</div>
+        </div>
+        <div class="tabs"><div class="tab">Assigned</div><div class="tab">Scan</div><div class="tab act">Runs</div><div class="tab">Blockers</div><div class="tab">Profile</div></div>
+      </div>
+
+      <!-- back row 3 -->
+      <div class="bg-mac" style="left:14px; top:454px; transform:rotate(2deg); opacity:0.32;">
+        <div class="tb"><span class="dot r"></span><span class="dot y"></span><span class="dot grn"></span><span class="ttl">BuildCheckView</span></div>
+        <div class="body"><div class="rail"><div class="it act">Planning</div><div class="it">Receiving</div><div class="it">Quality</div></div>
+          <div class="cnt"><div class="h">Build check · blocked</div><div class="sub">BuildCheckResult · rule build_check</div>
+            <table><thead><tr><th>slot</th><th>state</th></tr></thead><tbody>
+              <tr><td class="m">valve_body</td><td><span class="bdg b-grn">available</span></td></tr>
+              <tr><td class="m">gasket</td><td><span class="bdg b-red">quarantined</span></td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-mac" style="left:246px; top:466px; transform:rotate(-3deg); opacity:0.34;">
+        <div class="tb"><span class="dot r"></span><span class="dot y"></span><span class="dot grn"></span><span class="ttl">AccessDecisionAuditView</span></div>
+        <div class="body"><div class="rail"><div class="it">Reports</div><div class="it">Support</div><div class="it act">Admin</div></div>
+          <div class="cnt"><div class="h">Access decisions</div><div class="sub">AccessDecision · via readEventTrace</div>
+            <table><thead><tr><th>op</th><th>reason</th></tr></thead><tbody>
+              <tr><td class="m">GetReport</td><td class="m">allowed</td></tr>
+              <tr><td class="m">GetReport</td><td class="blk">customer_scope_mismatch</td></tr>
+              <tr><td class="m">GetAttachment</td><td class="blk">attachment_access_denied</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-mac" style="left:486px; top:462px; transform:rotate(2deg); opacity:0.34;">
+        <div class="tb"><span class="dot r"></span><span class="dot y"></span><span class="dot grn"></span><span class="ttl">RunBlockingConsole</span></div>
+        <div class="body"><div class="rail"><div class="it">Planning</div><div class="it act">Quality</div><div class="it">Reports</div></div>
+          <div class="cnt"><div class="h">Run blockers</div><div class="sub">Run · RunStep · blocked</div>
+            <table><thead><tr><th>run · step</th><th>reason</th></tr></thead><tbody>
+              <tr><td class="m">…003-01 · s3</td><td class="blk">failed_measurement</td></tr>
+              <tr><td class="m">…005-02 · s2</td><td class="blk">quarantined_inventory</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-phone" style="left:722px; top:466px; transform:rotate(3deg); opacity:0.42;">
+        <div class="hdr"><span class="chip">j.rivera · op</span><span class="stn">B4</span></div>
+        <div class="mt">Scan · shipment L3</div>
+        <div class="bd">
+          <div class="row grn"><b>gasket_003</b><span class="mono">SN 45-8829-G-000112</span><span class="mono">state reserved</span></div>
+          <div class="btn">Install</div>
+        </div>
+        <div class="tabs"><div class="tab">Assigned</div><div class="tab act">Scan</div><div class="tab">Runs</div><div class="tab">Blockers</div><div class="tab">Profile</div></div>
+      </div>
+
+      <!-- back row 4 (bottom edge, wraps under foreground) -->
+      <div class="bg-mac" style="left:14px; top:660px; transform:rotate(-1deg); opacity:0.28;">
+        <div class="tb"><span class="dot r"></span><span class="dot y"></span><span class="dot grn"></span><span class="ttl">ReportsHome</span></div>
+        <div class="body"><div class="rail"><div class="it act">Reports</div><div class="it">Admin</div></div>
+          <div class="cnt"><div class="h">Reports</div><div class="sub">GeneratedReport · via readRecord</div>
+            <table><thead><tr><th>report</th><th>freshness</th></tr></thead><tbody>
+              <tr><td class="m">rcr · run-01</td><td><span class="bdg b-amb">regen_required</span></td></tr>
+              <tr><td class="m">CoC · run-02</td><td><span class="bdg b-grn">fresh</span></td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-mac" style="left:754px; top:640px; transform:rotate(-2deg); opacity:0.3;">
+        <div class="tb"><span class="dot r"></span><span class="dot y"></span><span class="dot grn"></span><span class="ttl">EffectivityView</span></div>
+        <div class="body"><div class="rail"><div class="it act">Planning</div><div class="it">Receiving</div></div>
+          <div class="cnt"><div class="h">Effectivity</div><div class="sub">EffectivityRule · ResolveEffectivity</div>
+            <table><thead><tr><th>serial</th><th>window</th></tr></thead><tbody>
+              <tr><td class="m">SN 000234</td><td><span class="bdg b-grn">inside</span></td></tr>
+              <tr><td class="m">SN 000235</td><td><span class="bdg b-amb">pending</span></td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="veil"></div>
+
+    <!-- Foreground: phone -->
     <div class="phone">
       <div class="p-header">
         <div class="chip">
@@ -150,10 +386,10 @@
           <span class="via">CaptureMeasurement</span>
         </div>
         <div class="p-btn-primary">Complete step</div>
-        <div class="p-cite">→ CompleteRunStep · rule run_execution</div>
+        <div class="p-cite">CompleteRunStep · rule run_execution · RUN_STEP_COMPLETED</div>
         <p class="p-lbl" style="margin-top:10px;">Refuses on state</p>
         <div class="p-card" style="padding:5px 8px;">
-          <div class="v" style="color:#B00020;">quarantined · state-machine forbids installed → complete</div>
+          <div class="v" style="color:#B00020;">quarantined · state-machine forbids in_progress → complete</div>
         </div>
       </div>
       <div class="p-tabs">
@@ -165,7 +401,7 @@
       </div>
     </div>
 
-    <!-- Mac queue: quality/receiving-style -->
+    <!-- Foreground: Mac receiving queue -->
     <div class="mac-a">
       <div class="m-titlebar">
         <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
@@ -197,7 +433,7 @@
       </div>
     </div>
 
-    <!-- Mac detail: NonconformanceView-like -->
+    <!-- Foreground: nonconformance detail -->
     <div class="mac-b">
       <div class="m-titlebar">
         <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
@@ -227,7 +463,7 @@
       </div>
     </div>
 
-    <div class="foot">github.com/laffeyp/traveler</span></div>
+    <div class="foot">github.com/laffeyp/traveler</div>
 
   </div>
 
