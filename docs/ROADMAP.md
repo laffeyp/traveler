@@ -95,6 +95,39 @@ Two handoffs Phase D produces but does not close:
 
 Neither closes in this phase.
 
+## Phase E — Physical Presence Boundary (open, plan drafted 2026-08-28)
+
+The next phase implements the Physical Presence Boundary against the specification at `specs/physical-presence/boundary-spec-v0.10.md`. Closes handoff-E. Adds two records (`Station`, `Presentation`), six operations (`RegisterStation`, `PresentInventoryAtStation`, `BindPresentedItemToRunStep`, `RejectPresentedItem`, `ClearPresentedItem`, `ConsumePresentation`), seven events, one state machine (`Presentation`, seven states, expiry-as-predicate), four authorization rules, roughly thirty failure classes. Extends `InstallInventory` with an optional `presentation_id` parameter; pre-Phase-E scenarios continue to trace byte-identical against the golden. `ConsumePresentation` reuses the existing `system_lifecycle` rule; no fifth rule is added. Three driver changes land alongside the vocabulary: a JSON-expression partial index in `backend.ts` for the one-active-Presentation-per-InventoryItem invariant, a tuple-aware idempotency branch in `driver.ts` for `required_idempotency_key`, and an `access_decision_id` field on `EvaluateAccess`'s output. Six new scenarios (VF-038 through VF-046) plus a coupling-mutation suite of 25 arms. A §11.2 scan contract lands as a harness-side surface (label decoder, classifier, fixture format) so Phase F builds against the specified shape rather than re-inventing it.
+
+Cadence: auto-within-phase. Twenty sprint cards (091–110) drafted up front. Discipline: same as every prior boundary — signal contract per handler, artifact contract per file, observation contract per emit trace, Rubber Duck Pass at each sprint close. Detail lives in `docs/PHASE_E_PLAN.md`.
+
+### Phase E sprint index
+
+| # | Sprint | Scope |
+|---|---|---|
+| E.1 | 091 | Registry pack — records, operations, events, state machines, authorization rules, failure classes, reason codes for Physical Presence |
+| | 092 | Regenerate JSON schemas |
+| E.2 | 093 | `Station` handler (`RegisterStation`; `DeactivateStation`/`ReactivateStation` return `not_implemented` until a scenario opens them) |
+| | 094 | Five `Presentation` lifecycle handlers (`PresentInventoryAtStation`, `BindPresentedItemToRunStep`, `RejectPresentedItem`, `ClearPresentedItem`, `ConsumePresentation`) |
+| | 095 | `InstallInventory` extension (optional `presentation_id`, in-process `ConsumePresentation` call inside its snapshot) |
+| E.3 | 096 | Concurrency mechanism (JSON-expression partial index on the flat `records` table, backend.ts) |
+| | 097 | Idempotency tuple-aware branch (driver.ts memoised path) |
+| | 098 | `access_decision_id` in `EvaluateAccess` output (handlers.ts) |
+| E.4 | 099 | VF-038 — happy path |
+| | 100 | VF-039 — wrong item |
+| | 101 | VF-040 — presentation expires |
+| | 102 | VF-041 — same item, two stations (sequential; race arm in E.5) |
+| | 103 | VF-042 — quarantined for production; quality_review permits |
+| | 104 | VF-043 — hidden identity |
+| | 105 | VF-044 — receiving_review permits quarantined |
+| | 106 | VF-045 — rework, bound → cleared |
+| | 107 | VF-046 — support_diagnostics + binding_forbidden_for_purpose |
+| E.5 | 108 | Coupling-mutation suite (25 arms from §14) |
+| E.6 | 109 | Scan contract harness surface (§11.2 decoder, classifier, fixture format; two-path equivalence on all nine scenarios) |
+| E.7 | 110 | §15 acceptance closeout; `docs/PHYSICAL_PRESENCE_ACCEPTANCE.md`; STATE, ROADMAP, DOCS, HANDOFF, KIT_DIARY refresh; `dev/phase-handoffs/PHASE_E_HANDOFF.md` |
+
+Phase E does not open F, G, H, or I. Each opens on its own input specification.
+
 ## Post-Phase-C deferred
 
 Recorded by the 2026-08-25 red-team probe (KIT_DIARY Entry 32):
