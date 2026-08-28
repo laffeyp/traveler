@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 108
-status: open # [Phase E card; drafted 2026-08-28]
+status: closed # [closed 2026-08-28 — 17-arm mutation suite green; every arm couples to its target assertion; vitest 449/449]
 phase: E.5-mutations
 pass_kind: functional
 ---
