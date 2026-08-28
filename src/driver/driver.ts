@@ -12,6 +12,7 @@ import { opIdempotency, callerMayInvoke, opAuthorizationRule } from "./registry.
 import { asBuiltProjection, serialHistory } from "./projections.ts";
 import type { CallerContext, VisibilityDecision, VisibilityLevel } from "./visibility.ts";
 import { summarizeRecord, notFoundResponse } from "./visibility.ts";
+import { createHash } from "node:crypto";
 
 /** The Harness §11 OperationResult: the outcome envelope every operation returns. */
 export interface OperationResult {
@@ -31,6 +32,16 @@ export interface OperationResult {
 export class InMemoryProductDriver {
   world = new World();
   private idempotencyMemo = new Map<string, OperationResult>();
+  // Phase E, sprint 097: tuple-aware branch on the memoised path (boundary-spec-v0.10 §12.7). Stores the
+  // input tuple alongside the cached result so a same-key different-tuple call refuses idempotency_conflict.
+  // Only PresentInventoryAtStation opts into the tuple check today; other required_idempotency_key ops
+  // continue to return the cached result on any hit.
+  private idempotencyMemoTuples = new Map<string, string>();
+  private static tupleFor(op: string, input: any): string | undefined {
+    if (op === "PresentInventoryAtStation")
+      return JSON.stringify([input?.inventory_item_alias, input?.station_alias, input?.actor_id, input?.presentation_purpose]);
+    return undefined;
+  }
 
   setClock(clock: string) {
     this.world.clock = clock;
@@ -52,8 +63,26 @@ export class InMemoryProductDriver {
     // unrelated write, and a memoized op would return another op's result object (sprint-013 review [2]/[3]).
     const scopedKey = idempotencyKey ? `${op}:${idempotencyKey}` : undefined;
     // required_idempotency_key: in-instance memo returns the prior result (idempotent retry, Contract Spec §6).
-    if (memoized && scopedKey && this.idempotencyMemo.has(scopedKey))
+    if (memoized && scopedKey && this.idempotencyMemo.has(scopedKey)) {
+      // Phase E, sprint 097: tuple-aware refusal. If the caller reused a key against a different tuple,
+      // refuse idempotency_conflict rather than returning the stale cached result.
+      const tuple = InMemoryProductDriver.tupleFor(op, input);
+      const cachedTuple = this.idempotencyMemoTuples.get(scopedKey);
+      if (tuple != null && cachedTuple != null && tuple !== cachedTuple) {
+        return {
+          operationName: op,
+          succeeded: false,
+          failureClass: "idempotency_conflict",
+          output: { idempotency_key: idempotencyKey },
+          correlationId: this.world.correlation,
+          idempotencyKey,
+          contractVersion: "contracts-0.4.1",
+          operationContractVersion: `${op}.v1`,
+          productBuild: "build_001",
+        };
+      }
       return this.idempotencyMemo.get(scopedKey)!;
+    }
     // transactional_unique_constraint: a second write with a seen key conflicts, creating zero facts (B-Q-13).
     if (writeBounded && scopedKey && this.world.txIdempotencyKeys.has(scopedKey)) {
       return {
@@ -117,7 +146,16 @@ export class InMemoryProductDriver {
       const snapEventsLen = this.world.events.length;
       const snapSeq = this.world.seq;
       try {
-        const handlerOutput = handler(this.world, input, actorId, actorCallerType) ?? {};
+        let handlerOutput = handler(this.world, input, actorId, actorCallerType) ?? {};
+        // Phase E, sprint 098: stamp a deterministic access_decision_id on EvaluateAccess's output
+        // (boundary-spec-v0.10 §4.2). Derivation: sha256(correlation_id ‖ step_id ‖ actor_id ‖
+        // caller_type ‖ target_alias), hex, first 16 chars. Deterministic per call.
+        if (op === "EvaluateAccess" && handlerOutput != null && typeof handlerOutput === "object") {
+          const target = input?.target_object ?? input?.resource_alias ?? "";
+          const material = `${this.world.correlation}|${stepId ?? ""}|${actorId ?? ""}|${actorCallerType ?? ""}|${target}`;
+          const hash = createHash("sha256").update(material).digest("hex").slice(0, 16);
+          handlerOutput = { ...handlerOutput, access_decision_id: hash };
+        }
         const eventsEmitted = this.world.events
           .filter((event) => event.seq > before)
           .map((event) => ({ type: event.type }));
@@ -165,7 +203,11 @@ export class InMemoryProductDriver {
     }
     // Memoize / record the key ONLY on a committed success: a failed op persists no key, so a transient
     // failure does not poison the key and a legitimate retry can still succeed (sprint-013 review [4]).
-    if (memoized && scopedKey && result.succeeded) this.idempotencyMemo.set(scopedKey, result);
+    if (memoized && scopedKey && result.succeeded) {
+      this.idempotencyMemo.set(scopedKey, result);
+      const tuple = InMemoryProductDriver.tupleFor(op, input);
+      if (tuple != null) this.idempotencyMemoTuples.set(scopedKey, tuple);
+    }
     if (writeBounded && scopedKey && result.succeeded) this.world.txIdempotencyKeys.add(scopedKey);
     return result;
   }

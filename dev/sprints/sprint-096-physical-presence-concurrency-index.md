@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 096
-status: open # [Phase E card; drafted 2026-08-28]
+status: closed # [closed 2026-08-28 — driver change landed; every gate green]
 phase: E.3-driver-changes
 pass_kind: functional
 ---

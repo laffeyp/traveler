@@ -26,6 +26,16 @@ export class BackendProductDriver {
       -- redelivery (at-least-once) does not double-count — the proof of idempotency.
       CREATE TABLE IF NOT EXISTS delivery_projection (event_seq INTEGER PRIMARY KEY, type TEXT);
       CREATE TABLE IF NOT EXISTS projection_counts (type TEXT PRIMARY KEY, count INTEGER DEFAULT 0);
+      -- Phase E, sprint 096: the one-active-Presentation-per-InventoryItem invariant (boundary-spec-v0.10 §12.1
+      -- option (b)). A JSON-expression partial index on the flat records table, requires SQLite >= 3.9 (node:sqlite
+      -- on Node >= 22 satisfies this). Two active presentations on the same inventory_item_id (state IN ('presented',
+      -- 'bound')) raise SQLITE_CONSTRAINT_UNIQUE at the write; the operation wrapper (driver.ts:39) catches the throw
+      -- and re-emits presentation_conflict. Terminal presentations (consumed, rejected, cleared, conflicted) do not
+      -- count toward the active set, so a rejected-then-re-presented sequence (spec §12.6) is permitted.
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_presentation_active_per_item
+        ON records (json_extract(fields, '$.inventory_item_id'))
+        WHERE record_type = 'Presentation'
+          AND state IN ('presented', 'bound');
     `);
     this.loadFromDisk();
   }
