@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 109
-status: open # [Phase E card; drafted 2026-08-28]
+status: closed # [closed 2026-08-28 — decoder + classifier + 12 tests; scan contract pure-function surface ready for Phase F to build against]
 phase: E.6-scan-contract
 pass_kind: functional
 ---
