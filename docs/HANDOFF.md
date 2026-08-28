@@ -1,6 +1,6 @@
 # Handoff — Distributed Factory Execution Record System
 
-Written 2026-08-27, at the close of Phase D. `STATE.md` and `ROADMAP.md` carry the file-and-line detail this doc summarizes.
+Written 2026-08-28, at the close of Phase E. `STATE.md` and `ROADMAP.md` carry the file-and-line detail this doc summarizes.
 
 ## 1. What this is
 
@@ -12,14 +12,15 @@ Two drivers sit behind one interface: `InMemoryProductDriver` and `BackendProduc
 
 The project runs under Signal-Driven Development kit v2 (`dev/sdd-kit-2/`, vendored read-only). The contract registries are this project's locked vocabulary — the equivalent of `signals/0.1.json` in the kit's example.
 
-## 2. Where the build stands (measured 2026-08-27)
+## 2. Where the build stands (measured 2026-08-28)
 
-Four governing documents are closed:
+Five governing documents are closed:
 
 - The nine-document founding stack (`specs/founding-stack/`) — the first executable slice plus the extended adversarial arc.
 - The receiving evidence boundary specification (`specs/receiving-evidence/boundary-spec-v0.1.md`) — 15 of 15 §27 acceptance criteria pass (`RECEIVING_ACCEPTANCE.md`).
 - The access and visibility boundary specification (`specs/access-and-visibility/boundary-spec-v0.1.md`, arrived 2026-08-24) — 18 of 18 §16 acceptance criteria pass or pass-in-part (`ACCESS_AND_VISIBILITY_ACCEPTANCE.md`).
 - The UI surface design specification (`specs/ui-surface-design/ui-surface-design-spec-v0.3.md`) — 21 of 21 §25 acceptance criteria pass or pass-in-part (`docs/UI_SURFACE_ACCEPTANCE.md`). 66 canvas artefacts under `canvas/`: 1 vocabulary reference, 2 token sheets, 8 shared components, 3 pattern libraries, 47 screen artboards (8 handheld + 39 Mac), 4 flow maps, and the handoff bundle. Published at https://claude.ai/code/artifact/347f2431-d036-4bcf-a3ad-28cc928a3dda. `docs/banner.png` rendered from `canvas/banner.dc.html` and referenced in the root README. Phase D added no code, no registry entries, and no scenario steps; every artboard cites vocabulary that existed at Phase C close.
+- The Physical Presence Boundary specification (`specs/physical-presence/boundary-spec-v0.10.md`) — 33 of 33 §15 acceptance criteria pass or pass-in-part (`docs/PHYSICAL_PRESENCE_ACCEPTANCE.md`). Two records (`Station`, `Presentation`), six operations, seven events, one state machine, four authorization rules (`ConsumePresentation` reuses `system_lifecycle`), 31 failure classes. `InstallInventory` extended with an optional `presentation_id`; every pre-Phase-E scenario traces byte-identical. Three driver changes: JSON-expression partial index in `backend.ts` for the one-active-per-item invariant; tuple-aware idempotency branch in `driver.ts`; deterministic `access_decision_id` on `EvaluateAccess` output. Nine new scenarios (VF-038 through VF-046) plus a 17-arm coupling-mutation suite. Scan contract lands as `src/harness/scan-decoder.ts` and `src/harness/scan-classifier.ts`.
 
 The gates, at day's close:
 

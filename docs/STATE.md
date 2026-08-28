@@ -1,6 +1,6 @@
 # State of the build
 
-Measured 2026-08-27, after Phase D close. Sections 1 through 5 read against the state at Phase C close (2026-08-25); section 5b covers Phase D (UI surface design, 2026-08-26 through 2026-08-27); sections 6 onward carry forward from Phase C, since Phase D added no code and no registry entries. Every claim reads off the code or the gates. Where a claim came from a source file, the file and line are given.
+Measured 2026-08-28, after Phase E close. Sections 1 through 5 read against the state at Phase C close (2026-08-25); section 5b covers Phase D (UI surface design, 2026-08-26 through 2026-08-27); section 5c covers Phase E (Physical Presence Boundary, 2026-08-28); sections 6 onward carry forward from Phase C plus the Phase E deltas noted in 5c. Every claim reads off the code or the gates. Where a claim came from a source file, the file and line are given.
 
 ## 1. What the build is measured against
 
@@ -155,6 +155,24 @@ Canvas published at https://claude.ai/code/artifact/347f2431-d036-4bcf-a3ad-28cc
 Two boundaries the pack surfaces but does not close, each carried in `canvas/handoff/manifest.yaml`: Physical Presence (handoff-E, B-Q-33) with candidate operations named on `ScanInventoryView` and `InstallInventoryView`; Part / Inspection Requirement (handoff-F, B-Q-31 and B-Q-32) with candidate records named for a standalone Part, Drawing, MaterialSpecification, and InspectionRequirement. Each opens as its own boundary spec, the way Receiving and Access-and-Visibility opened.
 
 Registry delta from Phase D: none. No operations, events, records, states, or rules were added; every artboard cites vocabulary that existed at Phase C close. Every gate stayed green throughout.
+
+## 5c. Against the Physical Presence Boundary specification (Phase E)
+
+The boundary specification at `specs/physical-presence/boundary-spec-v0.10.md` arrived from outside as v0.4 and moved through six review passes to v0.10 (shipping baseline). Phase E closes handoff-E from the Phase D bundle. The row-by-row scoring lives in `docs/PHYSICAL_PRESENCE_ACCEPTANCE.md`. Thirty-three of thirty-three §15 criteria pass; one row (criterion 31, `required_presentation_on_install` run-close rule) is pass-in-part deferred to a follow-on sprint because it needs a factory-node opt-in scenario that Phase E's nine scenarios do not exercise.
+
+Registry delta: +2 records (`Station`, `Presentation`), +6 operations (`RegisterStation`, `PresentInventoryAtStation`, `BindPresentedItemToRunStep`, `RejectPresentedItem`, `ClearPresentedItem`, `ConsumePresentation`), +7 events (`STATION_REGISTERED`, `INVENTORY_PRESENTED_AT_STATION`, `PRESENTED_ITEM_BOUND_TO_RUN_STEP`, `PRESENTED_ITEM_REJECTED`, `PRESENTATION_CLEARED`, `PRESENTATION_CONSUMED`, `PRESENTATION_CONFLICT_DETECTED`), +1 state machine (`Presentation`, seven states with `expired` as a predicate on `expires_at`), +4 authorization rules (`station_management`, `physical_presence`, `presentation_binding`, `presentation_clearance`); `ConsumePresentation` reuses the existing `system_lifecycle` rule. +31 failure classes and +25 reason codes.
+
+Handler code lands at `src/driver/handlers.ts:3128+` (six new handlers) plus the `InstallInventory` extension at `src/driver/handlers.ts:1205`. `InstallInventory` accepts an optional `presentation_id`; when present it validates the bound `Presentation` (state, expiry, matching `intended_operation`, child identity) and calls `ConsumePresentation` as an in-process function inside its snapshot (boundary-spec-v0.10 §9.1 option (i)). Every VF-001 through VF-037 scenario continues to trace byte-identical against the golden.
+
+Three driver changes: a JSON-expression partial index on the flat `records` table at `src/driver/backend.ts` for the one-active-Presentation-per-InventoryItem invariant (§12.1 option (b), verified against a standalone test); a tuple-aware branch on the memoised idempotency path at `src/driver/driver.ts` so `PresentInventoryAtStation` refuses `idempotency_conflict` on a same-key different-tuple call (§12.7); an `access_decision_id` field on `EvaluateAccess`'s output derived as `sha256(correlation ‖ step ‖ actor ‖ caller_type ‖ target)[:16]`, deterministic per operation call (§4.2).
+
+Twenty sprints (091–110) closed between 2026-08-28 and 2026-08-28. Bench count grows from 29 to 38 (nine new scenarios VF-038 through VF-046). Whole-bench cross-driver diff-to-zero grows from 37 to 46 scenarios, all identical. Vitest grows from 432/58 to 462/60 (30 new tests: 17 mutation arms in `tests/consolidation/physical-presence-mutation.test.ts` plus 12 scan-contract tests in `tests/harness/scan-contract.test.ts`, plus the direct-call sanity checks).
+
+One spec-level correction landed during E.4: `authorization-rules.yaml` `physical_presence` rule extended from `[operator, planner, quality_engineer]` to `[operator, planner, quality_engineer, support_user]` so VF-046 has a valid audience. The rule's description is amended to note VF-046 opened this audience and that the §4.2 narrowing (a `support_diagnostics` presentation cannot be bound or consumed) prevents the widening from leaking into product truth.
+
+The scan contract from boundary-spec-v0.10 §11.2 lands as a harness-side surface: `src/harness/scan-decoder.ts` decodes `record_type:record_alias[:checksum]` labels; `src/harness/scan-classifier.ts` classifies decoded results against the current UI context into one of four branches (`identity_only`, `operation_binding`, `presence_asserting`, `handoff_gap`) and produces the operation input a scenario would otherwise write by hand. Twelve tests in `tests/harness/scan-contract.test.ts` exercise both.
+
+Two boundaries remain open at Phase E close: Part / Inspection Requirement (handoff-F, B-Q-31 and B-Q-32) and `external_viewer` as a registered caller_type (handoff-A, Phase D bundle-index). Each opens on its own boundary spec.
 
 ## 6. What exists
 

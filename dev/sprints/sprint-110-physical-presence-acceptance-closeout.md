@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 110
-status: open # [Phase E card; drafted 2026-08-28]
+status: closed # [closed 2026-08-28 — acceptance file scored 33/33; STATE, ROADMAP, DOCS, HANDOFF, KIT_DIARY, BLACKBOARD refreshed; phase handoff written]
 phase: E.7-closeout
 pass_kind: functional
 ---
