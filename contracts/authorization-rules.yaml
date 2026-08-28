@@ -199,10 +199,40 @@ rules:
     description: >
       Machine-driven lifecycle steps that no person invokes: apply a check result to a run, run the close
       check, request the close report, narrate the close, evaluate a measurement, advance step readiness,
-      expire an approval request, and raise or escalate a GrammarGap. Observed on ApplyBuildCheckResultToRun,
-      ApplyRunCloseResultToRun, RunCloseCheck, RequestRunCloseReport. The GrammarGap pair belongs here on the
-      Harness Spec §4.1 wording — "product creates GrammarGap" — which makes raising one runtime product
-      behavior when a payload cannot be normalized, not an act a person performs.
+      expire an approval request, raise or escalate a GrammarGap, and consume a bound Presentation.
+      Observed on ApplyBuildCheckResultToRun, ApplyRunCloseResultToRun, RunCloseCheck, RequestRunCloseReport,
+      and (Phase E, sprint 091) ConsumePresentation. The GrammarGap pair belongs here on the Harness Spec §4.1
+      wording — "product creates GrammarGap" — which makes raising one runtime product behavior when a
+      payload cannot be normalized, not an act a person performs. ConsumePresentation is fired by
+      InstallInventory in-process (boundary-spec-v0.10 §9.1 option (i)); no fifth rule was added because the
+      audience is identical.
+
+  # --- Physical Presence Module (Phase E, sprint 091; boundary-spec-v0.10 §7). Four new rules. ConsumePresentation
+  #     reuses system_lifecycle (see the amended description above).
+  - id: station_management
+    caller_types: [planner, manufacturing_engineer, access_admin]
+    description: >
+      Register a Station, and (deferred) deactivate or reactivate it. Observed on RegisterStation. Three
+      caller types because station registration happens both in a planning flow (planner) and in an
+      engineering flow (manufacturing_engineer); access_admin covers the admin path for the future
+      Deactivate/Reactivate pair (boundary-spec-v0.10 §4.1).
+  - id: physical_presence
+    caller_types: [operator, planner, quality_engineer]
+    description: >
+      Present an InventoryItem at a Station for a stated purpose; reject a presented item as unsuitable. Three
+      caller types cover: operator on the line for production purposes, planner for receiving_review, quality
+      engineer for quality_review / inspection / rework / support-adjacent flows.
+  - id: presentation_binding
+    caller_types: [operator]
+    description: >
+      Bind an active Presentation to a RunStep. Narrower than physical_presence because binding is an act on
+      the floor performed by the operator who owns the step. If a future scenario shows a quality engineer
+      legitimately binding during rework, that scenario expands the list.
+  - id: presentation_clearance
+    caller_types: [operator, planner, quality_engineer]
+    description: >
+      Clear an active Presentation without consuming it (actor cancels, walks away, work reassigns). Same
+      audience as physical_presence.
 
   - id: run_blocking
     caller_types: [quality_engineer]

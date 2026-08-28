@@ -34,3 +34,39 @@ failure_classes:
   - { name: report_audience_mismatch,     new: true,                                    spec_section: "§14", used_by_sprint: 045 }
   - { name: report_access_stale,          maps_to: report_regeneration_required, new: false, spec_section: "§14", used_by_sprint: 050, note: "existing behavior; the new name lets scenarios cite the access reason" }
   - { name: policy_change_forbidden,      new: true,                                    spec_section: "§14", used_by_sprint: 050 }
+
+  # --- Physical Presence Module (Phase E, sprint 091; boundary-spec-v0.10.md §8). Thirty-one classes cover
+  #     the Presentation lifecycle refusals, station errors, purpose gates, and scan-side failures. Every
+  #     class either maps_to an existing generic (authorization_denied, validation_error, state_transition_forbidden)
+  #     or is new.
+  - { name: presentation_not_found,        maps_to: validation_error,     new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: presentation_not_active,       maps_to: state_transition_forbidden, new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: presentation_not_bound,        maps_to: state_transition_forbidden, new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: presentation_expired,          new: true,                                 spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: presentation_terminal,         maps_to: state_transition_forbidden, new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: presentation_conflict,         new: true,                                 spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: binding_forbidden_for_purpose, new: true,                                 spec_section: "PP §8", used_by_sprint: 094, note: "enforces the support_diagnostics narrowing in §4.2 through BindPresentedItemToRunStep" }
+  - { name: presentation_wrong_station,    maps_to: authorization_denied, new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: presentation_wrong_actor,      maps_to: authorization_denied, new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: presentation_wrong_run,        maps_to: authorization_denied, new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: presentation_wrong_step,       maps_to: authorization_denied, new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: station_not_registered,        maps_to: validation_error,     new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: station_inactive,              new: true,                                 spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: station_alias_conflict,        maps_to: idempotency_conflict, new: false, spec_section: "PP §8", used_by_sprint: 093 }
+  - { name: station_type_unregistered,     maps_to: validation_error,     new: false, spec_section: "PP §8", used_by_sprint: 093 }
+  - { name: station_scope_mismatch,        maps_to: authorization_denied, new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: wrong_item,                    new: true,                                 spec_section: "PP §8", used_by_sprint: 094, note: "the parent expects a different child inventory item at the presented run step" }
+  - { name: inventory_not_available_for_presentation, new: true,                       spec_section: "PP §8", used_by_sprint: 094, note: "catch-all for inventory-state cases not otherwise named; used at PresentInventoryAtStation" }
+  - { name: inventory_already_installed,   maps_to: state_transition_forbidden, new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: scan_identity_hidden,          new: true,                                 spec_section: "PP §8", used_by_sprint: 094, note: "internal audit only — the caller sees not_found_or_not_visible" }
+  - { name: not_found_or_not_visible,      new: true,                                 spec_section: "PP §8", used_by_sprint: 094, note: "user-visible refusal under a visibility profile with denial_behavior: hidden_existence" }
+  - { name: unknown_scan,                  new: true,                                 spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: scan_type_wrong,               maps_to: validation_error,     new: false, spec_section: "PP §8", used_by_sprint: 094, note: "the scan_type on PresentInventoryAtStation is not presence_asserting" }
+  - { name: intended_operation_unregistered, maps_to: validation_error,   new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: scan_checksum_invalid,         new: true,                                 spec_section: "PP §8, §11.2", used_by_sprint: 109, note: "client-side refusal on a checksum mismatch during scan decode; no operation fires" }
+  - { name: consuming_operation_mismatch,  new: true,                                 spec_section: "PP §8", used_by_sprint: 094, note: "ConsumePresentation's consuming_operation input does not match the Presentation's intended_operation" }
+  - { name: factory_node_not_found,        maps_to: validation_error,     new: false, spec_section: "PP §8", used_by_sprint: 093 }
+  - { name: run_step_not_ready,            maps_to: state_transition_forbidden, new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: inventory_not_reserved,        maps_to: state_transition_forbidden, new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: inventory_not_released,        maps_to: state_transition_forbidden, new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: access_denied,                 maps_to: authorization_denied, new: false, spec_section: "PP §8", used_by_sprint: 094, note: "generic access refusal on PresentInventoryAtStation and downstream ops when access-and-visibility denies the read" }

@@ -325,3 +325,25 @@ state_machines:
       - { from: null,  to: open,   via: OpenSupportSession,  emits: SUPPORT_SESSION_OPENED }
       - { from: open,  to: closed, via: CloseSupportSession, emits: SUPPORT_SESSION_CLOSED }
 
+  # Phase E, sprint 091: Presentation lifecycle (boundary-spec-v0.10.md §6). Seven states, two active
+  # (presented, bound), five terminal (consumed, rejected, cleared, conflicted; expired is a predicate on
+  # expires_at, not a state — matches the Certificate pattern). Consumption goes through the in-process
+  # handler call from InstallInventory (§9.1 option (i)), not through executeOperation.
+  - record_type: Presentation
+    owning_module: physical_presence
+    state_field: presentation_status
+    initial_state: presented
+    terminal_states: [consumed, rejected, cleared, conflicted]
+    creation_transition: explicit
+    states: [presented, bound, consumed, rejected, cleared, conflicted]
+    transitions:
+      - { from: null,      to: presented,  via: PresentInventoryAtStation,     emits: INVENTORY_PRESENTED_AT_STATION }
+      - { from: presented, to: bound,      via: BindPresentedItemToRunStep,    emits: PRESENTED_ITEM_BOUND_TO_RUN_STEP }
+      - { from: presented, to: rejected,   via: RejectPresentedItem,           emits: PRESENTED_ITEM_REJECTED }
+      - { from: presented, to: cleared,    via: ClearPresentedItem,            emits: PRESENTATION_CLEARED }
+      - { from: presented, to: conflicted, via: PresentInventoryAtStation,     emits: PRESENTATION_CONFLICT_DETECTED }
+      - { from: bound,     to: consumed,   via: ConsumePresentation,           emits: PRESENTATION_CONSUMED }
+      - { from: bound,     to: rejected,   via: RejectPresentedItem,           emits: PRESENTED_ITEM_REJECTED }
+      - { from: bound,     to: cleared,    via: ClearPresentedItem,            emits: PRESENTATION_CLEARED }
+    forbidden: ["consumed -> *", "rejected -> *", "cleared -> *", "conflicted -> *"]
+

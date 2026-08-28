@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 092
-status: open # [Phase E card; drafted 2026-08-28]
+status: closed # [closed 2026-08-28 — schemas regenerated; validate:schemas ok, 154 op schemas + 93 event payload schemas + 1 report; fixtures 14/14 discriminate; new event and operation schemas materialize when VF-038-046 scenarios ship their references.yaml files (sprints 099-107)]
 phase: E.1-foundations
 pass_kind: functional
 ---

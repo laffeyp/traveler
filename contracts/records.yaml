@@ -60,3 +60,12 @@ records:
   - { name: Shipment,                    owning_module: receiving,              state_machine: Shipment, note: "inbound consignment from one supplier; the PO stays in ERP and is referenced, not owned" }
   - { name: ShipmentLine,                owning_module: receiving,              state_machine: false, note: "one line per part revision + lot/serial on a shipment; the link that marks inventory as supplier-received" }
   - { name: ReceivingCheck,              owning_module: receiving,              state_machine: false, note: "status-light, exactly like BuildCheckResult and RunCloseCheck: status passed|blocked plus blockers[] naming registered receiving-rule ids" }
+
+  # --- Physical Presence Module (Phase E; boundary-spec-v0.10.md §4). Two records: Station is a local place
+  #     where an act is performed (assembly bench, receiving dock, quality station); Presentation is the bridge
+  #     record between scan identity and install truth, temporary and with a seven-state lifecycle. Station is
+  #     status-light in v0.1 (active/inactive/retired as a field, not a machine) — a full state machine opens
+  #     when a lifecycle scenario justifies it. Presentation's expiry is a predicate on expires_at evaluated at
+  #     read time, matching the Certificate pattern.
+  - { name: Station,                     owning_module: physical_presence,      state_machine: false, note: "Phase E, boundary-spec-v0.10 §4.1: status-light active|inactive|retired as a field. A full lifecycle opens only when a station-lifecycle scenario is authored (DeactivateStation/ReactivateStation are deferred until then)." }
+  - { name: Presentation,                owning_module: physical_presence,      state_machine: Presentation, note: "Phase E, boundary-spec-v0.10 §4.2: seven-state lifecycle bridging scan identity to install truth. Expiry is a predicate on expires_at, not a transition. access_decision_id derived from EvaluateAccess output (§4.2 derivation formula)." }

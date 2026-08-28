@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 091
-status: open # [Phase E card; drafted 2026-08-28]
+status: closed # [closed 2026-08-28 — registry pack landed; validate:contracts ok with 45 records, 138 operations, 143 events, 17 state machines, 37 authorization rules; bench 29/29 both drivers unchanged; tsc clean]
 phase: E.1-foundations
 pass_kind: functional
 ---

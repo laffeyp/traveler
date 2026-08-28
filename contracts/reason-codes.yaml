@@ -112,3 +112,85 @@ reason_codes:
     spec_section: "existing"
     used_by_sprint: "already"
     note: "shipped in the first slice; a resource with a present-but-malformed export_control fails closed"
+
+  # --- Physical Presence Module (Phase E, sprint 091; boundary-spec-v0.10.md §8). User-visible subset of the
+  #     failure classes above. Internal-only outcomes (scan_identity_hidden) do not appear here.
+  - name: presentation_not_found
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: presentation_not_active
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: presentation_not_bound
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: presentation_expired
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: presentation_terminal
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: presentation_conflict
+    spec_section: "PP §8"
+    used_by_sprint: 094
+    note: "raised by the second concurrent PresentInventoryAtStation for production purposes"
+  - name: binding_forbidden_for_purpose
+    spec_section: "PP §8"
+    used_by_sprint: 094
+    note: "raised on BindPresentedItemToRunStep when the Presentation's purpose is support_diagnostics"
+  - name: presentation_wrong_station
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: presentation_wrong_actor
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: presentation_wrong_run
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: presentation_wrong_step
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: station_not_registered
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: station_inactive
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: station_alias_conflict
+    spec_section: "PP §8"
+    used_by_sprint: 093
+  - name: station_type_unregistered
+    spec_section: "PP §8"
+    used_by_sprint: 093
+  - name: wrong_item
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: inventory_not_available_for_presentation
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: inventory_already_installed
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: not_found_or_not_visible
+    spec_section: "PP §8"
+    used_by_sprint: 094
+    note: "user-visible name when hidden_existence applies; audit records scan_identity_hidden internally"
+  - name: unknown_scan
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: scan_type_wrong
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: intended_operation_unregistered
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: scan_checksum_invalid
+    spec_section: "PP §8, §11.2"
+    used_by_sprint: 109
+    note: "client-side refusal on scan decode; no operation fires"
+  - name: consuming_operation_mismatch
+    spec_section: "PP §8"
+    used_by_sprint: 094
+  - name: run_step_not_ready
+    spec_section: "PP §8"
+    used_by_sprint: 094
