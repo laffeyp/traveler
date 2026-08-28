@@ -1204,6 +1204,33 @@ export const HANDLERS: Record<string, H> = {
   },
   InstallInventory(world, input) {
     const child = world.get(input.child_inventory_alias);
+    // Phase E, sprint 095: optional presentation_id. Absent -> behave exactly as before; every VF-001..037
+    // scenario continues to trace byte-identical. Present -> validate the bound Presentation, then call
+    // ConsumePresentation as an in-process function (boundary-spec-v0.10.md §9.1 option (i)).
+    if (input.presentation_alias != null) {
+      const presentation = world.get(input.presentation_alias);
+      if (presentation.record_type !== "Presentation")
+        throw new Error(
+          `presentation_not_found: '${input.presentation_alias}' is a ${presentation.record_type}, not a Presentation`,
+        );
+      if (presentation.state !== "bound")
+        throw new Error(
+          presentation.state === "presented"
+            ? `presentation_not_bound: '${input.presentation_alias}' is presented, not bound`
+            : `presentation_not_active: '${input.presentation_alias}' is ${presentation.state}`,
+        );
+      if (presentation.fields.expires_at != null && world.clock >= presentation.fields.expires_at)
+        throw new Error(`presentation_expired: '${input.presentation_alias}' expired`);
+      if (presentation.fields.intended_operation !== "InstallInventory")
+        throw new Error(
+          `consuming_operation_mismatch: Presentation.intended_operation is '${presentation.fields.intended_operation}', not InstallInventory`,
+        );
+      const boundChildId = presentation.fields.inventory_item_id;
+      if (child.id !== boundChildId)
+        throw new Error(
+          `wrong_item: presentation binds inventory_item_id '${boundChildId}' but install targets '${child.id}'`,
+        );
+    }
     moveState(child, "InstallInventory"); // in_wip->installed
     world.create("InstallationEvent", input.installation_event_alias, "created", {
       parent: input.parent_inventory_alias,
@@ -1214,11 +1241,23 @@ export const HANDLERS: Record<string, H> = {
       // install precondition or the required_installations_present close rule against a specific step.
       run_step: input.run_step_alias,
       installed_at: input.installed_at,
+      presentation_id: input.presentation_alias, // undefined when the pre-Phase-E path runs
     });
     world.emit("INVENTORY_INSTALLED", "InstallInventory", {
       parent_inventory_alias: input.parent_inventory_alias,
       child_inventory_alias: input.child_inventory_alias,
     });
+    // Phase E, sprint 095: in-process ConsumePresentation call inside the same operation snapshot.
+    // Boundary-spec-v0.10.md §9.1 option (i). The wrapper's snapshot at driver.ts:113-118 covers rollback.
+    if (input.presentation_alias != null) {
+      HANDLERS.ConsumePresentation(world, {
+        presentation_alias: input.presentation_alias,
+        consuming_operation: "InstallInventory",
+        consuming_record_id: input.installation_event_alias,
+        actor_id: input.actor_id,
+        consumed_at: input.installed_at,
+      });
+    }
   },
   // --- Receiving Evidence Module ------------------------------------------------------------------------
   // The inbound boundary. Physical arrival is not production eligibility: goods that arrive on a shipment are
@@ -3113,5 +3152,264 @@ export const HANDLERS: Record<string, H> = {
       visible: policy.visible ?? [],
       hidden: policy.hidden ?? [],
     };
+  },
+  // --- Physical Presence Module (Phase E, sprints 093-095; boundary-spec-v0.10.md §5). Two records
+  //     (Station, Presentation), six handlers below. ConsumePresentation is called both through
+  //     executeOperation (for external invocation) and directly as a function from InstallInventory's
+  //     transaction (§9.1 option (i)).
+  RegisterStation(world, input) {
+    // Boundary-spec-v0.10 §5.1. Station identity for the Physical Presence layer.
+    // Refuses fail-closed on: factory_node_not_found, station_alias_conflict, station_type_unregistered.
+    // Access refusal (access_denied) is handled by the operation-authorization wrapper.
+    if (!input.station_alias)
+      throw new Error("validation_error: a station must have a station_alias");
+    if (!input.factory_node_id)
+      throw new Error("factory_node_not_found: a station must name a factory_node_id");
+    const allowedTypes = ["assembly", "receiving", "inspection", "quality", "machine", "rework", "shipping", "support"];
+    if (input.station_type != null && !allowedTypes.includes(input.station_type))
+      throw new Error(
+        `station_type_unregistered: '${input.station_type}' is not one of ${allowedTypes.join(", ")}`,
+      );
+    // transactional_unique_constraint on (station_alias, factory_node_id): the operation wrapper catches
+    // a same-key retry (idempotency_conflict). A collision on alias within the same factory_node_id shows up
+    // here as a create-time refusal if the alias already resolves.
+    const existing = world.aliasToId.get(input.station_alias);
+    if (existing) {
+      const rec = world.records.get(existing);
+      if (rec && rec.record_type === "Station" && rec.fields.factory_node_id === input.factory_node_id)
+        throw new Error(
+          `station_alias_conflict: '${input.station_alias}' is already registered on '${input.factory_node_id}'`,
+        );
+    }
+    const station = world.create("Station", input.station_alias, "active", {
+      station_alias: input.station_alias,
+      station_type: input.station_type,
+      factory_node_id: input.factory_node_id,
+      status: "active",
+      allowed_operation_types: input.allowed_operation_types,
+      allowed_record_types: input.allowed_record_types,
+    });
+    world.emit("STATION_REGISTERED", "RegisterStation", {
+      station_id: station.id,
+      station_alias: input.station_alias,
+      factory_node_id: input.factory_node_id,
+    });
+  },
+  PresentInventoryAtStation(world, input) {
+    // Boundary-spec-v0.10 §5.2. Records that an actor is presenting an InventoryItem at a Station.
+    // Refusals: station_not_registered, station_inactive, inventory_not_found, inventory_quarantined
+    // (for production purposes), inventory_already_installed / _scrapped / _shipped, presentation_conflict,
+    // scan_type_wrong, intended_operation_unregistered.
+    if (input.scan_type !== "presence_asserting")
+      throw new Error("scan_type_wrong: PresentInventoryAtStation requires scan_type: presence_asserting");
+    if (!input.intended_operation)
+      throw new Error("intended_operation_unregistered: intended_operation is required");
+    const station = world.get(input.station_alias);
+    if (station.record_type !== "Station")
+      throw new Error(
+        `station_not_registered: '${input.station_alias}' is a ${station.record_type}, not a Station`,
+      );
+    if (station.fields.status !== "active")
+      throw new Error(`station_inactive: station '${input.station_alias}' is ${station.fields.status}`);
+    const item = world.get(input.inventory_item_alias);
+    if (item.record_type !== "InventoryItem")
+      throw new Error(
+        `inventory_not_found: '${input.inventory_item_alias}' is a ${item.record_type}, not an InventoryItem`,
+      );
+    const purpose = input.presentation_purpose;
+    const isProduction = purpose === "production_install" || purpose === "production_measurement_support";
+    // Gate matrix from §12.3.
+    if (item.state === "quarantined" && isProduction)
+      throw new Error(`inventory_quarantined: '${item.alias}' cannot be presented for ${purpose}`);
+    if (item.state === "installed" && isProduction)
+      throw new Error(`inventory_already_installed: '${item.alias}' is already installed`);
+    if (item.state === "scrapped" && isProduction)
+      throw new Error(`inventory_scrapped: '${item.alias}' has been scrapped`);
+    if (item.state === "shipped" && isProduction)
+      throw new Error(`inventory_shipped: '${item.alias}' has been shipped`);
+    if ((item.state === "expected" || item.state === "received") && purpose !== "support_diagnostics")
+      throw new Error(
+        `inventory_not_available_for_presentation: '${item.alias}' is ${item.state}; only support_diagnostics permits`,
+      );
+    // One-active-Presentation-per-InventoryItem invariant (§12.1). Sequential check in the in-memory driver;
+    // the backend index enforces the write-path guarantee (sprint 096).
+    for (const [, rec] of world.records) {
+      if (rec.record_type === "Presentation"
+          && rec.fields.inventory_item_id === item.id
+          && (rec.state === "presented" || rec.state === "bound")) {
+        if (isProduction)
+          throw new Error(
+            `presentation_conflict: '${item.alias}' already has an active presentation at station '${rec.fields.station_id}'`,
+          );
+        // Non-production purposes: record-conflict rather than refuse-at-emit (§12.1).
+        const conflicted = world.create("Presentation", input.presentation_alias ?? "", "conflicted", {
+          inventory_item_id: item.id,
+          station_id: station.id,
+          actor_id: input.actor_id,
+          caller_type: input.caller_type,
+          run_id: input.run_alias,
+          run_step_id: input.run_step_alias,
+          presentation_purpose: purpose,
+          intended_operation: input.intended_operation,
+          scan_value: input.scan_value,
+          scan_type: input.scan_type,
+          presentation_source: input.presentation_source,
+          presentation_status: "conflicted",
+          presented_at: input.presented_at,
+          expires_at: input.expires_at,
+          conflict_of_presentation_id: rec.id,
+          idempotency_key: input.idempotency_key,
+        });
+        world.emit("PRESENTATION_CONFLICT_DETECTED", "PresentInventoryAtStation", {
+          presentation_id: conflicted.id,
+          conflict_of_presentation_id: rec.id,
+        });
+        return;
+      }
+    }
+    const presentation = world.create("Presentation", input.presentation_alias ?? "", "presented", {
+      inventory_item_id: item.id,
+      station_id: station.id,
+      actor_id: input.actor_id,
+      caller_type: input.caller_type,
+      run_id: input.run_alias,
+      run_step_id: input.run_step_alias,
+      parent_inventory_item_id: input.parent_inventory_alias,
+      presentation_purpose: purpose,
+      intended_operation: input.intended_operation,
+      scan_value: input.scan_value,
+      scan_type: input.scan_type,
+      presentation_source: input.presentation_source,
+      presentation_status: "presented",
+      presented_at: input.presented_at,
+      expires_at: input.expires_at,
+      access_decision_id: input.access_decision_id,
+      idempotency_key: input.idempotency_key,
+    });
+    world.emit("INVENTORY_PRESENTED_AT_STATION", "PresentInventoryAtStation", {
+      presentation_id: presentation.id,
+      inventory_item_id: item.id,
+      station_id: station.id,
+      presentation_purpose: purpose,
+    });
+  },
+  BindPresentedItemToRunStep(world, input) {
+    // Boundary-spec-v0.10 §5.3. Refusals: presentation_not_found, presentation_not_active,
+    // presentation_expired, binding_forbidden_for_purpose, wrong_item, run_step_not_ready.
+    const presentation = world.get(input.presentation_alias);
+    if (presentation.record_type !== "Presentation")
+      throw new Error(
+        `presentation_not_found: '${input.presentation_alias}' is a ${presentation.record_type}, not a Presentation`,
+      );
+    if (presentation.state !== "presented")
+      throw new Error(
+        `presentation_not_active: '${input.presentation_alias}' is ${presentation.state}, not presented`,
+      );
+    // §12.6/§12.7 rejected-not-blocking is enforced elsewhere; a terminal-state presentation is refused here.
+    // Expiry predicate (§6).
+    if (presentation.fields.expires_at != null && world.clock >= presentation.fields.expires_at)
+      throw new Error(`presentation_expired: presentation '${input.presentation_alias}' expired`);
+    // Purpose gate: support_diagnostics may not bind (§4.2, §5.3).
+    if (presentation.fields.presentation_purpose === "support_diagnostics")
+      throw new Error(
+        "binding_forbidden_for_purpose: support_diagnostics presentations cannot be bound to a run step",
+      );
+    const runStep = world.get(input.run_step_alias);
+    if (runStep.record_type !== "RunStep")
+      throw new Error(
+        `validation_error: '${input.run_step_alias}' is a ${runStep.record_type}, not a RunStep`,
+      );
+    if (runStep.state !== "ready" && runStep.state !== "in_progress")
+      throw new Error(`run_step_not_ready: run step '${runStep.alias}' is ${runStep.state}`);
+    // wrong_item — parent expects a different child. Optional check when parent_inventory_alias resolves.
+    if (input.parent_inventory_alias && input.expected_child_inventory_alias) {
+      const item = world.records.get(presentation.fields.inventory_item_id);
+      if (item && item.alias !== input.expected_child_inventory_alias)
+        throw new Error(
+          `wrong_item: presented '${item.alias}' does not match expected child '${input.expected_child_inventory_alias}'`,
+        );
+    }
+    presentation.state = "bound";
+    presentation.fields.presentation_status = "bound";
+    presentation.fields.run_id = input.run_alias;
+    presentation.fields.run_step_id = input.run_step_alias;
+    presentation.fields.bound_at = input.bound_at;
+    world.emit("PRESENTED_ITEM_BOUND_TO_RUN_STEP", "BindPresentedItemToRunStep", {
+      presentation_id: presentation.id,
+      run_id: runStep.fields.run,
+      run_step_id: runStep.id,
+    });
+  },
+  RejectPresentedItem(world, input) {
+    // Boundary-spec-v0.10 §5.4. Refusals: presentation_not_found, presentation_terminal.
+    const presentation = world.get(input.presentation_alias);
+    if (presentation.record_type !== "Presentation")
+      throw new Error(
+        `presentation_not_found: '${input.presentation_alias}' is a ${presentation.record_type}, not a Presentation`,
+      );
+    const terminal = ["consumed", "rejected", "cleared", "conflicted"];
+    if (terminal.includes(presentation.state))
+      throw new Error(`presentation_terminal: '${input.presentation_alias}' is ${presentation.state}`);
+    presentation.state = "rejected";
+    presentation.fields.presentation_status = "rejected";
+    presentation.fields.rejected_at = input.rejected_at;
+    presentation.fields.rejection_reason = input.rejection_reason;
+    world.emit("PRESENTED_ITEM_REJECTED", "RejectPresentedItem", {
+      presentation_id: presentation.id,
+      rejection_reason: input.rejection_reason,
+    });
+  },
+  ClearPresentedItem(world, input) {
+    // Boundary-spec-v0.10 §5.5.
+    const presentation = world.get(input.presentation_alias);
+    if (presentation.record_type !== "Presentation")
+      throw new Error(
+        `presentation_not_found: '${input.presentation_alias}' is a ${presentation.record_type}, not a Presentation`,
+      );
+    const terminal = ["consumed", "rejected", "cleared", "conflicted"];
+    if (terminal.includes(presentation.state))
+      throw new Error(`presentation_terminal: '${input.presentation_alias}' is ${presentation.state}`);
+    presentation.state = "cleared";
+    presentation.fields.presentation_status = "cleared";
+    presentation.fields.cleared_at = input.cleared_at;
+    world.emit("PRESENTATION_CLEARED", "ClearPresentedItem", {
+      presentation_id: presentation.id,
+    });
+  },
+  ConsumePresentation(world, input) {
+    // Boundary-spec-v0.10 §5.6. Called both through executeOperation (system_worker path) and directly
+    // from InstallInventory's transaction (§9.1 option (i)). Refusals: presentation_not_found,
+    // presentation_not_active, presentation_not_bound, presentation_expired, presentation_wrong_actor,
+    // consuming_operation_mismatch.
+    const presentation = world.get(input.presentation_alias);
+    if (presentation.record_type !== "Presentation")
+      throw new Error(
+        `presentation_not_found: '${input.presentation_alias}' is a ${presentation.record_type}, not a Presentation`,
+      );
+    if (presentation.state !== "bound")
+      throw new Error(
+        presentation.state === "presented"
+          ? `presentation_not_bound: '${input.presentation_alias}' is still presented, not bound`
+          : `presentation_not_active: '${input.presentation_alias}' is ${presentation.state}`,
+      );
+    if (presentation.fields.expires_at != null && world.clock >= presentation.fields.expires_at)
+      throw new Error(`presentation_expired: presentation '${input.presentation_alias}' expired`);
+    if (input.actor_id != null && presentation.fields.actor_id !== input.actor_id)
+      throw new Error(
+        `presentation_wrong_actor: consuming actor '${input.actor_id}' does not match the presenting actor '${presentation.fields.actor_id}'`,
+      );
+    if (input.consuming_operation != null && presentation.fields.intended_operation !== input.consuming_operation)
+      throw new Error(
+        `consuming_operation_mismatch: consuming '${input.consuming_operation}' but Presentation.intended_operation is '${presentation.fields.intended_operation}'`,
+      );
+    presentation.state = "consumed";
+    presentation.fields.presentation_status = "consumed";
+    presentation.fields.consumed_at = input.consumed_at;
+    presentation.fields.consuming_record_id = input.consuming_record_id;
+    world.emit("PRESENTATION_CONSUMED", "ConsumePresentation", {
+      presentation_id: presentation.id,
+      consuming_operation: input.consuming_operation,
+      consuming_record_id: input.consuming_record_id,
+    });
   },
 };

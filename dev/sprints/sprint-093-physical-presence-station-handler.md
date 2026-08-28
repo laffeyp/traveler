@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 093
-status: open # [Phase E card; drafted 2026-08-28]
+status: closed # [closed 2026-08-28 — handler code landed; validate:contracts ok; bench 29/29 both drivers unchanged; vitest 432/432; tsc 0]
 phase: E.2-handlers
 pass_kind: functional
 ---

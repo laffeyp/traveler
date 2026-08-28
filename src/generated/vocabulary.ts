@@ -2,7 +2,7 @@
 // Source: contracts/{events,operations,records}.yaml (the locked vocabulary).
 // Regenerate with `npm run generate:types`; CI fails on drift via `npm run verify:types`.
 
-/** Every registered FactoryEvent tag (136). */
+/** Every registered FactoryEvent tag (143). */
 export type EventType =
   | "ACCESS_DECISION_ALLOWED"
   | "ACCESS_DECISION_AUDITED"
@@ -44,6 +44,7 @@ export type EventType =
   | "INVENTORY_INSTALLED"
   | "INVENTORY_IN_WIP"
   | "INVENTORY_KITTED"
+  | "INVENTORY_PRESENTED_AT_STATION"
   | "INVENTORY_QUARANTINED"
   | "INVENTORY_RECEIVED"
   | "INVENTORY_REMOVED"
@@ -80,6 +81,11 @@ export type EventType =
   | "NONCONFORMANCE_CLOSED"
   | "NONCONFORMANCE_DISPOSITION_PENDING"
   | "NONCONFORMANCE_OPENED"
+  | "PRESENTATION_CLEARED"
+  | "PRESENTATION_CONFLICT_DETECTED"
+  | "PRESENTATION_CONSUMED"
+  | "PRESENTED_ITEM_BOUND_TO_RUN_STEP"
+  | "PRESENTED_ITEM_REJECTED"
   | "PROCEDURE_VERSION_CREATED"
   | "PROCEDURE_VERSION_RELEASED"
   | "PROCEDURE_VERSION_RETIRED"
@@ -136,12 +142,13 @@ export type EventType =
   | "SHIPMENT_CREATED"
   | "SHIPMENT_LINE_CREATED"
   | "SHIPMENT_RECEIVED"
+  | "STATION_REGISTERED"
   | "SUPPORT_SESSION_CLOSED"
   | "SUPPORT_SESSION_OPENED"
   | "VERIFICATION_COMPLETED"
   | "VERIFICATION_PENDING";
 
-/** Every registered operation name (132). */
+/** Every registered operation name (138). */
 export type OperationName =
   | "AcceptAttachmentAsEvidence"
   | "AcceptCertificateAsEvidence"
@@ -157,6 +164,7 @@ export type OperationName =
   | "ApplyRedline"
   | "ApplyRunCloseResultToRun"
   | "AttemptRunClose"
+  | "BindPresentedItemToRunStep"
   | "BlockRun"
   | "BlockRunStep"
   | "BoundedDrillDown"
@@ -166,6 +174,7 @@ export type OperationName =
   | "CancelRun"
   | "CaptureCertificate"
   | "CaptureMeasurement"
+  | "ClearPresentedItem"
   | "ClearRunBlocker"
   | "ClearRunStepBlocker"
   | "CloseIssue"
@@ -176,6 +185,7 @@ export type OperationName =
   | "CompleteRework"
   | "CompleteRunStep"
   | "CompleteRunSteps"
+  | "ConsumePresentation"
   | "CreateAttachment"
   | "CreateEffectivityRule"
   | "CreateGrammarGap"
@@ -214,6 +224,7 @@ export type OperationName =
   | "OpenSupplierCorrectiveAction"
   | "OpenSupportSession"
   | "PauseRun"
+  | "PresentInventoryAtStation"
   | "QuarantineInventory"
   | "QuarantineMachineEvidence"
   | "QuarantineRemovedInventory"
@@ -224,9 +235,11 @@ export type OperationName =
   | "RecordDisposition"
   | "RegisterMachine"
   | "RegisterMachineAdapter"
+  | "RegisterStation"
   | "RejectAttachmentAsEvidence"
   | "RejectCertificateAsEvidence"
   | "RejectMachineEvidence"
+  | "RejectPresentedItem"
   | "ReleaseFromQuarantine"
   | "ReleaseInventory"
   | "ReleaseManufacturingStructureVersion"
@@ -276,7 +289,7 @@ export type OperationName =
   | "VerifyCertificate"
   | "VerifyRework";
 
-/** Every registered record type (43). */
+/** Every registered record type (45). */
 export type RecordType =
   | "AccessDecision"
   | "AffectedPopulation"
@@ -303,6 +316,7 @@ export type RecordType =
   | "ManufacturingStructureVersion"
   | "Measurement"
   | "Nonconformance"
+  | "Presentation"
   | "ProcedureStep"
   | "ProcedureVersion"
   | "QualityContainmentAction"
@@ -319,5 +333,6 @@ export type RecordType =
   | "RunStep"
   | "Shipment"
   | "ShipmentLine"
+  | "Station"
   | "SupportSession"
   | "Verification";
