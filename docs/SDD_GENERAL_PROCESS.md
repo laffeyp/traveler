@@ -36,26 +36,26 @@ The reverse loop — read a model out of the text, check the text against it, bu
 
 The forward direction is also old: model-driven engineering plus program synthesis. The one odd move — that the spec is locked and also serves as the check — model-driven engineering's metamodels already make.
 
-The new parts are worth naming: running this loop over plain text with a language model as the reader; using repetition across the text to correct errors; the two-source move in §4; and the reach test in §3. None escapes two old limits.
+The new parts are worth naming: running this loop over plain text with a language model as the reader; using repetition across the text to correct errors; the two-source move in §4; and the yes-or-no check for when it works in §3. None escapes two old limits.
 
 - Gold (1967): you cannot pin down a rich language from positive examples alone. Public text is almost all positive examples. The rules and the forbidden moves — the part of a grammar worth locking — are what positive text cannot fix.
 - Angluin (1987): learning a machine fast needs a teacher who answers both "is this in the language?" and "is my whole guess right?" A body of text answers neither. SDD supplies the teacher through its tests, its human review, and in law the judge. The bet depends on that teacher; name the teacher or the bet looks stronger than it is.
 
 ---
 
-## 3. The reach test
+## 3. When it works
 
 SDD works when the grammar can express the important behavior of a domain. It fails when the important behavior cannot fit in the grammar.
 
-Two formal statements say the same thing. By minimum description length, the best grammar makes "the grammar plus the text given the grammar" shortest to write down; whatever will not shrink is the cruft. By rate-distortion theory (Shannon; Tishby, Pereira and Bialek 1999), the grammar is a compact code that keeps the useful part of the text; what it drops is the loss.
+The same idea shows up two ways in information theory. The best grammar makes the text shortest to write down once you have the grammar in hand — whatever the grammar cannot compress is the cruft. Equivalently, the grammar is a compact code that keeps the useful part of the text; whatever the code drops is the loss (Shannon; Tishby, Pereira and Bialek, 1999).
 
-Rate-distortion assumes you already know which losses count, and no fixed rule picks that. Choosing a grammar is choosing what counts as loss. The grammar declares what is cruft and cannot prove, from inside itself, that the cruft was worthless. Two more limits agree. Kolmogorov says a short grammar need not exist at all, and no method can tell you in advance whether one does. No-Free-Lunch (Wolpert and Macready 1997) says any method that does well on rule-shaped domains does exactly as badly on the others.
+Both framings assume you already know what counts as useful. No fixed rule picks that. Choosing a grammar is choosing what counts as cruft. The grammar can declare what is cruft; it cannot prove, from inside itself, that the cruft was worthless. Two more results agree. A short grammar need not exist at all, and no method can tell you in advance whether one does (Kolmogorov complexity). Any method that does well on rule-shaped domains does exactly as badly on the others (No Free Lunch; Wolpert and Macready, 1997).
 
-The reach test is a testable bet, not a proof. The test is one question: does a locked grammar reproduce the behavior we care about? It explains results better than it predicts them, because you learn which case you were in after you build. §5 names the four ways it can fail.
+The check is a testable bet, not a proof. The check is one question: does a locked grammar reproduce the behavior we care about? The answer usually comes after you build. §5 names the four ways it can fail.
 
 ---
 
-## 4. Reach one: rule-bound domains
+## 4. Where it works: rule-bound domains
 
 Where the bet holds best, SDD renames the most and invents the least. Forty years of separate proof is the best sign the operation is real.
 
@@ -79,7 +79,7 @@ No existing field reads the real working rule out of both at once, or shows wher
 
 ---
 
-## 5. Reach two: the limit
+## 5. Where it fails
 
 Push the method until the bet fails. Four separate lines of work put the failure in the same place.
 
@@ -90,7 +90,7 @@ Push the method until the bet fails. Four separate lines of work put the failure
 
 The clearest evidence is the collapse of expert systems in the 1980s. Forward SDD, tried at scale: pull an expert's rules out, build a system that obeys them. Feigenbaum named the pulling-out the bottleneck. It took seventy to eighty percent of project time, and about sixty percent of projects failed. Worked where real rules existed (MYCIN, XCON); failed on open judgment.
 
-Every rich domain has two layers: a teachable layer written in a manual and checked for compliance, and an apprentice layer learned by doing under a master and never told. SDD reaches as far as teaching reaches and stops where apprenticeship begins. The same split runs through medicine (protocol against bedside read), law (Hart's settled core against the open edge), and cooking (technique against taste), at different depths. Writing things down can push the split outward by catching patterns experts never named; it never closes.
+Every rich domain has two layers: a teachable layer written in a manual and checked for compliance, and an apprentice layer learned by doing under a master and never told. SDD works as far as teaching works and stops where apprenticeship begins. The same split runs through medicine (protocol against bedside read), law (Hart's settled core against the open edge), and cooking (technique against taste), at different depths. Writing things down can push the split outward by catching patterns experts never named; it never closes.
 
 Four questions for a new domain, before spending anything:
 
@@ -114,38 +114,20 @@ SDD fails when success on the teachable layer gets mistaken for covering the who
 
 ---
 
-## 7. Honest scope
+## 7. Scope
 
-What SDD is: one operation — lock a small typed grammar that both builds and checks a domain, over a body of text that is a repeated, imperfect copy of it. Proven reach into rule-bound domains, run either way.
+What SDD is: one operation — lock a small typed grammar that both builds and checks a domain, over a body of text that is a repeated, imperfect copy of it. Proven in rule-bound domains, run either way.
 
 What is new, in full:
 
 1. Running the read-check-build loop over plain text with a language model as the reader.
 2. The two-source move — a readable rule pulled from policy and decisions together, comparable against the statute. Proposed, not shown.
-3. The reach test as an explicit, portable, provision-by-provision yes-or-no.
+3. A yes-or-no check for when the method works, applied provision by provision.
 4. Treating the choice of grammar as an explicit, versioned choice of what counts as loss — worth doing only alongside the admission that the choice can be wrong.
 
 What it is not: a new theory of learning, an escape from Gold and Angluin, a solved join of ontology-learning and process-mining (that join is an open problem, not a part importable off the shelf), or the discovery of the limit. The limit is Polanyi, Dreyfus, Moravec, and the expert-systems collapse; SDD gives it a shared name, not a finding.
 
 Point SDD where the worth sits in the rules and the withheld part is cruft — compliance, regulated process, behavior firms already publish — and it is sound. Point it where the worth sits in the leftover — bedside judgment, hard cases, taste, choice under true novelty — and it will reproduce the outline and miss the substance, quietly unless you watch for it.
-
----
-
-## 8. What is borrowed and what is new
-
-Every central claim, checked. *Rename* means it renames an existing field. *New framing* means a clarifying reframing of a known technique, with the substance mostly old. *New* means a move no single field makes.
-
-| Claim | Verdict | Because |
-|---|---|---|
-| The reverse loop (read, check, rebuild cleaner) is a new general method | Rename | The shared core of process mining, spec mining, grammatical inference, protocol reverse engineering, and model extraction. Only the words are fresh. |
-| Forward SDD (write grammar, build, check) is a distinct method | Rename | Model-driven engineering and program synthesis; Rules as Code; GLIF and CPG-on-FHIR. |
-| A small typed grammar sits under law's words | Rename | The isomorphism result (Sergot and Kowalski, 1986; Bench-Capon and Coenen, 1992); Catala. A founding result, not a guess. |
-| The limit is where reading the rules fails | Rename | Polanyi, Dreyfus, Moravec, and the expert-systems collapse; Hart's open texture; Sackett's medicine. |
-| One grammar joins thing-, move-, and rule-reading and serves as both builder and checker | New framing | A clarifying join, but combining a read ontology with a read process model is an open problem, not a built part. |
-| The reach test (worth in structure, or in leftover) | New framing | The math is old; the portable yes-or-no is the note's best synthesis, but untestable until you fix what counts as loss. |
-| Running the loop over plain text with a language model | New | Process mining wants structured logs; ontology learning works one document at a time. A real, model-enabled shift. |
-| Two-source move: pull the working rule from policy and decisions together, comparable against the statute | New | Neither Rules as Code (policy only) nor judgment prediction (decisions only, black box) fills this gap. |
-| Repetition in the text corrects the grammar's errors | New framing | A figure of speech with no channel behind it; it fails on copied repetition. A metaphor sold as a mechanism. |
 
 ---
 
