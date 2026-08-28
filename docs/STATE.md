@@ -1,6 +1,6 @@
 # State of the build
 
-Measured 2026-08-25, after Phase C close. Every claim reads off the code or the gates. Where a claim came from a source file, the file and line are given.
+Measured 2026-08-27, after Phase D close. Sections 1 through 5 read against the state at Phase C close (2026-08-25); section 5b covers Phase D (UI surface design, 2026-08-26 through 2026-08-27); sections 6 onward carry forward from Phase C, since Phase D added no code and no registry entries. Every claim reads off the code or the gates. Where a claim came from a source file, the file and line are given.
 
 ## 1. What the build is measured against
 
@@ -143,6 +143,18 @@ Twenty-four sprints (029-052) opened and closed on 2026-08-25. `SESSION_2026-08-
 Registry delta from the boundary: +4 operations (`OpenSupportSession`, `CloseSupportSession`, `AccessAttachment`, `AmendAccessPolicy`), +4 events (`SUPPORT_SESSION_OPENED / CLOSED`, `ATTACHMENT_ACCESS_DECISION_RECORDED`, `ACCESS_POLICY_AMENDED`), +1 record (`SupportSession`), +1 state machine (`SupportSession`), +1 authorization rule (`support_session_management`), +3 registry files (`contracts/reason-codes.yaml`, `contracts/failure-classes.yaml`, `contracts/visibility-profiles.yaml`). Only one new record because B-Q-74/75/77 candidate answers kept `access_group`, `customer`, `program`, `contract`, `factory_node`, and `service_account_scope` as fields, not records.
 
 A red-team pass at day's end found three defects, all in claims about the code rather than in code itself. Two phantom reason-code citations (`role_not_authorized` and `controlled_data_denied` cited `used_by_sprint: 031` but never emit — marked `used_by_sprint: deferred`). One vacuous audit-does-not-leak test, extended to drive every dimension. One overstated "byte-identical" claim: diff-to-zero measures cross-driver fidelity, not against-baseline. A golden-trace regression check is recorded as a follow-up in `ROADMAP.md §Post-Phase-C deferred items`.
+
+## 5b. Against the UI surface design specification (Phase D)
+
+The design specification at `specs/ui-surface-design/ui-surface-design-spec-v0.3.md` defines the two-app UI over the closed slice, the receiving-evidence boundary, and the access-and-visibility boundary. The pack ships at 66 canvas artefacts under `canvas/`: 1 vocabulary reference, 2 token sheets, 8 shared components, 3 pattern libraries, 47 screen artboards (8 handheld + 39 Mac station), 4 flow maps, and the handoff bundle (`canvas/handoff/`). The row-by-row scoring lives in `docs/UI_SURFACE_ACCEPTANCE.md`. Twenty-one of twenty-one §25 criteria pass or pass-in-part. Row 21 is the only pass-in-part: the mechanical registry-only grep fired at three sprint closes (053, 054, 057) plus twice at phase close (once across the initial 25 screens, once across the 22 added later); the phase-close greps caught one real vocabulary invention (`measurement_out_of_range` on `NonconformanceView`), fixed at source.
+
+Thirty-eight sprints (053-090) opened and closed between 2026-08-26 and 2026-08-27. Two post-ship remediation passes were required: sprint 089 drew the 22 surfaces the spec at v0.3 named that the initial 25-screen close carried in the handoff bundle as `deferred`; sprint 090 fixed forty-plus findings from a second review across wrong authorization citations (11 files), invented reason codes and state-machine drift (13 files), bundle-versus-artboard disagreement (21 files), paraphrased button labels (7 files), and smaller drift (13 files). Each fix cites the registry row that governs it. No vocabulary was invented.
+
+Canvas published at https://claude.ai/code/artifact/347f2431-d036-4bcf-a3ad-28cc928a3dda. `docs/banner.png` rendered from `canvas/banner.dc.html` via Chrome headless (1600×800) and referenced in the root `README.md`.
+
+Two boundaries the pack surfaces but does not close, each carried in `canvas/handoff/manifest.yaml`: Physical Presence (handoff-E, B-Q-33) with candidate operations named on `ScanInventoryView` and `InstallInventoryView`; Part / Inspection Requirement (handoff-F, B-Q-31 and B-Q-32) with candidate records named for a standalone Part, Drawing, MaterialSpecification, and InspectionRequirement. Each opens as its own boundary spec, the way Receiving and Access-and-Visibility opened.
+
+Registry delta from Phase D: none. No operations, events, records, states, or rules were added; every artboard cites vocabulary that existed at Phase C close. Every gate stayed green throughout.
 
 ## 6. What exists
 

@@ -1,6 +1,6 @@
 # Handoff — Distributed Factory Execution Record System
 
-Written 2026-08-25, at the close of Phase C. `STATE.md` and `ROADMAP.md` carry the file-and-line detail this doc summarizes.
+Written 2026-08-27, at the close of Phase D. `STATE.md` and `ROADMAP.md` carry the file-and-line detail this doc summarizes.
 
 ## 1. What this is
 
@@ -12,13 +12,14 @@ Two drivers sit behind one interface: `InMemoryProductDriver` and `BackendProduc
 
 The project runs under Signal-Driven Development kit v2 (`dev/sdd-kit-2/`, vendored read-only). The contract registries are this project's locked vocabulary — the equivalent of `signals/0.1.json` in the kit's example.
 
-## 2. Where the build stands (measured 2026-08-25)
+## 2. Where the build stands (measured 2026-08-27)
 
-Three governing documents are closed:
+Four governing documents are closed:
 
 - The nine-document founding stack (`specs/founding-stack/`) — the first executable slice plus the extended adversarial arc.
 - The receiving evidence boundary specification (`specs/receiving-evidence/boundary-spec-v0.1.md`) — 15 of 15 §27 acceptance criteria pass (`RECEIVING_ACCEPTANCE.md`).
 - The access and visibility boundary specification (`specs/access-and-visibility/boundary-spec-v0.1.md`, arrived 2026-08-24) — 18 of 18 §16 acceptance criteria pass or pass-in-part (`ACCESS_AND_VISIBILITY_ACCEPTANCE.md`).
+- The UI surface design specification (`specs/ui-surface-design/ui-surface-design-spec-v0.3.md`) — 21 of 21 §25 acceptance criteria pass or pass-in-part (`docs/UI_SURFACE_ACCEPTANCE.md`). 66 canvas artefacts under `canvas/`: 1 vocabulary reference, 2 token sheets, 8 shared components, 3 pattern libraries, 47 screen artboards (8 handheld + 39 Mac), 4 flow maps, and the handoff bundle. Published at https://claude.ai/code/artifact/347f2431-d036-4bcf-a3ad-28cc928a3dda. `docs/banner.png` rendered from `canvas/banner.dc.html` and referenced in the root README. Phase D added no code, no registry entries, and no scenario steps; every artboard cites vocabulary that existed at Phase C close.
 
 The gates, at day's close:
 
@@ -76,6 +77,8 @@ No bundler. The runtime reads `.ts` directly via Node's type-stripping. Every ga
 | `specs/founding-stack/` | The eight numbered governing input specifications the build was authored against (read-only). |
 | `dev/sdd-kit-2/` | The vendored Signal-Driven Development kit (read-only). |
 | `demo-packs/` | Two demo packs (valve-body-assembly, receiving-evidence-valve-body) — data only, gated by `demo-packs/check.mjs` and `npm run validate:demo-packs`. |
+| `canvas/` | The Phase D design pack. 66 artefacts: 65 `.dc.html` artboards, plus `canvas.json` for layout. Rendered as a design canvas via the `design` skill in Claude Code. `canvas/banner.dc.html` sources the README banner. `canvas/handoff/` carries the manifest, per-screen row shape, and the two open boundaries. |
+| `specs/ui-surface-design/` | The design specification at v0.3 (47 surfaces defined), design philosophy (17 principles from 7 traditions), and the research notes preceding v0.2. |
 | `dev/persona-reviews/` and `dev/reviews/` | The 14-persona aerospace stakeholder review kit and this project's own pass. |
 
 ## 5. Where the documentation lives

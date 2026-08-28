@@ -67,7 +67,7 @@ Discipline: the design philosophy at `specs/ui-surface-design/design-philosophy.
 
 Tooling: the `design` skill in this Claude Code session — an early preview of Claude Design running inside the terminal agent. Artboards are `.dc.html` files on one pan-zoom canvas, published as an Artifact on claude.ai and refined visually in the browser. Detail lives in `docs/PHASE_D_PLAN.md`.
 
-Cadence: auto-within-phase. All 36 sprint cards (053-088) drafted up front. Amended in place if the read of the code changes what a card should hold.
+Cadence: auto-within-phase. 38 sprint cards total (053–090). The first 36 (053–088) were drafted up front and amended in place if the read of the code changed what a card should hold. Sprints 089 and 090 were written after two post-ship reviews closed at source (89: the 22 surfaces the spec at v0.3 named that the initial 25-screen close carried as `deferred` in the handoff bundle; 90: forty-plus findings across wrong authorization citations, invented reason codes, state-machine drift, bundle-versus-artboard disagreement, and paraphrased button labels). One real vocabulary invention (`measurement_out_of_range` on `NonconformanceView`) was found and fixed. `dev/KIT_DIARY.md` Entries 34 (corrigendum), 35, and 36 record both remediation passes and add practices 41, 42, 43, and 44.
 
 ### Phase D sprint index
 
@@ -85,6 +85,8 @@ Cadence: auto-within-phase. All 36 sprint cards (053-088) drafted up front. Amen
 | D.6 | 083-086 | Flow assembly: handheld operator, receiving, quality, access flows against real scenarios |
 | D.7 | 087 | Handoff bundle plus design tokens plus component tree |
 | D.8 | 088 | §25 acceptance closeout; `docs/UI_SURFACE_ACCEPTANCE.md`; STATE, ROADMAP, DOCS, KIT_DIARY refresh |
+| D.9 | 089 | Remediation pass A: the 22 surfaces the spec at v0.3 named that the initial close carried as `deferred` (planning, engineering, run-close, evidence, reports, support/admin) |
+| D.10 | 090 | Remediation pass B: forty-plus findings across authorization cites, state-machine drift, invented reason codes, bundle-versus-artboard disagreement, paraphrased button labels |
 
 Two handoffs Phase D produces but does not close:
 

@@ -13,6 +13,8 @@ Every document in the repo, grouped by purpose. All tracked in git. The code lay
 | [SESSION_2026-08-25.md](SESSION_2026-08-25.md) | Day narrative for Phase C close. 30 commits, 24 sprints, 8,299 insertions across 112 files, 21 new test files. Commit ledger at the bottom. |
 | [RECEIVING_ACCEPTANCE.md](RECEIVING_ACCEPTANCE.md) | The receiving-evidence boundary scored against its §27 — 14 of 15 pass, one passes in part. Each row cites the artifact that settles it. |
 | [ACCESS_AND_VISIBILITY_ACCEPTANCE.md](ACCESS_AND_VISIBILITY_ACCEPTANCE.md) | The access-and-visibility boundary scored against its §16 — 18 of 18 pass or pass-in-part. Each row cites the artifact that settles it. |
+| [UI_SURFACE_ACCEPTANCE.md](UI_SURFACE_ACCEPTANCE.md) | The UI surface design scored against its §25 — 21 of 21 pass or pass-in-part. 47 screens across 66 canvas artefacts, station-by-station breakdown, two open boundaries recorded. |
+| [PHASE_D_PLAN.md](PHASE_D_PLAN.md) | The Phase D task breakdown — 38 sprints (053-090), five sub-phases, the canvas layout plan, and the two remediation passes at the tail. |
 | [DEVIATION_SUMMARY.md](DEVIATION_SUMMARY.md) | Quantified delta from the initial design: locked baseline, delta table, method, final status. |
 | [ADDITIONS.md](ADDITIONS.md) | Every capability built on top of the original doc stack, with the new vocabulary it introduced and the test that proves it. |
 | [contracts/CONTRACT_GAPS.md](contracts/CONTRACT_GAPS.md) | The typed B-Q ledger. Every place the contract stack was underspecified or conflicting, and how it was resolved (a registry decision or a ContractGap). |
@@ -27,7 +29,7 @@ Live board for the methodology this project runs under (`dev/sdd-kit-2/`).
 | [KIT_DIARY.md](dev/KIT_DIARY.md) | Per-sprint and per-phase diary of how the kit serves the build. Accretes the numbered distrust-the-green practices. |
 | [WORKING_AGREEMENT.md](dev/WORKING_AGREEMENT.md) | Per-project overrides on top of `dev/sdd-kit-2/AGENTS.md`: identity, stack, authority order, no-invention rule, repo layout, canonical registry homes, build commands, cadence. |
 | [ADDENDUMS.md](dev/ADDENDUMS.md) | Dated technique captures staged between this project's `dev/KIT_DIARY.md` and the kit's `TECHNIQUES.md`. Feeds the shared kit, not project state. |
-| [SDD_GENERAL_PROCESS.md](SDD_GENERAL_PROCESS.md) | SDD placed against the settled fields that already do parts of what it does — process mining, spec mining, grammatical inference, model extraction, model-driven reverse engineering, Rules as Code, computer-interpretable guidelines. What is a rename, what is new, the reach test, where the method stops. |
+| [SDD_GENERAL_PROCESS.md](SDD_GENERAL_PROCESS.md) | SDD placed against the settled fields that already do parts of what it does — process mining, spec mining, grammatical inference, model extraction, model-driven reverse engineering, Rules as Code, computer-interpretable guidelines. Where it works, where it fails, and one yes-or-no check to tell the two apart. |
 
 ## 2c. Process notes
 
@@ -47,6 +49,9 @@ The nine-document stack (group 5) governs the first executable slice and stops t
 | [specs/receiving-evidence/registry-pack-v0.1/](specs/receiving-evidence/registry-pack-v0.1/) | Follow-on registry-ready definitions. Subordinate to the boundary spec. |
 | [specs/access-and-visibility/boundary-spec-v0.1.md](specs/access-and-visibility/boundary-spec-v0.1.md) | The access-and-visibility boundary — who may act, who may see, at what level of detail, in what context. §6 (11 dimensions), §7 (11 enforcement points), §8 access decision model, §15 (10 scenario families), §16 (18 acceptance criteria). |
 | [specs/access-and-visibility/registry-pack-v0.1/](specs/access-and-visibility/registry-pack-v0.1/) | Follow-on registry-ready definitions. Subordinate to the boundary spec. Nothing merged into the main registries yet; sprints 031-050 pulled items in as each surface landed. |
+| [specs/ui-surface-design/ui-surface-design-spec-v0.3.md](specs/ui-surface-design/ui-surface-design-spec-v0.3.md) | The UI surface design specification — 47 screens across two apps (handheld line, Mac station). §5 action classes, §7 row shape, §9 96-row screen-to-operation binding, §14-20 per-station surface definitions, §25 (21 acceptance criteria). The v0.2 predecessor and the research notes that preceded it also live in this folder. |
+| [specs/ui-surface-design/design-philosophy.md](specs/ui-surface-design/design-philosophy.md) | Seventeen principles drawn from seven traditions (high-performance HMI, alarm management, poka-yoke, classical human factors, situation awareness, aviation cockpit design, Signal-Driven Development). §6 lists the three tests every artboard passes before its sprint closes. |
+| [canvas/handoff/](canvas/handoff/) | Phase D handoff bundle: `manifest.yaml` (66 artefacts by kind), `bundle-index.md` (per-screen 11-column row: purpose, actor, data, states, primary, secondaries, disabled, blockers, access, events, handoffs), `README.md`. The two open boundaries (handoff-E Physical Presence; handoff-F Part / Inspection Requirement) live in `manifest.yaml` under `handoffs:`. |
 
 ## 2b. Demo packs
 
@@ -57,7 +62,7 @@ Data only. Nothing executes at build time. `demo-packs/check.mjs` proves every n
 | [demo-packs/receiving-evidence-valve-body-v0.1/](demo-packs/receiving-evidence-valve-body-v0.1/) | The receiving boundary written out as plain files (boundary spec §24): one consignment of one valve body with its shipment, lines, supplier reference, certificates, receiving check, requirements, access policy, fail-closed mutation list. `manifest.yaml` also records what §24 assumes and this build does not have — Supplier, PackingList, PurchaseOrderRef, ReceivingInspection as records — each with the reason. |
 | [demo-packs/valve-body-assembly-v0.1/](demo-packs/valve-body-assembly-v0.1/) | The valve body VF-003 already builds, written out as plain files: part, BOM, procedure, tool and calibration, serials, torque requirement, machine evidence, quality path, customer view, expected report. A `README.md` and `manifest.yaml`. Writing it surfaced three vocabulary gaps recorded as B-Q-31/32/33. |
 
-## 3. Sprint history — sprints 001-052
+## 3. Sprint history — sprints 001-090
 
 `dev/sprints/sprint-NNN-*.md`. Numbering scheme in [WORKING_AGREEMENT.md](dev/WORKING_AGREEMENT.md) `§Numbering`.
 
@@ -65,7 +70,7 @@ Sprints 001-018 have a paired output report in `dev/signal-reports/`, read toget
 
 | Folder | What it holds |
 |---|---|
-| [sprints/](dev/sprints/) `sprint-001..052-*.md` | Per sprint: plan and scope, artifact contract (files, exit codes), observation contract (what was observed, including Rubber Duck Pass findings), done criteria, notes. Stamped closed with a date. |
+| [sprints/](dev/sprints/) `sprint-001..090-*.md` | Per sprint: plan and scope, artifact contract (files, exit codes), observation contract (what was observed, including Rubber Duck Pass findings), done criteria, notes. Stamped closed with a date. Sprints 053-090 cover Phase D (UI surface design); the last two document the two remediation passes that closed against post-ship reviews. |
 | [signal-reports/](dev/signal-reports/) `sprint-001..018-report.md` | The separate output half for sprints 001-018 only. A retrospective SIGNAL_REPORT (Observed / Expected / Delta self-grade / Hypothesis) with a timestamped signal trace and adversarial-review findings. |
 
 ## 4. Reviews
