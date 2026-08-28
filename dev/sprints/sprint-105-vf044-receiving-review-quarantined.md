@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 105
-status: open # [Phase E card; drafted 2026-08-28]
+status: closed # [closed 2026-08-28 — scenario green on both drivers; bench 38/38; whole-bench 46 scenarios diff-to-zero PASS]
 phase: E.4-scenarios
 pass_kind: functional
 ---

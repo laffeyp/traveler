@@ -217,11 +217,14 @@ rules:
       engineering flow (manufacturing_engineer); access_admin covers the admin path for the future
       Deactivate/Reactivate pair (boundary-spec-v0.10 §4.1).
   - id: physical_presence
-    caller_types: [operator, planner, quality_engineer]
+    caller_types: [operator, planner, quality_engineer, support_user]
     description: >
-      Present an InventoryItem at a Station for a stated purpose; reject a presented item as unsuitable. Three
+      Present an InventoryItem at a Station for a stated purpose; reject a presented item as unsuitable. Four
       caller types cover: operator on the line for production purposes, planner for receiving_review, quality
-      engineer for quality_review / inspection / rework / support-adjacent flows.
+      engineer for quality_review / inspection / rework, support_user for support_diagnostics under an open
+      SupportSession (§13.9 VF-046 opens this audience; a support_diagnostics presentation cannot be bound to
+      a run step or consumed by any product operation per §4.2, so widening this rule cannot leak into product
+      truth).
   - id: presentation_binding
     caller_types: [operator]
     description: >

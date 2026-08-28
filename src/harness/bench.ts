@@ -82,6 +82,23 @@ const BENCHES: Record<string, { scenarios: string[]; required_pass_rate: number 
   shipping: { scenarios: ["VF-032"], required_pass_rate: 1.0 },
   // Attachments: the file behind a record, evidence until accepted (VF-033).
   attachments: { scenarios: ["VF-033"], required_pass_rate: 1.0 },
+  // Physical Presence Boundary (Phase E, boundary-spec-v0.10 §13). Nine scenarios cover the happy path,
+  // the wrong-item refusal, expiry, the two-station conflict, quarantine-for-production, hidden identity,
+  // receiving_review permits, rework bound->cleared, and support_diagnostics with binding refusal.
+  physical_presence: {
+    scenarios: [
+      "VF-038",
+      "VF-039",
+      "VF-040",
+      "VF-041",
+      "VF-042",
+      "VF-043",
+      "VF-044",
+      "VF-045",
+      "VF-046",
+    ],
+    required_pass_rate: 1.0,
+  },
   // Everything materialized so far.
   all: {
     scenarios: [
@@ -114,6 +131,15 @@ const BENCHES: Record<string, { scenarios: string[]; required_pass_rate: number 
       "VF-032",
       "VF-033",
       "VF-034",
+      "VF-038",
+      "VF-039",
+      "VF-040",
+      "VF-041",
+      "VF-042",
+      "VF-043",
+      "VF-044",
+      "VF-045",
+      "VF-046",
     ],
     required_pass_rate: 1.0,
   },

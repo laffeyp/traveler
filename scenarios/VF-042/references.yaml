@@ -1,0 +1,29 @@
+scenario_id: VF-042
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: >
+  Physical Presence Boundary, boundary-spec-v0.10 §13.5. Minimal setup: quarantined child refuses production_install.
+
+operations:
+  - RegisterStation
+  - CreateInventoryItem
+  - ReceiveInventory
+  - QuarantineInventory
+  - PresentInventoryAtStation
+
+events:
+  - STATION_REGISTERED
+  - INVENTORY_CREATED
+  - INVENTORY_RECEIVED
+  - INVENTORY_QUARANTINED
+
+record_states:
+  Station: [active]
+  InventoryItem: [expected, received, quarantined]
+
+assertion_types:
+  - record_state
+  - event_not_emitted
+  - operation_failed
+
+caller_types: [planner, quality_engineer, operator]

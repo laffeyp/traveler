@@ -1,0 +1,66 @@
+scenario_id: VF-046
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: >
+  Physical Presence Boundary, boundary-spec-v0.10 §13. support_diagnostics permits presentation but bind refuses.
+
+operations:
+  - CreateProcedureVersion
+  - SubmitProcedureVersionForReview
+  - ReleaseProcedureVersion
+  - CreateManufacturingStructureVersion
+  - AddBOMLine
+  - ReleaseManufacturingStructureVersion
+  - RegisterStation
+  - CreateInventoryItem
+  - ReceiveInventory
+  - ReleaseInventory
+  - ReserveInventory
+  - CreateEffectivityRule
+  - ResolveEffectivity
+  - RunBuildCheck
+  - CreateRun
+  - ApplyBuildCheckResultToRun
+  - StartRun
+  - StartRunWithInventory
+  - StartRunStep
+  - PresentInventoryAtStation
+  - BindPresentedItemToRunStep
+
+events:
+  - PROCEDURE_VERSION_CREATED
+  - PROCEDURE_VERSION_SUBMITTED
+  - PROCEDURE_VERSION_RELEASED
+  - MANUFACTURING_STRUCTURE_CREATED
+  - BOM_LINE_CREATED
+  - MANUFACTURING_STRUCTURE_RELEASED
+  - STATION_REGISTERED
+  - INVENTORY_CREATED
+  - INVENTORY_RECEIVED
+  - INVENTORY_AVAILABLE
+  - INVENTORY_RESERVED
+  - EFFECTIVITY_RULE_CREATED
+  - EFFECTIVITY_RESOLVED
+  - BUILD_CHECK_STARTED
+  - BUILD_CHECK_PASSED
+  - RUN_CREATED
+  - RUN_READY
+  - RUN_STARTED
+  - INVENTORY_IN_WIP
+  - RUN_STEP_STARTED
+  - INVENTORY_PRESENTED_AT_STATION
+  - PRESENTED_ITEM_BOUND_TO_RUN_STEP
+
+record_states:
+  Station: [active]
+  Presentation: [presented, bound, consumed, rejected, cleared, conflicted]
+  InventoryItem: [expected, received, available, reserved, in_wip, installed, quarantined]
+  Run: [planned, ready, in_progress]
+  RunStep: [not_started, ready, in_progress]
+
+assertion_types:
+  - record_state
+  - event_not_emitted
+  - operation_failed
+
+caller_types: [manufacturing_engineer, planner, operator, quality_engineer, system_worker, support_user]

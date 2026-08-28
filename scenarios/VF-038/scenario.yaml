@@ -1,0 +1,107 @@
+scenario_id: VF-038
+scenario_version: "1"
+title: Presentation-aware install (happy path)
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  Prove that the Physical Presence Boundary (Phase E) closes handoff-E. An operator scans an
+  InventoryItem at a Station, the runtime writes a Presentation, the operator binds the Presentation
+  to a RunStep, InstallInventory validates the bound Presentation and calls ConsumePresentation as
+  an in-process function inside its snapshot (boundary-spec-v0.10 §9.1 option (i)). The Presentation
+  reaches consumed; the child InventoryItem reaches installed; both events appear in the same
+  operation trace.
+
+seed:
+  deterministic_seed: 3038
+
+clock:
+  start_at: "2026-08-28T14:00:00Z"
+  timezone: "UTC"
+  mode: controlled
+
+actors:
+  - { actor_id: mfg_eng_1,  actor_type: manufacturing_engineer, product_caller_type: manufacturing_engineer }
+  - { actor_id: planner_1,  actor_type: planner,                product_caller_type: planner }
+  - { actor_id: operator_1, actor_type: operator,               product_caller_type: operator }
+  - { actor_id: report_worker_1, actor_type: system_worker,     product_caller_type: system_worker }
+
+aliases:
+  procedure_version_v1: ProcedureVersion
+  procedure_step_install_gasket: ProcedureStep
+  manufacturing_structure_v1: ManufacturingStructureVersion
+  bom_line_gasket: BOMLine
+  valve_body_assembly_001: InventoryItem
+  gasket_001: InventoryItem
+  effectivity_rule_proc: EffectivityRule
+  effectivity_rule_struct: EffectivityRule
+  effectivity_resolution_001: EffectivityResolution
+  build_check_001: BuildCheckResult
+  run_context_snapshot_001: RunContextSnapshot
+  run_001: Run
+  run_step_install: RunStep
+  station_b4: Station
+  presentation_001: Presentation
+  installation_event_001: InstallationEvent
+
+world:
+  factory_node: hq_b4
+  part_revisions:
+    - { alias: valve_body_rev_a, part_number: VB-100, revision: A }
+    - { alias: gasket_rev_b,     part_number: GS-200, revision: B }
+  inventory_truth:
+    - { alias: valve_body_assembly_001, part_revision: valve_body_rev_a, serial_number: VB-A001 }
+    - { alias: gasket_001,              part_revision: gasket_rev_b,     serial_number: GS-B001 }
+
+steps:
+  # Procedure and structure
+  - { step_id: "001", actor: mfg_eng_1, operation: CreateProcedureVersion, idempotency_key: vf038-001, input: { procedure_version_alias: procedure_version_v1, procedure_alias: proc_valve, revision: 1, steps: [ { alias: procedure_step_install_gasket, name: install_gasket, data_collection_fields: [] } ] }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_CREATED] } }
+  - { step_id: "002", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf038-002, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUBMITTED] } }
+  - { step_id: "003", actor: mfg_eng_1, operation: ReleaseProcedureVersion, idempotency_key: vf038-003, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_RELEASED] } }
+  - { step_id: "004", actor: mfg_eng_1, operation: CreateManufacturingStructureVersion, idempotency_key: vf038-004, input: { manufacturing_structure_alias: manufacturing_structure_v1, revision: 1 }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_CREATED] } }
+  - { step_id: "005", actor: mfg_eng_1, operation: AddBOMLine, idempotency_key: vf038-005, input: { manufacturing_structure_alias: manufacturing_structure_v1, bom_line_alias: bom_line_gasket, child_part_revision: gasket_rev_b, quantity: 1 }, expect: { operation_succeeded: true, events_emitted: [BOM_LINE_CREATED] } }
+  - { step_id: "006", actor: mfg_eng_1, operation: ReleaseManufacturingStructureVersion, idempotency_key: vf038-006, input: { manufacturing_structure_alias: manufacturing_structure_v1 }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_RELEASED] } }
+
+  # Station registration
+  - { step_id: "007", actor: planner_1, operation: RegisterStation, idempotency_key: vf038-007, input: { station_alias: station_b4, station_type: assembly, factory_node_id: hq_b4 }, expect: { operation_succeeded: true, events_emitted: [STATION_REGISTERED] } }
+
+  # Inventory seed: parent and child both to available then reserved, then run start moves to in_wip
+  - { step_id: "010", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf038-010, input: { inventory_alias: valve_body_assembly_001, part_revision: valve_body_rev_a, serial_number: VB-A001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "011", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf038-011, input: { inventory_alias: valve_body_assembly_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "012", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf038-012, input: { inventory_alias: valve_body_assembly_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+  - { step_id: "013", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf038-013, input: { inventory_alias: gasket_001, part_revision: gasket_rev_b, serial_number: GS-B001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "014", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf038-014, input: { inventory_alias: gasket_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "015", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf038-015, input: { inventory_alias: gasket_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_AVAILABLE] } }
+  - { step_id: "016", actor: planner_1, operation: ReserveInventory, idempotency_key: vf038-016, input: { inventory_alias: gasket_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RESERVED] } }
+  - { step_id: "017", actor: planner_1, operation: ReserveInventory, idempotency_key: vf038-017, input: { inventory_alias: valve_body_assembly_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RESERVED] } }
+
+  # Effectivity and build check. Effectivity rule seeds the resolver; without it ResolveEffectivity refuses.
+  - { step_id: "017b", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf038-017b, input: { effectivity_rule_alias: effectivity_rule_proc, target_record_type: ProcedureVersion, rule_type: serial_cut_in, serial_condition: "VB-A001", target_alias: procedure_version_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "017c", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf038-017c, input: { effectivity_rule_alias: effectivity_rule_struct, target_record_type: ManufacturingStructureVersion, rule_type: serial_cut_in, serial_condition: "VB-A001", target_alias: manufacturing_structure_v1, priority: 1 }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RULE_CREATED] } }
+  - { step_id: "018", actor: planner_1, operation: ResolveEffectivity, idempotency_key: vf038-018, input: { effectivity_resolution_alias: effectivity_resolution_001, target_serial: "VB-A001" }, expect: { operation_succeeded: true, events_emitted: [EFFECTIVITY_RESOLVED] } }
+  - { step_id: "019", actor: planner_1, operation: RunBuildCheck, idempotency_key: vf038-019, input: { build_check_alias: build_check_001, procedure_version_alias: procedure_version_v1, manufacturing_structure_alias: manufacturing_structure_v1, effectivity_resolution_alias: effectivity_resolution_001, target_inventory_alias: valve_body_assembly_001 }, expect: { operation_succeeded: true, events_emitted: [BUILD_CHECK_STARTED, BUILD_CHECK_PASSED] } }
+
+  # Run creation and start
+  - { step_id: "020", actor: planner_1, operation: CreateRun, idempotency_key: vf038-020, input: { run_alias: run_001, run_context_snapshot_alias: run_context_snapshot_001, procedure_version_alias: procedure_version_v1, manufacturing_structure_alias: manufacturing_structure_v1, effectivity_resolution_alias: effectivity_resolution_001, build_check_alias: build_check_001, target_inventory_alias: valve_body_assembly_001, run_step_aliases: [run_step_install] }, expect: { operation_succeeded: true, events_emitted: [RUN_CREATED] } }
+  - { step_id: "020b", actor: report_worker_1, operation: ApplyBuildCheckResultToRun, idempotency_key: vf038-020b, input: { run_alias: run_001, build_check_alias: build_check_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_READY] } }
+  - { step_id: "021", actor: operator_1, operation: StartRun, idempotency_key: vf038-021, input: { run_alias: run_001 }, expect: { operation_succeeded: true, events_emitted: [RUN_STARTED] } }
+  - { step_id: "022", actor: operator_1, operation: StartRunWithInventory, idempotency_key: vf038-022, input: { run_alias: run_001, inventory_aliases: [valve_body_assembly_001, gasket_001] }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_IN_WIP] } }
+  - { step_id: "023", actor: operator_1, operation: StartRunStep, idempotency_key: vf038-023, input: { run_alias: run_001, run_step_alias: run_step_install }, expect: { operation_succeeded: true, events_emitted: [RUN_STEP_STARTED] } }
+
+  # The Physical Presence flow: present, bind, install (with presentation_id), consume
+  - { step_id: "030", actor: operator_1, operation: PresentInventoryAtStation, idempotency_key: vf038-030, input: { presentation_alias: presentation_001, inventory_item_alias: gasket_001, station_alias: station_b4, actor_id: operator_1, caller_type: operator, run_alias: run_001, run_step_alias: run_step_install, parent_inventory_alias: valve_body_assembly_001, presentation_purpose: production_install, intended_operation: InstallInventory, scan_value: "InventoryItem:gasket_001", scan_type: presence_asserting, presentation_source: fixture_seed, presented_at: "2026-08-28T14:12:00Z", expires_at: "2026-08-28T14:22:00Z" }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_PRESENTED_AT_STATION] } }
+  - { step_id: "031", actor: operator_1, operation: BindPresentedItemToRunStep, idempotency_key: vf038-031, input: { presentation_alias: presentation_001, run_alias: run_001, run_step_alias: run_step_install, parent_inventory_alias: valve_body_assembly_001, bound_at: "2026-08-28T14:13:00Z" }, expect: { operation_succeeded: true, events_emitted: [PRESENTED_ITEM_BOUND_TO_RUN_STEP] } }
+  - { step_id: "032", set_time: "2026-08-28T14:14:00Z", actor: operator_1, operation: InstallInventory, idempotency_key: vf038-032, input: { run_alias: run_001, run_step_alias: run_step_install, parent_inventory_alias: valve_body_assembly_001, child_inventory_alias: gasket_001, bom_line_alias: bom_line_gasket, installation_event_alias: installation_event_001, installed_at: "2026-08-28T14:14:00Z", actor_id: operator_1, presentation_alias: presentation_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_INSTALLED, PRESENTATION_CONSUMED] } }
+
+assertions:
+  - { assertion_id: vf038_final_child_state, assertion_type: record_state, severity: blocking, target: { alias: gasket_001 }, expected: { state: installed } }
+  - { assertion_id: vf038_final_presentation_state, assertion_type: record_state, severity: blocking, target: { alias: presentation_001 }, expected: { state: consumed } }
+  - { assertion_id: vf038_final_run_state, assertion_type: record_state, severity: blocking, target: { alias: run_001 }, expected: { state: in_progress } }
+  - { assertion_id: vf038_station_active, assertion_type: record_state, severity: blocking, target: { alias: station_b4 }, expected: { state: active } }
+  - { assertion_id: vf038_forbid_rejected, assertion_type: event_not_emitted, severity: blocking, target: { event_type: PRESENTED_ITEM_REJECTED } }
+  - { assertion_id: vf038_forbid_conflict, assertion_type: event_not_emitted, severity: blocking, target: { event_type: PRESENTATION_CONFLICT_DETECTED } }
+  - { assertion_id: vf038_forbid_cleared, assertion_type: event_not_emitted, severity: blocking, target: { event_type: PRESENTATION_CLEARED } }
