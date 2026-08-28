@@ -38,6 +38,7 @@ Dated walk-throughs of arcs the SDD ledger does not fully cover — how a specif
 | Document | What it holds |
 |---|---|
 | [dev/process-notes/repo-cleanup-for-public-release.md](../dev/process-notes/repo-cleanup-for-public-release.md) | The three-move pre-public-release grooming this repo went through: register-strip every project-authored doc via the `dellm` skill, backfill every ledger surface where sprint coverage drifted, move every process artifact under `dev/` so the root reads as a normal Node/TS repo. Concrete commands, the errors each move caught in this project, the sequence that matters. |
+| [dev/phase-handoffs/PHASE_D_HANDOFF.md](../dev/phase-handoffs/PHASE_D_HANDOFF.md) | Phase D closeout returned to the team that supplied the architecture inputs: what came in (spec at v0.2, receiving and access-and-visibility boundaries already closed), what shipped (66 canvas artefacts, 47 screens, design philosophy, spec at v0.3, acceptance file, banner), the full process from D.0 grounding through D.11 residual closure, what worked and what did not, four new SDD practices, and the two boundaries that return open. |
 
 ## 2a. Boundary specifications
 
