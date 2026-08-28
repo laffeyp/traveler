@@ -24,7 +24,17 @@ function withMutation<T>(op: string, patch: (orig: any) => any, body: () => T): 
 
 describe("Physical Presence: baseline scenarios pass unmutated", () => {
   it("VF-038 through VF-046 all pass", () => {
-    for (const s of ["VF-038", "VF-039", "VF-040", "VF-041", "VF-042", "VF-043", "VF-044", "VF-045", "VF-046"])
+    for (const s of [
+      "VF-038",
+      "VF-039",
+      "VF-040",
+      "VF-041",
+      "VF-042",
+      "VF-043",
+      "VF-044",
+      "VF-045",
+      "VF-046",
+    ])
       expect(runScenarioWithDriver(s).result.status).toBe("passed");
   });
 });
@@ -34,7 +44,7 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     withMutation(
       "PresentInventoryAtStation",
       (orig) =>
-        function (world: any, input: any, actor: any, callerType: any) {
+        function (this: any, world: any, input: any, actor: any, callerType: any) {
           // Force the item state to look available even when it is quarantined
           const item = world.get(input.inventory_item_alias);
           const originalState = item.state;
@@ -55,11 +65,14 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     withMutation(
       "PresentInventoryAtStation",
       (orig) =>
-        function (world: any, input: any, actor: any, callerType: any) {
+        function (this: any, world: any, input: any, actor: any, callerType: any) {
           // Hide any prior Presentation before the check by temporarily clearing state
           const priors: Array<{ rec: any; state: string }> = [];
           for (const [, rec] of world.records) {
-            if (rec.record_type === "Presentation" && (rec.state === "presented" || rec.state === "bound")) {
+            if (
+              rec.record_type === "Presentation" &&
+              (rec.state === "presented" || rec.state === "bound")
+            ) {
               priors.push({ rec, state: rec.state });
               rec.state = "cleared";
             }
@@ -80,7 +93,7 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     withMutation(
       "BindPresentedItemToRunStep",
       (orig) =>
-        function (world: any, input: any, actor: any, callerType: any) {
+        function (this: any, world: any, input: any, actor: any, callerType: any) {
           // Drop expected_child_inventory_alias so the wrong_item branch cannot fire
           const stripped = { ...input };
           delete stripped.expected_child_inventory_alias;
@@ -96,9 +109,11 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     withMutation(
       "InstallInventory",
       (orig) =>
-        function (world: any, input: any, actor: any, callerType: any) {
+        function (this: any, world: any, input: any, actor: any, callerType: any) {
           // Advance the presentation's expires_at into the future so InstallInventory does not refuse
-          const presentation = input.presentation_alias ? world.records.get(world.aliasToId.get(input.presentation_alias)) : null;
+          const presentation = input.presentation_alias
+            ? world.records.get(world.aliasToId.get(input.presentation_alias))
+            : null;
           const originalExpiry = presentation?.fields.expires_at;
           if (presentation) presentation.fields.expires_at = "2099-01-01T00:00:00Z";
           try {
@@ -117,11 +132,12 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     withMutation(
       "BindPresentedItemToRunStep",
       (orig) =>
-        function (world: any, input: any, actor: any, callerType: any) {
+        function (this: any, world: any, input: any, actor: any, callerType: any) {
           // Force the presentation's purpose to look like production_install so the guard is bypassed
           const presentation = world.get(input.presentation_alias);
           const originalPurpose = presentation.fields.presentation_purpose;
-          if (originalPurpose === "support_diagnostics") presentation.fields.presentation_purpose = "production_install";
+          if (originalPurpose === "support_diagnostics")
+            presentation.fields.presentation_purpose = "production_install";
           try {
             return orig.call(this, world, input, actor, callerType);
           } finally {
@@ -140,11 +156,13 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     withMutation(
       "ClearPresentedItem",
       () =>
-        function (world: any, input: any, _actor: any, _callerType: any) {
+        function (this: any, world: any, input: any, _actor: any, _callerType: any) {
           const presentation = world.get(input.presentation_alias);
           presentation.state = "consumed";
           presentation.fields.presentation_status = "consumed";
-          world.emit("PRESENTATION_CONSUMED", "ClearPresentedItem", { presentation_id: presentation.id });
+          world.emit("PRESENTATION_CONSUMED", "ClearPresentedItem", {
+            presentation_id: presentation.id,
+          });
         },
       () => {
         expect(runScenarioWithDriver("VF-045").result.status).toBe("failed");
@@ -157,7 +175,17 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     const driver = runScenarioWithDriver("VF-038").driver;
     const result = driver.executeOperation(
       "PresentInventoryAtStation",
-      { presentation_alias: "test_p", inventory_item_alias: "gasket_001", station_alias: "station_b4", actor_id: "op", caller_type: "operator", presentation_purpose: "production_install", intended_operation: "InstallInventory", scan_type: "identity_only", presentation_source: "fixture_seed" },
+      {
+        presentation_alias: "test_p",
+        inventory_item_alias: "gasket_001",
+        station_alias: "station_b4",
+        actor_id: "op",
+        caller_type: "operator",
+        presentation_purpose: "production_install",
+        intended_operation: "InstallInventory",
+        scan_type: "identity_only",
+        presentation_source: "fixture_seed",
+      },
       "operator",
       "test-step",
       "test-key",
@@ -171,7 +199,16 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     const driver = runScenarioWithDriver("VF-038").driver;
     const result = driver.executeOperation(
       "PresentInventoryAtStation",
-      { presentation_alias: "test_p", inventory_item_alias: "gasket_001", station_alias: "station_b4", actor_id: "op", caller_type: "operator", presentation_purpose: "production_install", scan_type: "presence_asserting", presentation_source: "fixture_seed" },
+      {
+        presentation_alias: "test_p",
+        inventory_item_alias: "gasket_001",
+        station_alias: "station_b4",
+        actor_id: "op",
+        caller_type: "operator",
+        presentation_purpose: "production_install",
+        scan_type: "presence_asserting",
+        presentation_source: "fixture_seed",
+      },
       "operator",
       "test-step",
       "test-key",
@@ -185,7 +222,7 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     withMutation(
       "InstallInventory",
       () =>
-        function (world: any, input: any, _actor: any, _callerType: any) {
+        function (this: any, world: any, input: any, _actor: any, _callerType: any) {
           // Never consult the presentation; just install
           const child = world.get(input.child_inventory_alias);
           child.state = "installed";
@@ -208,7 +245,9 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
       () =>
         function (world: any, _input: any, _actor: any, _callerType: any) {
           // No-op: pretend we consumed but do not
-          world.emit("PRESENTATION_CONSUMED", "ConsumePresentation", { presentation_id: "phantom" });
+          world.emit("PRESENTATION_CONSUMED", "ConsumePresentation", {
+            presentation_id: "phantom",
+          });
         },
       () => {
         expect(runScenarioWithDriver("VF-038").result.status).toBe("failed");
@@ -221,7 +260,11 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     const driver = runScenarioWithDriver("VF-038").driver;
     const result = driver.executeOperation(
       "RejectPresentedItem",
-      { presentation_alias: "presentation_001", rejected_at: "2026-08-28T15:00:00Z", rejection_reason: "wrong_item" },
+      {
+        presentation_alias: "presentation_001",
+        rejected_at: "2026-08-28T15:00:00Z",
+        rejection_reason: "wrong_item",
+      },
       "operator",
       "test-step",
       "test-key",
@@ -278,7 +321,17 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     const driver = runScenarioWithDriver("VF-038").driver;
     const result = driver.executeOperation(
       "PresentInventoryAtStation",
-      { presentation_alias: "adapter_p", inventory_item_alias: "gasket_001", station_alias: "station_b4", actor_id: "adapter_1", caller_type: "adapter", presentation_purpose: "production_install", intended_operation: "InstallInventory", scan_type: "presence_asserting", presentation_source: "fixture_seed" },
+      {
+        presentation_alias: "adapter_p",
+        inventory_item_alias: "gasket_001",
+        station_alias: "station_b4",
+        actor_id: "adapter_1",
+        caller_type: "adapter",
+        presentation_purpose: "production_install",
+        intended_operation: "InstallInventory",
+        scan_type: "presence_asserting",
+        presentation_source: "fixture_seed",
+      },
       "adapter",
       "test-step",
       "test-key",
@@ -295,7 +348,19 @@ describe("Physical Presence: idempotency tuple-aware branch", () => {
     // Fresh presentation for a repeat test — use a new alias and key
     const first = driver.executeOperation(
       "PresentInventoryAtStation",
-      { presentation_alias: "idem_test_1", inventory_item_alias: "gasket_001", station_alias: "station_b4", actor_id: "op_test", caller_type: "operator", presentation_purpose: "quality_review", intended_operation: "InstallInventory", scan_type: "presence_asserting", presentation_source: "fixture_seed", presented_at: "2026-08-28T15:00:00Z", expires_at: "2026-08-28T15:10:00Z" },
+      {
+        presentation_alias: "idem_test_1",
+        inventory_item_alias: "gasket_001",
+        station_alias: "station_b4",
+        actor_id: "op_test",
+        caller_type: "operator",
+        presentation_purpose: "quality_review",
+        intended_operation: "InstallInventory",
+        scan_type: "presence_asserting",
+        presentation_source: "fixture_seed",
+        presented_at: "2026-08-28T15:00:00Z",
+        expires_at: "2026-08-28T15:10:00Z",
+      },
       "operator",
       "step-a",
       "idem-key-alpha",
@@ -306,7 +371,19 @@ describe("Physical Presence: idempotency tuple-aware branch", () => {
     // by relying on that same failure to be cached.
     const sameTuple = driver.executeOperation(
       "PresentInventoryAtStation",
-      { presentation_alias: "idem_test_1", inventory_item_alias: "gasket_001", station_alias: "station_b4", actor_id: "op_test", caller_type: "operator", presentation_purpose: "quality_review", intended_operation: "InstallInventory", scan_type: "presence_asserting", presentation_source: "fixture_seed", presented_at: "2026-08-28T15:00:00Z", expires_at: "2026-08-28T15:10:00Z" },
+      {
+        presentation_alias: "idem_test_1",
+        inventory_item_alias: "gasket_001",
+        station_alias: "station_b4",
+        actor_id: "op_test",
+        caller_type: "operator",
+        presentation_purpose: "quality_review",
+        intended_operation: "InstallInventory",
+        scan_type: "presence_asserting",
+        presentation_source: "fixture_seed",
+        presented_at: "2026-08-28T15:00:00Z",
+        expires_at: "2026-08-28T15:10:00Z",
+      },
       "operator",
       "step-b",
       "idem-key-alpha",
@@ -317,7 +394,19 @@ describe("Physical Presence: idempotency tuple-aware branch", () => {
     if (first.succeeded) {
       const differentTuple = driver.executeOperation(
         "PresentInventoryAtStation",
-        { presentation_alias: "idem_test_2", inventory_item_alias: "gasket_001", station_alias: "station_b4", actor_id: "op_test", caller_type: "operator", presentation_purpose: "inspection", intended_operation: "InstallInventory", scan_type: "presence_asserting", presentation_source: "fixture_seed", presented_at: "2026-08-28T15:00:00Z", expires_at: "2026-08-28T15:10:00Z" },
+        {
+          presentation_alias: "idem_test_2",
+          inventory_item_alias: "gasket_001",
+          station_alias: "station_b4",
+          actor_id: "op_test",
+          caller_type: "operator",
+          presentation_purpose: "inspection",
+          intended_operation: "InstallInventory",
+          scan_type: "presence_asserting",
+          presentation_source: "fixture_seed",
+          presented_at: "2026-08-28T15:00:00Z",
+          expires_at: "2026-08-28T15:10:00Z",
+        },
         "operator",
         "step-c",
         "idem-key-alpha",

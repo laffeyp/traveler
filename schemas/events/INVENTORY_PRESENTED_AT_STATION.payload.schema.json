@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/INVENTORY_PRESENTED_AT_STATION.payload.schema.json",
+  "title": "INVENTORY_PRESENTED_AT_STATION payload (baseline; owning_module=physical_presence)",
+  "type": "object"
+}

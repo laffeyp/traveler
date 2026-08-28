@@ -42,7 +42,10 @@ export interface ClassifierResult {
   operation_input?: any;
 }
 
-export function classifyScan(decoded: DecodedScanResult, context: ClassifierContext): ClassifierResult {
+export function classifyScan(
+  decoded: DecodedScanResult,
+  context: ClassifierContext,
+): ClassifierResult {
   if (decoded.checksum_verified === false) return { scan_class: "scan_checksum_invalid" };
   if (decoded.decoded_record_type === "unresolved") return { scan_class: "handoff_gap" };
 

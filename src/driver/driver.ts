@@ -39,7 +39,12 @@ export class InMemoryProductDriver {
   private idempotencyMemoTuples = new Map<string, string>();
   private static tupleFor(op: string, input: any): string | undefined {
     if (op === "PresentInventoryAtStation")
-      return JSON.stringify([input?.inventory_item_alias, input?.station_alias, input?.actor_id, input?.presentation_purpose]);
+      return JSON.stringify([
+        input?.inventory_item_alias,
+        input?.station_alias,
+        input?.actor_id,
+        input?.presentation_purpose,
+      ]);
     return undefined;
   }
 

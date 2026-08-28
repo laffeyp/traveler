@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/PRESENTED_ITEM_BOUND_TO_RUN_STEP.payload.schema.json",
+  "title": "PRESENTED_ITEM_BOUND_TO_RUN_STEP payload (baseline; owning_module=physical_presence)",
+  "type": "object"
+}

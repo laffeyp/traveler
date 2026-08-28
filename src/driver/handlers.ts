@@ -3165,7 +3165,16 @@ export const HANDLERS: Record<string, H> = {
       throw new Error("validation_error: a station must have a station_alias");
     if (!input.factory_node_id)
       throw new Error("factory_node_not_found: a station must name a factory_node_id");
-    const allowedTypes = ["assembly", "receiving", "inspection", "quality", "machine", "rework", "shipping", "support"];
+    const allowedTypes = [
+      "assembly",
+      "receiving",
+      "inspection",
+      "quality",
+      "machine",
+      "rework",
+      "shipping",
+      "support",
+    ];
     if (input.station_type != null && !allowedTypes.includes(input.station_type))
       throw new Error(
         `station_type_unregistered: '${input.station_type}' is not one of ${allowedTypes.join(", ")}`,
@@ -3176,7 +3185,11 @@ export const HANDLERS: Record<string, H> = {
     const existing = world.aliasToId.get(input.station_alias);
     if (existing) {
       const rec = world.records.get(existing);
-      if (rec && rec.record_type === "Station" && rec.fields.factory_node_id === input.factory_node_id)
+      if (
+        rec &&
+        rec.record_type === "Station" &&
+        rec.fields.factory_node_id === input.factory_node_id
+      )
         throw new Error(
           `station_alias_conflict: '${input.station_alias}' is already registered on '${input.factory_node_id}'`,
         );
@@ -3201,7 +3214,9 @@ export const HANDLERS: Record<string, H> = {
     // (for production purposes), inventory_already_installed / _scrapped / _shipped, presentation_conflict,
     // scan_type_wrong, intended_operation_unregistered.
     if (input.scan_type !== "presence_asserting")
-      throw new Error("scan_type_wrong: PresentInventoryAtStation requires scan_type: presence_asserting");
+      throw new Error(
+        "scan_type_wrong: PresentInventoryAtStation requires scan_type: presence_asserting",
+      );
     if (!input.intended_operation)
       throw new Error("intended_operation_unregistered: intended_operation is required");
     const station = world.get(input.station_alias);
@@ -3210,14 +3225,17 @@ export const HANDLERS: Record<string, H> = {
         `station_not_registered: '${input.station_alias}' is a ${station.record_type}, not a Station`,
       );
     if (station.fields.status !== "active")
-      throw new Error(`station_inactive: station '${input.station_alias}' is ${station.fields.status}`);
+      throw new Error(
+        `station_inactive: station '${input.station_alias}' is ${station.fields.status}`,
+      );
     const item = world.get(input.inventory_item_alias);
     if (item.record_type !== "InventoryItem")
       throw new Error(
         `inventory_not_found: '${input.inventory_item_alias}' is a ${item.record_type}, not an InventoryItem`,
       );
     const purpose = input.presentation_purpose;
-    const isProduction = purpose === "production_install" || purpose === "production_measurement_support";
+    const isProduction =
+      purpose === "production_install" || purpose === "production_measurement_support";
     // Gate matrix from §12.3.
     if (item.state === "quarantined" && isProduction)
       throw new Error(`inventory_quarantined: '${item.alias}' cannot be presented for ${purpose}`);
@@ -3227,39 +3245,49 @@ export const HANDLERS: Record<string, H> = {
       throw new Error(`inventory_scrapped: '${item.alias}' has been scrapped`);
     if (item.state === "shipped" && isProduction)
       throw new Error(`inventory_shipped: '${item.alias}' has been shipped`);
-    if ((item.state === "expected" || item.state === "received") && purpose !== "support_diagnostics")
+    if (
+      (item.state === "expected" || item.state === "received") &&
+      purpose !== "support_diagnostics"
+    )
       throw new Error(
         `inventory_not_available_for_presentation: '${item.alias}' is ${item.state}; only support_diagnostics permits`,
       );
     // One-active-Presentation-per-InventoryItem invariant (§12.1). Sequential check in the in-memory driver;
     // the backend index enforces the write-path guarantee (sprint 096).
     for (const [, rec] of world.records) {
-      if (rec.record_type === "Presentation"
-          && rec.fields.inventory_item_id === item.id
-          && (rec.state === "presented" || rec.state === "bound")) {
+      if (
+        rec.record_type === "Presentation" &&
+        rec.fields.inventory_item_id === item.id &&
+        (rec.state === "presented" || rec.state === "bound")
+      ) {
         if (isProduction)
           throw new Error(
             `presentation_conflict: '${item.alias}' already has an active presentation at station '${rec.fields.station_id}'`,
           );
         // Non-production purposes: record-conflict rather than refuse-at-emit (§12.1).
-        const conflicted = world.create("Presentation", input.presentation_alias ?? "", "conflicted", {
-          inventory_item_id: item.id,
-          station_id: station.id,
-          actor_id: input.actor_id,
-          caller_type: input.caller_type,
-          run_id: input.run_alias,
-          run_step_id: input.run_step_alias,
-          presentation_purpose: purpose,
-          intended_operation: input.intended_operation,
-          scan_value: input.scan_value,
-          scan_type: input.scan_type,
-          presentation_source: input.presentation_source,
-          presentation_status: "conflicted",
-          presented_at: input.presented_at,
-          expires_at: input.expires_at,
-          conflict_of_presentation_id: rec.id,
-          idempotency_key: input.idempotency_key,
-        });
+        const conflicted = world.create(
+          "Presentation",
+          input.presentation_alias ?? "",
+          "conflicted",
+          {
+            inventory_item_id: item.id,
+            station_id: station.id,
+            actor_id: input.actor_id,
+            caller_type: input.caller_type,
+            run_id: input.run_alias,
+            run_step_id: input.run_step_alias,
+            presentation_purpose: purpose,
+            intended_operation: input.intended_operation,
+            scan_value: input.scan_value,
+            scan_type: input.scan_type,
+            presentation_source: input.presentation_source,
+            presentation_status: "conflicted",
+            presented_at: input.presented_at,
+            expires_at: input.expires_at,
+            conflict_of_presentation_id: rec.id,
+            idempotency_key: input.idempotency_key,
+          },
+        );
         world.emit("PRESENTATION_CONFLICT_DETECTED", "PresentInventoryAtStation", {
           presentation_id: conflicted.id,
           conflict_of_presentation_id: rec.id,
@@ -3349,7 +3377,9 @@ export const HANDLERS: Record<string, H> = {
       );
     const terminal = ["consumed", "rejected", "cleared", "conflicted"];
     if (terminal.includes(presentation.state))
-      throw new Error(`presentation_terminal: '${input.presentation_alias}' is ${presentation.state}`);
+      throw new Error(
+        `presentation_terminal: '${input.presentation_alias}' is ${presentation.state}`,
+      );
     presentation.state = "rejected";
     presentation.fields.presentation_status = "rejected";
     presentation.fields.rejected_at = input.rejected_at;
@@ -3368,7 +3398,9 @@ export const HANDLERS: Record<string, H> = {
       );
     const terminal = ["consumed", "rejected", "cleared", "conflicted"];
     if (terminal.includes(presentation.state))
-      throw new Error(`presentation_terminal: '${input.presentation_alias}' is ${presentation.state}`);
+      throw new Error(
+        `presentation_terminal: '${input.presentation_alias}' is ${presentation.state}`,
+      );
     presentation.state = "cleared";
     presentation.fields.presentation_status = "cleared";
     presentation.fields.cleared_at = input.cleared_at;
@@ -3398,7 +3430,10 @@ export const HANDLERS: Record<string, H> = {
       throw new Error(
         `presentation_wrong_actor: consuming actor '${input.actor_id}' does not match the presenting actor '${presentation.fields.actor_id}'`,
       );
-    if (input.consuming_operation != null && presentation.fields.intended_operation !== input.consuming_operation)
+    if (
+      input.consuming_operation != null &&
+      presentation.fields.intended_operation !== input.consuming_operation
+    )
       throw new Error(
         `consuming_operation_mismatch: consuming '${input.consuming_operation}' but Presentation.intended_operation is '${presentation.fields.intended_operation}'`,
       );

@@ -11,13 +11,7 @@
 import { createHash } from "node:crypto";
 
 export type DecodedRecordType =
-  | "Station"
-  | "Run"
-  | "RunStep"
-  | "InventoryItem"
-  | "ShipmentLine"
-  | "Certificate"
-  | "Attachment";
+  "Station" | "Run" | "RunStep" | "InventoryItem" | "ShipmentLine" | "Certificate" | "Attachment";
 
 export interface DecodedScanResult {
   decoded_record_type: DecodedRecordType | "unresolved";
@@ -66,7 +60,9 @@ export function decodeLabel(
     };
   const [type, alias, cs] = parts;
   const isKnown = (KNOWN_TYPES as string[]).includes(type);
-  const recordType: DecodedRecordType | "unresolved" = isKnown ? (type as DecodedRecordType) : "unresolved";
+  const recordType: DecodedRecordType | "unresolved" = isKnown
+    ? (type as DecodedRecordType)
+    : "unresolved";
   let checksumVerified: true | false | "absent" = "absent";
   if (cs !== undefined && cs !== "") {
     checksumVerified = isKnown && checksumFor(type, alias) === cs;

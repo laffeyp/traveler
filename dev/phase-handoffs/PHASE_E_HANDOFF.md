@@ -130,7 +130,7 @@ Four new SDD practices recorded in `dev/KIT_DIARY.md` Entry 37:
 | Whole-bench cross-driver | 46 scenarios diff-to-zero PASS (was 37) |
 | Vitest | 462 tests across 60 files (was 432/58) |
 | §15 acceptance | 33 of 33 pass or pass-in-part |
-| Gates untouched | validate:contracts, validate:schemas, backend gate (15 durability proofs), tsc 0, prettier clean |
+| Gates untouched | validate:contracts, validate:schemas, backend gate (14 durability proofs; no Phase E-specific proof landed), tsc 0, prettier clean |
 
 ## 8. What returns
 

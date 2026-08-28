@@ -2,7 +2,7 @@
 
 Scored 2026-08-28 against the 33 §15 criteria in `specs/physical-presence/boundary-spec-v0.10.md`. Every row cites at least one artefact or a reason it does not pass. The boundary implementation lives in `src/driver/handlers.ts` (five lifecycle handlers + RegisterStation + the InstallInventory extension), `src/driver/driver.ts` (tuple-aware idempotency and access_decision_id), `src/driver/backend.ts` (JSON-expression partial index), and `contracts/*.yaml` (records, operations, events, state machines, authorization rules, failure classes, reason codes).
 
-**Score: 33 of 33 pass.** No row is pass-in-part.
+**Score: 33 of 33 pass or pass-in-part.** One row (criterion 31, `required_presentation_on_install` run-close rule) is pass-in-part — the rule is documented as a candidate in the boundary spec but is not yet registered in `contracts/run-close-rules.yaml`. The rule ships when the first scenario opts a factory node into runtime-enforced presence. Every other row is pass with a cited artefact.
 
 ## What the boundary covers
 

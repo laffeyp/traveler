@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/events/PRESENTATION_CLEARED.payload.schema.json",
+  "title": "PRESENTATION_CLEARED payload (baseline; owning_module=physical_presence)",
+  "type": "object"
+}
