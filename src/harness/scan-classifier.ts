@@ -50,11 +50,16 @@ export function classifyScan(
   if (decoded.decoded_record_type === "unresolved") return { scan_class: "handoff_gap" };
 
   if (context.queued_operation) {
-    const inputField = context.queued_input_field ?? "target_alias";
+    // operation_binding requires the caller to name WHICH input field on the queued operation receives
+    // the decoded alias. A default like "target_alias" would land the scan on a field no registered
+    // operation reads, and the receiving handler would silently discard it — the same silent-drop
+    // failure the poka-yoke discipline (grammar/PRINCIPLES.md commitment 2) exists to close. When the
+    // caller omits queued_input_field the classifier returns handoff_gap instead of guessing.
+    if (!context.queued_input_field) return { scan_class: "handoff_gap" };
     return {
       scan_class: "operation_binding",
       fire_operation: context.queued_operation,
-      operation_input: { [inputField]: decoded.decoded_record_alias },
+      operation_input: { [context.queued_input_field]: decoded.decoded_record_alias },
     };
   }
 

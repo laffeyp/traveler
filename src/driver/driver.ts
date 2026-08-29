@@ -8,7 +8,12 @@
 import { World } from "./world.ts";
 import type { FactoryRecord, FactoryEvent } from "./world.ts";
 import { HANDLERS } from "./handlers.ts";
-import { opIdempotency, callerMayInvoke, opAuthorizationRule } from "./registry.ts";
+import {
+  opIdempotency,
+  callerMayInvoke,
+  opAuthorizationRule,
+  opIdempotencyTupleFields,
+} from "./registry.ts";
 import { asBuiltProjection, serialHistory } from "./projections.ts";
 import type { CallerContext, VisibilityDecision, VisibilityLevel } from "./visibility.ts";
 import { summarizeRecord, notFoundResponse } from "./visibility.ts";
@@ -37,15 +42,13 @@ export class InMemoryProductDriver {
   // Only PresentInventoryAtStation opts into the tuple check today; other required_idempotency_key ops
   // continue to return the cached result on any hit.
   private idempotencyMemoTuples = new Map<string, string>();
+  // The tuple shape is registry-driven (contracts/operations.yaml:idempotency_tuple_fields). An
+  // operation that opts in declares its field list there; the driver reads only the vocabulary. An
+  // operation with no declared tuple skips the check entirely — same behaviour as before Phase E.
   private static tupleFor(op: string, input: any): string | undefined {
-    if (op === "PresentInventoryAtStation")
-      return JSON.stringify([
-        input?.inventory_item_alias,
-        input?.station_alias,
-        input?.actor_id,
-        input?.presentation_purpose,
-      ]);
-    return undefined;
+    const fields = opIdempotencyTupleFields.get(op);
+    if (!fields || fields.length === 0) return undefined;
+    return JSON.stringify(fields.map((field) => input?.[field]));
   }
 
   setClock(clock: string) {
@@ -154,10 +157,18 @@ export class InMemoryProductDriver {
         let handlerOutput = handler(this.world, input, actorId, actorCallerType) ?? {};
         // Phase E, sprint 098: stamp a deterministic access_decision_id on EvaluateAccess's output
         // (boundary-spec-v0.10 §4.2). Derivation: sha256(correlation_id ‖ step_id ‖ actor_id ‖
-        // caller_type ‖ target_alias), hex, first 16 chars. Deterministic per call.
+        // caller_type ‖ target_alias ‖ pre_call_seq), hex, first 16 chars.
+        //
+        // The `pre_call_seq` term is the review 2026-08-28 fix: without it, two EvaluateAccess calls
+        // that named the same target under the same actor and caller_type within one step_id produced
+        // an identical id — the audit trail's stated purpose is to distinguish those two decisions.
+        // `before` is captured at line 106 (this.world.seq before the handler ran); each invocation
+        // reads a strictly-different value because EvaluateAccess always emits at least one event, and
+        // the wrapper snapshot advances seq monotonically. Determinism per scenario replay holds: the
+        // pre-call seq is a function of the ordered event trace up to that call.
         if (op === "EvaluateAccess" && handlerOutput != null && typeof handlerOutput === "object") {
           const target = input?.target_object ?? input?.resource_alias ?? "";
-          const material = `${this.world.correlation}|${stepId ?? ""}|${actorId ?? ""}|${actorCallerType ?? ""}|${target}`;
+          const material = `${this.world.correlation}|${stepId ?? ""}|${actorId ?? ""}|${actorCallerType ?? ""}|${target}|${before}`;
           const hash = createHash("sha256").update(material).digest("hex").slice(0, 16);
           handlerOutput = { ...handlerOutput, access_decision_id: hash };
         }

@@ -138,7 +138,7 @@ To the team that supplied the boundary specification:
 
 - The v0.10 specification at `specs/physical-presence/boundary-spec-v0.10.md`. Every mechanism claim grounded against a file:line.
 - The runtime at `src/driver/handlers.ts:3128+`, `src/driver/handlers.ts:1205` (InstallInventory extension), `src/driver/backend.ts` (concurrency index), `src/driver/driver.ts` (tuple-aware idempotency and access_decision_id).
-- Nine scenarios and the 17-arm mutation suite as the regression net.
+- Ten scenarios (VF-038 through VF-047) and the 19-arm mutation suite as the regression net. VF-047 landed with the 2026-08-28 review response; two of the mutation arms are the review's direct-call additions for chronological expiry and fail-closed semantics.
 - The scan contract as a harness surface at `src/harness/scan-decoder.ts` and `src/harness/scan-classifier.ts`. Pure functions ready for Phase F's synthetic-scan runner.
 - The acceptance file at `docs/PHYSICAL_PRESENCE_ACCEPTANCE.md`.
 - This document.

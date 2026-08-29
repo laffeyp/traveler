@@ -331,7 +331,11 @@ state_machines:
   # handler call from InstallInventory (§9.1 option (i)), not through executeOperation.
   - record_type: Presentation
     owning_module: physical_presence
-    state_field: presentation_status
+    # state_field: state — the lifecycle lives on record.state, the same home Redline uses. The earlier
+    # value 'presentation_status' had been echoed as a duplicate field on every write; the review
+    # of Phase E (2026-08-28) found the two representations would silently diverge under a future edit
+    # and had no reader depending on the mirror. record.state is now the single source of truth.
+    state_field: state
     initial_state: presented
     terminal_states: [consumed, rejected, cleared, conflicted]
     creation_transition: explicit

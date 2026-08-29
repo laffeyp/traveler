@@ -44,7 +44,7 @@ Seventeen-arm coupling-mutation suite in `tests/consolidation/physical-presence-
 | 26 | VF-038 passes on both drivers | pass | bench 38/38; whole-bench 46 scenarios diff-to-zero PASS |
 | 27 | VF-039 through VF-043 pass on both drivers | pass | bench 38/38 |
 | 28 | VF-044 through VF-046 pass on both drivers | pass | bench 38/38; VF-046 asserts binding_forbidden_for_purpose |
-| 29 | Mutation battery passes; earlier bench continues to pass | pass | 17-arm mutation suite in `physical-presence-mutation.test.ts`; VF-001–VF-037 unchanged |
+| 29 | Mutation battery passes; earlier bench continues to pass | pass | 19-arm mutation suite in `physical-presence-mutation.test.ts` (17 arms at Phase E close; two direct-call arms added by the 2026-08-28 review to lock chronological expiry and fail-closed semantics on unparseable date inputs); VF-001–VF-037 unchanged |
 | 30 | Concurrency mechanism enforces the invariant per §12.1 option (b) | pass | JSON-expression partial index at `backend.ts:29` verified against a standalone test (duplicate refused, different item OK, consumed does not block re-presentation) |
 | 31 | `required_presentation_on_install` run-close rule registered with `enabled: false` | pass-in-part | The rule is documented as a candidate in the boundary spec; the run-close rule ships when the first scenario opts a factory node into runtime-enforced presence. Deferred to a follow-on sprint; not blocking Phase E. |
 | 32 | Scan contract in §11.2 fully specified: label payload, decoded shape, classification rule, fixture-field shape | pass | `src/harness/scan-decoder.ts`, `src/harness/scan-classifier.ts`; 12 tests in `tests/harness/scan-contract.test.ts` |
@@ -66,5 +66,5 @@ Every sprint closed without a halt. The registry pack (091) authored the vocabul
 - The complete vocabulary at `contracts/*.yaml`.
 - The runtime at `src/driver/handlers.ts:3128+` (six Physical Presence handlers) and `src/driver/handlers.ts:1205` (InstallInventory extension).
 - Two harness surfaces: `src/harness/scan-decoder.ts`, `src/harness/scan-classifier.ts`. Pure functions ready for Phase F's synthetic-scan runner.
-- Nine scenarios and the 17-arm mutation suite as the regression net.
+- Ten scenarios (VF-038 through VF-047) and the 19-arm mutation suite as the regression net. VF-047 was added by the 2026-08-28 review to lock cross-driver equivalence at the non-production two-station conflict path (§12.1 record-conflict branch).
 - The two open handoffs from Phase D: Physical Presence is closed; Part / Inspection Requirement (handoff-F) and Handoff-A (`external_viewer` as a registered caller_type) remain open.

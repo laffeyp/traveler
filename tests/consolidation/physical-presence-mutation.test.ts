@@ -105,12 +105,17 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     );
   });
 
-  it("skipping the expiry check in InstallInventory makes VF-040 red", () => {
+  it("erasing Presentation.expires_at at InstallInventory time lets a stale presentation install; VF-040 goes red on the missing refusal", () => {
+    // What this mutation actually does: it wraps InstallInventory so the resolved Presentation's
+    // expires_at is pushed to 2099. VF-040 asserts a `presentation_expired` refusal at install time;
+    // when the expiry moves out, the refusal never fires and the scenario turns red. The mutation
+    // is on the data the guard reads, not on the guard's code, and that's what makes it a coupling
+    // test: if a future edit routed InstallInventory's expiry check through a cached snapshot instead
+    // of the live record, this arm would still catch the decoupling.
     withMutation(
       "InstallInventory",
       (orig) =>
         function (this: any, world: any, input: any, actor: any, callerType: any) {
-          // Advance the presentation's expires_at into the future so InstallInventory does not refuse
           const presentation = input.presentation_alias
             ? world.records.get(world.aliasToId.get(input.presentation_alias))
             : null;
@@ -150,16 +155,19 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     );
   });
 
-  it("skipping the consuming_operation_mismatch check in ConsumePresentation makes VF-045 red", () => {
-    // VF-045 clears (not consumes) the presentation. Mutation: make ClearPresentedItem walk to consumed
-    // instead of cleared. The scenario expects presentation.state == cleared, so a consumed value fails.
+  it("ClearPresentedItem walking to 'consumed' instead of 'cleared' makes VF-045 red on the terminal-state assertion", () => {
+    // VF-045 clears (not consumes) the presentation. The mutation replaces ClearPresentedItem with a
+    // handler that walks the record to 'consumed' and emits PRESENTATION_CONSUMED. VF-045 asserts
+    // presentation.state == cleared at the end of the rework path; a 'consumed' terminal fails that
+    // check. The scenario is red because the wrong terminal state landed, not because a specific
+    // guard was skipped. That's the honest description: this arm couples ClearPresentedItem's own
+    // walk-target to the scenario's post-condition.
     withMutation(
       "ClearPresentedItem",
       () =>
         function (this: any, world: any, input: any, _actor: any, _callerType: any) {
           const presentation = world.get(input.presentation_alias);
           presentation.state = "consumed";
-          presentation.fields.presentation_status = "consumed";
           world.emit("PRESENTATION_CONSUMED", "ClearPresentedItem", {
             presentation_id: presentation.id,
           });
@@ -237,14 +245,15 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     );
   });
 
-  it("skipping the actor check in ConsumePresentation is caught by VF-038's PRESENTATION_CONSUMED assertion", () => {
-    // Mutation: ConsumePresentation succeeds but forgets to actually mutate the record. VF-038 asserts
-    // Presentation.state == consumed at the end; the mutation leaves it bound, which fails the assertion.
+  it("ConsumePresentation emitting PRESENTATION_CONSUMED without walking the record makes VF-038 red on the final state", () => {
+    // The mutation replaces ConsumePresentation with a handler that emits the event but never sets
+    // presentation.state to 'consumed'. VF-038 asserts presentation.state == consumed at scenario end;
+    // a 'bound' state fails that assertion. The arm couples the emit-plus-walk pattern to the terminal
+    // state check — decoupling the two (emit without walk) is the exact failure mode this catches.
     withMutation(
       "ConsumePresentation",
       () =>
         function (world: any, _input: any, _actor: any, _callerType: any) {
-          // No-op: pretend we consumed but do not
           world.emit("PRESENTATION_CONSUMED", "ConsumePresentation", {
             presentation_id: "phantom",
           });
@@ -315,6 +324,77 @@ describe("Physical Presence: mutations couple to specific scenarios", () => {
     );
     expect(result.succeeded).toBe(false);
     expect(result.failureClass).toBe("station_alias_conflict");
+  });
+
+  it("expiry compares chronologically, not lexically: BindPresentedItemToRunStep refuses an already-elapsed presentation whose string sorts higher", () => {
+    // The lexical trap the codebase has warned against: '2026-9-1T14:00:00Z' sorts LEXICALLY after
+    // '2026-08-28T15:00:00Z', so a string-comparison guard would treat the September date as still
+    // in the future when the world clock is at late August of the same year. Date.parse restores
+    // chronological order and the refusal fires. This arm is a direct call, not a scenario, because
+    // the shape being tested is the guard's semantics — a lexical implementation passes every VF-*
+    // scenario today because every scenario uses zero-padded ISO-8601 UTC strings.
+    const driver = runScenarioWithDriver("VF-038").driver;
+    driver.setClock("2026-09-15T00:00:00Z");
+    const world = (driver as any).world;
+    // Fabricate a presentation record in state 'presented' with an unpadded September expires_at.
+    const record = world.create("Presentation", "expiry_probe", "presented", {
+      inventory_item_id: world.aliasToId.get("gasket_001"),
+      station_id: world.aliasToId.get("station_b4"),
+      actor_id: "op",
+      caller_type: "operator",
+      presentation_purpose: "production_install",
+      intended_operation: "InstallInventory",
+      expires_at: "2026-9-1T14:00:00Z", // chronologically ~14 days before the clock, lexically after
+    });
+    const runStep = [...world.records.values()].find((r: any) => r.record_type === "RunStep");
+    const result = driver.executeOperation(
+      "BindPresentedItemToRunStep",
+      {
+        presentation_alias: record.alias,
+        run_alias: runStep?.fields?.run,
+        run_step_alias: runStep?.alias,
+        bound_at: "2026-09-15T00:00:00Z",
+      },
+      "operator",
+      "expiry-test",
+      "expiry-key",
+      "op",
+    );
+    expect(result.succeeded).toBe(false);
+    expect(result.failureClass).toBe("presentation_expired");
+  });
+
+  it("expiry check fails CLOSED when either expires_at or world.clock is unparseable", () => {
+    // A guard that reads `world.clock >= expires_at` on strings that don't parse as dates
+    // must refuse the presentation rather than silently allow it. Matches VerifyCertificate's
+    // supplier_document_expired discipline.
+    const driver = runScenarioWithDriver("VF-038").driver;
+    const world = (driver as any).world;
+    const record = world.create("Presentation", "unparseable_probe", "bound", {
+      inventory_item_id: world.aliasToId.get("gasket_001"),
+      station_id: world.aliasToId.get("station_b4"),
+      actor_id: "op",
+      caller_type: "operator",
+      presentation_purpose: "production_install",
+      intended_operation: "InstallInventory",
+      expires_at: "not-a-date-at-all",
+    });
+    const result = driver.executeOperation(
+      "ConsumePresentation",
+      {
+        presentation_alias: record.alias,
+        consuming_operation: "InstallInventory",
+        consuming_record_id: "some_installation",
+        actor_id: "op",
+        consumed_at: "2026-08-28T15:00:00Z",
+      },
+      "system_worker",
+      "expiry-unparseable",
+      "expiry-unparseable-key",
+      "op",
+    );
+    expect(result.succeeded).toBe(false);
+    expect(result.failureClass).toBe("presentation_expired");
   });
 
   it("adapter cannot invoke PresentInventoryAtStation (authorization wrapper refuses)", () => {

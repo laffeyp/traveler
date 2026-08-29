@@ -80,6 +80,54 @@ function ruleAppliesToSerial(rule: any, serial: string): boolean {
  * cannot assert the required work was done, so the caller refuses. (Practice #19 — a guard written as
  * "refuse only if I can see the bad thing" falls open on exactly the input nobody pictured.)
  */
+/**
+ * Physical Presence Boundary helpers (Phase E; boundary-spec-v0.10 §6, §9.1).
+ *
+ * `presentationExpired` compares `expires_at` and `world.clock` CHRONOLOGICALLY, via Date.parse, and
+ * FAILS CLOSED on either input being unparseable — matching the discipline VerifyCertificate carries
+ * for supplier_document_expired (handlers.ts §receiving_evidence). Lexical string ordering would let
+ * a caller writing '2026-9-1T14:00:00Z' walk straight past a guard that shipped comparisons like
+ * `world.clock >= presentation.fields.expires_at`.
+ *
+ * `assertPresentationConsumable` is the shared check applied at both consumption sites: the direct
+ * `ConsumePresentation` handler and `InstallInventory`'s in-process call (boundary-spec §9.1 option
+ * (i)). A single helper is what stops the two paths from drifting when one is tightened and the other
+ * is not.
+ */
+function presentationExpired(presentation: FactoryRecord, world: World): boolean {
+  const expiresAt = presentation.fields.expires_at;
+  if (expiresAt == null) return false;
+  const expiry = Date.parse(String(expiresAt));
+  const clock = Date.parse(String(world.clock));
+  if (!Number.isFinite(expiry) || !Number.isFinite(clock)) return true; // fail closed on unparseable inputs
+  return clock >= expiry;
+}
+
+function assertPresentationConsumable(
+  presentation: FactoryRecord,
+  expectedOperation: string,
+  actorId: string | undefined,
+  world: World,
+): void {
+  const alias = presentation.alias || presentation.id;
+  if (presentation.state !== "bound")
+    throw new Error(
+      presentation.state === "presented"
+        ? `presentation_not_bound: '${alias}' is presented, not bound`
+        : `presentation_not_active: '${alias}' is ${presentation.state}`,
+    );
+  if (presentationExpired(presentation, world))
+    throw new Error(`presentation_expired: '${alias}' expired`);
+  if (presentation.fields.intended_operation !== expectedOperation)
+    throw new Error(
+      `consuming_operation_mismatch: Presentation.intended_operation is '${presentation.fields.intended_operation}', not ${expectedOperation}`,
+    );
+  if (actorId != null && presentation.fields.actor_id !== actorId)
+    throw new Error(
+      `presentation_wrong_actor: consuming actor '${actorId}' does not match the presenting actor '${presentation.fields.actor_id}'`,
+    );
+}
+
 function stepRequirementGaps(world: World, runStep: FactoryRecord, runStepAlias: string): string[] {
   const snapshot = world
     .byType("RunContextSnapshot")
@@ -1213,18 +1261,7 @@ export const HANDLERS: Record<string, H> = {
         throw new Error(
           `presentation_not_found: '${input.presentation_alias}' is a ${presentation.record_type}, not a Presentation`,
         );
-      if (presentation.state !== "bound")
-        throw new Error(
-          presentation.state === "presented"
-            ? `presentation_not_bound: '${input.presentation_alias}' is presented, not bound`
-            : `presentation_not_active: '${input.presentation_alias}' is ${presentation.state}`,
-        );
-      if (presentation.fields.expires_at != null && world.clock >= presentation.fields.expires_at)
-        throw new Error(`presentation_expired: '${input.presentation_alias}' expired`);
-      if (presentation.fields.intended_operation !== "InstallInventory")
-        throw new Error(
-          `consuming_operation_mismatch: Presentation.intended_operation is '${presentation.fields.intended_operation}', not InstallInventory`,
-        );
+      assertPresentationConsumable(presentation, "InstallInventory", input.actor_id, world);
       const boundChildId = presentation.fields.inventory_item_id;
       if (child.id !== boundChildId)
         throw new Error(
@@ -3281,7 +3318,6 @@ export const HANDLERS: Record<string, H> = {
             scan_value: input.scan_value,
             scan_type: input.scan_type,
             presentation_source: input.presentation_source,
-            presentation_status: "conflicted",
             presented_at: input.presented_at,
             expires_at: input.expires_at,
             conflict_of_presentation_id: rec.id,
@@ -3308,7 +3344,6 @@ export const HANDLERS: Record<string, H> = {
       scan_value: input.scan_value,
       scan_type: input.scan_type,
       presentation_source: input.presentation_source,
-      presentation_status: "presented",
       presented_at: input.presented_at,
       expires_at: input.expires_at,
       access_decision_id: input.access_decision_id,
@@ -3334,8 +3369,8 @@ export const HANDLERS: Record<string, H> = {
         `presentation_not_active: '${input.presentation_alias}' is ${presentation.state}, not presented`,
       );
     // §12.6/§12.7 rejected-not-blocking is enforced elsewhere; a terminal-state presentation is refused here.
-    // Expiry predicate (§6).
-    if (presentation.fields.expires_at != null && world.clock >= presentation.fields.expires_at)
+    // Expiry predicate (§6) via presentationExpired: chronological, fail-closed on unparseable inputs.
+    if (presentationExpired(presentation, world))
       throw new Error(`presentation_expired: presentation '${input.presentation_alias}' expired`);
     // Purpose gate: support_diagnostics may not bind (§4.2, §5.3).
     if (presentation.fields.presentation_purpose === "support_diagnostics")
@@ -3358,7 +3393,6 @@ export const HANDLERS: Record<string, H> = {
         );
     }
     presentation.state = "bound";
-    presentation.fields.presentation_status = "bound";
     presentation.fields.run_id = input.run_alias;
     presentation.fields.run_step_id = input.run_step_alias;
     presentation.fields.bound_at = input.bound_at;
@@ -3381,7 +3415,6 @@ export const HANDLERS: Record<string, H> = {
         `presentation_terminal: '${input.presentation_alias}' is ${presentation.state}`,
       );
     presentation.state = "rejected";
-    presentation.fields.presentation_status = "rejected";
     presentation.fields.rejected_at = input.rejected_at;
     presentation.fields.rejection_reason = input.rejection_reason;
     world.emit("PRESENTED_ITEM_REJECTED", "RejectPresentedItem", {
@@ -3402,7 +3435,6 @@ export const HANDLERS: Record<string, H> = {
         `presentation_terminal: '${input.presentation_alias}' is ${presentation.state}`,
       );
     presentation.state = "cleared";
-    presentation.fields.presentation_status = "cleared";
     presentation.fields.cleared_at = input.cleared_at;
     world.emit("PRESENTATION_CLEARED", "ClearPresentedItem", {
       presentation_id: presentation.id,
@@ -3410,7 +3442,8 @@ export const HANDLERS: Record<string, H> = {
   },
   ConsumePresentation(world, input) {
     // Boundary-spec-v0.10 §5.6. Called both through executeOperation (system_worker path) and directly
-    // from InstallInventory's transaction (§9.1 option (i)). Refusals: presentation_not_found,
+    // from InstallInventory's transaction (§9.1 option (i)). The same assertPresentationConsumable helper
+    // runs at both entry points, so tightening one path tightens the other. Refusals: presentation_not_found,
     // presentation_not_active, presentation_not_bound, presentation_expired, presentation_wrong_actor,
     // consuming_operation_mismatch.
     const presentation = world.get(input.presentation_alias);
@@ -3418,27 +3451,10 @@ export const HANDLERS: Record<string, H> = {
       throw new Error(
         `presentation_not_found: '${input.presentation_alias}' is a ${presentation.record_type}, not a Presentation`,
       );
-    if (presentation.state !== "bound")
-      throw new Error(
-        presentation.state === "presented"
-          ? `presentation_not_bound: '${input.presentation_alias}' is still presented, not bound`
-          : `presentation_not_active: '${input.presentation_alias}' is ${presentation.state}`,
-      );
-    if (presentation.fields.expires_at != null && world.clock >= presentation.fields.expires_at)
-      throw new Error(`presentation_expired: presentation '${input.presentation_alias}' expired`);
-    if (input.actor_id != null && presentation.fields.actor_id !== input.actor_id)
-      throw new Error(
-        `presentation_wrong_actor: consuming actor '${input.actor_id}' does not match the presenting actor '${presentation.fields.actor_id}'`,
-      );
-    if (
-      input.consuming_operation != null &&
-      presentation.fields.intended_operation !== input.consuming_operation
-    )
-      throw new Error(
-        `consuming_operation_mismatch: consuming '${input.consuming_operation}' but Presentation.intended_operation is '${presentation.fields.intended_operation}'`,
-      );
+    if (input.consuming_operation == null)
+      throw new Error("validation_error: ConsumePresentation requires a consuming_operation input");
+    assertPresentationConsumable(presentation, input.consuming_operation, input.actor_id, world);
     presentation.state = "consumed";
-    presentation.fields.presentation_status = "consumed";
     presentation.fields.consumed_at = input.consumed_at;
     presentation.fields.consuming_record_id = input.consuming_record_id;
     world.emit("PRESENTATION_CONSUMED", "ConsumePresentation", {

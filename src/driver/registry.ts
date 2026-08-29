@@ -30,6 +30,22 @@ export const opIdempotency = new Map<string, string>(
 );
 
 /**
+ * operation name -> the ordered list of input field names that form its idempotency tuple. Only operations
+ * that opt in (declaring `idempotency_tuple_fields` in `contracts/operations.yaml`) have an entry.
+ *
+ * The tuple lets the driver's tuple-aware branch refuse `idempotency_conflict` when the same key is reused
+ * against a different semantic input — the vocabulary declares which fields identify the call, so a new
+ * operation that wants tuple-aware behaviour registers its fields here rather than editing runtime code.
+ * Phase E, sprint 097 shipped the mechanism against a runtime-only tuple for PresentInventoryAtStation;
+ * the review 2026-08-28 moved the field list into the registry.
+ */
+export const opIdempotencyTupleFields = new Map<string, string[]>(
+  (readYaml("contracts/operations.yaml").operations ?? [])
+    .filter((operation: any) => Array.isArray(operation.idempotency_tuple_fields))
+    .map((operation: any) => [operation.name, operation.idempotency_tuple_fields as string[]]),
+);
+
+/**
  * Registered event -> its registered producer operations (`contracts/events.yaml`). The emit poka-yoke (SDD
  * technique #2 / B-Q-16): a signal is validated at the SPEAKER'S mouth — an emitted event must be registered
  * AND its producer must be a registered producer of it, else the emit throws and the operation rolls back.

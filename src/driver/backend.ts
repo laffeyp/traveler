@@ -32,10 +32,18 @@ export class BackendProductDriver {
       -- 'bound')) raise SQLITE_CONSTRAINT_UNIQUE at the write; the operation wrapper (driver.ts:39) catches the throw
       -- and re-emits presentation_conflict. Terminal presentations (consumed, rejected, cleared, conflicted) do not
       -- count toward the active set, so a rejected-then-re-presented sequence (spec §12.6) is permitted.
+      --
+      -- The purpose filter is load-bearing: §12.1 refuses-at-emit ONLY for the production purposes
+      -- (production_install, production_measurement_support). Non-production purposes (receiving_review,
+      -- quality_review, inspection, rework, support_diagnostics) take the record-conflict path — the in-memory
+      -- handler writes a Presentation in state 'conflicted' and emits PRESENTATION_CONFLICT_DETECTED. Without the
+      -- purpose filter the backend index would refuse those writes too and the two drivers would diverge on the
+      -- same input (review 2026-08-28; VF-047 locks the case in cross-driver diff-to-zero).
       CREATE UNIQUE INDEX IF NOT EXISTS ux_presentation_active_per_item
         ON records (json_extract(fields, '$.inventory_item_id'))
         WHERE record_type = 'Presentation'
-          AND state IN ('presented', 'bound');
+          AND state IN ('presented', 'bound')
+          AND json_extract(fields, '$.presentation_purpose') IN ('production_install', 'production_measurement_support');
     `);
     this.loadFromDisk();
   }

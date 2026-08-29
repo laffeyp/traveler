@@ -60,6 +60,19 @@ describe("scan-classifier: four branches from §11.2", () => {
     expect(result.operation_input).toEqual({ certificate_alias: "cert_001" });
   });
 
+  it("queued operation without queued_input_field returns handoff_gap (no silent field-name default)", () => {
+    // The classifier used to default the input field to "target_alias" when the caller omitted
+    // queued_input_field. No registered operation reads that field, so the receiving handler would
+    // silently discard the alias. The classifier now returns handoff_gap so the caller sees the miss.
+    const decoded = decodeLabel("Certificate:cert_001", now, "handheld_scan");
+    const result = classifyScan(decoded, {
+      queued_operation: "AcceptCertificateAsEvidence",
+    });
+    expect(result.scan_class).toBe("handoff_gap");
+    expect(result.fire_operation).toBeUndefined();
+    expect(result.operation_input).toBeUndefined();
+  });
+
   it("run step active + InventoryItem decoded: presence_asserting fires PresentInventoryAtStation", () => {
     const decoded = decodeLabel("InventoryItem:gasket_001", now, "fixture_seed");
     const result = classifyScan(decoded, {
