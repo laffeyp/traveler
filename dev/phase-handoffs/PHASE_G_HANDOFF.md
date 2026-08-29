@@ -34,9 +34,14 @@ Written 2026-08-29 at Phase G close (sprint 138). Returns the phase's outcome to
 ## Close state, measured 2026-08-29
 
 ```text
-validate:contracts     ok — 138 operations · 143 events · 45 records · 17 state machines ·
-                            37 authorization rules · 14 run-close rules ·
-                            27 failure classes (F2b +3, F2c protection) · 26 assertion types
+validate:contracts     ok — 16 registries loaded (F2d landed the loader parity for
+                            failure-classes.yaml, reason-codes.yaml, and
+                            visibility-profiles.yaml that F2c began). Counts from the
+                            command's own summary JSON: 138 operations · 143 events ·
+                            45 records · 17 state machines · 37 authorization rules ·
+                            14 run-close rules · 10 receiving rules · 26 assertion types ·
+                            8 visibility profiles · 59 failure classes ·
+                            51 reason codes · 5 projections · 3 reports · 23 modules
 validate:schemas       ok — 162 op schemas · 99 event payload schemas · 1 report schema ·
                             14/14 fixtures discriminate
 bench first_slice /    14/14 · 9/9 · 10/10 · 10/10 · 49/49 on both drivers

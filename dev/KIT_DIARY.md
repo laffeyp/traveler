@@ -1031,6 +1031,20 @@ Sprint execution reordered from the plan's sub-phase index to honour the cards' 
 
 **Sprint count.** Phase G holds 13 sprints (126–138). The `dev/sprints/` directory now runs contiguously from 001 through 138. Practice #37's grep confirms every closed sprint has a `## Built` entry.
 
+**Corrigendum, 2026-08-29.** A ship-review pass on Phase G surfaced four hygiene gaps that landed as three follow-on commits under the F2 arc, each with mutation-coupling proven.
+
+- **F2d (loader parity).** `src/registry/load.ts` now opens `contracts/failure-classes.yaml` and `contracts/reason-codes.yaml` alongside `visibility-profiles.yaml` (F2c). `validate.ts` sections 9d and 9e assert every `maps_to:` target resolves to a first-class `name:` entry in the same file. The summary line grows from `13 registries` to `16 registries` with three new count keys (`visibilityProfiles`, `failureClasses`, `reasonCodes`). The parity check surfaced a real pre-existing drift on the first run: `report_access_stale` mapped to `report_regeneration_required` (a GeneratedReport state name, not a failure class); fixed at source to map to `precondition_failed`. Practice #59 closes.
+- **F2e (allowlist record shape).** `contracts/modules.yaml` migrates `deferred_caller_types` from the bare-string F2c list to the record shape `{ name, note, next_phase }`. `validate.ts` section 9c asserts every entry carries all three fields non-empty and that the name is not also a live caller_type. A naked typo added to the allowlist has no note to write; the validator refuses with a specific message. Closes the F2c allowlist-edge false-secure gap the ship review named as finding 1. Practice #60 closes.
+- **F2f (criterion-28 vitest).** `tests/floor/blocker-view-throw-templates.test.ts` replaces the criterion-28 spot-check grep with a real check surface — five tests couple `canvas/handheld/BlockerView.dc.html` to `src/driver/handlers.ts` + `world.ts` + `driver.ts`. Every product-blocker id appears on the artboard; every id also appears as a throw or `failureClass:` return in the source file the mapping table names; the two sections stay separate; the four wrong_item and presentation_expired templates match verbatim. Mutation-coupling proven: renaming every `wrong_item` on the artboard turns two tests red. Adds a new practice below.
+- **Ledger shape drift closed.** HANDOFF, ROADMAP, and STATE §5e close paragraph now name the same 14 registry counts in the same order — the ones the F2d-extended validator prints. Finding 2 (phantom cite of "27 failure classes" in a list attributed to `validate:contracts`) closes because the command now prints failure classes too.
+
+Two new practices from this hygiene arc:
+
+- **(61) When a deferred-vocabulary allowlist would let a typo through, encode entries as records not strings.** F2c's bare-string `deferred_caller_types: [external_viewer]` let a future typo (`external_viewer_extra`) silently join the allowlist. F2e's `{ name, note, next_phase }` shape forces a human to write the note and name the closing phase; a typo has neither to write. The pattern generalizes to any deferred-vocabulary list: registered names can be bare; deferred names carry metadata. For TECHNIQUES.md.
+- **(62) A UI artboard's rendered failure-class or state name is verifiable against the source file that produces it.** F2f's vitest is 115 lines and catches the drift the criterion-28 grep could only spot-check. Extend to every UI-vs-runtime coupling: rendered operation names on action buttons, rendered state names on state-badge variants, rendered rule ids on disabled strips. For TECHNIQUES.md, UI class subsection.
+
+Ship holds. The four ship-review findings closed under F2d + F2e + F2f + the ledger refresh; the F2c sibling gap (audience field on the eight visibility profiles carries no validator) remains deferred to a future arc if a scenario forces it. Every existing gate green throughout; vitest grew 507/67 → 512/68 from F2f.
+
 ---
 
 ## Entry 40 — Post-Phase-F drift close: handoff-A track 1 plus three same-shape patterns, six shipped as templates (2026-08-28)

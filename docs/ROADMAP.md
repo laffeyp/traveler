@@ -8,7 +8,7 @@ Discipline every phase runs under: behaviour is data (the locked YAML registries
 
 | Gate | Result |
 |---|---|
-| `validate:contracts` | ok — 138 operations · 143 events · 45 records · 17 state machines · 37 authorization rules · 14 run-close rules · 26 assertion types |
+| `validate:contracts` | ok — 16 registries loaded (F2d); 138 operations · 143 events · 45 records · 17 state machines · 37 authorization rules · 14 run-close rules · 10 receiving rules · 26 assertion types · 8 visibility profiles · 59 failure classes · 51 reason codes · 5 projections · 3 reports · 23 modules |
 | `validate:schemas` | ok — 14/14 fixtures discriminate (162 op schemas · 99 event payload schemas · 1 report schema) |
 | `validate:demo-packs` | ok — 118 names across 2 packs |
 | bench first_slice / extended / receiving / physical_presence / all | 14/14 · 9/9 · 10/10 · 10/10 · 49/49 on both drivers |

@@ -200,7 +200,7 @@ Thirteen sprints (126–138) executed contiguously and closed on 2026-08-28 and 
 
 Two triggers evaluated at close, both **NOT FIRED**: Phase M (Physical Presence overlay reasons — no inspected screen carries an unmet Physical Presence need; domain trigger from B-Q-31/B-Q-32 still-open remains the Architect's call); handoff-A track 2 (no Phase G screen surfaces a customer read a downstream consumer today distinguishes per-customer). `docs/phase-g-ij-recommendation.md` recommends **Desktop-first alpha (Phase I)** for the I/J decision point.
 
-Gates at Phase G close (measured 2026-08-29): validate:contracts ok (138/143/45/17/37/14/27), validate:schemas ok (162 op schemas, 99 event payload schemas), bench 49/49 both drivers, whole-bench cross-driver diff-to-zero over 57 scenarios PASS, backend gate exit 0 with 15 durability proofs, vitest 507/507 across 67 files, tsc 0, prettier clean.
+Gates at Phase G close (measured 2026-08-29, refreshed after F2d loader parity): validate:contracts ok — 16 registries loaded, counts from the command's summary JSON: 138 operations · 143 events · 45 records · 17 state machines · 37 authorization rules · 14 run-close rules · 10 receiving rules · 26 assertion types · 8 visibility profiles · 59 failure classes · 51 reason codes · 5 projections · 3 reports · 23 modules. validate:schemas ok (162 op schemas, 99 event payload schemas, 1 report schema, 14/14 fixtures discriminate). Bench 49/49 both drivers, whole-bench cross-driver diff-to-zero over 57 scenarios PASS, backend gate exit 0 with 15 durability proofs, vitest 507/507 across 67 files, tsc 0, prettier clean.
 
 ## 6. What exists
 

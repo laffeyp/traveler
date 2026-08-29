@@ -26,7 +26,7 @@ The gates, at day's close:
 
 | Gate | Command | Result |
 |---|---|---|
-| Contract registry | `npm run validate:contracts` | ok — 138 operations · 143 events · 45 records · 17 state machines · 37 authorization rules · 14 run-close rules · 27 failure classes · 26 assertion types |
+| Contract registry | `npm run validate:contracts` | ok — 16 registries loaded; counts from the command's own summary JSON (F2d): 138 operations · 143 events · 45 records · 17 state machines · 37 authorization rules · 14 run-close rules · 10 receiving rules · 26 assertion types · 8 visibility profiles · 59 failure classes · 51 reason codes · 5 projections · 3 reports · 23 modules |
 | Schemas | `npm run validate:schemas` | ok — 162 op schemas · 99 event payload schemas · 1 report schema · 14/14 fixtures discriminate |
 | Generated vocabulary types | `npm run verify:types` | up to date |
 | Demo packs | `npm run validate:demo-packs` | ok — 118 names across 2 packs |

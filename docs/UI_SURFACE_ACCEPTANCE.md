@@ -97,7 +97,7 @@ Scored 2026-08-29 at Phase G close (sprint 138) against the 27 §14 criteria of 
 | 25 | `docs/phase-g-phase-m-trigger.md` + `docs/phase-g-handoff-a-track-2-trigger.md` exist — trigger status named | pass | sprint 137; both NOT FIRED at Phase G close |
 | 26 | `dev/phase-handoffs/PHASE_G_HANDOFF.md` exists in PHASE_E/F_HANDOFF shape | pass | sprint 138 |
 | 27 | Close signal: product registry delta zero, runtime handler delta zero | pass | `git diff --stat contracts/*.yaml src/driver/handlers.ts` across sprints 126–138 = empty; F2b + F2c commits sit under the F2 hygiene arc |
-| 28 | Message-shape sweep: every rendered blocker/refusal text matches the throw template at the cited handler site | pass | sprint 130 BlockerView eleven throw-template mapping table; spot-check greps against `src/driver/handlers.ts` and `src/driver/world.ts` confirm verbatim match |
+| 28 | Message-shape sweep: every rendered blocker/refusal text matches the throw template at the cited handler site | pass | sprint 130 BlockerView eleven throw-template mapping table; F2f (2026-08-29) replaces the spot-check grep with a real vitest at `tests/floor/blocker-view-throw-templates.test.ts` — five tests couple the artboard to the source: every product-blocker id appears on the artboard; every id also appears as a throw or `failureClass:` return in the source file the mapping table names; the two sections stay separate; the four wrong_item and presentation_expired templates match verbatim between source and artboard. Mutation-coupling proven — renaming every `wrong_item` on the artboard turns two tests red |
 
 ## Phase G deferred and reasoned
 
