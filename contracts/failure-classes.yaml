@@ -80,3 +80,16 @@ failure_classes:
   - { name: precondition_failed,           maps_to: state_transition_forbidden, new: false, spec_section: "runtime", used_by_sprint: runtime, note: "runtime-generic; the specific state a handler required was not present" }
   - { name: access_filtered,               new: true,                                  spec_section: "runtime", used_by_sprint: runtime, note: "runtime-generic; used by BoundedDrillDown and other access-aware reads when the response is filtered rather than denied" }
   - { name: receiving_check_unresolvable,  new: true,                                  spec_section: "runtime", used_by_sprint: runtime, note: "runtime-generic; RunReceivingCheck cannot resolve one of its required references" }
+
+  # --- Runtime-executor parents (2026-08-28 F2b, follow-on to the F2 close-out). Three parent classes
+  #     are thrown from the executor itself (driver.ts and world.ts), not from individual handlers.
+  #     Every Physical Presence child that maps_to one of them (six to state_transition_forbidden,
+  #     eight to authorization_denied, one to idempotency_conflict) was already registered; the parents
+  #     themselves were left as maps_to targets without a name: entry. F2b adds the three parents as
+  #     first-class name: entries so a caller filtering by failure_class sees them. Matches the same
+  #     "publish no name a hard filter refuses" discipline F2 established. Surfaced by the v0.8
+  #     re-review of the Phase G overlay spec (specs/physical-presence-ui-overlay/), F2 finding on the
+  #     three remaining Physical Presence parent classes.
+  - { name: state_transition_forbidden,    new: true,                                  spec_section: "runtime", used_by_sprint: F2b, note: "runtime-executor; thrown from world.ts moveState when no state-machine transition matches the operation and the record's current state" }
+  - { name: idempotency_conflict,          new: true,                                  spec_section: "runtime", used_by_sprint: F2b, note: "runtime-executor; thrown from driver.ts on a same-key different-tuple call to a transactional_unique_constraint operation, or on a duplicate write-boundary key" }
+  - { name: authorization_denied,          new: true,                                  spec_section: "runtime", used_by_sprint: F2b, note: "runtime-executor; thrown from driver.ts callerMayInvoke when the caller_type is not on the operation's authorization rule" }
