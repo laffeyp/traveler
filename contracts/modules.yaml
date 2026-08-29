@@ -19,6 +19,15 @@ caller_types:
   - service_account
   - support_user
 
+# Caller-type names published by other layers (visibility-profiles.yaml
+# intended_audience, scenario actor_type notes, etc.) that the runtime does
+# not authorize. Every name here is deferred to a boundary spec that will
+# register it as a live caller_type when a scenario forces the move. Present
+# here as a hard-filter allowlist so a typo in an intended_audience value
+# fails validate:contracts loudly. F2b + handoff-A track 1 origin.
+deferred_caller_types:
+  - external_viewer
+
 modules:
   - { id: procedure,              name: Procedure Module,                 first_slice: true }
   - { id: manufacturing_structure, name: Manufacturing Structure Module,  first_slice: true }

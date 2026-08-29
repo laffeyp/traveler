@@ -38,6 +38,8 @@ const moduleIds = new Set<string>(
   (registries.modules?.modules ?? []).map((moduleDef: any) => moduleDef.id),
 );
 const callerTypes = new Set<string>(registries.modules?.caller_types ?? []);
+const deferredCallerTypes = new Set<string>(registries.modules?.deferred_caller_types ?? []);
+const knownCallerTypes = new Set<string>([...callerTypes, ...deferredCallerTypes]);
 const records: any[] = registries.records?.records ?? [];
 const recordNames = new Set<string>(records.map((record) => record.name));
 const operations: any[] = registries.operations?.operations ?? [];
@@ -393,6 +395,29 @@ resolve(dependencyTable.projections, projectionNames, "dependency projection");
 const runStates = new Set<string>(asArray(machineByRecord.get("Run")?.states));
 for (const s of asArray(dependencyTable.run_states))
   if (!runStates.has(s)) err(`[VF-003] dependency Run state '${s}' not in Run state machine`);
+
+// ---- 9b. visibility-profiles.yaml intended_audience -------------------------
+// Handoff-A track 1 (F2 close-out) introduced an intended_audience field on
+// two customer-facing visibility profiles. The runtime never authorizes an
+// unregistered caller_type; the audience array holds the registered fallback
+// (access_admin) and intended_audience records what the profile means. A typo
+// in intended_audience would ship green today because no gate reads the field.
+// Assert every intended_audience value resolves against caller_types or the
+// deferred_caller_types allowlist on modules.yaml. F2b + handoff-A track 1
+// origin; user finding on the Post-Phase-F Phase-G-open review.
+const visibilityProfiles: any[] =
+  registries.visibilityProfiles?.visibility_profiles ?? [];
+for (const profile of visibilityProfiles) {
+  if (profile.intended_audience == null) continue;
+  const values = Array.isArray(profile.intended_audience)
+    ? profile.intended_audience
+    : [profile.intended_audience];
+  for (const value of values)
+    if (!knownCallerTypes.has(value))
+      err(
+        `[visibility-profiles] '${profile.name}': intended_audience '${value}' is not a registered caller_type and not in modules.yaml deferred_caller_types`,
+      );
+}
 
 // ---- 10. vf003 flag vs manifest drift (warnings) ----------------------------
 const manifestOps = new Set<string>(asArray(vf.operations));

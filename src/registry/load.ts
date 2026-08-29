@@ -25,6 +25,7 @@ export interface Registries {
   scenarioAssertions: any;
   observabilityProfiles: any;
   compatibilityProfiles: any;
+  visibilityProfiles: any;
   vf003: any;
 }
 
@@ -43,6 +44,7 @@ export function loadRegistries(): Registries {
     scenarioAssertions: readYaml("contracts/scenario-assertions.yaml"),
     observabilityProfiles: readYaml("contracts/observability-profiles.yaml"),
     compatibilityProfiles: readYaml("contracts/compatibility-profiles.yaml"),
+    visibilityProfiles: readYaml("contracts/visibility-profiles.yaml"),
     vf003: readYaml("scenarios/VF-003/references.yaml"),
   };
 }
