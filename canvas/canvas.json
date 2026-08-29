@@ -11,14 +11,18 @@
     { "file": "caller-profile-chip.dc.html",    "x": 2500, "y": 1620, "w":  480, "h":  460, "title": "Caller profile chip",     "print": "fixed" },
     { "file": "state-badge.dc.html",            "x": 3060, "y": 1620, "w":  480, "h":  560, "title": "State badge",             "print": "fixed" },
 
-    { "file": "blocker-card.dc.html",           "x": 1400, "y": 2320, "w":  500, "h":  620, "title": "Blocker card",            "print": "fixed" },
-    { "file": "visibility-badge.dc.html",       "x": 1980, "y": 2320, "w":  440, "h":  520, "title": "Visibility badge",        "print": "fixed" },
-    { "file": "action-button.dc.html",          "x": 2500, "y": 2320, "w":  480, "h":  620, "title": "Action button",           "print": "fixed" },
-    { "file": "disabled-action-strip.dc.html",  "x": 3060, "y": 2320, "w":  480, "h":  540, "title": "Disabled action strip",   "print": "fixed" },
+    { "file": "blocker-card.dc.html",           "x": 1400, "y": 2320, "w":  500, "h":  920, "title": "Blocker card",            "print": "fixed" },
+    { "file": "visibility-badge.dc.html",       "x": 1980, "y": 2320, "w":  440, "h":  720, "title": "Visibility badge",        "print": "fixed" },
+    { "file": "action-button.dc.html",          "x": 2500, "y": 2320, "w":  480, "h":  900, "title": "Action button",           "print": "fixed" },
+    { "file": "disabled-action-strip.dc.html",  "x": 3060, "y": 2320, "w":  480, "h":  920, "title": "Disabled action strip",   "print": "fixed" },
 
-    { "file": "runtime-states.dc.html",         "x": 1400, "y": 3060, "w":  720, "h": 2600, "title": "Runtime action states",   "print": "fixed" },
-    { "file": "empty-states.dc.html",           "x": 2220, "y": 3060, "w":  720, "h": 3200, "title": "Empty and no-authority states", "print": "fixed" },
-    { "file": "blockers.dc.html",               "x": 3040, "y": 3060, "w":  720, "h": 3000, "title": "Blocker presentation library",  "print": "fixed" },
+    { "file": "station-chip.dc.html",           "x": 3620, "y": 1620, "w":  480, "h":  620, "title": "Station chip (Phase G)",         "print": "fixed" },
+    { "file": "presentation-expiry-strip.dc.html", "x": 3620, "y": 2320, "w":  500, "h":  700, "title": "Presentation expiry strip (Phase G)", "print": "fixed" },
+    { "file": "handoff-gap-card.dc.html",       "x": 4200, "y": 1620, "w":  500, "h":  700, "title": "Handoff-gap card (Phase G)",     "print": "fixed" },
+
+    { "file": "runtime-states.dc.html",         "x": 1400, "y": 3360, "w":  720, "h": 2600, "title": "Runtime action states",   "print": "fixed" },
+    { "file": "empty-states.dc.html",           "x": 2220, "y": 3360, "w":  720, "h": 2900, "title": "Empty and no-authority states", "print": "fixed" },
+    { "file": "blockers.dc.html",               "x": 3040, "y": 3360, "w":  720, "h": 3000, "title": "Blocker presentation library",  "print": "fixed" },
 
     { "file": "OperatorHome.dc.html",           "x":    0, "y": 6400, "w":  390, "h":  844, "title": "OperatorHome (handheld)",       "print": "fixed" },
     { "file": "RunStepView.dc.html",            "x":  450, "y": 6400, "w":  390, "h":  844, "title": "RunStepView (handheld)",        "print": "fixed" },
