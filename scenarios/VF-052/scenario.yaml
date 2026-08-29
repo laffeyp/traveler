@@ -1,0 +1,82 @@
+scenario_id: VF-052
+scenario_version: "1"
+title: Non-production two-station presentation writes a conflicted Presentation
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  Locks cross-driver equivalence on the non-production conflict path (boundary-spec-v0.10 §12.1). Under a
+  production_install purpose, the second PresentInventoryAtStation refuses at emit (VF-041 already tests
+  that). Under a non-production purpose (receiving_review here), the handler records a Presentation in
+  state 'conflicted' and emits PRESENTATION_CONFLICT_DETECTED, rather than refusing. The backend index
+  is purpose-aware: it enforces the invariant only for production purposes, so the record-conflict path
+  writes on both drivers.
+
+seed:
+  deterministic_seed: 3047
+
+clock:
+  start_at: "2026-08-28T14:00:00Z"
+  timezone: "UTC"
+  mode: controlled
+
+actors:
+  - { actor_id: mfg_eng_1,      actor_type: manufacturing_engineer, product_caller_type: manufacturing_engineer }
+  - { actor_id: planner_1,      actor_type: planner,                product_caller_type: planner }
+  - { actor_id: operator_1,     actor_type: operator,               product_caller_type: operator }
+  - { actor_id: quality_1,      actor_type: quality_engineer,       product_caller_type: quality_engineer }
+  - { actor_id: report_worker_1, actor_type: system_worker,         product_caller_type: system_worker }
+  - { actor_id: support_1,      actor_type: support_user,           product_caller_type: support_user }
+
+aliases:
+  procedure_version_v1: ProcedureVersion
+  procedure_step_install: ProcedureStep
+  manufacturing_structure_v1: ManufacturingStructureVersion
+  bom_line_a: BOMLine
+  parent_001: InventoryItem
+  child_001: InventoryItem
+  effectivity_rule_proc: EffectivityRule
+  effectivity_rule_struct: EffectivityRule
+  effectivity_resolution_001: EffectivityResolution
+  build_check_001: BuildCheckResult
+  run_context_snapshot_001: RunContextSnapshot
+  run_001: Run
+  run_step_install: RunStep
+  station_a: Station
+  station_b: Station
+  presentation_001: Presentation
+  presentation_002: Presentation
+
+world:
+  factory_node: hq_a
+  part_revisions:
+    - { alias: parent_rev_a, part_number: PA-100, revision: A }
+    - { alias: child_rev_a,  part_number: CA-200, revision: A }
+  inventory_truth:
+    - { alias: parent_001, part_revision: parent_rev_a, serial_number: P-A001 }
+    - { alias: child_001,  part_revision: child_rev_a,  serial_number: C-A001 }
+
+steps:
+  - { step_id: "001", actor: mfg_eng_1, operation: CreateProcedureVersion, idempotency_key: vf-052-001, input: { procedure_version_alias: procedure_version_v1, procedure_alias: proc_a, revision: 1, steps: [ { alias: procedure_step_install, name: install_child, data_collection_fields: [] } ] }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_CREATED] } }
+  - { step_id: "002", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf-052-002, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_SUBMITTED] } }
+  - { step_id: "003", actor: mfg_eng_1, operation: ReleaseProcedureVersion, idempotency_key: vf-052-003, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true, events_emitted: [PROCEDURE_VERSION_RELEASED] } }
+  - { step_id: "004", actor: mfg_eng_1, operation: CreateManufacturingStructureVersion, idempotency_key: vf-052-004, input: { manufacturing_structure_alias: manufacturing_structure_v1, revision: 1 }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_CREATED] } }
+  - { step_id: "005", actor: mfg_eng_1, operation: AddBOMLine, idempotency_key: vf-052-005, input: { manufacturing_structure_alias: manufacturing_structure_v1, bom_line_alias: bom_line_a, child_part_revision: child_rev_a, quantity: 1 }, expect: { operation_succeeded: true, events_emitted: [BOM_LINE_CREATED] } }
+  - { step_id: "006", actor: mfg_eng_1, operation: ReleaseManufacturingStructureVersion, idempotency_key: vf-052-006, input: { manufacturing_structure_alias: manufacturing_structure_v1 }, expect: { operation_succeeded: true, events_emitted: [MANUFACTURING_STRUCTURE_RELEASED] } }
+  - { step_id: "007", actor: planner_1, operation: RegisterStation, idempotency_key: vf-052-007, input: { station_alias: station_a, station_type: receiving, factory_node_id: hq_a }, expect: { operation_succeeded: true, events_emitted: [STATION_REGISTERED] } }
+  - { step_id: "008", actor: planner_1, operation: RegisterStation, idempotency_key: vf-052-008, input: { station_alias: station_b, station_type: receiving, factory_node_id: hq_a }, expect: { operation_succeeded: true, events_emitted: [STATION_REGISTERED] } }
+  - { step_id: "010", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf-052-010, input: { inventory_alias: parent_001, part_revision: parent_rev_a, serial_number: P-A001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "013", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf-052-013, input: { inventory_alias: child_001, part_revision: child_rev_a, serial_number: C-A001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_CREATED] } }
+  - { step_id: "014", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf-052-014, input: { inventory_alias: child_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_RECEIVED] } }
+  - { step_id: "015", actor: quality_1, operation: QuarantineInventory, idempotency_key: vf-052-015, input: { inventory_alias: child_001 }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_QUARANTINED] } }
+  - { step_id: "030", actor: planner_1, operation: PresentInventoryAtStation, idempotency_key: vf052-030, input: { presentation_alias: presentation_001, inventory_item_alias: child_001, station_alias: station_a, actor_id: planner_1, caller_type: planner, presentation_purpose: receiving_review, intended_operation: RunReceivingCheck, scan_value: "InventoryItem:child_001", scan_type: presence_asserting, presentation_source: fixture_seed, presented_at: "2026-08-28T14:12:00Z", expires_at: "2026-08-28T14:22:00Z" }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_PRESENTED_AT_STATION] } }
+  - { step_id: "031", actor: planner_1, operation: PresentInventoryAtStation, idempotency_key: vf052-031, input: { presentation_alias: presentation_002, inventory_item_alias: child_001, station_alias: station_b, actor_id: planner_1, caller_type: planner, presentation_purpose: receiving_review, intended_operation: RunReceivingCheck, scan_value: "InventoryItem:child_001", scan_type: presence_asserting, presentation_source: fixture_seed, presented_at: "2026-08-28T14:13:00Z", expires_at: "2026-08-28T14:23:00Z" }, expect: { operation_succeeded: true, events_emitted: [PRESENTATION_CONFLICT_DETECTED] } }
+
+assertions:
+  - { assertion_id: vf052_first_presentation_active, assertion_type: record_state, severity: blocking, target: { alias: presentation_001 }, expected: { state: presented } }
+  - { assertion_id: vf052_second_presentation_conflicted, assertion_type: record_state, severity: blocking, target: { alias: presentation_002 }, expected: { state: conflicted } }
+  - { assertion_id: vf052_conflict_event_emitted, assertion_type: event_emitted, severity: blocking, target: { step_id: "031", event_type: PRESENTATION_CONFLICT_DETECTED, producer_operation: PresentInventoryAtStation }, expected: { at_least: 1 } }

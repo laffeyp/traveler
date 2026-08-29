@@ -1,0 +1,30 @@
+scenario_id: VF-053
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: >
+  Physical Presence Boundary, boundary-spec-v0.10 §12.5. Adapter cannot create a Presentation; the
+  operation-authorization wrapper refuses before the handler runs.
+
+operations:
+  - RegisterStation
+  - CreateInventoryItem
+  - ReceiveInventory
+  - ReleaseInventory
+  - PresentInventoryAtStation
+
+events:
+  - STATION_REGISTERED
+  - INVENTORY_CREATED
+  - INVENTORY_RECEIVED
+  - INVENTORY_AVAILABLE
+
+record_states:
+  Station: [active]
+  InventoryItem: [expected, received, available]
+
+assertion_types:
+  - record_state
+  - event_not_emitted
+  - operation_failed
+
+caller_types: [planner, adapter]

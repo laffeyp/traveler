@@ -1,0 +1,45 @@
+scenario_id: VF-052
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: >
+  Physical Presence Boundary, boundary-spec-v0.10 §12.1 record-conflict path. Non-production two-station
+  presentation writes a Presentation in state 'conflicted' and emits PRESENTATION_CONFLICT_DETECTED.
+  Locks cross-driver equivalence for the non-production branch.
+
+operations:
+  - CreateProcedureVersion
+  - SubmitProcedureVersionForReview
+  - ReleaseProcedureVersion
+  - CreateManufacturingStructureVersion
+  - AddBOMLine
+  - ReleaseManufacturingStructureVersion
+  - RegisterStation
+  - CreateInventoryItem
+  - ReceiveInventory
+  - QuarantineInventory
+  - PresentInventoryAtStation
+
+events:
+  - PROCEDURE_VERSION_CREATED
+  - PROCEDURE_VERSION_SUBMITTED
+  - PROCEDURE_VERSION_RELEASED
+  - MANUFACTURING_STRUCTURE_CREATED
+  - BOM_LINE_CREATED
+  - MANUFACTURING_STRUCTURE_RELEASED
+  - STATION_REGISTERED
+  - INVENTORY_CREATED
+  - INVENTORY_RECEIVED
+  - INVENTORY_QUARANTINED
+  - INVENTORY_PRESENTED_AT_STATION
+  - PRESENTATION_CONFLICT_DETECTED
+
+record_states:
+  Station: [active]
+  Presentation: [presented, conflicted]
+  InventoryItem: [expected, received, quarantined]
+
+assertion_types:
+  - record_state
+  - event_emitted
+
+caller_types: [manufacturing_engineer, planner, quality_engineer]
