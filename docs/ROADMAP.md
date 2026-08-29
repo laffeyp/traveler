@@ -4,23 +4,23 @@ What has shipped, what is deferred, what will not be built. Detail lives in `DEV
 
 Discipline every phase runs under: behaviour is data (the locked YAML registries); the runtime is a generic executor over them; nothing invented (a B-Q or ContractGap goes into the ledger, never a guess); red is captured before green; every increment gets an adversarial distrust-the-green review plus fail-closed hardening; each behaviour regresses on both drivers; whole-bench cross-driver diff-to-zero holds across the change.
 
-## Where the build stands (measured 2026-08-25)
+## Where the build stands (measured 2026-08-28)
 
 | Gate | Result |
 |---|---|
-| `validate:contracts` | ok — 132 operations · 136 events · 43 records · 16 state machines · 33 authorization rules · 26 assertion types |
-| `validate:schemas` | ok — 14/14 fixtures discriminate (154 op schemas · 93 event payload schemas · 1 report schema) |
+| `validate:contracts` | ok — 138 operations · 143 events · 45 records · 17 state machines · 37 authorization rules · 14 run-close rules · 26 assertion types |
+| `validate:schemas` | ok — 14/14 fixtures discriminate (162 op schemas · 99 event payload schemas · 1 report schema) |
 | `validate:demo-packs` | ok — 118 names across 2 packs |
-| bench first_slice / extended / receiving / all | 14/14 · 9/9 · 10/10 · 29/29 on both drivers |
-| whole-bench cross-driver diff-to-zero | 37 scenarios, identical |
-| backend durability gate | exit 0, 14 durability proofs |
-| vitest | 432/432 across 58 files |
+| bench first_slice / extended / receiving / physical_presence / all | 14/14 · 9/9 · 10/10 · 10/10 · 39/39 on both drivers |
+| whole-bench cross-driver diff-to-zero | 47 scenarios, identical |
+| backend durability gate | exit 0, 15 durability proofs |
+| vitest | 466/466 across 61 files |
 | `tsc -p tsconfig.json --noEmit` | 0 errors across `src` and `tests` |
 | prettier | clean |
 | Open ContractGaps | 77 entries, none blocking |
 | Repo | `laffeyp/traveler` (private), branch `main` |
 
-Three governing documents are closed: the nine-document founding stack, the receiving-evidence boundary, the access-and-visibility boundary. 129 of 132 registered operations are built. The three unbuilt are refused on record — `EvaluateMeasurement` is implemented inside `CaptureMeasurement`, `GenerateRunCloseNarration` writes no registered record, `EscalateGrammarGap` has no lifecycle to escalate into. `ACCESS_AND_VISIBILITY_ACCEPTANCE.md` scores 18/18.
+Four governing documents are closed: the nine-document founding stack, the receiving-evidence boundary, the access-and-visibility boundary, and the physical-presence boundary. 135 of 138 registered operations are built (Phase E added six). The three unbuilt are refused on record — `EvaluateMeasurement` is implemented inside `CaptureMeasurement`, `GenerateRunCloseNarration` writes no registered record, `EscalateGrammarGap` has no lifecycle to escalate into. `ACCESS_AND_VISIBILITY_ACCEPTANCE.md` scores 18/18. `PHYSICAL_PRESENCE_ACCEPTANCE.md` scores 33/33 pass, no row pass-in-part.
 
 ## Shipped
 
@@ -95,17 +95,13 @@ Two handoffs Phase D produces but does not close:
 
 Neither closes in this phase.
 
-## Phase E — Physical Presence Boundary (shipped 2026-08-28)
+## Phase E — Physical Presence Boundary (shipped 2026-08-28, review response closed same day)
 
-Shipped. Two records (`Station`, `Presentation`), six operations, seven events, one state machine (Presentation, seven states, expiry as predicate), four authorization rules, 31 failure classes, 25 user-visible reason codes. `InstallInventory` extended with an optional `presentation_id`; VF-001 through VF-037 continue to trace byte-identical against the golden. Three driver changes landed alongside the vocabulary: a JSON-expression partial index on the flat `records` table in `backend.ts` for the one-active-Presentation-per-InventoryItem invariant; a tuple-aware branch on the memoised idempotency path in `driver.ts` for `PresentInventoryAtStation`; an `access_decision_id` field on `EvaluateAccess`'s output derived deterministically. Nine new scenarios (VF-038 through VF-046) plus a 17-arm coupling-mutation suite. §11.2 scan contract lands as `src/harness/scan-decoder.ts` and `src/harness/scan-classifier.ts` with 12 tests. `docs/PHYSICAL_PRESENCE_ACCEPTANCE.md` scores 33 of 33 §15 criteria pass or pass-in-part.
+Shipped. Two records (`Station`, `Presentation`), six operations, seven events, one state machine (Presentation, seven states, expiry as predicate), four authorization rules, 31 failure classes, 25 user-visible reason codes, 1 run-close rule (`required_presentation_on_install`, registered inert with `blocking: false`; flips at the first factory node opt-in). `InstallInventory` extended with an optional `presentation_id`; VF-001 through VF-037 continue to trace byte-identical against the golden. Three driver changes landed alongside the vocabulary: a purpose-aware JSON-expression partial index on the flat `records` table in `backend.ts` for the one-active-Presentation-per-InventoryItem invariant (§12.1 refuse-at-emit only under production purposes; the non-production branch writes a `conflicted` record on both drivers); a tuple-aware branch on the memoised idempotency path in `driver.ts` for `PresentInventoryAtStation` reading its tuple shape from `contracts/operations.yaml:idempotency_tuple_fields`; a deterministic `access_decision_id` field on `EvaluateAccess`'s output derived from `sha256(correlation | step | actor | caller_type | target | pre_call_seq)[:16]`. Ten scenarios (VF-038 through VF-047, with VF-047 added by the review response to lock the non-production conflict path in cross-driver equivalence) plus a 19-arm coupling-mutation suite. §11.2 scan contract lands as `src/harness/scan-decoder.ts` and `src/harness/scan-classifier.ts` with 13 tests; the classifier returns `handoff_gap` when `queued_input_field` is absent rather than defaulting to a field no registered operation reads.
 
-Twenty sprints (091–110) closed on 2026-08-28. Every gate green throughout: validate:contracts ok, validate:schemas ok, bench 38/38 both drivers (was 29), backend gate whole-bench cross-driver diff-to-zero over 46 scenarios PASS (was 37), vitest 462/60 (was 432/58), tsc 0. Detail lives in `docs/PHASE_E_PLAN.md`, `docs/PHYSICAL_PRESENCE_ACCEPTANCE.md`, and `dev/phase-handoffs/PHASE_E_HANDOFF.md`.
+Twenty sprints (091–110) closed on 2026-08-28. Every gate green throughout: validate:contracts ok, validate:schemas ok (162 op schemas, 99 event payload schemas), bench 39/39 both drivers (was 29), backend gate whole-bench cross-driver diff-to-zero over 47 scenarios PASS all identical (was 37), backend durability proofs 15 (was 14; the Presentation-lifecycle proof added by the review response covers VF-038's presented → bound → consumed walk plus VF-047's presented and conflicted states surviving cold reload), vitest 466/61 (was 432/58), tsc 0. `docs/PHYSICAL_PRESENCE_ACCEPTANCE.md` scores 33 of 33 §15 criteria pass with no row pass-in-part. Detail lives in `docs/PHASE_E_PLAN.md`, `docs/PHYSICAL_PRESENCE_ACCEPTANCE.md`, `dev/phase-handoffs/PHASE_E_HANDOFF.md`, and `dev/phase-handoffs/PHASE_E_REVIEW_HANDOFF.md`.
 
-## Phase E archive — original planning block (open, plan drafted 2026-08-28)
-
-The next phase implements the Physical Presence Boundary against the specification at `specs/physical-presence/boundary-spec-v0.10.md`. Closes handoff-E. Adds two records (`Station`, `Presentation`), six operations (`RegisterStation`, `PresentInventoryAtStation`, `BindPresentedItemToRunStep`, `RejectPresentedItem`, `ClearPresentedItem`, `ConsumePresentation`), seven events, one state machine (`Presentation`, seven states, expiry-as-predicate), four authorization rules, roughly thirty failure classes. Extends `InstallInventory` with an optional `presentation_id` parameter; pre-Phase-E scenarios continue to trace byte-identical against the golden. `ConsumePresentation` reuses the existing `system_lifecycle` rule; no fifth rule is added. Three driver changes land alongside the vocabulary: a JSON-expression partial index in `backend.ts` for the one-active-Presentation-per-InventoryItem invariant, a tuple-aware idempotency branch in `driver.ts` for `required_idempotency_key`, and an `access_decision_id` field on `EvaluateAccess`'s output. Six new scenarios (VF-038 through VF-046) plus a coupling-mutation suite of 25 arms. A §11.2 scan contract lands as a harness-side surface (label decoder, classifier, fixture format) so Phase F builds against the specified shape rather than re-inventing it.
-
-Cadence: auto-within-phase. Twenty sprint cards (091–110) drafted up front. Discipline: same as every prior boundary — signal contract per handler, artifact contract per file, observation contract per emit trace, Rubber Duck Pass at each sprint close. Detail lives in `docs/PHASE_E_PLAN.md`.
+The review-response arc closed four correctness findings at source with a coupling test each. String-comparison expiry in three handler sites became `presentationExpired(presentation, world)` — a helper using `Date.parse` and failing closed on unparseable input, matching the discipline `VerifyCertificate` carries for `supplier_document_expired`. The backend partial index gained the purpose filter so `receiving_review` two-station conflicts write a `conflicted` record on both drivers rather than one driver refusing and the other recording. The `access_decision_id` gained a per-call `before` term so two `EvaluateAccess` calls under one `step_id` against the same target produce distinct ids. The `fields.presentation_status` mirror on every Presentation write was dropped; `record.state` is the single source of truth, matching Redline. Two code-quality fixes landed alongside: the idempotency tuple shape moved from runtime code into `contracts/operations.yaml`, and the scan classifier stopped defaulting `queued_input_field` to `target_alias`. Every registered Presentation state the shipping bench produces (presented, bound, consumed, conflicted) now has a durability proof; the two terminal states the bench does not exercise (rejected, cleared) do not, and a future scenario that walks a Presentation into either at the run boundary picks them up. Three new SDD practices recorded in `dev/KIT_DIARY.md` Entry 38 (49 register inert to close a §15 row; 50 durability proof per state the bench produces; 51 a review that closes four correctness holes in one commit is a first-class SDD move).
 
 ### Phase E sprint index
 
@@ -132,7 +128,21 @@ Cadence: auto-within-phase. Twenty sprint cards (091–110) drafted up front. Di
 | E.6 | 109 | Scan contract harness surface (§11.2 decoder, classifier, fixture format; two-path equivalence on all nine scenarios) |
 | E.7 | 110 | §15 acceptance closeout; `docs/PHYSICAL_PRESENCE_ACCEPTANCE.md`; STATE, ROADMAP, DOCS, HANDOFF, KIT_DIARY refresh; `dev/phase-handoffs/PHASE_E_HANDOFF.md` |
 
-Phase E does not open F, G, H, or I. Each opens on its own input specification.
+Phase E does not open F, G, H, I, J, K, or L. Each opens on its own input specification.
+
+## Runway to a shipped Mac + iOS app
+
+What is shipped today is a contract-locked executor with a proved-durable backend skeleton and a wireframe pack. It is what the founding stack (`specs/founding-stack/08-repository-bootstrap-plan-outline-v0.1.md`) calls the first executable slice. It is not, and was not scoped as, a shipped app. Reaching one takes phases the roadmap has not yet carried. Two are already named; five are not.
+
+- **Phase F — Physical Presence bench.** Named at `specs/physical-presence/boundary-spec-v0.10.md §16` and `docs/PHYSICAL_PRESENCE_ACCEPTANCE.md § Deferred and reasoned`. Synthetic scan fixtures generated from the label grammar (`record_type:record_alias[:checksum]`) decoded through the shipped decoder, a headless simulated seven-screen handheld path exercising all four classifier branches, and a printed-label phone test proving the checksum survives print and camera. Own input spec forthcoming at `specs/physical-presence/physical-presence-bench-spec-v0.1.md`. Not yet authored. Still a test surface, not a shipped app.
+- **Phase G — UI overlay pass.** Sweeps the 22 Phase D artboards carrying the `handoff-E` marker (OperatorHome, ScanInventoryView, MeasurementCaptureView, InstallInventoryView, BlockerView, RunCloseReadinessView, SerialHistoryView, SupportDiagnosticsView, and the others). Named by `boundary-spec-v0.10 §16` as opening on the same list. Own sprint set. Still wireframes.
+- **Phase H — BFF and auth boundary.** No input spec exists. The `ProductDriver` interface today is a TypeScript object whose methods are called directly; nothing exposes it as HTTP or gRPC. `actor_id` and `caller_type` are passed as function arguments; no session, no login, no token rotation, no MDM for the shop-floor handhelds. Phase H would expose the executor as a network surface and add identity as a first-class record.
+- **Phase I — Desktop client build.** No input spec exists. Renders the 39 Mac artboards under `canvas/mac/` as running SwiftUI, AppKit, or Electron plus React against the Phase H BFF. The wireframes cite the vocabulary the client would call.
+- **Phase J — iOS client build.** No input spec exists. Renders the eight handheld artboards under `canvas/handheld/` as SwiftUI against the BFF. `§ Deliberate non-goals` rules out offline-first node execution today; a real shop-floor iOS app usually needs it, so that decision comes back to the table when Phase J opens.
+- **Phase K — Distribution and device management.** No input spec exists. Xcode projects, TestFlight, notarization, code signing, App Store submission, MDM enrolment for shop-floor handhelds.
+- **Phase L — Production infrastructure.** No input spec exists. `node:sqlite` becomes a production database. The outbox delivery leg gets a real event bus. Deployment story lands.
+
+The current build is not a partial app. It is a lockable substrate. Every caller_type, record, operation, event, state transition, authorization rule, run-close rule, receiving rule, failure class, reason code, and visibility profile the future clients will call already exists in the vocabulary and is proved by scenario on both drivers. When Phase H opens, its work is exposing the executor, not authoring product behaviour. The runway detail lives in `dev/phase-handoffs/PHASE_E_REVIEW_HANDOFF.md § What the next reader inherits`.
 
 ## Post-Phase-C deferred
 
