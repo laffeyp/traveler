@@ -1,8 +1,8 @@
-# Sprint 114 — headless bench app-flow harness.
+# Sprint 115 — headless bench app-flow harness.
 
 ```yaml
 ---
-id: 114
+id: 115
 status: pending
 phase: F.2-harness
 pass_kind: functional
@@ -25,7 +25,7 @@ The harness does not invent a caller context. It uses the fixture. It does not i
 
 ## prerequisites
 
-- sprints 111, 112, 113, 115
+- sprints 111, 112, 113, 114 (rule set now at 114 after the reviewer-caught swap so numeric order matches dependency order)
 
 ## context_files
 

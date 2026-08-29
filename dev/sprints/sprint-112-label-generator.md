@@ -80,4 +80,4 @@ label-generator.ts produces byte-identical output on repeat runs, and every gene
 
 ## notes
 
-Card drafted up front as part of the Phase F plan per practice #32. The QR-encoding library gets vetted before landing: no runtime code depends on it; only the label-generator tool does. If the vetting refuses every option, the sprint halts with `bridge_mapping_required` per AGENTS.md hard rule 10.
+Card drafted up front as part of the Phase F plan per practice #32. The QR-encoding library gets vetted against four criteria before landing: (1) permissive license (MIT, Apache-2.0, or BSD); (2) last release within the past twelve months (evidence: the package's registry metadata); (3) zero native transitive dependencies (evidence: `npm ls` or the lockfile after install); (4) no known CVEs at install time (evidence: `npm audit` reports zero findings). No runtime code depends on the library; only the label-generator tool does. If the vetting refuses every option, the sprint halts with `bridge_mapping_required` per AGENTS.md hard rule 10.

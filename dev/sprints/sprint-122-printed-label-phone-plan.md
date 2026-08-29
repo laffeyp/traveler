@@ -17,7 +17,7 @@ The warning banner from bench-spec-v0.8 §3 lands verbatim in both files: *"Loca
 
 ## prerequisites
 
-- sprints 111 through 115, 122 (this sprint requires the fixture pack and the harness surfaces to reference)
+- sprints 111 through 119 (the fixture pack, the harness surfaces, and every scenario the six flows cite)
 
 ## context_files
 

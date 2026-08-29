@@ -85,4 +85,4 @@ nine malformed-label tests pass; three decoder-happy-path tests pass; every muta
 
 ## notes
 
-Card drafted up front as part of the Phase F plan per practice #32. The unsupported-version-prefix case tests a payload with a `v1:` prefix — the shipped decoder refuses because parts.length > 3; the case documents the v0.6 reversal reversal in test form.
+Card drafted up front as part of the Phase F plan per practice #32. The unsupported-version-prefix case tests a payload with a `v1:` prefix — the shipped decoder refuses because parts.length > 3; the case documents the v0.6 reversal in test form.

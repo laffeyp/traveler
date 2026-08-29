@@ -1,8 +1,8 @@
-# Sprint 115 — classification rule set (nine rules across seven record types).
+# Sprint 114 — classification rule set (nine rules across seven record types).
 
 ```yaml
 ---
-id: 115
+id: 114
 status: pending
 phase: F.2-harness
 pass_kind: functional

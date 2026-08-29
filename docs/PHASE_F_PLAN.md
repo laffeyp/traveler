@@ -43,7 +43,7 @@ The shipped scan decoder (`src/harness/scan-decoder.ts:decodeLabel`) and scan cl
 
 Auto-within-phase, same as Phase D and Phase E. Every sprint card is drafted up front and amended in place if the read of the code changes what a sprint should hold (practice #32). The Architect redirects in real time; the Agent proceeds card-to-execution without per-card review pauses.
 
-The fixture pack (F.1) lands as one batched sprint because the fixtures reference each other (stations name factory nodes; inventory names part revisions; runs name procedures; labels name every registered record type) and half-landed fixtures confuse the reader. Sprint cards drafted per `dev/process-notes/phase-opening-pattern.md § Stage 3`.
+The fixture pack (F.1) lands as two sprints: 111 authors the seven fixture yaml files (their names reference each other; half-landed fixtures confuse the reader) and 112 authors the deterministic label generator against the fixtures 111 wrote. Sprint cards drafted per `dev/process-notes/phase-opening-pattern.md § Stage 3`.
 
 ## Dual and observation contract shape
 
@@ -51,7 +51,7 @@ The traditional shape, adapted to bench artefacts.
 
 - **Signal contract** — every sprint that fires operations names the emitted events and the events it does not emit (the refusal path). Every sprint that fires reads names the visibility level (`full`, `summary`, `denied`, `hidden_existence`). Every sprint that runs the classifier names the returned `ScanClass` and the fired operation.
 - **Artifact contract** — the file created or edited (`scenarios/VF-<NNN>/`, `fixtures/physical-presence-bench/`, `src/harness/`, `tests/harness/`), the exit code of each gate the sprint touches (`validate:contracts`, `validate:schemas`, `npm run bench all`, `npm run test:backend`, `vitest`, `tsc`, `prettier`), and the content assertions on the file (line count, cited names, coverage tests, expected event traces).
-- **Observation contract** — the runtime signals the sprint produces: the emit trace on both drivers (in-memory and backend), byte-identical under the whole-bench cross-driver diff-to-zero over 48 scenarios (was 47), the refusal classes the sprint's mutation arm asserts, the `docs/PHYSICAL_PRESENCE_BENCH_ACCEPTANCE.md` row the sprint closes.
+- **Observation contract** — the runtime signals the sprint produces: the emit trace on both drivers (in-memory and backend), byte-identical under the whole-bench cross-driver diff-to-zero over 57 scenarios at Phase F close (was 47 at Phase E close), the refusal classes the sprint's mutation arm asserts, the `docs/PHYSICAL_PRESENCE_BENCH_ACCEPTANCE.md` row the sprint closes.
 
 ## Rubber Duck Pass at each sprint close
 
@@ -77,8 +77,8 @@ Fifteen sprints, 111 through 125, grouped in six sub-phases.
 ### F.2 — Bench harness (sprints 113–115)
 
 - **113.** Author `src/harness/bench-call-log.ts`. Schemas for operation and read call log matching bench-spec-v0.8 §13 (operation call, read call, refusal call). Writer that reads the executed harness output and emits the call log yaml.
-- **114.** Author `src/harness/bench-app-flow.ts`. Reads `phone-caller-context.yaml`. Loads `labels.yaml`. Drives the classifier for each scan against the current headless app state. Fires reads via `readRecordAsCaller` / `readProjectionAsCaller`. Fires operations via `driver.executeOperation()`. Writes the call log per sprint 113's schema.
-- **115.** Author the classification rule set at `scan-classification-rules.yaml` (bench-spec-v0.8 §11.1). Seven rules covering every decodable record type (`InventoryItem`, `ShipmentLine`, `Certificate`, `Station`, `Run`, `RunStep`, `Attachment`) plus the two `handoff_gap` guards.
+- **114.** Author the classification rule set at `scan-classification-rules.yaml` (bench-spec-v0.8 §11.1). Seven rules covering every decodable record type (`InventoryItem`, `ShipmentLine`, `Certificate`, `Station`, `Run`, `RunStep`, `Attachment`) plus the two `handoff_gap` guards. Ordered before the app-flow harness so numeric order matches dependency order (reviewer-caught in the sprint-cards review; original numbering had the app-flow at 114 depending on 115).
+- **115.** Author `src/harness/bench-app-flow.ts`. Reads `phone-caller-context.yaml`. Loads `labels.yaml` and the rule set from sprint 114. Drives the classifier for each scan against the current headless app state. Fires reads via `readRecordAsCaller` / `readProjectionAsCaller`. Fires operations via `driver.executeOperation()`. Writes the call log per sprint 113's schema.
 
 ### F.3 — Scenarios (sprints 116–120)
 
@@ -111,8 +111,8 @@ Grouped by pair so a single sprint carries closely related refusals. Each scenar
 | F.1 | 111 | Fixture pack — simple valve BOM, stations, inventory, runs, labels, expected scan results, phone CallerContext |
 | | 112 | Label generator — deterministic SHA-256 four-hex-char checksum, QR image output |
 | F.2 | 113 | Bench call log schemas and writer |
-| | 114 | Headless app-flow harness — reads, operations, refusal traces |
-| | 115 | Classification rule set — seven rules plus two `handoff_gap` guards |
+| | 114 | Classification rule set — seven rules plus two `handoff_gap` guards |
+| | 115 | Headless app-flow harness — reads, operations, refusal traces |
 | F.3 | 116 | VF-048 + VF-049 — happy path + wrong item |
 | | 117 | VF-050 + VF-051 — expired + production conflict |
 | | 118 | VF-052 + VF-053 — non-production conflict via bench + hidden identity |
@@ -132,7 +132,7 @@ Every gate that passes at Phase E close continues to pass at Phase F close, with
 - `validate:schemas` reports no change (162 op schemas, 99 event payload schemas).
 - Bench count grows from 39 to 49 (ten new scenarios VF-048 through VF-057). `physical_presence_bench` bench added at 10/10.
 - Whole-bench cross-driver check spans 57 scenarios (was 47), byte-identical.
-- Backend gate durability proof count: 15 or 16 depending on whether VF-054 (manual selection producing a consumed Presentation from a distinct code path) earns a proof of its own.
+- Backend gate durability proof count: 15 (unchanged from Phase E close). VF-054 walks a Presentation to `consumed` through the same in-process `ConsumePresentation` call inside `InstallInventory` that VF-038 uses — only `presentation_source` differs on the fields. The Phase E VF-038+VF-047 durability proof already covers the `consumed` code path; VF-054's proof would test the same walk with a different field value, not a new state or a new mechanism. Practice #50 stands: durability proofs cover states the bench produces through distinct code paths.
 - Vitest grows to cover the nine decoder-refusal tests, the bench-app-flow tests, the bench-call-log schema tests, and the bench coupling-mutation suite.
 
 ## Handoffs this phase does not produce
