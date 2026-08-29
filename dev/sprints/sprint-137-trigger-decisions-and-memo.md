@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 137
-status: pending
+status: closed # [closed 2026-08-29 — five docs authored: phase-g-phase-m-trigger (NOT FIRED for overlay reasons), phase-g-handoff-a-track-2-trigger (NOT FIRED at Phase G close), phase-g-ij-recommendation (Desktop-first alpha), phase-g-screen-to-call-log-map (seven changed screens + components + flows), phase-g-remaining-handoffs (two handoff-F, two handoff-A track 2)]
 phase: G.7-closeout
 pass_kind: docs
 ---
