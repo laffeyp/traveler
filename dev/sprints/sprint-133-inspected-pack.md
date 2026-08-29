@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 133
-status: pending
+status: closed # [closed 2026-08-28 — six-screen inspection record produced; all six no-change against Phase F evidence; Phase M trigger for Physical Presence overlay reasons: NOT fired (no screen carries an unmet Physical Presence need; the Part / Drawing / InspectionRequirement gap is a "would be more honest with" not a "cannot render honestly without"); trigger decision deferred to sprint 137's docs/phase-g-phase-m-trigger.md]
 phase: G.4-inspected
 pass_kind: design-inspection
 ---
