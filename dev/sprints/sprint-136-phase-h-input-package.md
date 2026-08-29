@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 136
-status: pending
+status: closed # [closed 2026-08-28 — docs/phase-h-input-package.md landed with 19 (screen, action) rows across seven screens plus a handoffs-for-Phase-H section and non-endpoint pre-declarations; 4 explicit 'proposed' markers on names Phase H's team will settle; no other endpoint names]
 phase: G.6-phase-h-input
 pass_kind: docs
 ---
