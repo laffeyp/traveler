@@ -11,10 +11,10 @@ Discipline every phase runs under: behaviour is data (the locked YAML registries
 | `validate:contracts` | ok — 138 operations · 143 events · 45 records · 17 state machines · 37 authorization rules · 14 run-close rules · 26 assertion types |
 | `validate:schemas` | ok — 14/14 fixtures discriminate (162 op schemas · 99 event payload schemas · 1 report schema) |
 | `validate:demo-packs` | ok — 118 names across 2 packs |
-| bench first_slice / extended / receiving / physical_presence / all | 14/14 · 9/9 · 10/10 · 10/10 · 39/39 on both drivers |
-| whole-bench cross-driver diff-to-zero | 47 scenarios, identical |
+| bench first_slice / extended / receiving / physical_presence / all | 14/14 · 9/9 · 10/10 · 10/10 · 49/49 on both drivers |
+| whole-bench cross-driver diff-to-zero | 57 scenarios, identical |
 | backend durability gate | exit 0, 15 durability proofs |
-| vitest | 466/466 across 61 files |
+| vitest | 507/507 across 67 files |
 | `tsc -p tsconfig.json --noEmit` | 0 errors across `src` and `tests` |
 | prettier | clean |
 | Open ContractGaps | 77 entries, none blocking |

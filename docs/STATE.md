@@ -80,7 +80,7 @@ All seven §13 scenarios exist under the ids §13 assigns them. Five scenarios t
 | 3 | VF-024..VF-030 compile | all seven, under their own ids |
 | 4 | Bench passes in memory | receiving 10/10 |
 | 5 | Bench passes on node:sqlite | receiving 10/10 |
-| 6 | Cross-driver traces match | byte-identical over 37 scenarios |
+| 6 | Cross-driver traces match | byte-identical over 57 scenarios |
 | 7 | Missing evidence blocks release | VF-025, plus four battery arms |
 | 8 | Mismatched evidence blocks release | VF-026, plus five battery arms |
 | 9 | Inaccessible controlled evidence cannot be verified | VF-029 |
@@ -184,7 +184,7 @@ The Phase F input spec arrived 2026-08-28 at `specs/physical-presence-bench/benc
 
 Five review passes ran against the shipped code. v0.5 caught six fatal claims in v0.4 (JSON label envelope vs the shipped colon-delimited grammar, `DecodedRecordRef` vs the shipped `DecodedScanResult`, `*_id` vs `*_alias` field naming throughout, `SupplierDocument` unregistered, `not_found_or_not_visible` conflating classifier and access layers, `next_action.read_path` naming a classifier field that does not exist). v0.6 verified each v0.5 recommendation against the runtime and reversed one: the `v1:` label-prefix would have made every generated payload return `unresolved` (the shipped decoder refuses any string with more than three colon-separated segments). Version discrimination moved to the label-file metadata layer instead. v0.6 also closed eight coverage gaps (idempotency key required on every operation call; two distinct InventoryItem gates on present and install; `CallerContext` needs six access-dimension fields the earlier headless state omitted; bench scenarios split VF-* runtime-touching versus vitest decoder-refusal; `consuming_operation_mismatch` never exercised; `readProjectionAsCaller` as the bench read primitive; Station, Run, RunStep, Attachment classifier coverage; manual selection constructs `DecodedScanResult` directly without going through `decodeLabel`). v0.7 closed three narrow items (scenario numbering per `dev/WORKING_AGREEMENT.md § Numbering`; idempotency key convention `vf-<NNN>-<call_id>`; printed-label phone dev-tool session with a static `CallerContext` fixture). v0.8 folded in five reviewer findings against v0.6 and falsified one (the reviewer had read a stale `backend.ts`; the shipped index carries the purpose predicate landed in commit `aa9f06a`).
 
-v0.8 became the shipping baseline; fifteen sprints (111–125) executed against it and closed on 2026-08-28. Ten runtime-touching scenarios ship as VF-048 through VF-057; nine decoder-refusal vitest cases plus three decoder-happy-path cases ship at `tests/harness/malformed-label.test.ts`; twelve-arm bench mutation battery ships at `tests/consolidation/physical-presence-bench-mutation.test.ts`; printed-label phone test plan and result template ship at `manual-tests/`. `docs/PHYSICAL_PRESENCE_BENCH_ACCEPTANCE.md` scores 37 of 37 pass. Bench count grew from 39 to 49; whole-bench cross-driver diff-to-zero over 57 scenarios PASS; vitest 507/64. Registry delta: none. Runtime delta: none. The bench exercises what Phase E already registered.
+v0.8 became the shipping baseline; fifteen sprints (111–125) executed against it and closed on 2026-08-28. Ten runtime-touching scenarios ship as VF-048 through VF-057; nine decoder-refusal vitest cases plus three decoder-happy-path cases ship at `tests/harness/malformed-label.test.ts`; twelve-arm bench mutation battery ships at `tests/consolidation/physical-presence-bench-mutation.test.ts`; printed-label phone test plan and result template ship at `manual-tests/`. `docs/PHYSICAL_PRESENCE_BENCH_ACCEPTANCE.md` scores 37 of 37 pass. Bench count grew from 39 to 49; whole-bench cross-driver diff-to-zero over 57 scenarios PASS; vitest 507/67. Registry delta: none. Runtime delta: none. The bench exercises what Phase E already registered.
 
 ## 5e. Against the Physical Presence UI Overlay specification (Phase G, opening)
 
@@ -323,7 +323,7 @@ Every one runs clean as of this measurement.
 | Extended bench | `node src/harness/bench.ts extended` | 9/9, both drivers |
 | Receiving bench | `node src/harness/bench.ts receiving` | 10/10, both drivers |
 | Backend end-to-end | `npm run test:vf003:backend` | exit 0 |
-| Unit and regression | `npx vitest run` | 432 of 432, across 58 files |
+| Unit and regression | `npx vitest run` | 507 of 507, across 67 files |
 | Types | `npx tsc -p tsconfig.json --noEmit` | 0 errors across `src` and `tests` |
 | Format | `npm run format:check` | clean |
 
@@ -357,6 +357,6 @@ B-Q-55 says access is not on the release path. `AcceptCertificateAsEvidence` cal
 
 Phase C — the Access and Visibility Boundary — is closed. All 24 sprints (029-052) landed in one day. The 18 §16 acceptance criteria score 18/18 pass or pass-in-part (`ACCESS_AND_VISIBILITY_ACCEPTANCE.md`). Every §6 dimension has a first-class check in `EvaluateAccess`. Every §7 enforcement point is covered. Reason codes and failure classes are registered bidirectionally. The mutation battery has 16 permanent arms, each naming the specific §14 reason it refuses under.
 
-One pass-in-part: unifying the driver's operation-authorization wrapper with the §8 decision model was deferred to protect the byte-identical trace of the first slice. Every existing scenario (VF-001..016 + variants + VF-024..034 + IDEM-001 + NEG-001) traces byte-identical after every access change; whole-bench cross-driver diff-to-zero over 37 scenarios reads PASS at every sprint close.
+One pass-in-part: unifying the driver's operation-authorization wrapper with the §8 decision model was deferred to protect the byte-identical trace of the first slice. Every existing scenario (VF-001..016 + variants + VF-024..034 + IDEM-001 + NEG-001) traces byte-identical after every access change; whole-bench cross-driver diff-to-zero over 57 scenarios reads PASS at every sprint close (37 at Phase C close, 47 at Phase E close, 57 at Phase F close).
 
 77 ledger entries, plus four Phase-C entries (B-Q-74/75/76/77) each with a candidate answer applied in its owning sprint. None blocking.

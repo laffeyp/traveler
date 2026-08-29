@@ -1,6 +1,6 @@
 # Handoff — Distributed Factory Execution Record System
 
-Written 2026-08-28, at the close of Phase E. `STATE.md` and `ROADMAP.md` carry the file-and-line detail this doc summarizes.
+Written 2026-08-28, at the close of Phase F plus the F2 / F2b drift-close hygiene arcs and Phase G open through sprint 126. `STATE.md` and `ROADMAP.md` carry the file-and-line detail this doc summarizes.
 
 ## 1. What this is
 
@@ -8,7 +8,7 @@ A contract-first Manufacturing Execution & Record System for complex hardware. T
 
 The runtime does not invent. A scenario referencing an unregistered name compiles to a `ContractGap`. A handler emitting an unregistered event throws at the emit site and the operation rolls back. A `caller_type` no authorization rule names refuses fail-closed with `authorization_denied`. A required behavior the contract stack does not define surfaces as a `ContractGap`, `not_implemented`, or B-Q — never a guess.
 
-Two drivers sit behind one interface: `InMemoryProductDriver` and `BackendProductDriver` (node:sqlite). The whole-bench cross-driver check asserts they produce equivalent traces on 37 scenarios. Fourteen durability proofs assert a fresh-from-disk backend instance still holds each fact.
+Two drivers sit behind one interface: `InMemoryProductDriver` and `BackendProductDriver` (node:sqlite). The whole-bench cross-driver check asserts they produce equivalent traces on 57 scenarios. Fifteen durability proofs assert a fresh-from-disk backend instance still holds each fact.
 
 The project runs under Signal-Driven Development kit v2 (`dev/sdd-kit-2/`, vendored read-only). The contract registries are this project's locked vocabulary — the equivalent of `signals/0.1.json` in the kit's example.
 
@@ -26,22 +26,22 @@ The gates, at day's close:
 
 | Gate | Command | Result |
 |---|---|---|
-| Contract registry | `npm run validate:contracts` | ok — 132 operations · 136 events · 43 records · 16 state machines · 33 authorization rules · 26 assertion types |
-| Schemas | `npm run validate:schemas` | ok — 154 op schemas · 93 event payload schemas · 1 report schema · 14/14 fixtures discriminate |
+| Contract registry | `npm run validate:contracts` | ok — 138 operations · 143 events · 45 records · 17 state machines · 37 authorization rules · 14 run-close rules · 27 failure classes · 26 assertion types |
+| Schemas | `npm run validate:schemas` | ok — 162 op schemas · 99 event payload schemas · 1 report schema · 14/14 fixtures discriminate |
 | Generated vocabulary types | `npm run verify:types` | up to date |
 | Demo packs | `npm run validate:demo-packs` | ok — 118 names across 2 packs |
 | Smoke bench | `node src/harness/bench.ts smoke` | 2/2 both drivers |
 | First-slice bench | `npm run bench` | 14/14 both drivers |
 | Extended bench | `node src/harness/bench.ts extended` | 9/9 both drivers |
 | Receiving bench | `node src/harness/bench.ts receiving` | 10/10 both drivers |
-| All benches | `node src/harness/bench.ts all` | 29/29 both drivers |
+| All benches | `node src/harness/bench.ts all` | 49/49 both drivers |
 | Backend end-to-end | `npm run test:vf003:backend` | exit 0 |
-| Backend gate | `node src/harness/run-backend.ts` | exit 0 · every durability proof PASS · whole-bench cross-driver diff-to-zero over 37 scenarios PASS |
-| Unit + regression | `npx vitest run` | 432 of 432 across 58 files |
+| Backend gate | `node src/harness/run-backend.ts` | exit 0 · every durability proof PASS · whole-bench cross-driver diff-to-zero over 57 scenarios PASS |
+| Unit + regression | `npx vitest run` | 507 of 507 across 67 files |
 | Types | `npx tsc -p tsconfig.json --noEmit` | 0 errors across `src` and `tests` |
 | Format | `npm run format:check` | clean |
 
-129 of 132 registered operations are built. The three unbuilt each have a reason in the code (`STATE.md §2`): `EvaluateMeasurement` is already implemented inside `CaptureMeasurement`; `GenerateRunCloseNarration` writes no registered record; `EscalateGrammarGap` has no lifecycle to escalate into.
+135 of 138 registered operations are built. The three unbuilt each have a reason in the code (`STATE.md §2`): `EvaluateMeasurement` is already implemented inside `CaptureMeasurement`; `GenerateRunCloseNarration` writes no registered record; `EscalateGrammarGap` has no lifecycle to escalate into.
 
 77 ContractGap ledger entries, none blocking. B-Q-74/75/76/77 (Phase C mapping calls) each resolved with a candidate answer applied in the sprint that owned it.
 
@@ -52,7 +52,7 @@ Node ≥ 22 (native TypeScript type-stripping, `node:sqlite`, no build step).
 ```
 npm install
 npm run validate:contracts
-node src/harness/bench.ts all           # 29/29 both drivers
+node src/harness/bench.ts all           # 49/49 both drivers
 node src/harness/run-backend.ts         # durability + whole-bench diff-to-zero
 npx vitest run                          # unit + discrimination + coupling-mutation suites
 ```
@@ -152,7 +152,7 @@ Choices, recorded so they read as choices:
 ## 9. If something is on fire
 
 - Gates broken after a pull: `npm install` first (dev deps may have shifted). Then walk the gates in order — contracts → schemas → tsc → vitest → bench → backend. The first one to red usually names the file that broke.
-- A scenario stops passing after a handler edit: the cross-driver diff-to-zero over 37 scenarios is the widest safety net. If two drivers still agree but the assertions fail, the handler's semantics shifted — read the scenario's assertions against what the handler now emits. If the diff-to-zero fails, one driver diverged — usually the backend, because the in-memory driver holds state richer than the SQLite schema.
+- A scenario stops passing after a handler edit: the cross-driver diff-to-zero over 57 scenarios is the widest safety net. If two drivers still agree but the assertions fail, the handler's semantics shifted — read the scenario's assertions against what the handler now emits. If the diff-to-zero fails, one driver diverged — usually the backend, because the in-memory driver holds state richer than the SQLite schema.
 - The registry validator refuses: the message names the specific rule broken. Common causes — an event's `producer_operations` list missing the operation that emits it; a state machine referencing an operation not in `operations.yaml`; a `caller_type` in an authorization rule not in `modules.yaml`. The validator fails closed on every unknown; there is no permissive mode.
 - A green test whose claim is not trusted: suppress the guard it names, run the test, watch it go red, restore. A test that stays green under a targeted mutation is decoupled from what it claims to prove. Addendum A practice #3; caught the vacuous audit test in the 2026-08-25 red-team.
 - Adding a new operation: register it in `contracts/operations.yaml` (authorization rule, module, exposure, idempotency, observability_ref, compatibility_ref, events_emitted). Register the events it emits in `contracts/events.yaml` with the operation in `producer_operations`. If the operation drives a state transition, add it to `contracts/state-machines.yaml`. Regenerate schemas (`npm run generate:schemas`) and types (`npm run generate:types`). Add the handler in `src/driver/handlers.ts`. Add unit tests. `validate:contracts` refuses if the handler is not registered — the reverse-registration check.
