@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 126
-status: pending
+status: closed # [closed 2026-08-28 — five handoff-E mentions replaced with ScanClass outcomes + scan_checksum_invalid + not_found_or_not_visible; PresentInventoryAtStation cite line under physical_presence rule; gates unchanged]
 phase: G.1-replaced
 pass_kind: design
 ---

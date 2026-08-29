@@ -50,23 +50,22 @@
     .elig .pill.good { background: #E5F1E9; border-color: #2D6A3C; color: #2D6A3C; }
     .elig .pill svg { width: 12px; height: 12px; }
 
-    /* Handoff-E banner */
-    .handoff { padding: 12px 14px; background: #FFF3D9; border-left: 3px solid #B45309; border-radius: 0 3px 3px 0; margin-bottom: 14px; font-size: 12px; }
-    .handoff .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B4A00; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
-    .handoff .r { color: #1A1A1A; margin-bottom: 4px; font-size: 13px; }
-    .handoff .path { color: #6B4A00; font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+    /* Classifier outcome panel */
+    .classify { padding: 12px 14px; background: #F0EDDF; border-left: 3px solid #6B6B6B; border-radius: 0 3px 3px 0; margin-bottom: 14px; font-size: 12px; }
+    .classify .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #4A4A4A; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .classify .r { color: #1A1A1A; margin-bottom: 4px; font-size: 13px; }
+    .classify .path { color: #4A4A4A; font-family: "IBM Plex Mono", monospace; font-size: 11px; }
 
     /* Classification legend */
     .cls-legend { font-size: 11px; color: #6B6B6B; margin-top: 8px; padding-top: 8px; border-top: 1px solid #E0DDD3; }
     .cls-legend .k { font-family: "IBM Plex Mono", monospace; color: #4A4A4A; }
     .cls-legend .row { padding: 3px 0; }
 
-    /* Primary + secondary */
-    .btn-primary { display: flex; align-items: center; justify-content: center; gap: 6px; height: 56px; background: #B45309; color: #FAFAF7; border-radius: 4px; font-size: 15px; font-weight: 500; }
-    .btn-primary .handoff-mark { font-family: "IBM Plex Mono", monospace; font-size: 10px; background: rgba(255,255,255,0.18); padding: 2px 6px; border-radius: 2px; }
+    /* Primary + secondary + cite */
+    .btn-primary { display: flex; align-items: center; justify-content: center; gap: 6px; height: 56px; background: #1A1A1A; color: #FAFAF7; border-radius: 4px; font-size: 15px; font-weight: 500; }
+    .op-cite { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; text-align: center; margin-top: 4px; }
     .actions-row { display: flex; gap: 8px; margin-top: 8px; }
     .btn-sec { flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; background: transparent; color: #1A1A1A; border: 1px solid #1A1A1A; border-radius: 3px; font-size: 13px; font-weight: 500; }
-    .btn-sec .mark { display: inline-block; margin-left: 6px; padding: 1px 5px; border-radius: 2px; background: #FFF3D9; color: #6B4A00; font-family: "IBM Plex Mono", monospace; font-size: 10px; }
 
     /* Tab strip */
     .tabs { display: flex; border-top: 1px solid #B8B4A8; background: #FAFAF7; }
@@ -117,8 +116,8 @@
 
     <div class="match">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10 L8 14 L16 6"/></svg>
-      <span class="m-lbl">Matched</span>
-      <span class="m-mono">identity_only</span>
+      <span class="m-lbl">Classified</span>
+      <span class="m-mono">presence_asserting</span>
     </div>
 
     <p class="section-lbl">InventoryItem state</p>
@@ -135,27 +134,37 @@
       <span class="pill">receiving_check&nbsp;passed</span>
     </div>
 
-    <div class="handoff">
-      <div class="lbl">handoff-E · Physical Presence Boundary</div>
-      <div class="r">Identity resolved. Physical presence at this station cannot be asserted from a scan — no operation registered.</div>
-      <div class="path">B-Q-33 · design spec §22 · candidate: <span>PresentInventoryAtStation</span></div>
+    <div class="classify">
+      <div class="lbl">classifier · presence_asserting</div>
+      <div class="r">Run step active. Decoded record is InventoryItem. Primary action fires PresentInventoryAtStation, which creates a Presentation in state presented at this station.</div>
+      <div class="path">scan-classifier.ts:ScanClass · scan-classification-rules.yaml · VF-048</div>
     </div>
 
-    <div class="btn-primary">
-      Confirm matched item
-      <span class="handoff-mark">handoff-E</span>
-    </div>
+    <div class="btn-primary">Present at station</div>
+    <div class="op-cite">PresentInventoryAtStation · rule physical_presence · required_idempotency_key</div>
 
     <div class="actions-row">
-      <div class="btn-sec">Reject <span class="mark">handoff-E</span></div>
+      <div class="btn-sec">Rescan</div>
       <div class="btn-sec">Open summary</div>
     </div>
 
+    <p class="section-lbl" style="margin-top:16px;">Classifier outcomes (ScanClass)</p>
     <div class="cls-legend">
-      <div class="row"><span class="k">identity_only</span> · resolves to a record; no product claim</div>
-      <div class="row"><span class="k">operation_binding</span> · supplies a parameter to a registered op</div>
-      <div class="row"><span class="k">presence_asserting</span> · claims physical presence · handoff-E</div>
-      <div class="row"><span class="k">handoff-gap</span> · vocabulary does not describe · handoff-E</div>
+      <div class="row"><span class="k">identity_only</span> · no run step active or non-InventoryItem; fires readRecordAsCaller only</div>
+      <div class="row"><span class="k">operation_binding</span> · a queued operation names a scan-input field; scan value fills it</div>
+      <div class="row"><span class="k">presence_asserting</span> · run step active + InventoryItem; fires PresentInventoryAtStation (this scan)</div>
+      <div class="row"><span class="k">handoff_gap</span> · classifier cannot map the scan to a registered operation</div>
+      <div class="row"><span class="k">scan_checksum_invalid</span> · client-side refusal on checksum mismatch; no classifier, no read, no operation</div>
+    </div>
+
+    <p class="section-lbl" style="margin-top:14px;">Post-operation runtime refusal</p>
+    <div class="cls-legend">
+      <div class="row"><span class="k">not_found_or_not_visible</span> · runtime reason code from access boundary after read refuses under hidden_existence (rendered when the follow-on readRecordAsCaller returns hidden_existence, not a scan-layer state)</div>
+    </div>
+
+    <p class="section-lbl" style="margin-top:14px;">Sources</p>
+    <div class="cls-legend">
+      <div class="row">src/harness/scan-classifier.ts (ScanClass type) · scan-classification-rules.yaml · tests/harness/malformed-label.test.ts · scenarios VF-048, VF-049, VF-053</div>
     </div>
 
   </div>
