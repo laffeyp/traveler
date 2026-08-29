@@ -2,7 +2,7 @@
 
 Scored 2026-08-28 against the 33 §15 criteria in `specs/physical-presence/boundary-spec-v0.10.md`. Every row cites at least one artefact or a reason it does not pass. The boundary implementation lives in `src/driver/handlers.ts` (five lifecycle handlers + RegisterStation + the InstallInventory extension), `src/driver/driver.ts` (tuple-aware idempotency and access_decision_id), `src/driver/backend.ts` (JSON-expression partial index), and `contracts/*.yaml` (records, operations, events, state machines, authorization rules, failure classes, reason codes).
 
-**Score: 33 of 33 pass or pass-in-part.** One row (criterion 31, `required_presentation_on_install` run-close rule) is pass-in-part — the rule is documented as a candidate in the boundary spec but is not yet registered in `contracts/run-close-rules.yaml`. The rule ships when the first scenario opts a factory node into runtime-enforced presence. Every other row is pass with a cited artefact.
+**Score: 33 of 33 pass.** The 2026-08-28 review-response commit registered the last row's `required_presentation_on_install` rule in `contracts/run-close-rules.yaml` with `blocking: false`; the rule flips to `blocking: true` in the sprint that opts the first factory node into runtime-enforced presence, and wires the check into `RunCloseCheck` against the `InstallationEvent.presentation_id` foreign key that already lands today. Every row cites at least one artefact.
 
 ## What the boundary covers
 
@@ -46,7 +46,7 @@ Seventeen-arm coupling-mutation suite in `tests/consolidation/physical-presence-
 | 28 | VF-044 through VF-046 pass on both drivers | pass | bench 38/38; VF-046 asserts binding_forbidden_for_purpose |
 | 29 | Mutation battery passes; earlier bench continues to pass | pass | 19-arm mutation suite in `physical-presence-mutation.test.ts` (17 arms at Phase E close; two direct-call arms added by the 2026-08-28 review to lock chronological expiry and fail-closed semantics on unparseable date inputs); VF-001–VF-037 unchanged |
 | 30 | Concurrency mechanism enforces the invariant per §12.1 option (b) | pass | JSON-expression partial index at `backend.ts:29` verified against a standalone test (duplicate refused, different item OK, consumed does not block re-presentation) |
-| 31 | `required_presentation_on_install` run-close rule registered with `enabled: false` | pass-in-part | The rule is documented as a candidate in the boundary spec; the run-close rule ships when the first scenario opts a factory node into runtime-enforced presence. Deferred to a follow-on sprint; not blocking Phase E. |
+| 31 | `required_presentation_on_install` run-close rule registered with `enabled: false` | pass | `contracts/run-close-rules.yaml` carries the rule with `blocking: false` (the analogue of `enabled: false` in this registry's field vocabulary). Description records the flip path: when the first factory node opts in, that sprint sets `blocking: true` and wires the check into `RunCloseCheck` against `InstallationEvent.presentation_id`. |
 | 32 | Scan contract in §11.2 fully specified: label payload, decoded shape, classification rule, fixture-field shape | pass | `src/harness/scan-decoder.ts`, `src/harness/scan-classifier.ts`; 12 tests in `tests/harness/scan-contract.test.ts` |
 | 33 | VF-038 through VF-046 can be driven either by direct call or by the classifier; identical event traces | pass | Two-path equivalence test asserts the classifier's PresentInventoryAtStation input matches VF-038's direct-call shape on the scaffolding fields |
 

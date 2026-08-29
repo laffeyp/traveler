@@ -46,3 +46,13 @@ rules:
   - id: access_policy_available
     blocking: true
     description: An access policy is available for the report and its controlled detail.
+  - id: required_presentation_on_install
+    blocking: false
+    description: >
+      Physical Presence Boundary, boundary-spec-v0.10 §16 criterion 31. Every required BOM installation
+      has a consumed Presentation that names InstallInventory as its intended_operation. The rule is
+      registered inert (blocking: false) at Phase E close: it activates when the first factory node opts
+      in to runtime-enforced presence — a future sprint flips this to blocking: true and wires the check
+      into RunCloseCheck against the InstallationEvent.presentation_id foreign key that already lands
+      today (handlers.ts:1240). Until then, the enforcement holds at the InstallInventory operation
+      itself, which refuses presentation_expired / consuming_operation_mismatch / wrong_item at emit.

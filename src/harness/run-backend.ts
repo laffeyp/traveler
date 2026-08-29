@@ -667,6 +667,64 @@ console.log(
   `  Phase A delivery: applied=${d1.applied}, simulated crash lost ${lostD} marks -> redeliver skipped=${d2.skipped}/applied=${d2.applied}, projectionTotal ${afterD.projectionTotal}->${redelD.projectionTotal} (no double count), reload no-op delivered=${d3.delivered}, ordering(scrambled->ascending)=${orderingOk}`,
 );
 console.log(`  backend outbox-delivery durability proof (Phase A): ${okD ? "PASS" : "FAIL"}`);
+
+// Durability of the PRESENTATION LIFECYCLE (Phase E, boundary-spec-v0.10 §6 + §12.1). VF-038 walks a
+// Presentation through presented -> bound -> consumed (the in-process ConsumePresentation call inside
+// InstallInventory, §9.1 option (i)); a fresh-from-disk instance must still see the terminal 'consumed'
+// state, and the PRESENTATION_CONSUMED event must persist in the append-only log. VF-047 records the
+// non-production conflict path: presentation_001 stays 'presented' at station_a, presentation_002 lands
+// 'conflicted' at station_b, and PRESENTATION_CONFLICT_DETECTED fires on the second call — a fresh
+// instance must reconstruct both terminal shapes and both events. Together the two prove every
+// Presentation state that the shipping VF-038..047 bench produces (presented, bound, consumed,
+// conflicted) survives a cold reload.
+const DBpres = join(tmpdir(), "vf038-presentation-durable.db");
+for (const f of [DBpres, DBpres + "-journal"]) if (existsSync(f)) rmSync(f);
+const backendPres = new BackendProductDriver(DBpres);
+const runPres = runScenarioOnDriver("VF-038", backendPres, "backend", "VF-038-backend");
+console.log(
+  `backend run: VF-038 [backend/node:sqlite]  status=${runPres.result.status}  assertions=${runPres.result.assertions.passed}/${runPres.result.assertions.total}`,
+);
+const freshPres = new BackendProductDriver(DBpres);
+const presReload = freshPres.readRecord("presentation_001");
+const presentationConsumedPersisted = freshPres
+  .readEventTrace()
+  .some(
+    (event: any) =>
+      event.type === "PRESENTATION_CONSUMED" && event.producer_operation === "ConsumePresentation",
+  );
+
+const DBconf = join(tmpdir(), "vf047-presentation-conflict-durable.db");
+for (const f of [DBconf, DBconf + "-journal"]) if (existsSync(f)) rmSync(f);
+const backendConf = new BackendProductDriver(DBconf);
+const runConf = runScenarioOnDriver("VF-047", backendConf, "backend", "VF-047-backend");
+console.log(
+  `backend run: VF-047 [backend/node:sqlite]  status=${runConf.result.status}  assertions=${runConf.result.assertions.passed}/${runConf.result.assertions.total}`,
+);
+const freshConf = new BackendProductDriver(DBconf);
+const firstReload = freshConf.readRecord("presentation_001");
+const secondReload = freshConf.readRecord("presentation_002");
+const conflictEventPersisted = freshConf
+  .readEventTrace()
+  .some(
+    (event: any) =>
+      event.type === "PRESENTATION_CONFLICT_DETECTED" &&
+      event.producer_operation === "PresentInventoryAtStation",
+  );
+console.log(
+  `  fresh Presentation reads: VF-038 presentation_001.state=${presReload?.state}  PRESENTATION_CONSUMED_persisted=${presentationConsumedPersisted}  VF-047 presentation_001.state=${firstReload?.state}  presentation_002.state=${secondReload?.state}  PRESENTATION_CONFLICT_DETECTED_persisted=${conflictEventPersisted}`,
+);
+const okPres =
+  runPres.result.status === "passed" &&
+  presReload?.state === "consumed" && // in-process ConsumePresentation walk survives reload
+  presentationConsumedPersisted &&
+  runConf.result.status === "passed" &&
+  firstReload?.state === "presented" && // the pre-conflict active presentation survives reload
+  secondReload?.state === "conflicted" && // the record-conflict branch survives reload
+  conflictEventPersisted; // PRESENTATION_CONFLICT_DETECTED persisted in the append-only log
+console.log(
+  `  backend Presentation-lifecycle durability proof (VF-038 + VF-047): ${okPres ? "PASS" : "FAIL"}`,
+);
+
 process.exit(
   ok &&
     ok6 &&
@@ -682,7 +740,8 @@ process.exit(
     okD &&
     okRcv &&
     okSq &&
-    okOut
+    okOut &&
+    okPres
     ? 0
     : 1,
 );

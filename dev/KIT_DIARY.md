@@ -993,6 +993,49 @@ claims.** For TECHNIQUES.md.
 
 ---
 
+## Entry 38 — Phase E review response: four correctness fixes, one durability proof, one row flipped (2026-08-28)
+
+*A same-day code review on the shipped Phase E named four correctness findings. All four closed at source with a coupling test each. The response also added the Presentation-lifecycle durability proof (backend proofs 14 → 15) and registered `required_presentation_on_install` in `contracts/run-close-rules.yaml` with `blocking: false`, which flips row 31 of `docs/PHYSICAL_PRESENCE_ACCEPTANCE.md` from pass-in-part to pass. The acceptance file now reads 33 of 33 pass, no row pass-in-part. VF-047 was added the same day; the whole-bench cross-driver diff-to-zero over 47 scenarios PASS holds.*
+
+**The four correctness findings.**
+
+- *String-comparison expiry.* `BindPresentedItemToRunStep`, `InstallInventory`, and `ConsumePresentation` compared `world.clock` to `presentation.fields.expires_at` with `>=` — lexical ordering. `'2026-9-1T14:00:00Z'` sorts after `'2026-08-28T15:00:00Z'` as a string, so a caller writing an unpadded September date walked past a guard the clock had already passed. `VerifyCertificate` at `handlers.ts:1976` had fixed this exact shape for `supplier_document_expired`; the three Presentation sites had regressed. Fix: `presentationExpired(presentation, world)` helper uses `Date.parse` and fails closed on unparseable input; `assertPresentationConsumable(presentation, expectedOp, actorId, world)` is the shared check both consumption sites route through.
+
+- *Backend-vs-in-memory divergence.* The partial index in `backend.ts` enforced §12.1's one-active-Presentation-per-InventoryItem invariant universally. The in-memory handler distinguishes production purposes (refuse-at-emit) from non-production (write a `conflicted` Presentation and emit `PRESENTATION_CONFLICT_DETECTED`). Under a non-production two-station case the two drivers would produce different traces. Fix: the index is now purpose-aware — `AND json_extract(fields, '$.presentation_purpose') IN ('production_install', 'production_measurement_support')`. VF-047 exercises two receiving_review presentations at two stations on the same InventoryItem; both drivers write the conflicted record and emit the event.
+
+- *access_decision_id collision.* The derivation was `sha256(correlation | step_id | actor_id | caller_type | target)[:16]` — no per-call term. Two `EvaluateAccess` calls under one `step_id` against the same target under the same actor produced the same id, which defeats the audit trail's purpose. Fix: append `before` (pre-call `world.seq`) to the material. Every invocation reads a distinct value because `EvaluateAccess` always emits at least one event and the wrapper's snapshot advances `seq` monotonically. Determinism per scenario replay holds — the pre-call seq is a function of the ordered event trace up to the call.
+
+- *`fields.presentation_status` doubled `record.state`.* Every Presentation write set both. No reader depended on the mirror; a future edit updating one and not the other would diverge silently. Fix: every mirror write dropped; `contracts/state-machines.yaml` records `state_field: state` on Presentation, matching Redline.
+
+**Two code-quality fixes alongside.**
+
+- *Tuple fields into the registry.* `driver.ts` hard-coded the four-field tuple for `PresentInventoryAtStation`. `contracts/operations.yaml` now carries `idempotency_tuple_fields: [inventory_item_alias, station_alias, actor_id, presentation_purpose]` on the operation; `driver.ts` reads the shape from `opIdempotencyTupleFields`. A future operation opts in by declaring its field list in the vocabulary, not by editing runtime code.
+
+- *Scan classifier `handoff_gap` instead of `target_alias` default.* The classifier defaulted `queued_input_field` to `target_alias` when the caller omitted it. No registered operation reads `target_alias`, so the receiving handler would silently drop the alias. The classifier now returns `handoff_gap`, and the scan-contract test locks the shape.
+
+**The Presentation-lifecycle durability proof.** `src/harness/run-backend.ts` drives VF-038 (walks presented → bound → consumed via the in-process `ConsumePresentation` inside `InstallInventory`) and VF-047 (records the non-production conflict) through the backend, then a fresh-from-disk instance reads back:
+- `VF-038 presentation_001.state = consumed` (the in-process walk survives reload)
+- `PRESENTATION_CONSUMED` persisted in the append-only log
+- `VF-047 presentation_001.state = presented` (the pre-conflict active presentation survives reload)
+- `VF-047 presentation_002.state = conflicted` (the record-conflict branch survives reload)
+- `PRESENTATION_CONFLICT_DETECTED` persisted in the append-only log
+
+Backend gate durability proof count moves from 14 to 15. Every Presentation state the shipping bench produces (presented, bound, consumed, conflicted) survives a cold reload.
+
+**The last row of §15.** `contracts/run-close-rules.yaml` now carries `required_presentation_on_install` with `blocking: false`. The description records the flip path: when the first factory node opts in to runtime-enforced presence, that sprint sets `blocking: true` and wires the check into `RunCloseCheck` against the `InstallationEvent.presentation_id` foreign key that already lands today (handlers.ts:1240). No handler changes needed at Phase E close — the rule is documented and inert. Row 31 of the acceptance file flips from `pass-in-part` to `pass`; the overall score reads 33 of 33 pass.
+
+**What this arc says for the next kit version.**
+
+- **(49) A run-close rule can register inert and still close a §15 row.** Row 31 asked for the rule "registered with `enabled: false`". This registry's field vocabulary calls that `blocking: false`. Registering the rule inert now closes the acceptance row and makes the future opt-in a single-field flip against a documented citation, not new registry vocabulary invented at activation time. The reader who lands on the future opt-in sprint reads the description and knows exactly what to change. For TECHNIQUES.md, contract-first / spec-executor subsection.
+
+- **(50) Every state a boundary's records can hold gets a durability proof against a scenario that produces it.** VF-038 covers `presented → bound → consumed`. VF-047 covers `presented` and `conflicted`. Together the two proofs cover every Presentation terminal the shipping bench produces. Neither `rejected` nor `cleared` has a durability proof today because no bench scenario opens them terminal at the run-boundary. The rule the pattern proposes: a boundary that ships N record states in a state machine ships proofs for the states the bench actually produces, and names the states it does not cover so a later sprint can add them. For TECHNIQUES.md.
+
+- **(51) A review that closes four correctness holes in one commit is a first-class SDD move, not a scramble.** The 2026-08-28 pass named the four fixes explicitly, each with a coupling test the mutation suite would catch. Every fix landed at source: helper function for the expiry check, purpose filter on the partial index, extra term in the hash material, dropped mirror field. The commit message names the four findings and the tests that lock them. This is what an SDD review response looks like when it takes the discipline seriously — not a patch pass, a boundary-quality pass. For TECHNIQUES.md, review-response subsection.
+
+**Sprint count.** No new sprint numbers. The review response landed as two commits (`a356364` closed the earlier ship-report drift; `aa9f06a` closed the four correctness findings and added VF-047; the current work adds the durability proof and the run-close rule registration). `dev/sprints/` still runs contiguously from 001 through 110.
+
+---
+
 ## Entry 37 — Phase E: Physical Presence Boundary lands in one day (2026-08-28)
 
 *Twenty sprints (091–110) closed on 2026-08-28. Two new records, six operations, seven events, one state machine, four authorization rules, 31 failure classes, nine scenarios, a 17-arm coupling-mutation suite, and a scan-contract harness surface. `InstallInventory` gains an optional `presentation_id` without breaking a pre-Phase-E scenario. Six review passes on the incoming boundary spec (v0.4 → v0.10) caught five fatal code-truth claims, seven shape refinements, three drift citations, one hole, and three smaller notes. The plan and cards drafted up front turned out to be the shipping shape.*
