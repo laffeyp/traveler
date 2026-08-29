@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 132
-status: pending
+status: closed # [closed 2026-08-28 — diagnostic rows render under four VisibilityLevel outcomes with a blank no-leak hidden_existence row; VF-052 non-production two-station conflict summary card added; handoff-A track 2 trigger evaluation card added citing the F2 track 1 access_admin workaround and F2c validator]
 phase: G.3-amended-mac
 pass_kind: design
 ---

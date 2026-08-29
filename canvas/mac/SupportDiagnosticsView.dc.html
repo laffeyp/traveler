@@ -109,17 +109,40 @@
       </div>
 
       <div class="card">
-        <h3>Diagnostic reads</h3>
+        <h3>Diagnostic reads · rendered under explicit visibility results</h3>
         <table class="tbl">
-          <thead><tr><th style="width:280px;">read</th><th style="width:120px;">outcome</th><th>note</th></tr></thead>
+          <thead><tr><th style="width:280px;">read</th><th style="width:130px;">visibility</th><th>note</th></tr></thead>
           <tbody>
-            <tr><td class="mono">run summary · RUN-VF-003-0812-01</td><td><span class="badge b-amber">summary</span></td><td>report_summary shape</td></tr>
+            <tr><td class="mono">run summary · RUN-VF-003-0812-01</td><td><span class="badge b-amber">summary</span></td><td>report_summary shape (visibility.ts:VisibilityLevel = summary)</td></tr>
             <tr><td class="mono">access decision summaries · last hour</td><td><span class="badge b-amber">summary</span></td><td>4 decisions, one refused with report_audience_mismatch</td></tr>
             <tr><td class="mono">event trace · rcr_RUN-VF-003-0812-01</td><td><span class="badge b-amber">summary</span></td><td>readEventTraceAsCaller hides raw_payload · strips nationality hints</td></tr>
-            <tr><td class="mono">report freshness · rcr_RUN-VF-003-0812-01</td><td><span class="badge b-neutral">clear</span></td><td>no regeneration trigger fired</td></tr>
-            <tr><td class="mono">projection status</td><td><span class="badge b-neutral">current</span></td><td>SerialHistory · AsBuiltProjection both current</td></tr>
+            <tr><td class="mono">machine evidence · adapter payload</td><td><span class="badge b-red">denied</span></td><td>controlled_data_denied · adapter raw_payload out of support scope</td></tr>
+            <tr><td class="mono">&nbsp;</td><td><span style="display:inline-flex;padding:1px 20px;border:1px dashed #D9D6CE;border-radius:2px;">&nbsp;</span></td><td style="color:#6B6B6B;">— row renders blank — no alias, no display label; caller cannot tell whether the record exists (visibility.ts:hiddenExistenceResponse). Internal audit records outcome hidden_existence_required; the caller never sees this string.</td></tr>
+            <tr><td class="mono">report freshness · rcr_RUN-VF-003-0812-01</td><td><span class="badge b-neutral">full</span></td><td>freshness metadata carries no restricted content — full permitted</td></tr>
+            <tr><td class="mono">projection status</td><td><span class="badge b-neutral">full</span></td><td>SerialHistory · AsBuiltProjection both current</td></tr>
           </tbody>
         </table>
+        <p class="cite" style="margin-top:8px;">Every row above renders under one of the four VisibilityLevel outcomes from <span class="mono-inline">src/driver/visibility.ts</span>: <span class="mono-inline">full</span>, <span class="mono-inline">summary</span>, <span class="mono-inline">denied</span>, <span class="mono-inline">hidden_existence</span>. The hidden-existence row deliberately carries no <span class="mono-inline">record_alias</span>, no display label, and no runtime-confirmed existence claim — the dashed outline is the only affordance the support user sees. Matches the shape of <span class="mono-inline">hiddenExistenceResponse</span> at visibility.ts:106.</p>
+      </div>
+
+      <div class="card">
+        <h3>Presentation-conflict summary · from VF-052</h3>
+        <p class="cite" style="margin:0 0 8px;">Non-production two-station conflict: two <span class="mono-inline">receiving_review</span> Presentations at two stations on the same InventoryItem. Both drivers write a <span class="mono-inline">conflicted</span> Presentation and emit <span class="mono-inline">PRESENTATION_CONFLICT_DETECTED</span>. Purpose-aware partial index at <span class="mono-inline">backend.ts</span> permits the record-conflict branch under non-production purposes; under production_install / production_measurement_support the second PresentInventoryAtStation would refuse <span class="mono-inline">presentation_conflict</span>.</p>
+        <dl class="fields">
+          <dt>scenario</dt><dd class="mono">VF-052 · non-production conflict via bench flow</dd>
+          <dt>inventory item</dt><dd class="mono">insp_receiving_item_001</dd>
+          <dt>presentation A</dt><dd class="mono">presentation_a · state presented · station receiving-01 · presentation_purpose receiving_review</dd>
+          <dt>presentation B</dt><dd class="mono">presentation_b · state conflicted · station receiving-02 · presentation_purpose receiving_review</dd>
+          <dt>event trace</dt><dd class="mono">INVENTORY_PRESENTED_AT_STATION · INVENTORY_PRESENTED_AT_STATION · PRESENTATION_CONFLICT_DETECTED</dd>
+          <dt>durability</dt><dd class="mono">both records survive cold reload · backend gate proof #15</dd>
+        </dl>
+      </div>
+
+      <div class="card" style="background:#FFF3D9; border-left:3px solid #B45309;">
+        <h3 style="color:#B45309;">handoff-A track 2 · trigger evaluation</h3>
+        <p class="cite" style="margin:0 0 6px; color:#1A1A1A;">The support caller reads through the F2 track 1 workaround: <span class="mono-inline">visibility-profiles.yaml</span> publishes <span class="mono-inline">intended_audience: external_viewer</span> on the two customer profiles; the runtime routes those reads under <span class="mono-inline">access_admin</span> at <span class="mono-inline">src/driver/driver.ts:readRecordAsCaller</span>. The audit trail records the invocation as <span class="mono-inline">access_admin</span>, not the customer identity.</p>
+        <p class="cite" style="margin:0 0 6px; color:#1A1A1A;"><b>Trigger fires here if:</b> a compliance auditor needs the audit trail to show which specific customer party accessed which specific report, and the aggregated access_admin recording is materially wrong for that downstream consumer. Per <span class="mono-inline">ui-overlay-spec-v0.9.md § 16</span>.</p>
+        <p class="cite" style="margin:0; color:#6B4A00;">→ handoff-A track 2 — external_viewer caller_type registration. Trigger decision recorded at sprint 137's <span class="mono">docs/phase-g-handoff-a-track-2-trigger.md</span>. F2c's validator at <span class="mono-inline">validate:contracts</span> section 9b protects this workaround from typos: every <span class="mono-inline">intended_audience</span> value must resolve against <span class="mono-inline">caller_types ∪ deferred_caller_types</span>.</p>
       </div>
 
       <div class="actions">
