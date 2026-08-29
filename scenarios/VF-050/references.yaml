@@ -1,0 +1,68 @@
+scenario_id: VF-050
+scenario_version: "1"
+registry_version: contracts-0.4.1
+source: >
+  Phase F bench-spec-v0.8 §14.1. Bench happy path from generated label through Present-Bind-Install.
+
+operations:
+  - CreateProcedureVersion
+  - SubmitProcedureVersionForReview
+  - ReleaseProcedureVersion
+  - CreateManufacturingStructureVersion
+  - AddBOMLine
+  - ReleaseManufacturingStructureVersion
+  - RegisterStation
+  - CreateInventoryItem
+  - ReceiveInventory
+  - ReleaseInventory
+  - ReserveInventory
+  - CreateEffectivityRule
+  - ResolveEffectivity
+  - RunBuildCheck
+  - CreateRun
+  - ApplyBuildCheckResultToRun
+  - StartRun
+  - StartRunWithInventory
+  - StartRunStep
+  - PresentInventoryAtStation
+  - BindPresentedItemToRunStep
+  - InstallInventory
+
+events:
+  - PROCEDURE_VERSION_CREATED
+  - PROCEDURE_VERSION_SUBMITTED
+  - PROCEDURE_VERSION_RELEASED
+  - MANUFACTURING_STRUCTURE_CREATED
+  - BOM_LINE_CREATED
+  - MANUFACTURING_STRUCTURE_RELEASED
+  - STATION_REGISTERED
+  - INVENTORY_CREATED
+  - INVENTORY_RECEIVED
+  - INVENTORY_AVAILABLE
+  - INVENTORY_RESERVED
+  - EFFECTIVITY_RULE_CREATED
+  - EFFECTIVITY_RESOLVED
+  - BUILD_CHECK_STARTED
+  - BUILD_CHECK_PASSED
+  - RUN_CREATED
+  - RUN_READY
+  - RUN_STARTED
+  - INVENTORY_IN_WIP
+  - RUN_STEP_STARTED
+  - INVENTORY_PRESENTED_AT_STATION
+  - PRESENTED_ITEM_BOUND_TO_RUN_STEP
+  - INVENTORY_INSTALLED
+  - PRESENTATION_CONSUMED
+
+record_states:
+  Station: [active]
+  Presentation: [presented, bound, consumed]
+  InventoryItem: [expected, received, available, reserved, in_wip, installed]
+  Run: [planned, ready, in_progress]
+  RunStep: [not_started, ready, in_progress]
+
+assertion_types:
+  - record_state
+  - event_emitted
+
+caller_types: [manufacturing_engineer, planner, operator, system_worker]
