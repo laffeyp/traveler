@@ -159,7 +159,10 @@
           <tr><td class="mono">08-12 15:04</td><td class="mono">REWORK_STARTED</td><td>rr_003 · disposition rework</td></tr>
           <tr><td class="mono">08-12 15:38</td><td class="mono">VERIFICATION_COMPLETED</td><td>v_003 · verified by m.tan</td></tr>
           <tr><td class="mono">08-12 15:44</td><td class="mono">NONCONFORMANCE_CLOSED</td><td>nc_003 · closed</td></tr>
-          <tr><td class="mono">08-12 15:55</td><td class="mono">INVENTORY_INSTALLED</td><td>state reserved → installed · into valve_assembly_014</td></tr>
+          <tr><td class="mono">08-12 15:53</td><td class="mono">INVENTORY_PRESENTED_AT_STATION</td><td>Presentation presentation_valve_body_001 · state presented · station station-B4 (bench_station) · j.rivera · intended_operation InstallInventory · presentation_purpose production_install</td></tr>
+          <tr><td class="mono">08-12 15:54</td><td class="mono">PRESENTED_ITEM_BOUND_TO_RUN_STEP</td><td>presentation_valve_body_001 · state bound · run RUN-VF-003-0812-01 · run step step_final_install</td></tr>
+          <tr><td class="mono">08-12 15:55</td><td class="mono">PRESENTATION_CONSUMED</td><td>presentation_valve_body_001 · state consumed · consumed by InstallInventory (in-process ConsumePresentation inside InstallInventory's snapshot, sprint 095)</td></tr>
+          <tr><td class="mono">08-12 15:55</td><td class="mono">INVENTORY_INSTALLED</td><td>state reserved → installed · into valve_assembly_014 · presentation_id presentation_valve_body_001</td></tr>
           <tr><td class="mono">08-12 16:04</td><td class="mono">RUN_CLOSED</td><td>RUN-VF-003-0812-01 · Run.closed</td></tr>
           <tr><td class="mono">08-12 16:04</td><td class="mono">REPORT_GENERATED</td><td>rcr_RUN-VF-003-0812-01 · RunCloseReport</td></tr>
         </tbody>
@@ -175,7 +178,13 @@
           <dt>run close report</dt><dd class="mono">rcr_RUN-VF-003-0812-01 · generated</dd>
           <dt>certificate of conformance</dt><dd class="mono">issued</dd>
         </dl>
-        <p class="cite" style="margin-top:8px;">Withheld under this level: measurement values, nonconformance details, individual event timestamps, supplier identity, internal actor names. The response is a summary payload, not a refusal (§10.2).</p>
+        <p class="cite" style="margin-top:8px;">Withheld under this level: measurement values, nonconformance details, individual event timestamps, supplier identity, internal actor names, <b>Presentation source and station identity</b> (visibility profile does not authorize presentation-context detail on customer reads). The response is a summary payload, not a refusal (§10.2).</p>
+      </div>
+
+      <div class="sec-head" style="margin-top:16px;">handoff-F · Part / Inspection Requirement vocabulary</div>
+      <div class="card" style="margin-top:0; background:#FFF3D9; border-left:3px solid #B45309;">
+        <p class="cite" style="margin:0 0 6px; color:#1A1A1A;"><b>What renders today:</b> the <span class="mono-inline">part revision</span> field on the Serial card shows a plain (part_number, revision) pair carried on the InventoryItem — <span class="mono">valve_body_45-8829-C · rev B</span>. No standalone <span class="mono-inline">PartRevision</span> record; no <span class="mono-inline">Drawing</span> revision authority; no <span class="mono-inline">MaterialSpecification</span> link on the row; no <span class="mono-inline">InspectionRequirement</span> version pointer on measurement events.</p>
+        <p class="cite" style="margin:0; color:#6B4A00;">→ Phase M — Part / Inspection Requirement boundary. Trigger evaluated at sprint 133's inspected pack; decision recorded at sprint 137's <span class="mono">docs/phase-g-phase-m-trigger.md</span>. If Phase M fires, SerialHistoryView gains a per-row PartRevision / Drawing / InspectionRequirement column and the summary variant redacts them per profile.</p>
       </div>
 
       <div class="sec-head" style="margin-top:16px;">Variant · denied under customer_summary_access (hidden_existence)</div>

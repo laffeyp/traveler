@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 131
-status: pending
+status: closed # [closed 2026-08-28 — three new Presentation rows added to the event timeline (INVENTORY_PRESENTED_AT_STATION, PRESENTED_ITEM_BOUND_TO_RUN_STEP, PRESENTATION_CONSUMED); INVENTORY_INSTALLED row extended with presentation_id; summary variant redacts presentation source and station per profile; handoff-F card names the missing PartRevision/Drawing/MaterialSpecification/InspectionRequirement vocabulary and Phase M trigger]
 phase: G.3-amended-mac
 pass_kind: design
 ---
