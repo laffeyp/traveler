@@ -137,6 +137,24 @@ The remaining Phase E items — the `required_presentation_on_install` flip to `
 
 Two boundaries remain open, each waiting on its own input spec: **handoff-F** (Part / Inspection Requirement, B-Q-31 and B-Q-32) and **handoff-A** (`external_viewer` as a registered caller_type). Neither touches the Physical Presence surface.
 
+### Note — the runway from here to a shipped Mac + iOS app
+
+The roadmap in `docs/ROADMAP.md` runs Phase A through Phase E and names F, G, H, I only in passing. What is shipped today is a contract-locked executor with a proved-durable backend skeleton and a wireframe pack. It is what the founding stack calls the first executable slice. It is not, and was not scoped as, a shipped app.
+
+Reaching a Mac + iOS app requires phases the roadmap has not yet named. Each is phase-scale under this discipline and needs its own input specification:
+
+- **Phase F** (already named) — Physical Presence bench. Synthetic scan fixtures, headless simulated app flow, printed-label phone test. Own spec at `specs/physical-presence/physical-presence-bench-spec-v0.1.md` (not yet authored).
+- **Phase G** (already named) — UI overlay pass on the 22 `handoff-E` artboards. Still wireframes.
+- **Phase H** — BFF + auth boundary. The `ProductDriver` interface today is a TypeScript object with function calls; nothing exposes it as HTTP or gRPC. `actor_id` and `caller_type` are function arguments today. This phase adds session, identity, and the network surface.
+- **Phase I** — Desktop client build. Renders the 39 Mac artboards under `canvas/mac/` as running SwiftUI, AppKit, or Electron+React against the Phase H BFF.
+- **Phase J** — iOS client build. Renders the 8 handheld artboards under `canvas/handheld/` as SwiftUI against the BFF.
+- **Phase K** — Distribution and device management. Xcode projects, TestFlight, notarization, code signing, App Store, MDM for shop-floor handhelds.
+- **Phase L** — Production infrastructure. `node:sqlite` becomes a real database. The outbox delivery leg gets a real event bus. Deployment story lands.
+
+No input specifications exist for Phase H through Phase L. `docs/ROADMAP.md § Deliberate non-goals` also rules out offline-first node execution, which a real shop-floor iOS app usually needs; if Phase J opens, that decision comes back to the table.
+
+The current build is not a partial app. It is a lockable substrate the app-facing phases build against: every caller_type, record, operation, event, state transition, authorization rule, run-close rule, receiving rule, failure class, reason code, and visibility profile the future clients call already exists in the vocabulary and is proved by scenario on both drivers. When the BFF phase opens, its work is exposing the executor, not authoring product behaviour.
+
 ## 8. Practices this arc adds to the diary
 
 Three practices recorded in `dev/KIT_DIARY.md` Entry 38:
