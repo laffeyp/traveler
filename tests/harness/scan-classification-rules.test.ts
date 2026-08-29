@@ -38,7 +38,15 @@ describe("scan classification rules (sprint 114)", () => {
     const handoffGaps = rules.filter((r) => r.classification === "handoff_gap");
     expect(handoffGaps.length).toBe(2);
     const decodedTypes = new Set(rules.map((r) => r.decoded_record_type));
-    for (const t of ["InventoryItem", "ShipmentLine", "Certificate", "Station", "Run", "RunStep", "Attachment"])
+    for (const t of [
+      "InventoryItem",
+      "ShipmentLine",
+      "Certificate",
+      "Station",
+      "Run",
+      "RunStep",
+      "Attachment",
+    ])
       expect(decodedTypes.has(t)).toBe(true);
   });
 

@@ -18,7 +18,8 @@ describe("label generator (sprint 112)", () => {
   const outB = join(tmpdir(), "phase-f-labels-b");
 
   beforeAll(() => {
-    for (const dir of [outA, outB]) if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+    for (const dir of [outA, outB])
+      if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
     generateLabels(fixturePath, outA);
     generateLabels(fixturePath, outB);
   });

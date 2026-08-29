@@ -153,7 +153,12 @@ export class BenchAppFlow {
    * `hidden_existence` the log entry carries no fields from the target
    * record (the shipped visibility.ts already returns null for that case).
    */
-  readRecord(recordType: string, alias: string, screen: string, classification: ScanClass): CallLogEntry {
+  readRecord(
+    recordType: string,
+    alias: string,
+    screen: string,
+    classification: ScanClass,
+  ): CallLogEntry {
     const decision = this.config.driver.readRecordAsCaller(alias, this.config.callerContext);
     const entry: CallLogEntry = {
       call_id: this.nextId(),
@@ -167,7 +172,9 @@ export class BenchAppFlow {
       record_type: recordType,
       record_alias: decision.level === "hidden_existence" ? undefined : alias,
       access_result: decision.level,
-      expected_result: { succeeded: decision.level !== "denied" && decision.level !== "hidden_existence" },
+      expected_result: {
+        succeeded: decision.level !== "denied" && decision.level !== "hidden_existence",
+      },
       actual_result: {
         succeeded: decision.level !== "denied" && decision.level !== "hidden_existence",
         record_refs: decision.record ? [`${recordType}:${alias}`] : [],

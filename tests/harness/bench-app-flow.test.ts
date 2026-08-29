@@ -11,7 +11,9 @@ import { checksumFor } from "../../src/harness/scan-decoder.ts";
 
 function makeFlow() {
   const driver = new InMemoryProductDriver();
-  const callerContext = loadPhoneCallerContext("fixtures/physical-presence-bench/phone-caller-context.yaml");
+  const callerContext = loadPhoneCallerContext(
+    "fixtures/physical-presence-bench/phone-caller-context.yaml",
+  );
   const log = new BenchCallLog();
   const flow = new BenchAppFlow({
     driver,
@@ -27,7 +29,9 @@ function makeFlow() {
 
 describe("bench app-flow harness (sprint 115)", () => {
   it("loads the phone CallerContext fixture with all thirteen fields materialised", () => {
-    const ctx = loadPhoneCallerContext("fixtures/physical-presence-bench/phone-caller-context.yaml");
+    const ctx = loadPhoneCallerContext(
+      "fixtures/physical-presence-bench/phone-caller-context.yaml",
+    );
     expect(ctx.caller_type).toBe("operator");
     expect(ctx.visibility_profile).toBe("operator_station_view");
     expect(ctx.factory_node_context).toBe("hq_a");
@@ -101,8 +105,16 @@ describe("bench app-flow harness (sprint 115)", () => {
     const { driver, flow, log } = makeFlow();
     // Read a nonexistent record — visibility.ts returns not-found, which is
     // byte-identical to hidden_existence per §5.4.
-    driver.world.create("InventoryItem", "gasket_001", "available", { part_revision: "p", serial: "s" });
-    const entry = flow.readRecord("InventoryItem", "gasket_001", "ScanInventoryView", "identity_only");
+    driver.world.create("InventoryItem", "gasket_001", "available", {
+      part_revision: "p",
+      serial: "s",
+    });
+    const entry = flow.readRecord(
+      "InventoryItem",
+      "gasket_001",
+      "ScanInventoryView",
+      "identity_only",
+    );
     expect(log.read().length).toBe(1);
     expect(entry.call_type).toBe("read");
   });
