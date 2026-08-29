@@ -405,8 +405,7 @@ for (const s of asArray(dependencyTable.run_states))
 // Assert every intended_audience value resolves against caller_types or the
 // deferred_caller_types allowlist on modules.yaml. F2b + handoff-A track 1
 // origin; user finding on the Post-Phase-F Phase-G-open review.
-const visibilityProfiles: any[] =
-  registries.visibilityProfiles?.visibility_profiles ?? [];
+const visibilityProfiles: any[] = registries.visibilityProfiles?.visibility_profiles ?? [];
 for (const profile of visibilityProfiles) {
   if (profile.intended_audience == null) continue;
   const values = Array.isArray(profile.intended_audience)
