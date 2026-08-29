@@ -35,7 +35,7 @@
   <p class="meta">sprint 054 · shared component · shows a registered state name</p>
   <p class="lede">One pill per registered state. Ground states use greyscale; exception states use the palette exactly once each.</p>
 
-  <p class="lede">Three of sixteen state-machined records drawn as samples. Full inventory in <span class="mono">contracts/state-machines.yaml</span>; the pattern below applies to every lifecycle record without exception.</p>
+  <p class="lede">Four of seventeen state-machined records drawn as samples (Presentation added at Phase E close). Full inventory in <span class="mono">contracts/state-machines.yaml</span>; the pattern below applies to every lifecycle record without exception.</p>
 
   <h2>Run</h2>
   <div>
@@ -74,6 +74,17 @@
     <span class="badge t">rejected</span>
     <span class="badge t">superseded</span>
   </div>
+
+  <h2>Presentation <span class="mono" style="font-weight:400;color:#6B6B6B;">(Phase E addition)</span></h2>
+  <div>
+    <span class="badge n">presented</span>
+    <span class="badge n">bound</span>
+    <span class="badge g">consumed</span>
+    <span class="badge t">rejected</span>
+    <span class="badge t">cleared</span>
+    <span class="badge r">conflicted</span>
+  </div>
+  <p class="lede" style="margin-top:6px;"><span class="mono">expired</span> is a read-time predicate, not a stored state. Renderers evaluate <span class="mono">world.clock &gt;= Presentation.expires_at</span> and draw an expired variant of the current state pill; no scheduled transition ever writes <span class="mono">expired</span>. Pair with <span class="mono">presentation-expiry-strip</span> where time-remaining detail is warranted.</p>
 
   <p class="lede" style="margin-top:16px;">Terminal states carry the strike-through and a mute; the record cannot leave them. Colour uses: red for refusal states (blocked, quarantined, close_blocked); amber for waiting-on-review (paused, review_required); green for the load-bearing success state ONLY — the terminal success step of a lifecycle (closed, verified). Grey for ground including working states (in_progress); strike-through grey for other terminal states that are not a success (cancelled, rejected, scrapped). Philosophy §3.1: green is finite; if every step were green nothing would draw the eye.</p>
 

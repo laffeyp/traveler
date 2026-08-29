@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+    .doc { width: 460px; padding: 24px 28px; }
+    h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+    .meta { font-size: 11px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 20px; }
+    h2 { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #6B6B6B; margin: 20px 0 8px; }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+    .lede { font-size: 12px; color: #4A4A4A; margin: 0 0 12px; }
+
+    .card { background: #FFF3D9; border: 1px solid #D4A946; border-left: 4px solid #B45309; border-radius: 2px; padding: 12px 14px; margin-bottom: 12px; }
+    .card .badge { display: inline-block; padding: 2px 8px; border-radius: 2px; font-family: "IBM Plex Mono", monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; background: #B45309; color: #FAFAF7; margin-bottom: 6px; }
+    .card .r { color: #1A1A1A; font-size: 13px; margin-bottom: 8px; }
+    .card .row { font-size: 12px; color: #4A4A4A; padding: 2px 0; }
+    .card .row .k { font-family: "IBM Plex Mono", monospace; color: #6B6B6B; display: inline-block; min-width: 130px; }
+    .card .path { margin-top: 8px; padding-top: 6px; border-top: 1px solid #D4A946; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B4A00; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1>Handoff-gap card</h1>
+  <p class="meta">sprint 134 · shared component · Phase G · scan classifier's handoff_gap outcome</p>
+  <p class="lede">The classifier at <span class="mono-inline">src/harness/scan-classifier.ts:ScanClass</span> returns <span class="mono-inline">handoff_gap</span> when the decoded record type does not resolve to a registered flow, or when a required context field is absent. The outcome names an unclosed product boundary — today, that boundary is handoff-F (Part / Inspection Requirement) or handoff-A track 2 (external_viewer). Rendered as its own card, distinct from generic blockers, because it points at a phase that has not yet opened.</p>
+
+  <h2>handoff-F · no Part / PartRevision registered</h2>
+  <div class="card">
+    <div class="badge">handoff-F</div>
+    <div class="r">The scan resolved to a <span class="mono-inline">Drawing</span>-shaped label. No <span class="mono-inline">Drawing</span> record is registered in <span class="mono-inline">contracts/records.yaml</span> — the concept has no home yet. The classifier records the scan, refuses to synthesize a product read, and cites the phase that would register the vocabulary.</div>
+    <div class="row"><span class="k">scan raw</span> <span class="mono-inline">drawing:dwg-45-8829</span></div>
+    <div class="row"><span class="k">decoded_record_type</span> unresolved</div>
+    <div class="row"><span class="k">next phase</span> Phase M — Part / Inspection Requirement boundary</div>
+    <div class="row"><span class="k">ledger</span> B-Q-31, B-Q-32</div>
+    <div class="path">no operation fires · no record read · no runtime event · scenario evaluated at sprint 133's inspected pack for Phase M trigger</div>
+  </div>
+
+  <h2>handoff-A track 2 · external_viewer registration deferred</h2>
+  <div class="card">
+    <div class="badge">handoff-A track 2</div>
+    <div class="r">A customer-facing read fired under the <span class="mono-inline">access_admin</span> workaround (F2 track 1). The audit trail records the invocation as <span class="mono-inline">access_admin</span>, not the customer identity. For a downstream consumer that needs per-customer audit attribution, the workaround is materially wrong — the trigger at <span class="mono-inline">ui-overlay-spec-v0.9.md § 16</span> fires.</div>
+    <div class="row"><span class="k">visibility profile</span> <span class="mono-inline">customer_summary_access</span></div>
+    <div class="row"><span class="k">intended_audience</span> <span class="mono-inline">external_viewer</span> (deferred; per <span class="mono-inline">modules.yaml:deferred_caller_types</span>)</div>
+    <div class="row"><span class="k">runtime workaround</span> read routed under <span class="mono-inline">access_admin</span> at <span class="mono-inline">driver.ts:readRecordAsCaller</span></div>
+    <div class="row"><span class="k">next phase</span> handoff-A track 2 — external_viewer caller_type registration</div>
+    <div class="path">F2c gate at <span class="mono-inline">validate:contracts</span> section 9b ensures <span class="mono-inline">intended_audience</span> resolves against <span class="mono-inline">caller_types ∪ deferred_caller_types</span></div>
+  </div>
+
+  <h2>Grading</h2>
+  <p class="lede">Amber palette (never red) because a handoff_gap is not a refusal — it's an honestly-named absence of vocabulary. Red belongs to registered refusal states (see <span class="mono-inline">blocker-card</span>). The card names the phase that would close the gap and the B-Q / trigger doc that tracks it.</p>
+
+</div>
+</x-dc>
+</body>
+</html>

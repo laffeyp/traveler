@@ -64,6 +64,14 @@
 
   <p class="lede" style="margin-top:14px;">Registered summary shapes today: <span class="mono-inline">machine_evidence_summary</span>, <span class="mono-inline">supplier_document_summary</span>, <span class="mono-inline">nonconformance_summary</span>, <span class="mono-inline">report_summary</span>. Requesting a summary for a record with no shape refuses with <span class="mono-inline">no_summary_shape_registered</span>.</p>
 
+  <h2>Hidden-existence no-leak variant (Phase G)</h2>
+  <p class="lede">The hidden-existence variant renders with zero identifying content — matches <span class="mono-inline">visibility.ts:hiddenExistenceResponse</span> at line 106: <span class="mono-inline">{ level: "hidden_existence", record: null }</span>. No alias, no display label, no state, no timestamp. The dashed outline is the only affordance a reader sees; the shape says "the read returned; access refused; the caller cannot tell whether the record exists."</p>
+  <div>
+    <span class="vbadge v-hidden" style="width:180px;height:24px;">&nbsp;</span>
+    <span class="side-note">no alias · no label · no metadata</span>
+  </div>
+  <p class="lede" style="margin-top:8px;">Rendered on SupportDiagnosticsView (sprint 132), SerialHistoryView hidden variants (sprint 131), and any surface where a read returned <span class="mono-inline">hidden_existence</span> under a visibility profile with <span class="mono-inline">denial_behavior: hidden_existence</span>.</p>
+
 </div>
 </x-dc>
 </body>

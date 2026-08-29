@@ -68,6 +68,21 @@
 
   <p class="lede" style="margin-top:12px;">The support-session variant carries an expiry countdown; when the clock passes <span class="mono-inline">expires_at</span> the chip flips to a refusal state and every subsequent read refuses with <span class="mono-inline">support_context_expired</span>.</p>
 
+  <h2 style="font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #6B6B6B; margin: 20px 0 8px;">Station-context variant (Phase G)</h2>
+  <p class="lede">When the caller is at a Station (a Physical Presence surface: OperatorHome, ScanInventoryView, RunStepView, InstallInventoryView), the chip carries a station strip alongside the caller_type. Station identity comes from the classifier setting <span class="mono-inline">context.station_alias</span>. See also <span class="mono-inline">station-chip.dc.html</span>, a header-only variant when the caller strip is elsewhere on the screen.</p>
+
+  <div class="chip">
+    <span class="actor">j.rivera</span>
+    <span class="sep">·</span>
+    <span class="mono">operator</span>
+    <span class="sep">·</span>
+    <span class="profile">operator_station_view</span>
+    <span class="sep">·</span>
+    <span class="mono">station-B4</span>
+    <span class="sep">·</span>
+    <span class="mono" style="font-size:10px;color:#6B6B6B;">bench_station</span>
+  </div>
+
 </div>
 </x-dc>
 </body>

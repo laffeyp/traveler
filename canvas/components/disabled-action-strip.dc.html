@@ -57,6 +57,32 @@
     <div class="path">clears when an <span class="who">access_admin</span> or <span class="who">support_user</span> fires <span class="mono-inline">OpenSupportSession</span> with a scope covering this record · rule <span class="mono-inline">support_session_management</span></div>
   </div>
 
+  <h2>Physical Presence refusals (Phase G)</h2>
+
+  <div class="strip">
+    <div class="why">Why disabled · <span class="mono-inline">presentation_expired</span></div>
+    <div class="r">The bound Presentation's <span class="mono-inline">expires_at</span> has passed. Handlers evaluate <span class="mono-inline">world.clock &gt;= Presentation.expires_at</span> at read time via the <span class="mono-inline">presentationExpired</span> helper.</div>
+    <div class="path">clears when the <span class="who">operator</span> re-scans and fires <span class="mono-inline">PresentInventoryAtStation</span> · rule <span class="mono-inline">physical_presence</span> · creates a fresh Presentation</div>
+  </div>
+
+  <div class="strip" style="border-left-color:#B00020;">
+    <div class="why">Why refused · <span class="mono-inline">wrong_item</span></div>
+    <div class="r">The presented item's <span class="mono-inline">inventory_item_id</span> does not match the install's <span class="mono-inline">child_inventory_alias</span>. Thrown from <span class="mono-inline">InstallInventory</span>'s bound-item check (a second throw sits in <span class="mono-inline">BindPresentedItemToRunStep</span>'s expected-child check when the operation input carries both parent and expected-child fields).</div>
+    <div class="path">clears when the <span class="who">operator</span> re-scans the correct child and fires <span class="mono-inline">PresentInventoryAtStation</span> plus <span class="mono-inline">BindPresentedItemToRunStep</span></div>
+  </div>
+
+  <div class="strip" style="border-left-color:#6B6B6B;">
+    <div class="why">Why refused · <span class="mono-inline">state_transition_forbidden</span> (F2b first-class parent)</div>
+    <div class="r">Runtime-executor throw from <span class="mono-inline">world.ts moveState</span> when no state-machine transition matches the operation and the record's current state. Grey because the throw is executor-level; the specific state that failed is named in the message.</div>
+    <div class="path">clears when the record advances to a state the operation's state machine permits — for InventoryItem into InstallInventory, that's <span class="mono-inline">reserved</span>, <span class="mono-inline">kitted</span>, or <span class="mono-inline">in_wip</span></div>
+  </div>
+
+  <div class="strip" style="border-left-color:#6B6B6B;">
+    <div class="why">Why refused · <span class="mono-inline">idempotency_conflict</span> (F2b first-class parent)</div>
+    <div class="r">Runtime-executor throw from <span class="mono-inline">driver.ts</span> on a same-key different-tuple call to a <span class="mono-inline">transactional_unique_constraint</span> operation, or on a duplicate write-boundary key. The tuple shape lives on <span class="mono-inline">contracts/operations.yaml:idempotency_tuple_fields</span>.</div>
+    <div class="path">clears when the caller mints a fresh idempotency_key for the intended new tuple — same-key retries of the identical call return the memoised result and are not a conflict</div>
+  </div>
+
 </div>
 </x-dc>
 </body>

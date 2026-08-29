@@ -74,6 +74,17 @@
   </div>
   <p class="lede" style="margin-top:8px;">The button names the operation the caller invokes (<span class="mono-inline">AttemptRunClose</span>); the trailing chain lists the system-worker stages that follow. The close console renders each stage as the pipeline walks it.</p>
 
+  <h2>Physical Presence · presentation_alias on the cite (Phase G)</h2>
+  <p class="lede">When the primary action fires <span class="mono-inline">InstallInventory</span> against a bound Presentation, the cite line names <span class="mono-inline">presentation_alias</span> as an input-object field (not a positional argument — the shipped handler signature is <span class="mono-inline">InstallInventory(world, input)</span>).</p>
+  <div>
+    <span class="btn primary">Present at station</span>
+    <span class="op-note">PresentInventoryAtStation · rule physical_presence · required_idempotency_key</span>
+  </div>
+  <div>
+    <span class="btn primary">Install</span>
+    <span class="op-note">InstallInventory(world, input) · input carries child_inventory_alias, parent_inventory_alias, optional presentation_alias · rule run_execution</span>
+  </div>
+
 </div>
 </x-dc>
 </body>

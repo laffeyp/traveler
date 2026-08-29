@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+    .doc { width: 460px; padding: 24px 28px; }
+    h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+    .meta { font-size: 11px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 20px; }
+    h2 { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #6B6B6B; margin: 20px 0 8px; }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+    .lede { font-size: 12px; color: #4A4A4A; margin: 0 0 12px; }
+
+    .strip { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 3px; margin: 6px 0; font-size: 12px; }
+    .strip .icon { width: 14px; height: 14px; flex-shrink: 0; }
+    .strip .label { font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+    .strip .remaining { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 500; }
+
+    .strip.calm { background: #F0EDDF; color: #4A4A4A; border-left: 3px solid #6B6B6B; }
+    .strip.warn { background: #FFF3D9; color: #6B4A00; border-left: 3px solid #B45309; }
+    .strip.expired { background: #FEECEC; color: #B00020; border-left: 3px solid #B00020; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1>Presentation expiry strip</h1>
+  <p class="meta">sprint 134 · shared component · Phase G · time-remaining against Presentation.expires_at</p>
+  <p class="lede">Time-remaining strip for a bound Presentation. Reads <span class="mono-inline">Presentation.expires_at</span> and computes remaining against <span class="mono-inline">world.clock</span>. Distinct from <span class="mono-inline">state-badge</span> because the badge renders a stored state (<span class="mono-inline">bound</span>) and this strip renders time-relative content that state alone cannot carry. <span class="mono-inline">expired</span> is a read-time predicate, not a stored state — the strip is the surface where the predicate becomes visible to the operator.</p>
+
+  <h2>Calm · plenty of time</h2>
+  <div class="strip calm">
+    <svg class="icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="7" cy="7" r="5"/><path d="M7 4 V7 L9 8"/></svg>
+    <span class="label">presentation_gasket_003 · bound at station-B4</span>
+    <span class="remaining">6:43 left</span>
+  </div>
+
+  <h2>Warn · under 90 seconds remaining</h2>
+  <div class="strip warn">
+    <svg class="icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="7" cy="7" r="5"/><path d="M7 4 V7 L9 8"/></svg>
+    <span class="label">presentation_gasket_003 · bound at station-B4</span>
+    <span class="remaining">0:47 left</span>
+  </div>
+
+  <h2>Expired · handler will refuse presentation_expired</h2>
+  <div class="strip expired">
+    <svg class="icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="7" cy="7" r="5"/><path d="M4 4 L10 10 M10 4 L4 10"/></svg>
+    <span class="label">presentation_gasket_003 · bound at station-B4</span>
+    <span class="remaining">expired 0:12 ago</span>
+  </div>
+  <p class="lede">On expired, the next handler call (Install / Bind / Consume) throws <span class="mono-inline">presentation_expired</span> via the <span class="mono-inline">presentationExpired</span> helper (Date.parse-based, fail-closed on unparseable input). The strip is a UI-side warning; the runtime refuses independently.</p>
+
+  <h2>Grading</h2>
+  <p class="lede">Colour uses: calm is the grey ground (no exception); warn earns amber under 90s; expired earns red once the predicate flips. The threshold (90s) is not a runtime constant — it's a UI cue only, tunable per surface. The runtime cares about the crossing at zero, not before it.</p>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 134
-status: pending
+status: closed # [closed 2026-08-28 — six generics extended (state-badge lede corrected to seventeen with Presentation states added; blocker-card + caller-profile-chip + visibility-badge + disabled-action-strip + action-button gained Physical Presence sections); three new components landed (station-chip, presentation-expiry-strip, handoff-gap-card); canvas artefact count 66 → 69]
 phase: G.5-components-flows
 pass_kind: design
 ---

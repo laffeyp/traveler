@@ -54,6 +54,39 @@
     <div class="action">current caller (<span class="mono-inline">operator</span>) may view; the disposition write is out of scope.</div>
   </div>
 
+  <h2 style="font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #6B6B6B; margin: 20px 0 8px;">Physical Presence blockers (Phase E / Phase G)</h2>
+  <p class="lede">The Presentation refusals share the row shape. Each cites the registered failure class from <span class="mono-inline">contracts/failure-classes.yaml</span> and names the throw site by function.</p>
+
+  <div class="card">
+    <div class="id">presentation_expired</div>
+    <div class="desc"><span class="mono-inline">world.clock &gt;= Presentation.expires_at</span>. Handlers evaluate the predicate at read time via the <span class="mono-inline">presentationExpired</span> helper (Date.parse, fail-closed on unparseable input); no scheduled transition writes an <span class="mono-inline">expired</span> state.</div>
+    <div class="row"><span class="k">affected</span><span class="v"><span class="mono-inline">presentation_gasket_003</span> · bound</span></div>
+    <div class="row"><span class="k">station</span><span class="v"><span class="mono-inline">station-B4</span></span></div>
+    <div class="row"><span class="k">expires_at</span><span class="v"><span class="mono-inline">14:28:00Z</span> · clock <span class="mono-inline">14:33:12Z</span></span></div>
+    <div class="row"><span class="k">next actor</span><span class="v">operator</span></div>
+    <div class="action">clears when an <span class="mono-inline">operator</span> re-scans; <span class="mono-inline">PresentInventoryAtStation</span> creates a fresh Presentation.</div>
+  </div>
+
+  <div class="card">
+    <div class="id">presentation_conflict</div>
+    <div class="desc">Another active production Presentation exists for the same InventoryItem at another station. Under production purposes the second <span class="mono-inline">PresentInventoryAtStation</span> refuses; under non-production purposes both drivers write a <span class="mono-inline">conflicted</span> record and emit <span class="mono-inline">PRESENTATION_CONFLICT_DETECTED</span>.</div>
+    <div class="row"><span class="k">affected</span><span class="v"><span class="mono-inline">gasket_003</span></span></div>
+    <div class="row"><span class="k">existing</span><span class="v"><span class="mono-inline">station-A2</span> · presented</span></div>
+    <div class="row"><span class="k">attempted</span><span class="v"><span class="mono-inline">station-B4</span></span></div>
+    <div class="row"><span class="k">next actor</span><span class="v">operator</span></div>
+    <div class="action">clears when an <span class="mono-inline">operator</span> fires <span class="mono-inline">ClearPresentedItem</span> on the earlier Presentation, or the earlier station's operator consumes it.</div>
+  </div>
+
+  <div class="card" style="border-left-color:#6B6B6B;">
+    <div class="id" style="color:#6B6B6B;">state_transition_forbidden</div>
+    <div class="desc">Runtime-executor parent thrown from <span class="mono-inline">world.ts moveState</span> when no state-machine transition matches the operation and the record's current state. F2b first-class entry (2026-08-28). Rendered in grey because the throw is executor-level; the specific InventoryItem state (available / installed / etc.) is named in the row.</div>
+    <div class="row"><span class="k">affected</span><span class="v"><span class="mono-inline">gasket_003</span> · <span class="mono-inline">available</span></span></div>
+    <div class="row"><span class="k">operation</span><span class="v"><span class="mono-inline">InstallInventory</span></span></div>
+    <div class="row"><span class="k">reason</span><span class="v">state-machine requires reserved / kitted / in_wip; <span class="mono-inline">available</span> is upstream</span></div>
+    <div class="row"><span class="k">next actor</span><span class="v">planner</span></div>
+    <div class="action">clears when a <span class="mono-inline">planner</span> fires <span class="mono-inline">ReserveInventory</span> or <span class="mono-inline">KitInventory</span>.</div>
+  </div>
+
 </div>
 </x-dc>
 </body>

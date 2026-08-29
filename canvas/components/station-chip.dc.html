@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF7; color: #1A1A1A; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+    .doc { width: 440px; padding: 24px 28px; }
+    h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+    .meta { font-size: 11px; color: #6B6B6B; font-family: "IBM Plex Mono", monospace; margin: 0 0 20px; }
+    h2 { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #6B6B6B; margin: 20px 0 8px; }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .mono-inline { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: #F0EDDF; padding: 1px 4px; border-radius: 2px; }
+    .lede { font-size: 12px; color: #4A4A4A; margin: 0 0 12px; }
+
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: #F0EDDF; border: 1px solid #D9D6CE; border-radius: 3px; margin: 4px 6px 4px 0; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; }
+    .chip .id { color: #1A1A1A; font-weight: 500; }
+    .chip .sep { color: #B8B4A8; }
+    .chip .type { font-size: 10px; color: #6B6B6B; }
+    .chip.absent { background: transparent; border-style: dashed; color: #6B6B6B; }
+    .chip.absent .id { color: #6B6B6B; font-weight: 400; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1>Station chip</h1>
+  <p class="meta">sprint 134 · shared component · Phase G · header strip when the caller is at a Station</p>
+  <p class="lede">A header-only chip showing <span class="mono-inline">station_alias</span> and <span class="mono-inline">station_type</span> from <span class="mono-inline">contracts/records.yaml</span>'s Station record. Rendered on OperatorHome (§8.3), RunStepView (§8.4), and InstallInventoryView (§8.2) when the harness state carries station context. Distinct chrome from <span class="mono-inline">caller-profile-chip</span> because Station identity is set by the classifier (per <span class="mono-inline">scan-classification-rules.yaml</span>), not by the auth layer.</p>
+
+  <h2>Present · registered station</h2>
+  <div>
+    <span class="chip">
+      <span class="id">station-B4</span>
+      <span class="sep">·</span>
+      <span class="type">bench_station</span>
+    </span>
+  </div>
+  <div>
+    <span class="chip">
+      <span class="id">receiving-01</span>
+      <span class="sep">·</span>
+      <span class="type">receiving_station</span>
+    </span>
+  </div>
+  <div>
+    <span class="chip">
+      <span class="id">station-M2</span>
+      <span class="sep">·</span>
+      <span class="type">machine_evidence_station</span>
+    </span>
+  </div>
+
+  <h2>Absent · no station context on the harness state</h2>
+  <div>
+    <span class="chip absent">
+      <span class="id">— no station —</span>
+    </span>
+  </div>
+  <p class="lede">Renders when the harness state carries no <span class="mono-inline">context.station_alias</span>. The dashed outline preserves the header layout so an operator moving between "at a station" and "at a bench desk" reads the change as a state, not a UI shift.</p>
+
+  <h2>Cite line for the parent surface</h2>
+  <p class="lede">Alongside the chip, the parent surface's sprint records the station-context source: which classifier rule fired (from <span class="mono-inline">scan-classification-rules.yaml</span>), which Phase F call-log row set the context, and whether the operator has crossed to a different station this session (which triggers a fresh <span class="mono-inline">context.station_alias</span> assignment).</p>
+
+</div>
+</x-dc>
+</body>
+</html>
