@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 128
-status: pending
+status: closed # [closed 2026-08-28 — StationChip added to header (station_alias + station_type); active Presentation panel added citing presentation_alias/station_alias/intended_operation/presentation_source; expiry strip against world.clock; state field is 'state', not the dropped presentation_status mirror]
 phase: G.2-amended-handheld
 pass_kind: design
 ---
