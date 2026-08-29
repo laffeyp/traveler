@@ -52,10 +52,15 @@
     .transition svg { width: 14px; height: 14px; color: #2D6A3C; }
     .transition .via { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #2D6A3C; }
 
-    /* Handoff-E */
-    .handoff { padding: 10px 12px; background: #FFF3D9; border-left: 3px solid #B45309; border-radius: 0 3px 3px 0; margin-bottom: 12px; font-size: 12px; color: #6B4A00; }
-    .handoff .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
-    .handoff .r { color: #1A1A1A; }
+    /* Bound-Presentation panel (Phase G sprint 127) */
+    .presentation { padding: 10px 12px; background: #F0EDDF; border-left: 3px solid #6B6B6B; border-radius: 0 3px 3px 0; margin-bottom: 12px; font-size: 12px; }
+    .presentation .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #4A4A4A; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .presentation .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+    .presentation .grid div { line-height: 1.4; }
+    .presentation .k { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #6B6B6B; display: block; }
+    .presentation .v { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #1A1A1A; }
+    .presentation .state { margin-top: 6px; padding-top: 6px; border-top: 1px solid #D9D6CE; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #4A4A4A; }
+    .presentation .state .mono { color: #1A1A1A; font-weight: 500; }
 
     /* Primary + secondary */
     .btn-primary { display: flex; align-items: center; justify-content: center; gap: 6px; height: 56px; background: #1A1A1A; color: #FAFAF7; border-radius: 4px; font-size: 16px; font-weight: 500; margin-bottom: 4px; }
@@ -142,13 +147,21 @@
       <span class="via">via InstallInventory</span>
     </div>
 
-    <div class="handoff">
-      <div class="lbl">handoff-E · Physical Presence Boundary</div>
-      <div class="r">The install acts on the scanned identity; the presence-at-station claim is out of vocabulary today (B-Q-33). The state-machine walk is legitimate.</div>
+    <div class="presentation">
+      <div class="lbl">Bound Presentation</div>
+      <div class="grid">
+        <div><span class="k">presentation_alias</span><span class="v">presentation_gasket_003</span></div>
+        <div><span class="k">station_alias</span><span class="v">station-B4</span></div>
+        <div><span class="k">expires_at</span><span class="v">14:33 · 5 min left</span></div>
+        <div><span class="k">intended_operation</span><span class="v">InstallInventory</span></div>
+        <div><span class="k">presentation_source</span><span class="v">scan</span></div>
+        <div><span class="k">presentation_purpose</span><span class="v">production_install</span></div>
+      </div>
+      <div class="state">state <span class="mono">bound</span> → consumed via in-process ConsumePresentation inside InstallInventory's snapshot (sprint 095)</div>
     </div>
 
     <div class="btn-primary">Install</div>
-    <div class="cite-op">→ InstallInventory · rule run_execution · emits INVENTORY_INSTALLED</div>
+    <div class="cite-op">InstallInventory(world, input) · input carries child_inventory_alias, parent_inventory_alias, optional presentation_alias · rule run_execution · required_idempotency_key · emits INVENTORY_INSTALLED</div>
 
     <div class="btn-sec" title="RemoveInventory cites run_execution; a Remove affordance belongs on a separate step whose scope is removal, not the install step.">
       <span>RemoveInventory</span>
@@ -156,22 +169,38 @@
     </div>
 
     <div class="legend">
-      <div class="lbl">InstallInventory refuses when child InventoryItem state is not <span class="mono">in_wip</span></div>
+      <div class="lbl">InstallInventory refuses fail-closed under these registered failure classes</div>
       <div class="row">
-        <span class="state r-quar">quarantined</span>
-        <span class="reason">state-machine forbids quarantined → installed via InstallInventory</span>
+        <span class="state r-quar">wrong_item</span>
+        <span class="reason">presented item's inventory_item_id does not match install's child_inventory_alias (InstallInventory bound-item check)</span>
       </div>
       <div class="row">
-        <span class="state r-other">expected</span>
-        <span class="reason">state-machine forbids expected → installed via InstallInventory</span>
+        <span class="state r-quar">presentation_expired</span>
+        <span class="reason">world.clock &gt;= Presentation.expires_at (checked via presentationExpired helper)</span>
       </div>
       <div class="row">
-        <span class="state r-other">available</span>
-        <span class="reason">state-machine requires reserved/kitted/in_wip; available is upstream</span>
+        <span class="state r-quar">presentation_not_bound</span>
+        <span class="reason">Presentation.state is not 'bound' at the moment of install</span>
       </div>
       <div class="row">
-        <span class="state r-other">installed</span>
-        <span class="reason">state-machine forbids installed → installed (terminal for this parent)</span>
+        <span class="state r-quar">presentation_not_active</span>
+        <span class="reason">Presentation is in a terminal state (consumed / rejected / cleared / conflicted)</span>
+      </div>
+      <div class="row">
+        <span class="state r-quar">presentation_conflict</span>
+        <span class="reason">another active production Presentation for the same InventoryItem at another station</span>
+      </div>
+      <div class="row">
+        <span class="state r-other">state_transition_forbidden</span>
+        <span class="reason">child InventoryItem state is not one of reserved / kitted / in_wip (F2b first-class parent thrown from world.ts moveState)</span>
+      </div>
+      <div class="row">
+        <span class="state r-other">idempotency_conflict</span>
+        <span class="reason">same idempotency_key with different tuple values (F2b first-class parent thrown from driver.ts)</span>
+      </div>
+      <div class="row">
+        <span class="state r-other">consuming_operation_mismatch</span>
+        <span class="reason">Presentation.intended_operation is not InstallInventory; in-process ConsumePresentation refuses and the outer InstallInventory snapshot rolls back</span>
       </div>
     </div>
 

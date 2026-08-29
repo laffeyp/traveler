@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 127
-status: pending
+status: closed # [closed 2026-08-28 — one handoff-E mention replaced; bound-Presentation panel with six fields; primary cite names input-object fields with the shipped signature; eight registered refusal states; state_transition_forbidden/idempotency_conflict/authorization_denied cite the F2b first-class entries]
 phase: G.1-replaced
 pass_kind: design
 ---
