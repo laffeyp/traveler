@@ -22,6 +22,25 @@
     .chip .mono { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #4A4A4A; }
     .chip .sep { color: #B8B4A8; }
     .station { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B6B6B; text-align: right; line-height: 1.15; }
+    .station-chip { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: #F0EDDF; border: 1px solid #D9D6CE; border-radius: 3px; font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #4A4A4A; }
+    .station-chip .sid { color: #1A1A1A; font-weight: 500; }
+    .station-chip .stype { color: #6B6B6B; }
+    .station-chip .clock { padding-left: 4px; border-left: 1px solid #D9D6CE; margin-left: 2px; color: #6B6B6B; }
+    /* Presentation binding block (Phase G sprint 129) */
+    .bind-block { background: #F0EDDF; border-left: 3px solid #6B6B6B; border-radius: 0 3px 3px 0; padding: 10px 12px; margin-bottom: 10px; font-size: 12px; }
+    .bind-block .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #4A4A4A; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .bind-block .row { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #1A1A1A; padding: 1px 0; }
+    .bind-block .row .k { color: #6B6B6B; display: inline-block; min-width: 130px; }
+    .bind-block .readiness { display: flex; align-items: center; gap: 6px; margin-top: 6px; padding-top: 6px; border-top: 1px solid #D9D6CE; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #2D6A3C; }
+    /* Refusal states beneath the primary (Phase G sprint 129) */
+    .refusal { background: #FEECEC; border-left: 3px solid #B00020; padding: 10px 12px; margin-top: 10px; font-size: 12px; border-radius: 0 2px 2px 0; }
+    .refusal .why { color: #B00020; font-family: "IBM Plex Mono", monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+    .refusal .r { color: #1A1A1A; margin-bottom: 4px; }
+    .refusal .path { color: #6B6B6B; font-size: 11px; font-family: "IBM Plex Mono", monospace; }
+    .handoff-f { background: #FFF3D9; border: 1px solid #D4A946; border-left: 3px solid #B45309; border-radius: 0 3px 3px 0; padding: 10px 12px; margin-top: 10px; font-size: 12px; }
+    .handoff-f .badge { display: inline-block; padding: 1px 6px; background: #B45309; color: #FAFAF7; font-family: "IBM Plex Mono", monospace; font-size: 10px; border-radius: 2px; margin-bottom: 4px; }
+    .handoff-f .r { color: #1A1A1A; margin-bottom: 3px; }
+    .handoff-f .path { color: #6B4A00; font-family: "IBM Plex Mono", monospace; font-size: 11px; }
 
     /* Meta strip */
     .meta { display: flex; align-items: baseline; gap: 8px; padding: 10px 16px; background: #F0EDDF; border-bottom: 1px solid #D9D6CE; font-size: 12px; flex-wrap: wrap; }
@@ -91,7 +110,12 @@
       <span class="sep">·</span>
       <span class="mono">operator_station_view</span>
     </div>
-    <div class="station">14:22<br>station-B4</div>
+    <div class="station-chip" title="Station.station_alias · Station.station_type · world.clock">
+      <span class="sid">station-B4</span>
+      <span>·</span>
+      <span class="stype">bench_station</span>
+      <span class="clock">14:22</span>
+    </div>
   </div>
 
   <div class="meta">
@@ -112,6 +136,18 @@
       <div class="lbl">Instruction</div>
       <div class="text">Torque M8 bolt at 24-28 Nm.</div>
       <div class="cite">ProcedureStep step_003 · procedure valve_body_v3</div>
+    </div>
+
+    <div class="bind-block">
+      <div class="lbl">Presentation bound to this step · BOMLine gasket_bom_003</div>
+      <div class="row"><span class="k">BOMLine.part_revision</span> (45-8829-G, rev B) · qty 1</div>
+      <div class="row"><span class="k">presentation_alias</span> presentation_gasket_003 · state bound</div>
+      <div class="row"><span class="k">station_alias</span> station-B4</div>
+      <div class="row"><span class="k">intended_operation</span> InstallInventory · presentation_purpose production_install</div>
+      <div class="readiness">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7 L6 10 L11 4"/></svg>
+        BindPresentedItemToRunStep ready · run step 'in_progress', Presentation 'bound', item identity matches BOMLine
+      </div>
     </div>
 
     <p class="req-lbl">Required</p>
@@ -167,6 +203,18 @@
       <div class="btn-sec">Skip</div>
       <div class="btn-sec">Fail</div>
       <div class="btn-sec">Rework</div>
+    </div>
+
+    <div class="refusal" style="display:none;" data-shape="wrong_item-example">
+      <div class="why">wrong_item · BindPresentedItemToRunStep expected-child check</div>
+      <div class="r">The presented item's identity does not match the step's expected child. Would fire on a scan of a different InventoryItem.</div>
+      <div class="path">throws only when the operation input carries BOTH <span style="color:#1A1A1A;">parent_inventory_alias</span> AND <span style="color:#1A1A1A;">expected_child_inventory_alias</span>; if either is absent, the check does not fire — the sprint that patches this screen renders the refusal only under the two-field-present precondition. A second wrong_item throw sits in InstallInventory's bound-item check, rendered on InstallInventoryView (§8.2), not on this screen.</div>
+    </div>
+
+    <div class="handoff-f">
+      <span class="badge">handoff-F</span>
+      <div class="r">The step's expected child cites <span style="font-family:'IBM Plex Mono',monospace;">BOMLine.part_revision</span> as a plain (part_number, revision) pair. A Drawing revision authority or an InspectionRequirement version would need a Part / PartRevision / Drawing / InspectionRequirement record type — none registered in contracts/records.yaml today (B-Q-31, B-Q-32).</div>
+      <div class="path">→ Phase M — Part / Inspection Requirement Boundary. Trigger evaluated at sprint 133; decision recorded at sprint 137's docs/phase-g-phase-m-trigger.md.</div>
     </div>
 
   </div>

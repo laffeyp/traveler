@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 129
-status: pending
+status: closed # [closed 2026-08-28 — StationChip added to header; Presentation-bound block cites BOMLine.part_revision + presentation_alias + station_alias + intended_operation with BindPresentedItemToRunStep readiness indicator; wrong_item refusal cites the two-field guard (parent_inventory_alias AND expected_child_inventory_alias); handoff-F marker names the Part-master vocabulary gap and Phase M trigger]
 phase: G.2-amended-handheld
 pass_kind: design
 ---
