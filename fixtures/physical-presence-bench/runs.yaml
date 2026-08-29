@@ -1,0 +1,18 @@
+# Runs fixture — Phase F bench-spec-v0.8 §5.
+# One Run against the valve BOM. RunStep names the gasket-install step per
+# simple-valve-bom.yaml's procedure_step.
+
+run:
+  alias: run_valve_001
+  target_inventory_alias: parent_valve_001
+
+run_step:
+  alias: run_step_install_gasket
+  procedure_step_alias: step_install_gasket
+
+effectivity:
+  procedure_rule_alias: effectivity_rule_proc
+  structure_rule_alias: effectivity_rule_struct
+  resolution_alias: effectivity_resolution_001
+  build_check_alias: build_check_001
+  run_context_snapshot_alias: run_context_snapshot_001

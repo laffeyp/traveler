@@ -1,0 +1,26 @@
+# Simple valve BOM fixture — Phase F bench-spec-v0.8 §5.
+# Two-part assembly. Parent valve body has one gasket as its BOM child. Enough shape to walk
+# scan, present, bind, install through the shipped runtime without inventing anything the
+# receiving-evidence or physical-presence boundary specs already ratified.
+
+part_revisions:
+  - { alias: valve_body_rev_a, part_number: VB-100, revision: A }
+  - { alias: gasket_rev_a,     part_number: GK-200, revision: A }
+
+procedure_version:
+  alias: proc_valve_assy_v1
+  procedure_alias: proc_valve_assy
+  revision: 1
+
+procedure_step:
+  alias: step_install_gasket
+  name: install_gasket
+
+manufacturing_structure_version:
+  alias: struct_valve_v1
+  revision: 1
+
+bom_line:
+  alias: bom_line_gasket
+  child_part_revision: gasket_rev_a
+  quantity: 1

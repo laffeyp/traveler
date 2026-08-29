@@ -1,0 +1,10 @@
+# Inventory fixture — Phase F bench-spec-v0.8 §5.
+# One parent valve body and one gasket child, plus a second gasket for VF-052's
+# non-production conflict shape. State walks land in the scenario steps, not
+# here — this file names identity only.
+
+items:
+  - { alias: parent_valve_001, part_revision: valve_body_rev_a, serial_number: VB-A001 }
+  - { alias: gasket_001,       part_revision: gasket_rev_a,     serial_number: GK-A001 }
+  - { alias: gasket_002,       part_revision: gasket_rev_a,     serial_number: GK-A002 }
+  - { alias: screw_001,        part_revision: gasket_rev_a,     serial_number: GK-A003 }  # wrong-item probe (uses same revision so effectivity resolves)

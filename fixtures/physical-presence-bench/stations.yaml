@@ -1,0 +1,20 @@
+# Stations fixture — Phase F bench-spec-v0.8 §5.
+# Two production stations at hq_a. Both types drawn from RegisterStation's
+# shipped allowedTypes list at src/driver/handlers.ts (assembly, receiving,
+# inspection, quality, machine, rework, shipping, support).
+
+factory_node_id: hq_a
+
+stations:
+  - alias: station_a
+    station_type: assembly
+    factory_node_id: hq_a
+    status: active
+  - alias: station_b
+    station_type: assembly
+    factory_node_id: hq_a
+    status: active
+  - alias: station_receiving
+    station_type: receiving
+    factory_node_id: hq_a
+    status: active

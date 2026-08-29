@@ -1,0 +1,30 @@
+# Labels fixture — Phase F bench-spec-v0.8 §5, §7.
+# Every payload matches the shipped decodeLabel parse rules at
+# src/harness/scan-decoder.ts: record_type:record_alias or
+# record_type:record_alias:checksum. No v1: prefix per bench-spec-v0.8 §7
+# (v0.6 reversed v0.5's prefix after tracing it against the shipped parser).
+# Version discrimination lives at the label-file metadata layer
+# (expected-scan-results.yaml top-level).
+
+labels:
+  - { alias: label_gasket_001,       record_type: InventoryItem, record_alias: gasket_001,       carry_checksum: true }
+  - { alias: label_gasket_002,       record_type: InventoryItem, record_alias: gasket_002,       carry_checksum: true }
+  - { alias: label_screw_001,        record_type: InventoryItem, record_alias: screw_001,        carry_checksum: true }
+  - { alias: label_parent_valve_001, record_type: InventoryItem, record_alias: parent_valve_001, carry_checksum: true }
+  - { alias: label_station_a,        record_type: Station,       record_alias: station_a,        carry_checksum: true }
+  - { alias: label_station_b,        record_type: Station,       record_alias: station_b,        carry_checksum: true }
+  - { alias: label_run_valve_001,    record_type: Run,           record_alias: run_valve_001,    carry_checksum: true }
+  - { alias: label_run_step_install, record_type: RunStep,       record_alias: run_step_install_gasket, carry_checksum: true }
+
+# Malformed labels the decoder-refusal wall (sprint 121) exercises. Each names
+# the parse shape the shipped decoder refuses.
+malformed:
+  - { alias: label_bad_checksum,          raw_scan_value: "InventoryItem:gasket_001:zzzz" }
+  - { alias: label_v1_prefix_refused,     raw_scan_value: "v1:InventoryItem:gasket_001:0000" }  # v0.6 reversal in fixture form
+  - { alias: label_missing_alias,         raw_scan_value: "InventoryItem:" }
+  - { alias: label_unregistered_type,     raw_scan_value: "Widget:gadget_001" }
+  - { alias: label_extra_segments,        raw_scan_value: "InventoryItem:gasket_001:0000:extra" }
+  - { alias: label_empty_payload,         raw_scan_value: "" }
+  - { alias: label_single_segment,        raw_scan_value: "gasket_001" }
+  - { alias: label_wrong_checksum_length, raw_scan_value: "InventoryItem:gasket_001:aa" }
+  - { alias: label_missing_type,          raw_scan_value: ":gasket_001" }

@@ -1,0 +1,39 @@
+# Expected scan results — Phase F bench-spec-v0.8 §5, §7.1.
+# Top-level metadata records the grammar version and checksum shape per §7.1
+# (v0.6 moved version discrimination here from the payload after tracing
+# proved the shipped decoder refuses a v1: prefix).
+
+label_grammar_version: v1
+checksum_algorithm: sha256
+checksum_truncation_hex_chars: 4
+generated_at: "2026-08-28T00:00:00Z"
+
+# Per-label expected decode outcomes. record_type and record_alias come from
+# labels.yaml; checksum values come from sha256("<record_type>:<record_alias>")
+# truncated to four hex chars, matching src/harness/scan-decoder.ts:checksumFor.
+# The label generator (sprint 112) writes these images and asserts every
+# decode returns the shape below.
+
+expected:
+  - { label_alias: label_gasket_001,       decoded_record_type: InventoryItem, decoded_record_alias: gasket_001,               checksum_verified: true }
+  - { label_alias: label_gasket_002,       decoded_record_type: InventoryItem, decoded_record_alias: gasket_002,               checksum_verified: true }
+  - { label_alias: label_screw_001,        decoded_record_type: InventoryItem, decoded_record_alias: screw_001,                checksum_verified: true }
+  - { label_alias: label_parent_valve_001, decoded_record_type: InventoryItem, decoded_record_alias: parent_valve_001,         checksum_verified: true }
+  - { label_alias: label_station_a,        decoded_record_type: Station,       decoded_record_alias: station_a,                checksum_verified: true }
+  - { label_alias: label_station_b,        decoded_record_type: Station,       decoded_record_alias: station_b,                checksum_verified: true }
+  - { label_alias: label_run_valve_001,    decoded_record_type: Run,           decoded_record_alias: run_valve_001,            checksum_verified: true }
+  - { label_alias: label_run_step_install, decoded_record_type: RunStep,       decoded_record_alias: run_step_install_gasket,  checksum_verified: true }
+
+# Malformed labels — every one refuses at the decoder wall, none reaches the
+# classifier. Sprint 121 (decoder-refusal wall) locks each of these against
+# the shipped decoder.
+expected_malformed:
+  - { label_alias: label_bad_checksum,          reason: checksum_failed }
+  - { label_alias: label_v1_prefix_refused,     reason: unsupported_payload_version }  # parts.length > 3 refuses
+  - { label_alias: label_missing_alias,         reason: payload_malformed }
+  - { label_alias: label_unregistered_type,     reason: record_type_unregistered }
+  - { label_alias: label_extra_segments,        reason: payload_malformed }             # parts.length > 3 refuses
+  - { label_alias: label_empty_payload,         reason: payload_malformed }
+  - { label_alias: label_single_segment,        reason: payload_malformed }             # parts.length < 2 refuses
+  - { label_alias: label_wrong_checksum_length, reason: checksum_failed }               # different hex, checksum comparison refuses
+  - { label_alias: label_missing_type,          reason: record_type_unregistered }      # empty record_type not in KNOWN_TYPES

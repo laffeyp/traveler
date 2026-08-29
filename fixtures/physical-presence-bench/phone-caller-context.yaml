@@ -1,0 +1,33 @@
+# Phone CallerContext fixture — Phase F bench-spec-v0.8 §3, §4.
+# The printed-label phone test runs under a local dev-tool session that loads
+# this file at start-up and injects it into every readRecordAsCaller,
+# readProjectionAsCaller, and executeOperation call.
+#
+# LOCAL DEV-TOOL SESSION. NOT AUTHENTICATION. Phase H authentication has not
+# landed. This CallerContext is a bench fixture and does not reflect
+# production identity handling.
+#
+# Field set matches the CallerContext interface at src/driver/visibility.ts
+# (all thirteen fields materialised as null or empty array where optional).
+
+actor_id: operator_001
+caller_type: operator
+roles: []
+access_groups: []
+service_account_scope: null
+customer_context: null
+program_context: null
+contract_context: null
+factory_node_context: hq_a
+support_admin_context: null
+requested_visibility: null
+visibility_profile: operator_station_view
+purpose: null
+subject_nationality: null
+
+# Fixed warning banner text — landed verbatim in both the printed-label phone
+# test plan and the result template (sprint 122). Do not paraphrase.
+warning_banner: |
+  Local dev-tool session. Not authentication. Phase H authentication has not
+  landed. This CallerContext is a bench fixture and does not reflect
+  production identity handling.

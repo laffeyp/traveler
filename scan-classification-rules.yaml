@@ -1,0 +1,116 @@
+# Scan classification rules — Phase F sprint 114, bench-spec-v0.8 §11.1.
+#
+# Nine rules. Seven cover every decodable record type at src/harness/scan-decoder.ts
+# KNOWN_TYPES (InventoryItem, ShipmentLine, Certificate, Station, Run, RunStep,
+# Attachment). Two are the handoff_gap guards (unknown record type; missing
+# queued_input_field). Every operation_name resolves in contracts/operations.yaml.
+# Every input_field is a field the shipped handler reads verbatim.
+#
+# Rule shape per bench-spec-v0.8 §11.1: rule_id, screen_context,
+# decoded_record_type, runtime_context, classification, plus one of
+# follow_on_read (for identity_only) or fire_operation (for operation_binding,
+# presence_asserting) or nothing (for handoff_gap).
+
+rules:
+  # --- InventoryItem scans ----------------------------------------------------
+  - rule_id: run_step_matching_inventory_presence
+    screen_context: RunStepView
+    decoded_record_type: InventoryItem
+    runtime_context:
+      run_step_expects_matching_child_item: true
+      station_known: true
+    classification: presence_asserting
+    fire_operation:
+      operation_name: PresentInventoryAtStation
+      input_field: inventory_item_alias
+
+  - rule_id: install_inventory_bound_operation_binding
+    screen_context: InstallInventoryView
+    decoded_record_type: InventoryItem
+    runtime_context:
+      presentation_already_bound: true
+      queued_operation: InstallInventory
+      queued_input_field: child_inventory_alias
+    classification: operation_binding
+    fire_operation:
+      operation_name: InstallInventory
+      input_field: child_inventory_alias
+
+  # --- ShipmentLine scans ----------------------------------------------------
+  - rule_id: receiving_queue_shipment_line_binding
+    screen_context: ReceivingQueue
+    decoded_record_type: ShipmentLine
+    runtime_context:
+      actor_can_receive_shipment_line: true
+      queued_operation: RunReceivingCheck
+      queued_input_field: shipment_line_alias
+    classification: operation_binding
+    fire_operation:
+      operation_name: RunReceivingCheck
+      input_field: shipment_line_alias
+
+  # --- Certificate scans -----------------------------------------------------
+  - rule_id: certificate_evidence_binding
+    screen_context: SupplierEvidenceChecklist
+    decoded_record_type: Certificate
+    runtime_context:
+      actor_can_review_evidence: true
+      queued_operation: AcceptCertificateAsEvidence
+      queued_input_field: certificate_alias
+    classification: operation_binding
+    fire_operation:
+      operation_name: AcceptCertificateAsEvidence
+      input_field: certificate_alias
+
+  # --- Station / Run / RunStep scans return identity_only --------------------
+  # The app-flow layer reads the target through readRecordAsCaller; no
+  # operation fires from an identity scan of these three record types today.
+  - rule_id: station_identity_only
+    screen_context: Any
+    decoded_record_type: Station
+    classification: identity_only
+    follow_on_read:
+      read_path: readRecordAsCaller
+      read_target_alias_field: decoded_record_alias
+
+  - rule_id: run_identity_only
+    screen_context: Any
+    decoded_record_type: Run
+    classification: identity_only
+    follow_on_read:
+      read_path: readRecordAsCaller
+      read_target_alias_field: decoded_record_alias
+
+  - rule_id: run_step_identity_only
+    screen_context: Any
+    decoded_record_type: RunStep
+    classification: identity_only
+    follow_on_read:
+      read_path: readRecordAsCaller
+      read_target_alias_field: decoded_record_alias
+
+  # --- Attachment scans fire AccessAttachment --------------------------------
+  - rule_id: attachment_access_binding
+    screen_context: Any
+    decoded_record_type: Attachment
+    runtime_context:
+      queued_operation: AccessAttachment
+      queued_input_field: attachment_alias
+    classification: operation_binding
+    fire_operation:
+      operation_name: AccessAttachment
+      input_field: attachment_alias
+
+  # --- handoff_gap guards ----------------------------------------------------
+  - rule_id: unknown_record_type_gap
+    screen_context: Any
+    decoded_record_type: unresolved
+    classification: handoff_gap
+
+  - rule_id: missing_queued_input_field_gap
+    screen_context: Any
+    decoded_record_type: Any
+    runtime_context:
+      queued_operation_exists: true
+      queued_input_field: null
+    classification: handoff_gap
