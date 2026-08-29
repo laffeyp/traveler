@@ -67,6 +67,18 @@
     </ol>
   </div>
 
+  <h2 style="font-size: 15px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: #333; margin: 30px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #B8B4A8;">Physical Presence · receiving_review two-station conflict (VF-052, Phase G)</h2>
+  <p style="font-size:13px; color:#4A4A4A; margin: 0 0 12px;">Non-production Presentation flow. Two receiving_review Presentations at two stations on the same InventoryItem. Both drivers write a <span style="font-family:'IBM Plex Mono',monospace;">conflicted</span> record and emit <span style="font-family:'IBM Plex Mono',monospace;">PRESENTATION_CONFLICT_DETECTED</span>. Purpose-aware partial index at <span style="font-family:'IBM Plex Mono',monospace;">backend.ts</span> permits the record-conflict branch under non-production purposes; under <span style="font-family:'IBM Plex Mono',monospace;">production_install</span> or <span style="font-family:'IBM Plex Mono',monospace;">production_measurement_support</span> the second PresentInventoryAtStation would instead refuse <span style="font-family:'IBM Plex Mono',monospace;">presentation_conflict</span>. ShipmentLine and Certificate scans classify under the scan-classification-rules.yaml KNOWN_TYPES entries and bind to their operations without needing a Presentation.</p>
+  <div style="padding: 12px 16px; background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px;">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;">VF-052 scenario steps walked</div>
+    <ol style="margin: 0; padding-left: 20px;">
+      <li style="font-size: 13px; color: #1A1A1A; padding: 2px 0;">ShipmentLine and Certificate scans in Receiving classify under KNOWN_TYPES; each binds to its operation (ReceiveInventory, AcceptCertificateAsEvidence).</li>
+      <li style="font-size: 13px; color: #1A1A1A; padding: 2px 0;">Presentation A at receiving-01: <span style="font-family:'IBM Plex Mono',monospace;">PresentInventoryAtStation</span> with <span style="font-family:'IBM Plex Mono',monospace;">presentation_purpose receiving_review</span>. Presentation A → <span style="font-family:'IBM Plex Mono',monospace;">presented</span>.</li>
+      <li style="font-size: 13px; color: #1A1A1A; padding: 2px 0;">Presentation B at receiving-02 on the same InventoryItem: second <span style="font-family:'IBM Plex Mono',monospace;">PresentInventoryAtStation</span>. Because <span style="font-family:'IBM Plex Mono',monospace;">presentation_purpose</span> is non-production, both drivers write Presentation B in state <span style="font-family:'IBM Plex Mono',monospace;">conflicted</span> and emit <span style="font-family:'IBM Plex Mono',monospace;">PRESENTATION_CONFLICT_DETECTED</span>.</li>
+      <li style="font-size: 13px; color: #1A1A1A; padding: 2px 0;">Cross-driver diff-to-zero holds. Both records survive cold reload — backend gate proof #15 (Presentation-lifecycle durability across VF-038 + VF-047 + VF-052).</li>
+    </ol>
+  </div>
+
 </div>
 </x-dc>
 </body>

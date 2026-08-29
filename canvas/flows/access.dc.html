@@ -82,6 +82,19 @@
     </ol>
   </div>
 
+  <h2 style="font-size: 15px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: #333; margin: 30px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #B8B4A8;">Physical Presence · SupportDiagnostics conflict summary + hidden-identity no-leak (VF-053, Phase G)</h2>
+  <p style="font-size:13px; color:#4A4A4A; margin: 0 0 12px;">Two shapes: SupportDiagnosticsView renders a Presentation-conflict summary from VF-052 (bench-flow, non-production) alongside its diagnostic rows; hidden-identity reads under a visibility profile with <span style="font-family:'IBM Plex Mono',monospace;">denial_behavior: hidden_existence</span> return the no-leak variant — no alias, no display label. The <span style="font-family:'IBM Plex Mono',monospace;">handoff-A track 2</span> marker fires on this flow where the audit trail's caller identity would be materially wrong under the F2 track 1 <span style="font-family:'IBM Plex Mono',monospace;">access_admin</span> workaround.</p>
+  <div style="padding: 12px 16px; background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px;">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;">VF-053 scenario steps walked · hidden identity via the app-flow layer</div>
+    <ol style="margin: 0; padding-left: 20px;">
+      <li style="font-size: 13px; color: #1A1A1A; padding: 2px 0;">Scan of a non-visible InventoryItem. Classifier returns <span style="font-family:'IBM Plex Mono',monospace;">identity_only</span> (no run step context).</li>
+      <li style="font-size: 13px; color: #1A1A1A; padding: 2px 0;"><span style="font-family:'IBM Plex Mono',monospace;">readRecordAsCaller</span> fires. Access boundary refuses under <span style="font-family:'IBM Plex Mono',monospace;">hidden_existence</span>. Caller receives <span style="font-family:'IBM Plex Mono',monospace;">not_found_or_not_visible</span>. Audit records the internal outcome <span style="font-family:'IBM Plex Mono',monospace;">hidden_existence_required</span>; the caller never sees the internal name.</li>
+      <li style="font-size: 13px; color: #1A1A1A; padding: 2px 0;">SupportDiagnosticsView renders the hidden-existence row as a blank pill (visibility.ts:hiddenExistenceResponse) — no alias, no label, no metadata.</li>
+    </ol>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 12px;">handoff-A track 2 marker · trigger evaluation</div>
+    <p style="font-size:13px; color:#1A1A1A; margin: 4px 0 0;">Where a customer-facing read fires under the <span style="font-family:'IBM Plex Mono',monospace;">access_admin</span> workaround and a downstream consumer needs per-customer audit attribution, the trigger from <span style="font-family:'IBM Plex Mono',monospace;">ui-overlay-spec-v0.9.md § 16</span> fires. Decision at sprint 137's <span style="font-family:'IBM Plex Mono',monospace;">docs/phase-g-handoff-a-track-2-trigger.md</span>. F2c's validator at <span style="font-family:'IBM Plex Mono',monospace;">validate:contracts</span> section 9b protects the intended_audience workaround from typos.</p>
+  </div>
+
 </div>
 </x-dc>
 </body>

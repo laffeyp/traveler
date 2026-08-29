@@ -79,6 +79,21 @@
     </ol>
   </div>
 
+  <h2 style="font-size: 15px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: #333; margin: 30px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #B8B4A8;">Physical Presence · quality_review Presentation · rework bound → cleared (VF-045, VF-052, Phase G)</h2>
+  <p style="font-size:13px; color:#4A4A4A; margin: 0 0 12px;">Two quality-side Presentation flows. VF-045: a rework flow where a Presentation is bound to a rework step and later cleared without consumption when the rework path changes. VF-052: the non-production two-station conflict summary (mirror of the receiving-flow entry). Both drive quality_review presentation_purpose semantics: the record-conflict branch under non-production purposes writes a conflicted Presentation on both drivers.</p>
+  <div style="padding: 12px 16px; background: #FFFFFF; border: 1px solid #D9D6CE; border-radius: 3px;">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;">VF-045 scenario steps walked · Presentation bound → cleared</div>
+    <ol style="margin: 0; padding-left: 20px;">
+      <li style="font-size: 13px; color: #1A1A1A; padding: 2px 0;">Quality engineer scans the InventoryItem at station-Q1. <span style="font-family:'IBM Plex Mono',monospace;">PresentInventoryAtStation</span> with <span style="font-family:'IBM Plex Mono',monospace;">presentation_purpose quality_review</span>. Presentation → <span style="font-family:'IBM Plex Mono',monospace;">presented</span>.</li>
+      <li style="font-size: 13px; color: #1A1A1A; padding: 2px 0;"><span style="font-family:'IBM Plex Mono',monospace;">BindPresentedItemToRunStep</span> against the rework RunStep. Presentation → <span style="font-family:'IBM Plex Mono',monospace;">bound</span>.</li>
+      <li style="font-size: 13px; color: #1A1A1A; padding: 2px 0;">Rework path changes (scrap disposition instead of rework). <span style="font-family:'IBM Plex Mono',monospace;">ClearPresentedItem</span> fires (rule <span style="font-family:'IBM Plex Mono',monospace;">presentation_clearance</span>). Presentation → <span style="font-family:'IBM Plex Mono',monospace;">cleared</span>. No consumption; no product truth landed from this Presentation. Terminal state, no further transitions.</li>
+    </ol>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 12px;">VF-052 scenario steps walked · non-production conflict (mirror of receiving flow)</div>
+    <ol style="margin: 0; padding-left: 20px;">
+      <li style="font-size: 13px; color: #1A1A1A; padding: 2px 0;">Same shape as the receiving-flow entry: two quality_review Presentations at two stations on the same InventoryItem, both drivers write a conflicted record, both emit <span style="font-family:'IBM Plex Mono',monospace;">PRESENTATION_CONFLICT_DETECTED</span>.</li>
+    </ol>
+  </div>
+
 </div>
 </x-dc>
 </body>

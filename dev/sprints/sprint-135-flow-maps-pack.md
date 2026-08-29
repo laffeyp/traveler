@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 135
-status: pending
+status: closed # [closed 2026-08-28 — four flow maps updated: handheld-operator adds the scan→present→bind→install chain (VF-048); receiving adds ShipmentLine/Certificate/Attachment scan bindings + receiving_review conflict (VF-052); quality adds quality_review Presentation and non-production conflict (VF-045, VF-052); access adds SupportDiagnostics conflict summary + hidden-identity no-leak + handoff-A track 2 marker (VF-053)]
 phase: G.5-components-flows
 pass_kind: design
 ---
