@@ -993,6 +993,38 @@ claims.** For TECHNIQUES.md.
 
 ---
 
+## Entry 39 — Phase F: Physical Presence Bench ships in one day, zero registry edits (2026-08-28)
+
+*Fifteen sprints (111–125) closed contiguously. Ten new bench scenarios (VF-048 through VF-057), a decoder-refusal vitest wall of nine cases plus three happy-path cases, a printed-label phone test plan and result template, a twelve-arm bench mutation battery, an acceptance file scoring 37 of 37. Registry counts unchanged from Phase E close. Zero handler edits. Zero product truth added. The bench exercises what Phase E already registered through the scan-shaped path a future operator app will use.*
+
+**The arc.** Bench-spec-v0.4 arrived from outside on 2026-08-28. Four review passes (v0.5, v0.6, v0.7, v0.8) closed the incoming spec against the shipped runtime. v0.6 caught the biggest single fatal claim — the v0.5 `v1:` label prefix would have made every generated payload return `unresolved` because `scan-decoder.ts` refuses payloads with more than three colon-separated segments. Version discrimination moved to the label-file metadata layer instead. v0.8 became the shipping baseline. Fifteen sprint cards drafted up front per practice #32. Six defects the reviewer caught in the drafted cards closed before sprint 111 dispatched. Sprints 111 through 125 executed auto-within-phase without a card-level halt.
+
+**What worked.**
+
+- *The phase-opening pattern held through fifteen sprints without drift.* Stage 1 grounded four review passes on the incoming spec against the runtime; stage 2 wrote the plan in the eleven-section shape; stage 3 drafted cards up front. The reviewer caught six defects in the drafts before sprint 111 dispatched; every defect closed before execution. `dev/process-notes/phase-opening-pattern.md` is now a load-bearing artefact — every future phase reads it.
+
+- *The whole-bench cross-driver diff-to-zero absorbed ten new scenarios without a divergence.* VF-048 through VF-057 each landed on both drivers byte-identical. Every scenario went into `src/harness/bench.ts:all` and `src/harness/run-backend.ts:EQUIV_SCENARIOS` (practice #48). The 47-scenario baseline at Phase E review-response close grew to 57 in one phase.
+
+- *Zero registry edits, zero handler edits.* Phase F is a bench, not a boundary. The shipping runtime at Phase E close was exactly the substrate the bench exercised. Two practices formalise this shape: bench phases do not add product truth (practice #52); the fixture pack, harness surfaces, scenarios, decoder wall, phone test, and mutation battery all sit outside `src/driver/` and `contracts/*.yaml`.
+
+- *Amend-in-place proved cheaper than a card renumber.* Sprint 112 amended its scope from "QR image files" to "deterministic payload strings" once the phone-test pattern proved QR belonged at sprint 122. The card's trailer note stated the amendment shape explicitly per practice #32. Sprint 122's plan then named the QR encoding step. No new sprint number opened; no reader lost the thread.
+
+**What got in the way.**
+
+- *One reviewer-caught order defect on the sprint cards.* The original numbering had sprint 114 as "bench app-flow harness" and sprint 115 as "classification rule set" — but the harness depends on the rule set at load time. Under auto-within-phase execution a reader following numeric order would run 114 before 115 and hit a missing rule set. The reviewer named the swap as a first-class card fix; the two sprints swapped file names, id headers, and prerequisites before execution. Recorded here as evidence that a card review must trace dependencies even when the dependency lives across two adjacent sprints.
+
+- *One VF-053 scope shift.* Bench-spec-v0.8 §14.5 named hidden identity as one of ten runtime-touching flows. The scenario framework does not directly support asserting `readRecordAsCaller returned hidden_existence` at the yaml layer. VF-053 shipped as the outer-boundary shape — an unauthorized caller_type (manufacturing_engineer) refuses at the operation-authorization wrapper — and the app-flow-layer UI-visible `not_found_or_not_visible` state landed in `tests/harness/bench-app-flow.test.ts` and the mutation battery. `docs/PHYSICAL_PRESENCE_BENCH_ACCEPTANCE.md` row 26 records the split honestly.
+
+**What this arc says for the next kit version.**
+
+- **(52) A bench phase adds no product vocabulary.** Phase F edited zero registries and zero handlers across fifteen sprints. The bench exercises the shipping runtime; it does not extend it. Every claim in the acceptance file trace back to either a shipping code helper (`presentationExpired`, `assertPresentationConsumable`, tuple-aware refusal, purpose-aware backend index) or to a fixture/harness/scenario/test surface Phase F itself produced. If a bench sprint surfaces vocabulary the runtime does not support, the sprint halts with `vocabulary_change_required` against the *boundary* spec, not against the bench spec. Phase F did not halt. For TECHNIQUES.md, bench-phase subsection.
+
+- **(53) Amend sprint cards in place when the code proves the scope shift.** Two amendments landed in-flight during Phase F: sprint 112's QR-library scope shift to payload strings, and sprint 122's added QR encoding step. Neither shifted the phase's outcome. Both landed under the practice #32 trailer note that every card carries. The alternative (open a new sprint number every time a card's scope drifts) would have grown the phase from fifteen to eighteen sprints for zero acceptance-file gain. For TECHNIQUES.md, planning subsection.
+
+**Sprint count.** Phase F holds 15 sprints (111–125). The `dev/sprints/` directory now runs contiguously from 001 through 125.
+
+---
+
 ## Entry 38 — Phase E review response: four correctness fixes, one durability proof, one row flipped (2026-08-28)
 
 *A same-day code review on the shipped Phase E named four correctness findings. All four closed at source with a coupling test each. The response also added the Presentation-lifecycle durability proof (backend proofs 14 → 15) and registered `required_presentation_on_install` in `contracts/run-close-rules.yaml` with `blocking: false`, which flips row 31 of `docs/PHYSICAL_PRESENCE_ACCEPTANCE.md` from pass-in-part to pass. The acceptance file now reads 33 of 33 pass, no row pass-in-part. VF-047 was added the same day; the whole-bench cross-driver diff-to-zero over 47 scenarios PASS holds.*

@@ -12,7 +12,7 @@ Two drivers sit behind one interface: `InMemoryProductDriver` and `BackendProduc
 
 The project runs under Signal-Driven Development kit v2 (`dev/sdd-kit-2/`, vendored read-only). The contract registries are this project's locked vocabulary — the equivalent of `signals/0.1.json` in the kit's example.
 
-## 2. Where the build stands (measured 2026-08-28)
+## 2. Where the build stands (measured 2026-08-28, Phase F ships)
 
 Five governing documents are closed:
 
