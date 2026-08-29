@@ -1,0 +1,96 @@
+scenario_id: VF-049
+scenario_version: "1"
+title: Bench wrong-item — Bind refuses wrong_item after successful Present
+ci_eligible: true
+
+contract_authority:
+  contract_spec: Operation / Event / State Contract Specification v0.4.1
+  harness_spec: Virtual Factory Harness Specification v0.1.2
+  registry_version: contracts-0.4.1
+
+purpose: >
+  Phase F bench §14.2. The operator presents screw_001 at station_a but the RunStep expects gasket_001;
+  Present succeeds (the operation writes a Presentation record regardless of what the target step
+  expects); Bind refuses wrong_item at the expected_child_inventory_alias guard. No InstallInventory,
+  no PRESENTATION_CONSUMED.
+
+seed:
+  deterministic_seed: 3049
+
+clock:
+  start_at: "2026-08-28T14:00:00Z"
+  timezone: "UTC"
+  mode: controlled
+
+actors:
+  - { actor_id: mfg_eng_1,      actor_type: manufacturing_engineer, product_caller_type: manufacturing_engineer }
+  - { actor_id: planner_1,      actor_type: planner,                product_caller_type: planner }
+  - { actor_id: operator_1,     actor_type: operator,               product_caller_type: operator }
+  - { actor_id: quality_1,      actor_type: quality_engineer,       product_caller_type: quality_engineer }
+  - { actor_id: report_worker_1, actor_type: system_worker,         product_caller_type: system_worker }
+  - { actor_id: support_1,      actor_type: support_user,           product_caller_type: support_user }
+
+aliases:
+  procedure_version_v1: ProcedureVersion
+  procedure_step_install: ProcedureStep
+  manufacturing_structure_v1: ManufacturingStructureVersion
+  bom_line_a: BOMLine
+  parent_valve_001: InventoryItem
+  gasket_001: InventoryItem
+  screw_001: InventoryItem
+  effectivity_rule_proc: EffectivityRule
+  effectivity_rule_struct: EffectivityRule
+  effectivity_resolution_001: EffectivityResolution
+  build_check_001: BuildCheckResult
+  run_context_snapshot_001: RunContextSnapshot
+  run_valve_001: Run
+  run_step_install_gasket: RunStep
+  station_a: Station
+  presentation_wrong_001: Presentation
+
+world:
+  factory_node: hq_a
+  part_revisions:
+    - { alias: valve_body_rev_a, part_number: VB-100, revision: A }
+    - { alias: gasket_rev_a,     part_number: GK-200, revision: A }
+  inventory_truth:
+    - { alias: parent_valve_001, part_revision: valve_body_rev_a, serial_number: VB-A001 }
+    - { alias: gasket_001,       part_revision: gasket_rev_a,     serial_number: GK-A001 }
+    - { alias: screw_001,        part_revision: gasket_rev_a,     serial_number: GK-A003 }
+
+steps:
+  - { step_id: "001", actor: mfg_eng_1, operation: CreateProcedureVersion, idempotency_key: vf-049-001, input: { procedure_version_alias: procedure_version_v1, procedure_alias: proc_a, revision: 1, steps: [ { alias: procedure_step_install, name: install_gasket, data_collection_fields: [] } ] }, expect: { operation_succeeded: true } }
+  - { step_id: "002", actor: mfg_eng_1, operation: SubmitProcedureVersionForReview, idempotency_key: vf-049-002, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true } }
+  - { step_id: "003", actor: mfg_eng_1, operation: ReleaseProcedureVersion, idempotency_key: vf-049-003, input: { procedure_version_alias: procedure_version_v1 }, expect: { operation_succeeded: true } }
+  - { step_id: "004", actor: mfg_eng_1, operation: CreateManufacturingStructureVersion, idempotency_key: vf-049-004, input: { manufacturing_structure_alias: manufacturing_structure_v1, revision: 1 }, expect: { operation_succeeded: true } }
+  - { step_id: "005", actor: mfg_eng_1, operation: AddBOMLine, idempotency_key: vf-049-005, input: { manufacturing_structure_alias: manufacturing_structure_v1, bom_line_alias: bom_line_a, child_part_revision: gasket_rev_a, quantity: 1 }, expect: { operation_succeeded: true } }
+  - { step_id: "006", actor: mfg_eng_1, operation: ReleaseManufacturingStructureVersion, idempotency_key: vf-049-006, input: { manufacturing_structure_alias: manufacturing_structure_v1 }, expect: { operation_succeeded: true } }
+  - { step_id: "007", actor: planner_1, operation: RegisterStation, idempotency_key: vf-049-007, input: { station_alias: station_a, station_type: assembly, factory_node_id: hq_a }, expect: { operation_succeeded: true } }
+  - { step_id: "010", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf-049-010, input: { inventory_alias: parent_valve_001, part_revision: valve_body_rev_a, serial_number: VB-A001 }, expect: { operation_succeeded: true } }
+  - { step_id: "011", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf-049-011, input: { inventory_alias: parent_valve_001 }, expect: { operation_succeeded: true } }
+  - { step_id: "012", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf-049-012, input: { inventory_alias: parent_valve_001 }, expect: { operation_succeeded: true } }
+  - { step_id: "013", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf-049-013, input: { inventory_alias: gasket_001, part_revision: gasket_rev_a, serial_number: GK-A001 }, expect: { operation_succeeded: true } }
+  - { step_id: "014", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf-049-014, input: { inventory_alias: gasket_001 }, expect: { operation_succeeded: true } }
+  - { step_id: "015", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf-049-015, input: { inventory_alias: gasket_001 }, expect: { operation_succeeded: true } }
+  - { step_id: "015a", actor: planner_1, operation: CreateInventoryItem, idempotency_key: vf-049-015a, input: { inventory_alias: screw_001, part_revision: gasket_rev_a, serial_number: GK-A003 }, expect: { operation_succeeded: true } }
+  - { step_id: "015b", actor: planner_1, operation: ReceiveInventory, idempotency_key: vf-049-015b, input: { inventory_alias: screw_001 }, expect: { operation_succeeded: true } }
+  - { step_id: "015c", actor: planner_1, operation: ReleaseInventory, idempotency_key: vf-049-015c, input: { inventory_alias: screw_001 }, expect: { operation_succeeded: true } }
+  - { step_id: "016", actor: planner_1, operation: ReserveInventory, idempotency_key: vf-049-016, input: { inventory_alias: gasket_001 }, expect: { operation_succeeded: true } }
+  - { step_id: "016b", actor: planner_1, operation: ReserveInventory, idempotency_key: vf-049-016b, input: { inventory_alias: screw_001 }, expect: { operation_succeeded: true } }
+  - { step_id: "017", actor: planner_1, operation: ReserveInventory, idempotency_key: vf-049-017, input: { inventory_alias: parent_valve_001 }, expect: { operation_succeeded: true } }
+  - { step_id: "017b", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf-049-017b, input: { effectivity_rule_alias: effectivity_rule_proc, target_record_type: ProcedureVersion, rule_type: serial_cut_in, serial_condition: "VB-A001", target_alias: procedure_version_v1, priority: 1 }, expect: { operation_succeeded: true } }
+  - { step_id: "017c", actor: planner_1, operation: CreateEffectivityRule, idempotency_key: vf-049-017c, input: { effectivity_rule_alias: effectivity_rule_struct, target_record_type: ManufacturingStructureVersion, rule_type: serial_cut_in, serial_condition: "VB-A001", target_alias: manufacturing_structure_v1, priority: 1 }, expect: { operation_succeeded: true } }
+  - { step_id: "018", actor: planner_1, operation: ResolveEffectivity, idempotency_key: vf-049-018, input: { effectivity_resolution_alias: effectivity_resolution_001, target_serial: "VB-A001" }, expect: { operation_succeeded: true } }
+  - { step_id: "019", actor: planner_1, operation: RunBuildCheck, idempotency_key: vf-049-019, input: { build_check_alias: build_check_001, procedure_version_alias: procedure_version_v1, manufacturing_structure_alias: manufacturing_structure_v1, effectivity_resolution_alias: effectivity_resolution_001, target_inventory_alias: parent_valve_001 }, expect: { operation_succeeded: true } }
+  - { step_id: "020", actor: planner_1, operation: CreateRun, idempotency_key: vf-049-020, input: { run_alias: run_valve_001, run_context_snapshot_alias: run_context_snapshot_001, procedure_version_alias: procedure_version_v1, manufacturing_structure_alias: manufacturing_structure_v1, effectivity_resolution_alias: effectivity_resolution_001, build_check_alias: build_check_001, target_inventory_alias: parent_valve_001, run_step_aliases: [run_step_install_gasket] }, expect: { operation_succeeded: true } }
+  - { step_id: "020b", actor: report_worker_1, operation: ApplyBuildCheckResultToRun, idempotency_key: vf-049-020b, input: { run_alias: run_valve_001, build_check_alias: build_check_001 }, expect: { operation_succeeded: true } }
+  - { step_id: "021", actor: operator_1, operation: StartRun, idempotency_key: vf-049-021, input: { run_alias: run_valve_001 }, expect: { operation_succeeded: true } }
+  - { step_id: "022", actor: operator_1, operation: StartRunWithInventory, idempotency_key: vf-049-022, input: { run_alias: run_valve_001, inventory_aliases: [parent_valve_001, gasket_001, screw_001] }, expect: { operation_succeeded: true } }
+  - { step_id: "023", actor: operator_1, operation: StartRunStep, idempotency_key: vf-049-023, input: { run_alias: run_valve_001, run_step_alias: run_step_install_gasket }, expect: { operation_succeeded: true } }
+  - { step_id: "030", actor: operator_1, operation: PresentInventoryAtStation, idempotency_key: vf-049-030, input: { presentation_alias: presentation_wrong_001, inventory_item_alias: screw_001, station_alias: station_a, actor_id: operator_1, caller_type: operator, run_alias: run_valve_001, run_step_alias: run_step_install_gasket, parent_inventory_alias: parent_valve_001, presentation_purpose: production_install, intended_operation: InstallInventory, scan_value: "InventoryItem:screw_001", scan_type: presence_asserting, presentation_source: handheld_scan, presented_at: "2026-08-28T14:10:00Z", expires_at: "2026-08-28T14:20:00Z" }, expect: { operation_succeeded: true, events_emitted: [INVENTORY_PRESENTED_AT_STATION] } }
+  - { step_id: "031", actor: operator_1, operation: BindPresentedItemToRunStep, idempotency_key: vf-049-031, input: { presentation_alias: presentation_wrong_001, run_alias: run_valve_001, run_step_alias: run_step_install_gasket, parent_inventory_alias: parent_valve_001, expected_child_inventory_alias: gasket_001, bound_at: "2026-08-28T14:11:00Z" }, expect: { operation_succeeded: false } }
+
+assertions:
+  - { assertion_id: vf049_bind_refuses_wrong_item, assertion_type: operation_failed, severity: blocking, target: { step_id: "031" }, expected: { failure_class: wrong_item } }
+  - { assertion_id: vf049_presentation_still_presented, assertion_type: record_state, severity: blocking, target: { alias: presentation_wrong_001 }, expected: { state: presented } }
+  - { assertion_id: vf049_no_install, assertion_type: event_not_emitted, severity: blocking, target: { event_type: INVENTORY_INSTALLED }, expected: { count: 0 } }
