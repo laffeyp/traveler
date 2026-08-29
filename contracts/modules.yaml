@@ -24,9 +24,23 @@ caller_types:
 # not authorize. Every name here is deferred to a boundary spec that will
 # register it as a live caller_type when a scenario forces the move. Present
 # here as a hard-filter allowlist so a typo in an intended_audience value
-# fails validate:contracts loudly. F2b + handoff-A track 1 origin.
+# fails validate:contracts loudly. F2b + handoff-A track 1 origin; F2e
+# (2026-08-29) migrated to the record shape { name, note, next_phase } so a
+# naked typo added to the allowlist itself has no note to write and no phase
+# to name — closes the F2c allowlist-edge false-secure gap the Phase G ship
+# review named.
 deferred_caller_types:
-  - external_viewer
+  - name: external_viewer
+    note: >
+      F2 track 1 (2026-08-28) published `intended_audience: external_viewer` on
+      `customer_summary_access` and `customer_extended_access` in
+      `contracts/visibility-profiles.yaml`. The runtime routes those reads under
+      `access_admin` at `src/driver/driver.ts:readRecordAsCaller`; the audit
+      event carries `access_admin` as the caller identity. F2c added this
+      allowlist so a typo in intended_audience fails validate:contracts
+      (section 9b). F2e added this record shape so a typo in the allowlist
+      itself fails (section 9c).
+    next_phase: handoff-A track 2 — external_viewer caller_type registration; the sharpened trigger at ui-overlay-spec-v0.9.md § 16 fires when a downstream consumer of the audit trail needs per-customer attribution.
 
 modules:
   - { id: procedure,              name: Procedure Module,                 first_slice: true }

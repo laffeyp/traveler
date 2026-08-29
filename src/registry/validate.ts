@@ -1,5 +1,5 @@
 // Static contract-registry validator (Contract Spec v0.4.1 sections 3, 24).
-// Enforces internal consistency of the 13 registries and resolves every name
+// Enforces internal consistency of the 16 registries and resolves every name
 // VF-003 references. Reports all errors; exits 1 if any, 0 if clean.
 //
 // This is the gate behind `npm run validate:contracts` and the SDD
@@ -38,7 +38,16 @@ const moduleIds = new Set<string>(
   (registries.modules?.modules ?? []).map((moduleDef: any) => moduleDef.id),
 );
 const callerTypes = new Set<string>(registries.modules?.caller_types ?? []);
-const deferredCallerTypes = new Set<string>(registries.modules?.deferred_caller_types ?? []);
+// F2e (2026-08-29): deferred_caller_types is a list of records with { name,
+// note, next_phase }. Accept the F2c bare-string shape here as a fallback so
+// section 9c below can produce a specific error naming the record shape; a
+// bare-string entry still contributes its name to the known set so section
+// 9b renders the intended_audience error at the right site.
+const deferredRawInit: any[] = registries.modules?.deferred_caller_types ?? [];
+const deferredNames: string[] = deferredRawInit
+  .map((entry: any) => (typeof entry === "string" ? entry : entry?.name))
+  .filter(Boolean);
+const deferredCallerTypes = new Set<string>(deferredNames);
 const knownCallerTypes = new Set<string>([...callerTypes, ...deferredCallerTypes]);
 const records: any[] = registries.records?.records ?? [];
 const recordNames = new Set<string>(records.map((record) => record.name));
@@ -418,6 +427,61 @@ for (const profile of visibilityProfiles) {
       );
 }
 
+// ---- 9c. deferred_caller_types allowlist shape (F2e) -----------------------
+// The F2c allowlist shipped as bare strings; a typo dropped into the list
+// silently made the section-9b check pass on the typo. F2e requires records
+// with { name, note, next_phase } so a naked typo has no note to write and
+// no phase to name. Every deferred entry's name must not appear in the live
+// caller_types set (deferred means deferred; overlap is dead vocabulary).
+const deferredRaw: any[] = registries.modules?.deferred_caller_types ?? [];
+for (const entry of deferredRaw) {
+  if (typeof entry === "string") {
+    err(
+      `[modules] deferred_caller_types entry '${entry}' uses bare-string shape; F2e requires records with { name, note, next_phase }`,
+    );
+    continue;
+  }
+  if (!entry.name)
+    err(`[modules] deferred_caller_types entry missing 'name': ${JSON.stringify(entry)}`);
+  if (!entry.note || !String(entry.note).trim())
+    err(
+      `[modules] deferred_caller_types '${entry.name ?? "?"}': 'note' must be present and non-empty (F2e — a naked typo has no note to write)`,
+    );
+  if (!entry.next_phase || !String(entry.next_phase).trim())
+    err(
+      `[modules] deferred_caller_types '${entry.name ?? "?"}': 'next_phase' must be present and non-empty (which phase would register this name)`,
+    );
+  if (entry.name && callerTypes.has(entry.name))
+    err(
+      `[modules] deferred_caller_types '${entry.name}' is also in caller_types; deferred names must not be live`,
+    );
+}
+
+// ---- 9d. failure-classes.yaml maps_to parity (F2d) --------------------------
+// F2 (handler-generic parents) and F2b (runtime-executor parents) added the
+// seven parent classes that were maps_to targets without a name: entry. This
+// check refuses that shape going forward — every maps_to target must appear
+// as a first-class name: entry in the same registry. Practice #55 codified.
+const failureClasses: any[] = registries.failureClasses?.failure_classes ?? [];
+const failureClassNames = new Set<string>(failureClasses.map((fc: any) => fc.name).filter(Boolean));
+for (const fc of failureClasses) {
+  if (fc.maps_to && !failureClassNames.has(fc.maps_to))
+    err(
+      `[failure-classes] '${fc.name}' maps_to '${fc.maps_to}' which has no name: entry in failure-classes.yaml (F2b hygiene rule; practice #55)`,
+    );
+}
+
+// ---- 9e. reason-codes.yaml maps_to parity (F2d) ----------------------------
+// Same shape as 9d against reason-codes.yaml.
+const reasonCodes: any[] = registries.reasonCodes?.reason_codes ?? [];
+const reasonCodeNames = new Set<string>(reasonCodes.map((rc: any) => rc.name).filter(Boolean));
+for (const rc of reasonCodes) {
+  if (rc.maps_to && !reasonCodeNames.has(rc.maps_to))
+    err(
+      `[reason-codes] '${rc.name}' maps_to '${rc.maps_to}' which has no name: entry in reason-codes.yaml`,
+    );
+}
+
 // ---- 10. vf003 flag vs manifest drift (warnings) ----------------------------
 const manifestOps = new Set<string>(asArray(vf.operations));
 for (const op of operations) {
@@ -450,9 +514,12 @@ const counts = {
   receivingRules: (registries.receivingRules?.rules ?? []).length,
   authorizationRules: authorizationRuleIds.size,
   assertionTypes: assertionTypes.size,
+  visibilityProfiles: visibilityProfiles.length,
+  failureClasses: failureClassNames.size,
+  reasonCodes: reasonCodeNames.size,
 };
 console.log("contract registry validation (contracts-0.4.1)");
-console.log(`  loaded: 13 registries  ${JSON.stringify(counts)}`);
+console.log(`  loaded: 16 registries  ${JSON.stringify(counts)}`);
 if (warnings.length) {
   console.log(`  warnings: ${warnings.length}`);
   for (const warning of warnings) console.log(`    warn: ${warning}`);

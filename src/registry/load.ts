@@ -26,6 +26,8 @@ export interface Registries {
   observabilityProfiles: any;
   compatibilityProfiles: any;
   visibilityProfiles: any;
+  failureClasses: any;
+  reasonCodes: any;
   vf003: any;
 }
 
@@ -45,6 +47,8 @@ export function loadRegistries(): Registries {
     observabilityProfiles: readYaml("contracts/observability-profiles.yaml"),
     compatibilityProfiles: readYaml("contracts/compatibility-profiles.yaml"),
     visibilityProfiles: readYaml("contracts/visibility-profiles.yaml"),
+    failureClasses: readYaml("contracts/failure-classes.yaml"),
+    reasonCodes: readYaml("contracts/reason-codes.yaml"),
     vf003: readYaml("scenarios/VF-003/references.yaml"),
   };
 }

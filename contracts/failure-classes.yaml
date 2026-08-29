@@ -32,7 +32,7 @@ failure_classes:
   - { name: hidden_existence_required,    new: true,                                    spec_section: "§14", used_by_sprint: 032, note: "internal outcome — produces a hidden_existence response, not a caller-visible failure" }
   - { name: summary_only_access,          new: true,                                    spec_section: "§14", used_by_sprint: 032, note: "internal outcome — produces a summary response" }
   - { name: report_audience_mismatch,     new: true,                                    spec_section: "§14", used_by_sprint: 045 }
-  - { name: report_access_stale,          maps_to: report_regeneration_required, new: false, spec_section: "§14", used_by_sprint: 050, note: "existing behavior; the new name lets scenarios cite the access reason" }
+  - { name: report_access_stale,          maps_to: precondition_failed,          new: false, spec_section: "§14", used_by_sprint: 050, note: "existing behavior; the new name lets scenarios cite the access reason. F2d (2026-08-29) changed maps_to from the unregistered 'report_regeneration_required' (a GeneratedReport state name, not a failure class) to the F2 first-class 'precondition_failed' — freshness is a precondition; the loader-parity check would have caught this the first time it ran." }
   - { name: policy_change_forbidden,      new: true,                                    spec_section: "§14", used_by_sprint: 050 }
 
   # --- Physical Presence Module (Phase E, sprint 091; boundary-spec-v0.10.md §8). Thirty-one classes cover
