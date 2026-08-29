@@ -1045,6 +1045,18 @@ Two new practices from this hygiene arc:
 
 Ship holds. The four ship-review findings closed under F2d + F2e + F2f + the ledger refresh; the F2c sibling gap (audience field on the eight visibility profiles carries no validator) remains deferred to a future arc if a scenario forces it. Every existing gate green throughout; vitest grew 507/67 → 512/68 from F2f.
 
+**Coverage analysis, 2026-08-29.** A full-suite run after F2f close asked the plainer question: what did Phase G + F2b/F2c/F2d/F2e/F2f add that has no regression check? Ten surfaces, each sorting into one of two shapes. Full ledger entry in `dev/BLACKBOARD.md ## Deferred`.
+
+- **Validator regression** — F2c section 9b, F2d sections 9d and 9e, F2e section 9c each proved mutation-coupling at commit time via a shell mutation of a contracts file. None landed as a permanent test. If a future edit deletes or short-circuits any of the four validator sections, `validate:contracts` stays green because the shipped registries are clean. The same shape applies at the doc layer: HANDOFF/STATE/ROADMAP fourteen-count consistency, `phase-h-input-package.md` mono-token registration, `canvas/handoff/manifest.yaml` artboard-path existence. Every "the shipped state is clean" gate leaves the check surface itself unverified.
+- **Artboard-vs-source coupling** — F2f exists for BlockerView; five other Phase G artboards ship the same pattern uncovered (ScanInventoryView, InstallInventoryView, RunStepView, SerialHistoryView, SupportDiagnosticsView). Sprint 133's six inspected-only screens can silently accrete Physical Presence content; state-badge lede and Presentation states can drift against `state-machines.yaml` on the next record change; flow-map scenario cites go stale on renumbering. Practice #62 said "extend to every UI-vs-runtime coupling"; today one of six artboards ships with the test.
+
+Two more practices from this analysis:
+
+- **(63) A "green gate" is only as wide as the surface it actually reads.** F2c/F2d/F2e/F2f each widened the surface by one section or one file. The coverage gaps above are the surfaces the current gate does not read. The pattern names the two directions the surface can miss: what the validator doesn't check (validator regression) and what the check surface doesn't cover (artboard-vs-source coupling). For TECHNIQUES.md.
+- **(64) A mutation-coupling proof at commit time is a proof, not a test.** F2c, F2d, F2e each ran `sed …/contracts/…yaml; npm run validate:contracts; expect fail; restore; expect pass` in the shell. The commit body records the transcript. A future author who deletes the validator section faces no red gate — the shipped registries stay clean. Every commit-time mutation proof needs a matching permanent test to freeze the coupling. For TECHNIQUES.md, coupling-mutation subsection.
+
+None of the ten gaps blocks ship today; each is a re-visit condition for a future F2g (audience validator), F2h (validator-coupling vitest), F2i (five-artboard F2f extensions), or a general "artboard-vs-source" hygiene arc.
+
 ---
 
 ## Entry 40 — Post-Phase-F drift close: handoff-A track 1 plus three same-shape patterns, six shipped as templates (2026-08-28)
