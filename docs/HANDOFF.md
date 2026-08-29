@@ -1,6 +1,6 @@
 # Handoff — Distributed Factory Execution Record System
 
-Written 2026-08-28, at the close of Phase F plus the F2 / F2b drift-close hygiene arcs and Phase G open through sprint 126. `STATE.md` and `ROADMAP.md` carry the file-and-line detail this doc summarizes.
+Written 2026-08-29, at the close of Phase G plus the F2 / F2b / F2c hygiene arcs. `STATE.md` and `ROADMAP.md` carry the file-and-line detail this doc summarizes.
 
 ## 1. What this is
 

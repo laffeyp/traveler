@@ -61,3 +61,55 @@ stack, and implements screen by screen against the same registries.
 The two handoffs (Physical Presence, Part / Inspection Requirement)
 must close before scanning flows and part-master flows can ship in
 production; both are on the roadmap after this phase.
+
+---
+
+# Phase G — Physical Presence UI Overlay acceptance
+
+Scored 2026-08-29 at Phase G close (sprint 138) against the 27 §14 criteria of `specs/physical-presence-ui-overlay/ui-overlay-spec-v0.9.md`, plus criterion 28 (message-shape sweep) that v0.9 added.
+
+| # | Criterion | Result | Evidence |
+|---|---|---|---|
+| 1 | UI overlay spec exists | pass | `specs/physical-presence-ui-overlay/ui-overlay-spec-v0.9.md` |
+| 2 | Current roadmap embedded | pass | v0.9 §1 embeds the manufacturing-software-roadmap-v0.8 track list |
+| 3 | Every screen in §8 listed in `canvas/handoff/manifest.yaml` with a §6 outcome | pass | manifest refreshed at sprint 138 with all fifteen screens under replaced (2) / amended (5) / inspected (6) / escalated (0) |
+| 4 | Every changed artboard cites Phase F evidence / Phase E vocabulary / explicit handoff | pass | `docs/phase-g-screen-to-call-log-map.md` |
+| 5 | ScanInventoryView renders four `ScanClass` outcomes + `scan_checksum_invalid` + `not_found_or_not_visible` | pass | sprint 126 close entry; five outcome rows plus post-op runtime refusal |
+| 6 | ScanInventoryView never treats `scan_checksum_invalid` as a classifier output | pass | rendered in "Scan-layer refusal" section, cited as client-side refusal (no classifier fires) |
+| 7 | ScanInventoryView never turns `scan_checksum_invalid` into a product operation | pass | operation mapping row: `scan_checksum_invalid → no classifier, no product read, no operation` |
+| 8 | InstallInventoryView renders eight registered disabled states citing failure-class names | pass | sprint 127; eight rows: wrong_item, presentation_expired, presentation_not_bound, presentation_not_active, presentation_conflict, state_transition_forbidden, idempotency_conflict, consuming_operation_mismatch |
+| 9 | OperatorHome shows station context and active Presentation summary; reads `state`, not `presentation_status` | pass | sprint 128; `grep -c presentation_status canvas/handheld/OperatorHome.dc.html` returns 0 |
+| 10 | RunStepView shows `wrong_item` refusal under the two-field guard; marks handoff-F where needed | pass | sprint 129; refusal block explicitly notes throws only when input carries both `parent_inventory_alias` AND `expected_child_inventory_alias`; handoff-F marker present |
+| 11 | BlockerView renders product blockers under registered names; scan-layer + runtime refusals in separate section | pass | sprint 130; nine product blockers in one section, three refusals in a separate section; every text matches the throw template |
+| 12 | SerialHistoryView shows consumed-Presentation context under visibility profile | pass | sprint 131; three Presentation event rows plus summary-variant redaction note |
+| 13 | SupportDiagnosticsView shows presentation conflicts + scan diagnostics under explicit visibility modes; no hidden-existence row carries alias or label | pass | sprint 132; four VisibilityLevel outcomes with the hidden row rendered as a blank pill |
+| 14 | No screen shows `external_viewer` as live caller_type; screens carry handoff-A track 2 marker where audit-trail identity is materially wrong | pass | sprint 132 SupportDiagnosticsView carries the marker card; sprint 135 access flow map carries the marker; no live cite in the artboards |
+| 15 | Any screen needing Part / Drawing / MaterialSpecification / InspectionRequirement marks handoff-F | pass | sprint 129 RunStepView marker; sprint 131 SerialHistoryView marker; sprint 133 inspected pack decision doc names why the six inspected screens did NOT mark |
+| 16 | Six inspected screens patched only if Phase F evidence forces or handoff-F marker | pass | sprint 133 inspection record: all six no-change decisions with cited reasoning |
+| 17 | Shared components extended per §9; three new files land; state-badge lede corrected to seventeen | pass | sprint 134; six extended + three new; state-badge lede reads "Four of seventeen state-machined records drawn as samples (Presentation added at Phase E close)" |
+| 18 | Flow maps updated for handheld scan/install, receiving, quality, access | pass | sprint 135; four flow maps updated with Phase F/E scenario cites |
+| 19 | `canvas/handoff/manifest.yaml` updated with §6 outcome per screen | pass | sprint 138 |
+| 20 | `docs/UI_SURFACE_ACCEPTANCE.md` gains Phase G section scoring each criterion | pass | this section |
+| 21 | `docs/phase-g-screen-to-call-log-map.md` exists — one row per changed screen with evidence | pass | sprint 137 |
+| 22 | `docs/phase-g-remaining-handoffs.md` exists — every marker listed | pass | sprint 137 lists two handoff-F markers (RunStepView, SerialHistoryView) and two handoff-A track 2 markers (SupportDiagnosticsView, access flow map) |
+| 23 | `docs/phase-h-input-package.md` exists — (screen, action) rows × seven fields, no endpoint names unless proposed | pass | sprint 136; 19 rows across seven screens; four `proposed` markers; every other name registered |
+| 24 | `docs/phase-g-ij-recommendation.md` exists — Desktop or iOS with cited reasoning | pass | sprint 137 recommends Desktop-first alpha (Phase I) |
+| 25 | `docs/phase-g-phase-m-trigger.md` + `docs/phase-g-handoff-a-track-2-trigger.md` exist — trigger status named | pass | sprint 137; both NOT FIRED at Phase G close |
+| 26 | `dev/phase-handoffs/PHASE_G_HANDOFF.md` exists in PHASE_E/F_HANDOFF shape | pass | sprint 138 |
+| 27 | Close signal: product registry delta zero, runtime handler delta zero | pass | `git diff --stat contracts/*.yaml src/driver/handlers.ts` across sprints 126–138 = empty; F2b + F2c commits sit under the F2 hygiene arc |
+| 28 | Message-shape sweep: every rendered blocker/refusal text matches the throw template at the cited handler site | pass | sprint 130 BlockerView eleven throw-template mapping table; spot-check greps against `src/driver/handlers.ts` and `src/driver/world.ts` confirm verbatim match |
+
+## Phase G deferred and reasoned
+
+Two markers survive at Phase G close; both are recorded honestly, neither is a criterion gap.
+
+- **handoff-F — Part / Inspection Requirement.** RunStepView and SerialHistoryView carry the marker. The (part_number, revision) pair on the InventoryItem / BOMLine renders honestly today; a first-class PartRevision or Drawing record would render more richly. Phase M evaluated as NOT FIRED for Physical Presence overlay reasons per sprint 137's decision doc; the domain trigger (B-Q-31, B-Q-32 still open) remains the Architect's call.
+- **handoff-A track 2 — external_viewer registration.** SupportDiagnosticsView and canvas/flows/access.dc.html carry the marker naming the trigger condition. Sharpened trigger from §16 evaluated as NOT FIRED at Phase G close; the F2 track 1 workaround plus F2c validator stand.
+
+## What did not need Architect input during Phase G
+
+Every sprint closed without a halt. The design skill authored every touched `.dc.html`; the Agent applied the F2b + F2c hygiene addenda under separate commits. The Rubber Duck Pass caught small drift at authoring (a stale `presentation_status` reference recognised before render; a first attempt at the InstallInventory cite line that would have carried a fabricated positional signature — caught and rewritten to the input-object form). The reorder from the plan's sub-phase index (G.5 after G.4) to the cards' topological order (134 after 127, before 128–133) landed inside the phase without a halt.
+
+## What the next phase inherits from Phase G
+
+`docs/phase-h-input-package.md` is Phase H's input. Every registered read / operation / projection / report / visibility profile / idempotency need / refusal envelope surfaces per (screen, action). Phase H must not invent endpoint names; naming lives inside Phase H's own review-pass discipline.

@@ -993,6 +993,46 @@ claims.** For TECHNIQUES.md.
 
 ---
 
+## Entry 41 — Phase G: UI overlay against the runtime Phase E and Phase F already proved; F2b and F2c hygiene arcs land alongside (2026-08-29)
+
+*Thirteen sprints (126–138) closed contiguously on 2026-08-28 and 2026-08-29 against `ui-overlay-spec-v0.9.md` (five review passes on the incoming v0.4 spec before the baseline held). Fifteen screens patched under four §6 outcome classes (2 replaced, 5 amended, 6 inspected-only no-change, 0 escalated). Six shared components extended, three added. Four flow maps updated citing Phase F/E scenarios. Six new docs including the Phase H input package. Zero product-registry delta on Phase G's own commits (verified by `git diff` on `contracts/*.yaml` and `src/driver/handlers.ts` across the thirteen commits). F2b and F2c hygiene arcs landed alongside Phase G in separate commits — F2b added three runtime-executor parent classes as first-class registry entries; F2c added a `deferred_caller_types` allowlist plus a validator that hard-filters `intended_audience` values. Two triggers evaluated at close, both **NOT FIRED**: Phase M (Physical Presence overlay reasons); handoff-A track 2 (sharpened trigger from §16). `docs/phase-g-ij-recommendation.md` recommends Desktop-first alpha (Phase I).*
+
+**The arc.** The incoming spec arrived from outside as `physical-presence-ui-overlay-spec-v0.4.md` alongside `manufacturing-software-roadmap-v0.8.md`. Both moved into `specs/physical-presence-ui-overlay/`. Five review passes ran:
+
+- **v0.5** — first grounding pass. Two fatal claims (`ReportViewer.dc.html` did not exist — the real screens are ReportsHome + RunCloseReportView + RunCloseReportGenerationView; §6/§8 scope mismatch — 2-marker scope vs 11-screen scope), three shape decisions, two smaller drifts.
+- **v0.6** — closed each v0.5 item at source.
+- **v0.7** — second grounding pass. Every v0.5 item verified as closed. Three fatal line-citation drifts v0.6 introduced (`handlers.ts:3211 through :3449` fabricated range; `InstallInventory(child, parent, presentation_alias)` fabricated positional signature; `handlers.ts:3353-3358` wrong line cite for `wrong_item`) plus a footprint note (`canvas/factory-ui-canvas.html` as build-artefact mirror).
+- **v0.8** — rewrote each cite to function-name anchors.
+- **v0.8 re-review** — named four fresh fatals at levels earlier passes had not audited: wrong Presentation field name (`presentation_status` for the read that now reads `state`); three parent-generic failure classes cited as first-class but registered as `maps_to:` targets only; record-lifecycle count off by one (16 vs 17 after Phase E); missing-guard cite for `wrong_item` in `BindPresentedItemToRunStep`.
+- **v0.9** — shipping baseline. Closed each fatal. Sharpened the citation-drift-audit rule from one level (citation shape) to six (citation shape, mechanism guard, count, field name, registry membership, message template).
+
+Sprint execution reordered from the plan's sub-phase index to honour the cards' topological prerequisites: 126 (ScanInventoryView replaced) → 127 (InstallInventoryView replaced) → 134 (components pack, so screens 128–132 cite landed files) → 128 (OperatorHome amended) → 129 (RunStepView amended) → 130 (BlockerView amended) → 131 (SerialHistoryView amended) → 132 (SupportDiagnosticsView amended) → 133 (inspected pack) → 135 (flow maps pack) → 136 (Phase H input package) → 137 (trigger decisions and I/J memo, five docs) → 138 (acceptance closeout).
+
+**What worked.**
+
+- *The v0.5-through-v0.9 review arc followed Phase E's shape at Phase E's cost.* Phase E ran six passes on v0.4 through v0.10; Phase G ran five on v0.4 through v0.9. The v0.8 re-review found four fatals at four levels — field name, registry membership, count, mechanism guard — that the earlier arc's citation-drift-audit rule (v0.6 §5) did not name. v0.9 §5 records the rule at six levels; every future overlay-spec review starts from that list.
+- *F2b and F2c landed as hygiene arcs, not Phase G product edits.* Both commits (`c78f730` for F2b; `e03de25` + `509562f` for F2c) sit in their own history entries. Phase G's product-registry-delta-zero claim holds because the accounting separates the two arcs. When a Phase G artboard cites a name F2b or F2c registered, the citation is legitimate — the name is registered somewhere in the tree at commit time; the source of the registration is another arc.
+- *The sprint-card prerequisites governed execution order.* The plan grouped sprints logically (G.5 components after G.1–G.4 screens); the cards declared 128–132 as depending on 134. Executing 134 before 128–132 meant every amended screen cited landed components rather than pending files. Practice #57 records this.
+- *The message-shape sweep (criterion 28) ran at scale in sprint 130.* BlockerView renders nine product blockers each carrying the throw template from `handlers.ts` verbatim. Spot-check greps against the throw sites confirmed the match. Criterion 28 is the concrete instantiation of "publish no name a hard filter refuses" for message content, not just for name registration.
+
+**What got in the way.**
+
+- *The initial validate:contracts loader omitted three registries.* F2c added `contracts/visibility-profiles.yaml` to `src/registry/load.ts`. Two more (`failure-classes.yaml`, `reason-codes.yaml`) remain outside the loader's Registries interface. Their maps_to graph is validated by human review. Deferred to a future hygiene arc (practice #59).
+- *The ledger drift caught by the Post-Phase-F review.* HANDOFF.md still read "at the close of Phase E" with Phase E-close numbers when Phase G was opening. STATE.md carried 507/64 in one row and 432/58 in another. ROADMAP.md carried 47 scenarios in the gate table when the disk truth was 57. Commit `3bc8361` reconciled everything to disk truth, but the deeper fix (practice #42 — acceptance-file evidence text is a compile artefact) remains open. A future hygiene arc would generate the gate-table rows from a live measurement script.
+- *`external_viewer` in `visibility-profiles.yaml:intended_audience` had no compile check before F2c.* A typo would have shipped green. F2c's section-9b validator plus `deferred_caller_types` allowlist closes it; mutation-coupling proven. The naive "must be in caller_types" version the reviewer proposed would have flagged the two currently-deferred entries — the two-list split preserves both the hard-filter discipline and the deferred-registration workaround. Practice worth writing: when a naive validator would flag a legitimate deferred state, add an allowlist rather than a code exemption.
+
+**What this arc says for the next kit version.**
+
+- **(56) The citation-drift-audit rule has six levels, not one.** Citation shape, mechanism guard, count, field name, registry membership, message template. Each grounding pass reads against every level, not just the level the prior pass named. For TECHNIQUES.md.
+- **(57) Sub-phase index and card prerequisites can disagree; the cards are the topological order.** When they diverge, the cards win. Practice worth writing.
+- **(58) Hygiene contract edits sit under the F2 arc, not the current phase.** Phase G's zero-registry-delta claim required that F2b and F2c commits carry F2's discipline note, not Phase G's. Separate commits preserve the accounting.
+- **(59) validate:contracts should open every registry it validates.** Today's loader opens 13 of the 16 registries under `contracts/*.yaml`. F2c fixed one (visibility-profiles); two remain (failure-classes, reason-codes). A future hygiene arc extends the loader's Registries interface and adds parity checks.
+- **(60) When a naive validator would flag a legitimate deferred state, add a small allowlist rather than an inline exemption.** F2c's `deferred_caller_types` on `modules.yaml` is the pattern: two lists (registered, deferred), the validator accepts either, the runtime reads only the registered list. Every future "publish a name the hard filter refuses" case (report reason codes, deferred authorization rules, forthcoming failure classes) can follow the same shape. For TECHNIQUES.md, vocabulary discipline subsection.
+
+**Sprint count.** Phase G holds 13 sprints (126–138). The `dev/sprints/` directory now runs contiguously from 001 through 138. Practice #37's grep confirms every closed sprint has a `## Built` entry.
+
+---
+
 ## Entry 40 — Post-Phase-F drift close: handoff-A track 1 plus three same-shape patterns, six shipped as templates (2026-08-28)
 
 *A review pass on the two open handoffs (handoff-A external_viewer; handoff-F no Part record) surfaced six same-shape drifts sitting in the vocabulary. Four closed in one commit (`1dd0cdc`); two wait on their own input specs. The philosophy the reviewer articulated: no layer publishes a name a hard filter in another layer refuses. The `receiving_inspector_view` note is the shipping template. The `role_not_authorized` `used_by_sprint: deferred` marker is the other template. Every drift the review flagged that was not already handled honestly got one of the two. Zero runtime behaviour change; zero test regression. Every gate green throughout.*

@@ -28,6 +28,10 @@ components:
   - components/visibility-badge.dc.html
   - components/action-button.dc.html
   - components/disabled-action-strip.dc.html
+  # Phase G additions (sprint 134, 2026-08-28)
+  - components/station-chip.dc.html
+  - components/presentation-expiry-strip.dc.html
+  - components/handoff-gap-card.dc.html
 
 patterns:
   - patterns/runtime-states.dc.html
@@ -169,3 +173,105 @@ tokens_summary:
     mac_default: 30
 
 # What the implementer must not do lives in README.md; five items.
+
+# ============================================================================
+# Phase G — Physical Presence UI Overlay (sprints 126–138, closed 2026-08-29)
+# ============================================================================
+# Every screen in ui-overlay-spec-v0.9.md § 8 scope, under one of the four
+# §6 outcome classes: replaced / amended / inspected / escalated.
+
+phase_g_overlay:
+  spec: specs/physical-presence-ui-overlay/ui-overlay-spec-v0.9.md
+  plan: docs/PHASE_G_PLAN.md
+  handoff: dev/phase-handoffs/PHASE_G_HANDOFF.md
+  triggers:
+    phase_m: NOT FIRED — see docs/phase-g-phase-m-trigger.md
+    handoff_a_track_2: NOT FIRED — see docs/phase-g-handoff-a-track-2-trigger.md
+  ij_recommendation: Desktop-first (Phase I) — see docs/phase-g-ij-recommendation.md
+
+  replaced:
+    - screen: handheld/ScanInventoryView.dc.html
+      sprint: 126
+      old_marker: handoff-E (5 mentions)
+      new_state: four ScanClass outcomes + scan_checksum_invalid + not_found_or_not_visible; primary fires PresentInventoryAtStation
+      evidence: [VF-048, VF-049, VF-053, scan-classification-rules.yaml, tests/harness/malformed-label.test.ts]
+      remaining_handoff: null
+    - screen: handheld/InstallInventoryView.dc.html
+      sprint: 127
+      old_marker: handoff-E (1 mention)
+      new_state: bound-Presentation panel (six fields) + eight registered disabled states; primary cite names input-object fields
+      evidence: [VF-038, VF-048, VF-050, VF-055, VF-057, handlers.ts:InstallInventory]
+      remaining_handoff: null
+
+  amended:
+    - screen: handheld/OperatorHome.dc.html
+      sprint: 128
+      new_content: StationChip + active Presentation panel + expiry strip; state field is 'state' not 'presentation_status'
+      evidence: [VF-048, bench-app-flow.ts, scan-classification-rules.yaml]
+      remaining_handoff: null
+    - screen: handheld/RunStepView.dc.html
+      sprint: 129
+      new_content: BOMLine.part_revision + BindPresentedItemToRunStep readiness + wrong_item under two-field guard
+      evidence: [VF-048, VF-049, handlers.ts:BindPresentedItemToRunStep]
+      remaining_handoff: handoff-F
+    - screen: handheld/BlockerView.dc.html
+      sprint: 130
+      new_content: nine product blockers with criterion-28 templates + three scan-layer refusals in a separate section
+      evidence: [VF-049, VF-050, VF-051, VF-055, VF-056, tests/harness/malformed-label.test.ts]
+      remaining_handoff: null
+    - screen: mac/SerialHistoryView.dc.html
+      sprint: 131
+      new_content: three Presentation event rows + summary redaction + handoff-F card
+      evidence: [VF-038, VF-048, projections.ts:serialHistory]
+      remaining_handoff: handoff-F
+    - screen: mac/SupportDiagnosticsView.dc.html
+      sprint: 132
+      new_content: four VisibilityLevel outcomes + VF-052 conflict summary + handoff-A track 2 trigger card
+      evidence: [VF-052, VF-053, visibility.ts:hiddenExistenceResponse]
+      remaining_handoff: handoff-A track 2
+
+  inspected:
+    - screen: handheld/MeasurementCaptureView.dc.html
+      sprint: 133
+      decision: no change (no operation-binding scan in Phase F evidence; renders honestly today)
+      evidence: [VF-048..057 all InventoryItem scans, scan-classification-rules.yaml]
+      remaining_handoff: null
+    - screen: handheld/RunCloseReadinessView.dc.html
+      sprint: 133
+      decision: no change (consumed-Presentation context is a SerialHistory concern covered by sprint 131)
+      evidence: [Phase F run-close paths]
+      remaining_handoff: null
+    - screen: mac/SupplierEvidenceChecklist.dc.html
+      sprint: 133
+      decision: no change (no Phase F scan/classification rule targets this surface today)
+      evidence: [scan-classification-rules.yaml]
+      remaining_handoff: null
+    - screen: mac/ReportsHome.dc.html
+      sprint: 133
+      decision: no change (no report-specific Phase F bench row; scan diagnostics belong in SupportDiagnosticsView)
+      evidence: [none — inspection]
+      remaining_handoff: null
+    - screen: mac/RunCloseReportView.dc.html
+      sprint: 133
+      decision: no change (report renders close narrative + cited evidence; Presentation flows via SerialHistory reference)
+      evidence: [none — inspection]
+      remaining_handoff: null
+    - screen: mac/RunCloseReportGenerationView.dc.html
+      sprint: 133
+      decision: no change (generation is system-worker; Presentation events already in source trace)
+      evidence: [none — inspection]
+      remaining_handoff: null
+
+  escalated: []
+
+  remaining_handoffs:
+    handoff_F:
+      screens: [handheld/RunStepView.dc.html, mac/SerialHistoryView.dc.html]
+      why: (part_number, revision) pair renders honestly today; PartRevision / Drawing / MaterialSpecification / InspectionRequirement would render more richly
+      next_phase: Phase M
+      ledger: [B-Q-31, B-Q-32]
+    handoff_A_track_2:
+      screens: [mac/SupportDiagnosticsView.dc.html, flows/access.dc.html]
+      why: F2 track 1 access_admin workaround; sharpened trigger not fired at Phase G close
+      next_phase: handoff-A track 2 boundary spec
+      protection: F2c intended_audience validator (validate:contracts section 9b)

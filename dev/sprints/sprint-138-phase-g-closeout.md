@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 138
-status: pending
+status: closed # [closed 2026-08-29 — every ledger refreshed: UI_SURFACE_ACCEPTANCE Phase G section (28 rows all pass), manifest.yaml and bundle-index.md with Phase G outcome-class classification, STATE §5e updated from opening to closed, ROADMAP Phase G bullet updated to shipped, DOCS.md pointers added for six new Phase G docs, HANDOFF.md date rolled to 2026-08-29 at Phase G close, KIT_DIARY Entry 41, PHASE_G_HANDOFF.md returned to the team that supplied the overlay spec]
 phase: G.7-closeout
 pass_kind: docs
 ---
