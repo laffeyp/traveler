@@ -3,7 +3,7 @@
 ```yaml
 ---
 id: 130
-status: pending
+status: closed # [closed 2026-08-28 — nine product blockers rendered with throw templates matching handlers.ts verbatim per criterion 28; three scan-layer/runtime refusals rendered in a separate section; F2b first-class parents (state_transition_forbidden, idempotency_conflict, authorization_denied) rendered in grey]
 phase: G.2-amended-handheld
 pass_kind: design
 ---

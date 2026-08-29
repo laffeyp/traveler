@@ -85,7 +85,7 @@
   <div class="meta">
     <span class="mono">RUN-VF-003-0812-01</span>
     <span class="sep">·</span>
-    Blockers · 4
+    Blockers · 4 product · Physical Presence + scan-layer legend below
   </div>
 
   <div class="body">
@@ -170,6 +170,87 @@
     <div class="hidden-note">
       <div class="k">no rows on this run</div>
       A blocker lands here when a visibility profile with <span class="mono">denial_behavior: hidden_existence</span> covers the target (<span class="mono">customer_summary_access</span>, <span class="mono">customer_extended_access</span>). The count in the meta strip includes the row; no id, description, or affected record appears. Attempting to read returns the standard not-found shape; audit records the internal outcome <span class="mono">hidden_existence_required</span>.
+    </div>
+
+    <div class="section-head" style="margin-top:18px;">
+      <span class="lbl">physical_presence · product blockers</span>
+      <span class="count">9 registered</span>
+    </div>
+    <div class="hidden-note" style="background:#FFFFFF; border:1px solid #D9D6CE; border-style:solid;">
+      <div class="k">nine failure classes registered against Physical Presence</div>
+      Every rendered blocker text matches the throw template at the cited handler site verbatim per <span class="mono">ui-overlay-spec-v0.9.md § 14 criterion 28</span>. Grouped so a reader can see the vocabulary without a run currently in the blocked state.
+    </div>
+
+    <div class="card compact">
+      <div class="id">presentation_conflict</div>
+      <div class="desc">Another active production Presentation for the same InventoryItem at another station.</div>
+      <div class="row"><span class="k">throw</span><span class="v"><span class="mono">PresentInventoryAtStation</span>: <span class="mono">presentation_conflict: '&lt;alias&gt;' already has an active presentation at station '&lt;station&gt;'</span></span></div>
+    </div>
+    <div class="card compact">
+      <div class="id">presentation_expired</div>
+      <div class="desc">world.clock &gt;= Presentation.expires_at (checked via presentationExpired helper; Date.parse, fail-closed).</div>
+      <div class="row"><span class="k">throw</span><span class="v"><span class="mono">BindPresentedItemToRunStep</span>: <span class="mono">presentation_expired: presentation '&lt;alias&gt;' expired</span></span></div>
+      <div class="row"><span class="k">throw</span><span class="v"><span class="mono">ConsumePresentation</span>: <span class="mono">presentation_expired: '&lt;alias&gt;' expired</span></span></div>
+    </div>
+    <div class="card compact">
+      <div class="id">presentation_terminal</div>
+      <div class="desc">Presentation is in a terminal state (consumed / rejected / cleared / conflicted); no further transitions permitted.</div>
+      <div class="row"><span class="k">throw</span><span class="v"><span class="mono">RejectPresentedItem</span> / <span class="mono">ClearPresentedItem</span>: <span class="mono">presentation_terminal: '&lt;alias&gt;' is &lt;state&gt;</span></span></div>
+    </div>
+    <div class="card compact">
+      <div class="id">wrong_item</div>
+      <div class="desc">Two throw sites: InstallInventory bound-item check; BindPresentedItemToRunStep expected-child check (the second fires only when the input carries both parent_inventory_alias AND expected_child_inventory_alias).</div>
+      <div class="row"><span class="k">throw A</span><span class="v"><span class="mono">InstallInventory</span>: <span class="mono">wrong_item: presentation binds inventory_item_id '&lt;id&gt;' but install targets '&lt;id&gt;'</span></span></div>
+      <div class="row"><span class="k">throw B</span><span class="v"><span class="mono">BindPresentedItemToRunStep</span>: <span class="mono">wrong_item: presented '&lt;alias&gt;' does not match expected child '&lt;alias&gt;'</span></span></div>
+    </div>
+    <div class="card compact" style="border-left-color:#6B6B6B;">
+      <div class="id" style="color:#6B6B6B;">state_transition_forbidden · F2b first-class parent</div>
+      <div class="desc">Runtime-executor parent thrown from world.ts moveState when no state-machine transition matches the operation and the record's current state. Registered as a first-class name: entry at contracts/failure-classes.yaml under the F2b addendum (commit c78f730).</div>
+      <div class="row"><span class="k">throw</span><span class="v"><span class="mono">world.ts moveState</span>: <span class="mono">state_transition_forbidden: &lt;record_type&gt; '&lt;alias&gt;' cannot transition from &lt;state&gt; via &lt;operation&gt;</span></span></div>
+    </div>
+    <div class="card compact" style="border-left-color:#6B6B6B;">
+      <div class="id" style="color:#6B6B6B;">idempotency_conflict · F2b first-class parent</div>
+      <div class="desc">Runtime-executor parent thrown from driver.ts on a same-key different-tuple call to a transactional_unique_constraint operation, or on a duplicate write-boundary key.</div>
+      <div class="row"><span class="k">throw</span><span class="v"><span class="mono">driver.ts</span>: <span class="mono">idempotency_conflict</span> (memoised path with tuple-aware check on PresentInventoryAtStation; write-boundary check for transactional operations)</span></div>
+    </div>
+    <div class="card compact">
+      <div class="id">consuming_operation_mismatch</div>
+      <div class="desc">Presentation.intended_operation does not match the consuming operation. When called in-process from InstallInventory, the outer snapshot rolls back.</div>
+      <div class="row"><span class="k">throw</span><span class="v"><span class="mono">ConsumePresentation</span>: <span class="mono">consuming_operation_mismatch: Presentation.intended_operation is '&lt;op&gt;', not &lt;op&gt;</span></span></div>
+    </div>
+    <div class="card compact">
+      <div class="id">binding_forbidden_for_purpose</div>
+      <div class="desc">A Presentation created for support_diagnostics purpose cannot be bound to a run step. §4.2 narrowing preventing the support_user audience widening from leaking into product truth.</div>
+      <div class="row"><span class="k">throw</span><span class="v"><span class="mono">BindPresentedItemToRunStep</span>: <span class="mono">binding_forbidden_for_purpose: support_diagnostics presentations cannot be bound to a run step</span></span></div>
+    </div>
+    <div class="card compact" style="border-left-color:#6B6B6B;">
+      <div class="id" style="color:#6B6B6B;">authorization_denied · F2b first-class parent</div>
+      <div class="desc">Runtime-executor parent thrown from driver.ts callerMayInvoke when the caller_type is not on the operation's authorization rule. Registered as a first-class name: entry under F2b.</div>
+      <div class="row"><span class="k">throw</span><span class="v"><span class="mono">driver.ts callerMayInvoke</span>: <span class="mono">authorization_denied</span> (adapter caller attempting PresentInventoryAtStation, e.g., VF-043)</span></div>
+    </div>
+
+    <div class="section-head" style="margin-top:18px;">
+      <span class="lbl">scan-layer / post-operation refusals · not product blockers</span>
+      <span class="count">3</span>
+    </div>
+    <div class="hidden-note" style="background:#FFFFFF; border-style:solid;">
+      <div class="k">separate section — different layer</div>
+      These three do not name product state that blocks a run. They live in different layers: the classifier and the client-side decoder; the access boundary's post-operation refusal. Grouped here so an operator can see the full landscape without conflating them with the nine product blockers above.
+    </div>
+    <div class="card compact blue">
+      <div class="id">scan_checksum_invalid</div>
+      <div class="desc">Client-side refusal on a checksum mismatch during scan decode. No classifier runs, no product read fires, no operation is invoked. Registered at contracts/failure-classes.yaml sprint 109 so the name is a first-class citizen even though it never reaches a handler.</div>
+      <div class="row"><span class="k">layer</span><span class="v">decoder (src/harness/scan-decoder.ts)</span></div>
+    </div>
+    <div class="card compact blue">
+      <div class="id">handoff_gap</div>
+      <div class="desc">Classifier outcome, not a failure class. Fires when the decoded record type does not resolve to a known type or when a required context field is absent (per scan-classifier.ts). Points at an unclosed boundary — handoff-F or handoff-A track 2.</div>
+      <div class="row"><span class="k">layer</span><span class="v">classifier (src/harness/scan-classifier.ts)</span></div>
+    </div>
+    <div class="card compact blue">
+      <div class="id">not_found_or_not_visible</div>
+      <div class="desc">Runtime reason code from the access boundary (contracts/reason-codes.yaml). Rendered by the caller after a read fires and access refuses under a visibility profile with denial_behavior: hidden_existence. Not a scan-layer state; grouped here for UI-side reader convenience only.</div>
+      <div class="row"><span class="k">layer</span><span class="v">access (src/driver/visibility.ts:hiddenExistenceResponse)</span></div>
     </div>
 
   </div>
