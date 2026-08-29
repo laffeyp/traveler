@@ -6,7 +6,7 @@ Every new name in this phase either matches the spec's proposal or refuses to la
 
 ## Where the phase sits
 
-Four governing documents closed before this one: the nine-document founding stack, the receiving-evidence boundary, the access-and-visibility boundary, and the UI surface design specification (Phase D). Phase E covers item E of the roadmap and produces the vocabulary the Phase F bench (`specs/physical-presence/physical-presence-bench-spec-v0.1.md`) will implement against and the Phase G UI overlay will render.
+Four governing documents closed before this one: the nine-document founding stack, the receiving-evidence boundary, the access-and-visibility boundary, and the UI surface design specification (Phase D). Phase E covers item E of the roadmap and produces the vocabulary the Phase F bench (`specs/physical-presence-bench/bench-spec-v0.8.md`, shipping baseline) implements against and the Phase G UI overlay will render.
 
 The two open boundaries at Phase D close were Physical Presence (handoff-E, B-Q-33) and Part / Inspection Requirement (handoff-F, B-Q-31 and B-Q-32). Phase E closes the first. Handoff-F waits for its own boundary spec.
 
@@ -118,7 +118,7 @@ Phase E closes handoff-E. The two remaining open boundaries stay open:
 
 Phase E is the vocabulary. The four phases after it move the vocabulary through a real workflow.
 
-- **Phase F** — Physical Presence Bench, three levels (synthetic scan fixture, simulated headless app flow, printed-label phone test). Governed by `specs/physical-presence/physical-presence-bench-spec-v0.1.md`, authored during E.7.
+- **Phase F** — Physical Presence Bench, three levels (synthetic scan fixture, simulated headless app flow, printed-label phone test). Governed by `specs/physical-presence-bench/bench-spec-v0.8.md`. Input arrived as v0.4 on 2026-08-28; ran through five review passes (v0.5, v0.6, v0.7, v0.8) against the shipped code and closed at v0.8 as the shipping baseline. Ten runtime-touching scenarios ship as VF-048 through VF-057; decoder-refusal tests ship as plain vitest.
 - **Phase G** — UI overlay. Updates the Phase D artboards under `canvas/` so the handoff-E marker becomes the `PresentInventoryAtStation` call; every screen listed in the spec §16 gains its Presentation-aware content.
 - **Phase H** — UI implementation foundation. Shared components, route structure, client wrapper, scenario fixture loader, runtime-state renderer, blocker renderer, visibility renderer, operation execution pattern.
 - **Phase I** — Handheld + Mac alpha. The first working iOS-first operator app and Mac station app.

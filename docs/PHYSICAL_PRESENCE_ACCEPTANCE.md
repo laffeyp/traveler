@@ -54,7 +54,7 @@ Seventeen-arm coupling-mutation suite in `tests/consolidation/physical-presence-
 
 Two items deferred to Phase F/G:
 
-- **Phase F Physical Presence Bench.** Synthetic scan fixtures (generated QR images), simulated app flow (headless seven-screen handheld path), printed-label phone test. Own spec forthcoming (`specs/physical-presence/physical-presence-bench-spec-v0.1.md`).
+- **Phase F Physical Presence Bench.** Input spec arrived 2026-08-28 at `specs/physical-presence-bench/bench-spec-v0.4.md` and closed at v0.8 (`specs/physical-presence-bench/bench-spec-v0.8.md`) after five review passes. Ten runtime-touching scenarios ship as VF-048 through VF-057; decoder-refusal tests ship as plain vitest under `tests/harness/`. Synthetic scan fixtures follow the shipped colon-delimited grammar (`record_type:record_alias[:checksum]`) with version discrimination at the label-file metadata layer. Sprint planning opens against v0.8.
 - **Phase G UI overlay.** Sweeps the Phase D artboards where `handoff-E` sits (OperatorHome, ScanInventoryView, MeasurementCaptureView, InstallInventoryView, BlockerView, RunCloseReadinessView, SerialHistoryView, SupportDiagnosticsView). Own sprint set; opens on the boundary-spec-v0.10 §16 list.
 
 ## What did not need Architect input during this phase

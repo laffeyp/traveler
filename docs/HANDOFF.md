@@ -117,7 +117,7 @@ Hard rules, not guidance. Each has a reason and a record of what happens when br
 
 7. Opt-in on target-side scoping fields. Every Phase C dimension check reads a caller-side context field AND a target-side scoping field. Existing records carry no scoping field, so the check is dormant for every existing trace. This is how eight dimension sprints preserved the whole-bench cross-driver equivalence check while adding real fail-closed guards. A new dimension follows the same shape: the check fires fail-closed against callers who don't provide the matching context, and stays dormant against targets that don't declare the scoping field.
 
-8. Never edit `dev/sdd-kit-2/`, `specs/founding-stack/`, `specs/receiving-evidence/boundary-spec-v0.1.md`, or `specs/access-and-visibility/boundary-spec-v0.1.md`. These are the governing documents; the audit trail is the work. New thinking lands in project-side documents, additive.
+8. Never edit `dev/sdd-kit-2/`, `specs/founding-stack/`, `specs/receiving-evidence/boundary-spec-v0.1.md`, `specs/access-and-visibility/boundary-spec-v0.1.md`, or any shipping `specs/physical-presence/boundary-spec-v0.10.md` and `specs/physical-presence-bench/bench-spec-v0.8.md`. These are the governing documents; the audit trail is the work. Prior draft revisions (v0.4 through v0.9 for physical-presence; v0.4 through v0.7 for the bench) live beside them as the review record. New thinking lands in project-side documents, additive.
 
 9. Every gate green before commit. `npm run validate:contracts && npm run validate:schemas && npx vitest run && npx tsc -p tsconfig.json --noEmit && npm run format:check`. If a commit needs a follow-up fix (as sprints 043, 046, 048 did), the fix is its own commit — no amend.
 
