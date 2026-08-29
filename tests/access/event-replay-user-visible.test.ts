@@ -47,7 +47,11 @@ describe("readEventTrace vs readEventTraceAsCaller (§7.8)", () => {
   it("external user-visible replay HIDES events carrying raw_payload", () => {
     const d = primed();
     const trace = d.readEventTraceAsCaller({
-      caller_type: "external_viewer",
+      // The runtime routes customer reads under access_admin per
+      // src/driver/driver.ts:readRecordAsCaller. The visibility_profile is
+      // the load-bearing filter; external_viewer is not a registered
+      // caller_type today (handoff-A opens it).
+      caller_type: "access_admin",
       visibility_profile: "customer_summary_access",
     });
     const machine = trace.find((e: any) => e.type === "MACHINE_EVIDENCE_ACCEPTED");
@@ -57,7 +61,11 @@ describe("readEventTrace vs readEventTraceAsCaller (§7.8)", () => {
   it("external user-visible replay STRIPS subject_nationality from access decisions", () => {
     const d = primed();
     const trace = d.readEventTraceAsCaller({
-      caller_type: "external_viewer",
+      // The runtime routes customer reads under access_admin per
+      // src/driver/driver.ts:readRecordAsCaller. The visibility_profile is
+      // the load-bearing filter; external_viewer is not a registered
+      // caller_type today (handoff-A opens it).
+      caller_type: "access_admin",
       visibility_profile: "customer_summary_access",
     });
     const access = trace.find((e: any) => e.type === "ACCESS_DECISION_ALLOWED");

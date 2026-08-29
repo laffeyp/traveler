@@ -44,7 +44,7 @@ visibility_profiles:
     note: "audience is quality_engineer for now — receiving_inspector is not a registered caller type; a sprint that registers new caller types decides whether to add one"
 
   - name: customer_summary_access
-    audience: [external_viewer]
+    audience: [access_admin]
     default_visibility: summary
     allowed_record_types: [GeneratedReport, SerialHistory]
     allowed_report_types: [RunCloseReport, CertificateOfConformance]
@@ -53,10 +53,11 @@ visibility_profiles:
     denial_behavior: hidden_existence
     audit_required: true
     used_inline_by: [contracts/reports.yaml, src/driver/handlers.ts]
-    note: "already used inline as a scope name; sprint 044 folds report generation to read this registry"
+    intended_audience: external_viewer
+    note: "reads run under access_admin through readRecordAsCaller (src/driver/driver.ts:readRecordAsCaller); external_viewer is not a registered caller_type today — handoff-A opens the caller_type in its own boundary spec. Matches the receiving_inspector_view template: publish a registered audience, name the intended audience in a note field so no downstream layer resolves an unregistered value."
 
   - name: customer_extended_access
-    audience: [external_viewer]
+    audience: [access_admin]
     default_visibility: full_within_customer_scope
     allowed_record_types: [GeneratedReport, SerialHistory, Attachment]
     allowed_report_types: [RunCloseReport, CertificateOfConformance]
@@ -65,7 +66,8 @@ visibility_profiles:
     denial_behavior: hidden_existence
     audit_required: true
     used_inline_by: [contracts/reports.yaml, src/driver/handlers.ts]
-    note: "already used inline as a scope name; sprint 044 folds"
+    intended_audience: external_viewer
+    note: "reads run under access_admin through readRecordAsCaller (src/driver/driver.ts:readRecordAsCaller); external_viewer is not a registered caller_type today — handoff-A opens the caller_type in its own boundary spec."
 
   - name: supplier_evidence_reviewer
     audience: [quality_engineer]

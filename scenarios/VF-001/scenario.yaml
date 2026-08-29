@@ -22,7 +22,7 @@ actors:
   - { actor_id: planner_1, actor_type: planner, product_caller_type: planner }
   - { actor_id: operator_1, actor_type: operator, product_caller_type: operator }
   - { actor_id: report_worker_1, actor_type: system_worker, product_caller_type: system_worker }
-  - { actor_id: customer_viewer_1, actor_type: access_limited_external_viewer, product_caller_type: support_user, access_profile: customer_summary_access }
+  - { actor_id: customer_viewer_1, actor_type: support_user, product_caller_type: support_user, access_profile: customer_summary_access }
 
 aliases:
   procedure_version_v1: ProcedureVersion

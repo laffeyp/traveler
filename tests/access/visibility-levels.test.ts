@@ -89,7 +89,9 @@ describe("visibility levels (§5) — four first-class outcomes", () => {
     // shape, the same keys, and the same values — proven by JSON equality.
     const d = new InMemoryProductDriver();
     // Not-found: no such alias.
-    const rNotFound = d.readRecordAsCaller("does_not_exist", { caller_type: "external_viewer" });
+    // caller_type: access_admin matches the runtime workaround per handoff-A;
+    // external_viewer is not a registered caller_type today.
+    const rNotFound = d.readRecordAsCaller("does_not_exist", { caller_type: "access_admin" });
     // Hidden: the record exists but the export path refuses. To keep the response BYTE-IDENTICAL to
     // not-found, sprint 032 returns the same {level: hidden_existence, record: null} shape whenever a
     // record is refused via export control AND the caller opts into hidden-existence semantics via a

@@ -86,8 +86,8 @@ reason_codes:
     used_by_sprint: 045
   - name: report_access_stale
     spec_section: "§8.3"
-    used_by_sprint: 050
-    note: "cites the existing report freshness behavior (VF-012, VF-003D); sprint 050 generalizes"
+    used_by_sprint: deferred
+    note: "cites the existing report freshness behavior; the emit at src/driver/handlers.ts:2325 writes `access_policy_change_for_controlled_export` (one of four §19 regeneration triggers, not registered as its own reason_code because it names the trigger cause, not the caller-visible refusal). report_access_stale would be the caller-visible name when the read refuses on freshness; no sprint has wired that path today. Marked deferred per the receiving_inspector_view template."
   - name: access_context_missing
     spec_section: "§14"
     used_by_sprint: 031

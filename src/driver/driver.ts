@@ -354,10 +354,16 @@ export class InMemoryProductDriver {
    * read raw event payloads by reading the trace.
    */
   readEventTraceAsCaller(callerContext: CallerContext): FactoryEvent[] {
+    // The `external` flag fires on the two customer visibility profiles. The
+    // v0.1-era code also checked `caller_type === "external_viewer"`; that
+    // caller_type is not registered in contracts/modules.yaml, so the check
+    // was dead in the runtime path (EvaluateAccess at handlers.ts refuses
+    // any unregistered caller_type as access_context_malformed before this
+    // line runs). The profile check is the only load-bearing branch;
+    // handoff-A opens the caller_type in its own boundary spec.
     const external =
       callerContext.visibility_profile === "customer_summary_access" ||
-      callerContext.visibility_profile === "customer_extended_access" ||
-      callerContext.caller_type === "external_viewer";
+      callerContext.visibility_profile === "customer_extended_access";
     return this.world.events
       .filter((event) => {
         // Hide raw supplier/machine payloads from external audiences entirely.

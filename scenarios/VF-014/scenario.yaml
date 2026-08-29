@@ -22,7 +22,7 @@ seed: { deterministic_seed: 30140 }
 clock: { start_at: "2026-06-29T08:00:00Z", timezone: "UTC", mode: controlled }
 
 actors:
-  - { actor_id: customer_viewer_1, actor_type: access_limited_external_viewer, product_caller_type: support_user, access_profile: customer_summary_access }
+  - { actor_id: customer_viewer_1, actor_type: support_user, product_caller_type: support_user, access_profile: customer_summary_access }
 
 aliases: {}
 

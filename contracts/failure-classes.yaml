@@ -46,10 +46,10 @@ failure_classes:
   - { name: presentation_terminal,         maps_to: state_transition_forbidden, new: false, spec_section: "PP §8", used_by_sprint: 094 }
   - { name: presentation_conflict,         new: true,                                 spec_section: "PP §8", used_by_sprint: 094 }
   - { name: binding_forbidden_for_purpose, new: true,                                 spec_section: "PP §8", used_by_sprint: 094, note: "enforces the support_diagnostics narrowing in §4.2 through BindPresentedItemToRunStep" }
-  - { name: presentation_wrong_station,    maps_to: authorization_denied, new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: presentation_wrong_station,    maps_to: authorization_denied, new: false, spec_section: "PP §8", used_by_sprint: deferred, note: "registered per the boundary spec but not thrown by any handler — actor-to-station linkage does not exist on current records. Marked deferred per the receiving_inspector_view template: the name lives, no layer resolves an emit. Handoff-A or a future physical-presence rev opens the linkage." }
   - { name: presentation_wrong_actor,      maps_to: authorization_denied, new: false, spec_section: "PP §8", used_by_sprint: 094 }
-  - { name: presentation_wrong_run,        maps_to: authorization_denied, new: false, spec_section: "PP §8", used_by_sprint: 094 }
-  - { name: presentation_wrong_step,       maps_to: authorization_denied, new: false, spec_section: "PP §8", used_by_sprint: 094 }
+  - { name: presentation_wrong_run,        maps_to: authorization_denied, new: false, spec_section: "PP §8", used_by_sprint: deferred, note: "same as presentation_wrong_station: registered per boundary spec, unthrown today because actor-to-run linkage does not exist on current records." }
+  - { name: presentation_wrong_step,       maps_to: authorization_denied, new: false, spec_section: "PP §8", used_by_sprint: deferred, note: "same as presentation_wrong_station: registered per boundary spec, unthrown today because actor-to-step linkage does not exist on current records." }
   - { name: station_not_registered,        maps_to: validation_error,     new: false, spec_section: "PP §8", used_by_sprint: 094 }
   - { name: station_inactive,              new: true,                                 spec_section: "PP §8", used_by_sprint: 094 }
   - { name: station_alias_conflict,        maps_to: idempotency_conflict, new: false, spec_section: "PP §8", used_by_sprint: 093 }
@@ -70,3 +70,13 @@ failure_classes:
   - { name: inventory_not_reserved,        maps_to: state_transition_forbidden, new: false, spec_section: "PP §8", used_by_sprint: 094 }
   - { name: inventory_not_released,        maps_to: state_transition_forbidden, new: false, spec_section: "PP §8", used_by_sprint: 094 }
   - { name: access_denied,                 maps_to: authorization_denied, new: false, spec_section: "PP §8", used_by_sprint: 094, note: "generic access refusal on PresentInventoryAtStation and downstream ops when access-and-visibility denies the read" }
+
+  # --- Runtime-generic classes (2026-08-28 handoff-A close-out). These names are thrown from multiple
+  #     handlers as bare failure_class values. Every one existed in the runtime before this file recorded
+  #     it; the entries land here now so the registry is a complete list of every failure class a caller
+  #     may filter on. Matches the discipline the receiving-boundary review named: no layer publishes a
+  #     name a hard filter would refuse; the failure_class filter reads this registry as authoritative.
+  - { name: validation_error,              new: true,                                  spec_section: "runtime", used_by_sprint: runtime, note: "runtime-generic; thrown from ~40 sites across handlers.ts for validation refusals (missing input, unresolvable reference, empty required field)" }
+  - { name: precondition_failed,           maps_to: state_transition_forbidden, new: false, spec_section: "runtime", used_by_sprint: runtime, note: "runtime-generic; the specific state a handler required was not present" }
+  - { name: access_filtered,               new: true,                                  spec_section: "runtime", used_by_sprint: runtime, note: "runtime-generic; used by BoundedDrillDown and other access-aware reads when the response is filtered rather than denied" }
+  - { name: receiving_check_unresolvable,  new: true,                                  spec_section: "runtime", used_by_sprint: runtime, note: "runtime-generic; RunReceivingCheck cannot resolve one of its required references" }

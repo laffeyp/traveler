@@ -31,7 +31,7 @@ actors:
   - { actor_id: quality_1, actor_type: quality_engineer,       product_caller_type: quality_engineer }
   - { actor_id: machine_adapter_1, actor_type: adapter,        product_caller_type: adapter }
   - { actor_id: report_worker_1, actor_type: system_worker,    product_caller_type: system_worker }
-  - { actor_id: customer_viewer_1, actor_type: access_limited_external_viewer, product_caller_type: support_user, access_profile: customer_summary_access }
+  - { actor_id: customer_viewer_1, actor_type: support_user, product_caller_type: support_user, access_profile: customer_summary_access }
 
 aliases:
   procedure_version_v1: ProcedureVersion

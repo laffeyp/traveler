@@ -3031,10 +3031,19 @@ export const HANDLERS: Record<string, H> = {
     // service_scope_denied. B-Q-77 candidate applied: fields on the caller-context object.
     const scope = input.service_account_scope;
     if (scope) {
+      // A profile is a disclosure profile when it publishes the customer audience.
+      // The prior check read the audience array for the string "external_viewer";
+      // the handoff-A cleanup swapped the two customer profiles to
+      // `audience: [access_admin]` with `intended_audience: external_viewer`.
+      // The disclosure check reads intended_audience so the semantic stays intact
+      // regardless of the audience-field workaround.
+      const profile = input.visibility_profile
+        ? VISIBILITY_PROFILES.get(input.visibility_profile)
+        : undefined;
       const isDisclosure =
         input.requested_action === "disclosure" ||
-        (input.visibility_profile &&
-          VISIBILITY_PROFILES.get(input.visibility_profile)?.audience?.includes("external_viewer"));
+        profile?.intended_audience === "external_viewer" ||
+        profile?.audience?.includes("external_viewer");
       const allowedList: string[] = isDisclosure
         ? (scope.disclosure_actions ?? [])
         : (scope.processing_actions ?? []);
