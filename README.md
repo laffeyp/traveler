@@ -4,7 +4,7 @@
 
 A factory-execution system for building complex hardware. TypeScript on Node. The specifications were reverse-engineered from public sources — industry standards, published architectures, job postings, open-source projects, regulatory guidance — using Signal-Driven Development and a language model.
 
-Signal-Driven Development: [`docs/SDD_GENERAL_PROCESS.md`](docs/SDD_GENERAL_PROCESS.md). Source list and evaluation: [`specs/founding-stack/01-research-dossier-v0.12.md`](specs/founding-stack/01-research-dossier-v0.12.md) §9-10.
+Signal-Driven Development: [`docs/process/SDD_GENERAL_PROCESS.md`](docs/process/SDD_GENERAL_PROCESS.md). Source list and evaluation: [`specs/founding-stack/01-research-dossier-v0.12.md`](specs/founding-stack/01-research-dossier-v0.12.md) §9-10.
 
 ## What it is
 
@@ -32,8 +32,8 @@ A prototype in TypeScript that models a manufacturing execution record system. T
 Three governing documents closed:
 
 - The nine-document founding stack ([`specs/founding-stack/`](specs/founding-stack/))
-- Receiving evidence boundary ([`specs/receiving-evidence/`](specs/receiving-evidence/)) — 15 of 15 §27 criteria pass ([`docs/RECEIVING_ACCEPTANCE.md`](docs/RECEIVING_ACCEPTANCE.md))
-- Access and visibility boundary ([`specs/access-and-visibility/`](specs/access-and-visibility/)) — 18 of 18 §16 criteria pass or pass-in-part ([`docs/ACCESS_AND_VISIBILITY_ACCEPTANCE.md`](docs/ACCESS_AND_VISIBILITY_ACCEPTANCE.md))
+- Receiving evidence boundary ([`specs/receiving-evidence/`](specs/receiving-evidence/)) — 15 of 15 §27 criteria pass ([`docs/acceptance/RECEIVING_ACCEPTANCE.md`](docs/acceptance/RECEIVING_ACCEPTANCE.md))
+- Access and visibility boundary ([`specs/access-and-visibility/`](specs/access-and-visibility/)) — 18 of 18 §16 criteria pass or pass-in-part ([`docs/acceptance/ACCESS_AND_VISIBILITY_ACCEPTANCE.md`](docs/acceptance/ACCESS_AND_VISIBILITY_ACCEPTANCE.md))
 
 Full state: [`docs/STATE.md`](docs/STATE.md). Roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
