@@ -1,5 +1,7 @@
 # Roadmap — Distributed Factory Execution & Record System
 
+> **Pivot notice (2026-09-25).** Under [ADR-001](../dev/adrs/ADR-001-cell-native-pivot.md) — a Zoom-In + Customer Segment reframe of the first product surface from broad factory UI to cell-native repair/manufacturing execution. Phase H, I, and J text below describes what those phases would ship against the old surface; the pivot supersedes that content. See [`phases/pivot-status.md`](phases/pivot-status.md) for the row-by-row phase status and where each phase re-opens. The runtime is preserved; the surface is redrawn. G2 sprint 145 lands the amendment that reconciles this section to disk truth.
+
 What has shipped, what is deferred, what will not be built. Detail lives in `notes/DEVIATION_SUMMARY.md`, `notes/ADDITIONS.md`, `contracts/CONTRACT_GAPS.md`, `dev/BLACKBOARD.md`, and `dev/KIT_DIARY.md`.
 
 Discipline every phase runs under: behaviour is data (the locked YAML registries); the runtime is a generic executor over them; nothing invented (a B-Q or ContractGap goes into the ledger, never a guess); red is captured before green; every increment gets an adversarial distrust-the-green review plus fail-closed hardening; each behaviour regresses on both drivers; whole-bench cross-driver diff-to-zero holds across the change.

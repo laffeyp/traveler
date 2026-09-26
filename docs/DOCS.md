@@ -1,5 +1,7 @@
 # Documentation index
 
+> **Pivot notice (2026-09-25).** The project is under a cell-native pivot recorded in [ADR-001](../dev/adrs/ADR-001-cell-native-pivot.md). Several documents in this index describe the broad factory UI Phases D and G shipped; those documents are marked with a `PIVOT-STATUS` header at the top of the file. Consult [`phases/pivot-status.md`](phases/pivot-status.md) before treating any Phase H–L text on `ROADMAP.md` as current — parts of Phase H, I, and J are pivot-superseded on content though their purpose survives.
+
 Every document in the repo, grouped by purpose. All tracked in git. The code layout is in `README.md`; this file catalogs the prose. `STATE.md` and `ROADMAP.md` are the front door for "where is the project."
 
 The `docs/` folder itself keeps only five human-first-reach files at the top level — `README.md`, `STATE.md`, `ROADMAP.md`, `HANDOFF.md`, `DOCS.md` — plus `banner.png`. Everything else lives in four kind-based subfolders: `docs/phases/` (per-phase plans, readouts, triggers, screen-to-call-log maps, phase-H input packages), `docs/acceptance/` (per-boundary acceptance scoring files), `docs/notes/` (deviation summary, additions ledger, dated session narratives), `docs/process/` (methodology-adjacent essays not project state).

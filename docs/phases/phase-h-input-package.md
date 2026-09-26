@@ -1,5 +1,7 @@
 # Phase H input package — screen × action × runtime need
 
+> **PIVOT-STATUS: SUPERSEDED** (once G2 sprint 146 lands). This package derives from the broad Phase G screens the cell-native pivot retires. Do not treat it as authoritative for Phase H. The replacement is `docs/phases/g2/phase-h-input-reset.md`, authored under G2 sprint 146 against the cell-native surface map (G2 sprint 142). Preserved on disk per `dev/sdd-kit-2/AGENTS.md` hard rule 12 (no deletions; audit trail is the work). See [ADR-001](../../dev/adrs/ADR-001-cell-native-pivot.md) and [`docs/phases/pivot-status.md`](pivot-status.md).
+
 Written 2026-08-28 at Phase G close (sprint 136). Read alongside `docs/phase-g-screen-to-call-log-map.md` (sprint 137) and `dev/phase-handoffs/PHASE_G_HANDOFF.md` (sprint 138). Phase G is UI overlay only; Phase H exposes the shipped executor as a network surface. This document names, per (screen, action) pair, what the runtime already provides — every registered operation, projection, report, visibility profile, and refusal envelope. Phase H must derive its endpoint set from this table.
 
 ## The rule

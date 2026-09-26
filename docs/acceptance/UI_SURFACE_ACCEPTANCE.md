@@ -1,5 +1,7 @@
 # UI Surface Design — acceptance
 
+> **PIVOT-STATUS: REFERENCE-ONLY** under the cell-native pivot ([ADR-001](../../dev/adrs/ADR-001-cell-native-pivot.md)). This acceptance file scored the broad factory UI Phases D and G shipped. Direction v0.9 §17 requires the first product UI redesigned from scratch around cell execution; the artboards this file scores are pivot-superseded as the first product shell but remain valid as design research and discipline reference per G2 sprint 143's borrow-list. Retained on disk per `dev/sdd-kit-2/AGENTS.md` hard rule 12. See [`docs/phases/pivot-status.md`](../phases/pivot-status.md).
+
 Scored 2026-08-26 against the 21 §25 acceptance criteria in
 `specs/ui-surface-design/ui-surface-design-spec-v0.3.md`. Every row cites
 at least one artboard or a reason it does not pass. The pack lives at

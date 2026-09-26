@@ -7,6 +7,7 @@
 | # | Project | Dates | Subject |
 |---|---------|-------|---------|
 | A | Distributed Factory Execution Record System | 2026-06-30 → 2026-07-01 | Distrust-the-green for a contract-first / spec-executor backend: the taxonomy of green-that-lies, mutation-grounded auditing, and two-driver diff-to-zero |
+| B | Distributed Factory Execution Record System | 2026-09-05 → 2026-09-25 | Whole-project pivot discipline: a ninth `SURFACE_PIVOT_PROPOSED` proposal type paired with numbered ADRs, a pivot-status table for downstream phases, and deprecation-marks at point of use. The kit's eight `_PROPOSED` types operate at the vocabulary layer; a Zoom-In + Customer Segment pivot needs a proposal type that operates at the first-product-surface layer, an immutable ADR that records the decision, a phase-status table that reconciles the roadmap, and `PIVOT-STATUS` markers on every superseded artefact so downstream readers do not work off stale content. First use: `dev/adrs/ADR-001-cell-native-pivot.md`. |
 
 *(Add a row when you add an addendum. Never delete a row; if folded into `TECHNIQUES.md`, keep the row and note the promotion.)*
 

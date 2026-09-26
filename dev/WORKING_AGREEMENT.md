@@ -106,6 +106,16 @@ Vocabulary location: `contracts/*.yaml` — 16 registries as of Phase C close. T
 
 Vocabulary CI gate command: `npm run validate:contracts`. Registry consistency plus VF-003 reference resolution. Must exit 0 before any sprint closes.
 
+### Whole-project proposal types (project override, 2026-09-25)
+
+The kit's eight `_PROPOSED` types at `dev/sdd-kit-2/grammar/PRINCIPLES.md` operate at the vocabulary layer — tag splits, entity merges, invariant additions, per-tag deprecation. They do not cover whole-project moves that change the first product surface, retire a phase's content, or reshape the roadmap. This project adds a ninth type:
+
+**`SURFACE_PIVOT_PROPOSED`** — a first-product-surface reframe. Carries: named pivot type (per Ries taxonomy: Zoom-In / Zoom-Out / Customer Segment / Customer Need / Platform / Value Capture / Channel / Technology / Business Architecture / Engine of Growth); migration pattern (per Fowler: strangler fig / parallel run / big bang / contract-first); preserved core; redrawn surface; superseded artefacts at point of use; downstream phase status table; numbered ADR that records the decision immutably. The proposal is Accepted when: (a) an ADR is written and accepted per `dev/adrs/README.md`; (b) a pivot-status table exists at `docs/phases/pivot-status.md`; (c) every superseded artefact carries a `PIVOT-STATUS` marker at point of use; (d) the load-bearing indexes (`docs/README.md`, `docs/DOCS.md`, `docs/ROADMAP.md`) carry the pivot notice.
+
+First use: cell-native pivot, `dev/adrs/ADR-001-cell-native-pivot.md`, 2026-09-25.
+
+The type is added as a project override rather than a kit-level change. When the project next feeds the kit upstream, `dev/ADDENDUMS.md` carries the entry naming this type for potential inclusion in a future `sdd-kit-3`.
+
 ## Build and verification commands
 
 The Architect (human) runs build commands; the Agent does not silently retry failed builds.

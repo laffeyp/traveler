@@ -1,5 +1,7 @@
 # docs/
 
+> **Pivot notice (2026-09-25).** The project is under a cell-native pivot recorded in [ADR-001](../dev/adrs/ADR-001-cell-native-pivot.md). Consult [`phases/pivot-status.md`](phases/pivot-status.md) before treating any Phase H–L text on `ROADMAP.md` as current. Phase D and Phase G artefacts are pivot-reference-only per direction v0.9 §17.
+
 Project state ledgers. Every file here is authored by this project — status, scoring, deviation, additions, session narratives, boundary acceptance. The governing inputs live under [`../specs/`](../specs/).
 
 Start with `STATE.md`. `DOCS.md` catalogs every document in the repo.
